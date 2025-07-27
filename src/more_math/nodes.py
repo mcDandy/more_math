@@ -13,5 +13,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "mrmth_LatentMathNode": "Latent math node",
     "mrmth_ImageMathNode": "Image math node",
     "Tensor": "Tensor expression",
+    "Latent": "Latent expression",
+    "Image": "Image expression",
     "pooled_output": "Pooled output tensor expression"
 }

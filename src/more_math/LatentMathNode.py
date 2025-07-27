@@ -15,7 +15,7 @@ class LatentMathNode:
             Latent, bound to variables with the same name. Defaults to zero latent if not provided.
         w, x, y, z:
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
-        Tensor expression:
+        Latent expression:
             String, describing expression to mix latents. Valid functions are sin, cos, tan, abs, sqrt, min, max, norm. Valid operators are +, -, *, /, ^, %. Usable constants are e and pi.
         
     OUTPUTS:
@@ -35,7 +35,7 @@ class LatentMathNode:
 
                 }),
 
-                "Tensor": ("STRING", {
+                "Latent": ("STRING", {
                     "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
                     "default": "a*(1-w)+b*w",
                     "description": "Describes composition of the image. Valid functions are sin,cos,tan,abs,sqrt,min,max. Valid operators are +,-,*,/,^,%"
@@ -85,13 +85,13 @@ class LatentMathNode:
 
     CATEGORY = "More math"
 
-    def latMathNode(self, Tensor, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    def latMathNode(self, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         a = a["samples"]
         b = torch.zeros_like(a) if b is None else b["samples"]
         c = torch.zeros_like(a) if c is None else c["samples"]
         d = torch.zeros_like(a) if d is None else d["samples"]
 
-        tokens = tokenize_expression(Tensor)
+        tokens = tokenize_expression(Latent)
         parser = Parser(tokens)
         ast = parser.parse_expression()
         print(a.shape)

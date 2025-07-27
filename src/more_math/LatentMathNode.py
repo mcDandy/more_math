@@ -16,7 +16,7 @@ class LatentMathNode:
         w, x, y, z:
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Tensor expression:
-            String, describing expression to mix latents. Valid functions are sin, cos, tan, abs, sqrt, min, max, norm. Valid operators are +, -, *, /, ^, %.
+            String, describing expression to mix latents. Valid functions are sin, cos, tan, abs, sqrt, min, max, norm. Valid operators are +, -, *, /, ^, %. Usable constants are e and pi.
         
     OUTPUTS:
         LATENT:

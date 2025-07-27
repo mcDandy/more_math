@@ -30,9 +30,9 @@ def evaluate_tensor_expression(ast, variables):
         op, operand_expr = ast[1]
         operand_val = evaluate_tensor_expression(operand_expr, variables)
         if op == '+':
-            return operand_val
+            return to_tensor(operand_val,variables['a'])
         elif op == '-':
-            return torch.neg(operand_val)
+            return torch.neg(to_tensor(operand_val,variables['a']))
         else:
             raise ValueError(f"Unsupported unary operator: {op}")
 
@@ -45,15 +45,15 @@ def evaluate_tensor_expression(ast, variables):
         if func_name == 'ABS':
             return torch.abs(arg_vals[0])
         elif func_name == 'NORM':
-            return torch.nn.functional.normalize(arg_vals[0], p=2, dim=-1)
+            return torch.nn.functional.normalize(to_tensor(arg_vals[0],variables['a']), p=2, dim=-1)
         elif func_name == 'SQRT':
-            return torch.sqrt(arg_vals[0])
+            return torch.sqrt(to_tensor(arg_vals[0],variables['a']))
         elif func_name == 'SIN':
-            return torch.sin(arg_vals[0])
+            return torch.sin(to_tensor(arg_vals[0],variables['a']))
         elif func_name == 'COS':
-            return torch.cos(arg_vals[0])
+            return torch.cos(to_tensor(arg_vals[0],variables['a']))
         elif func_name == 'TAN':
-            return torch.tan(arg_vals[0])
+            return torch.tan(to_tensor(arg_vals[0],variables['a']))
         elif func_name == 'MAX':
             return torch.max(*arg_vals)
         elif func_name == 'MIN':

@@ -3,10 +3,11 @@ from io import StringIO
 import tokenize
 
 def to_tensor(val, ref):
-            if isinstance(val, torch.Tensor):
-                return val
-            # Convert float/int, to tensor with the same shape as ref
-            return torch.full_like(ref, float(val))
+    if isinstance(val, torch.Tensor):
+        return val
+    # Convert float/int, to tensor with the same shape as ref
+    return torch.full_like(ref, float(val))
+
 def evaluate_tensor_expression(ast, variables):
     """
     Evaluates AST using variables.
@@ -14,7 +15,10 @@ def evaluate_tensor_expression(ast, variables):
     """
     if not isinstance(ast, tuple):
         return ast  # Return literal values directly (if any)
-    
+    variables['w'] = to_tensor(variables['w'], variables['a'])
+    variables['x'] = to_tensor(variables['x'], variables['a'])
+    variables['y'] = to_tensor(variables['y'], variables['a'])
+    variables['z'] = to_tensor(variables['z'], variables['a'])
     node_type = ast[0]
 
     if node_type == 'VARIABLE':
@@ -30,9 +34,12 @@ def evaluate_tensor_expression(ast, variables):
         op, operand_expr = ast[1]
         operand_val = evaluate_tensor_expression(operand_expr, variables)
         if op == '+':
-            return to_tensor(operand_val,variables['a'])
+            return to_tensor(operand_val, variables['a'])
         elif op == '-':
-            return torch.neg(to_tensor(operand_val,variables['a']))
+            return torch.neg(to_tensor(operand_val, variables['a']))
+        elif op == '!':
+            # Logická negace: !a
+            return torch.logical_not(to_tensor(operand_val, variables['a']).bool())
         else:
             raise ValueError(f"Unsupported unary operator: {op}")
 
@@ -45,19 +52,55 @@ def evaluate_tensor_expression(ast, variables):
         if func_name == 'ABS':
             return torch.abs(arg_vals[0])
         elif func_name == 'NORM':
-            return torch.nn.functional.normalize(to_tensor(arg_vals[0],variables['a']), p=2, dim=-1)
+            return torch.nn.functional.normalize(to_tensor(arg_vals[0], variables['a']), p=2, dim=-1)
         elif func_name == 'SQRT':
-            return torch.sqrt(to_tensor(arg_vals[0],variables['a']))
+            return torch.sqrt(arg_vals[0])
         elif func_name == 'SIN':
-            return torch.sin(to_tensor(arg_vals[0],variables['a']))
+            return torch.sin(arg_vals[0])
         elif func_name == 'COS':
-            return torch.cos(to_tensor(arg_vals[0],variables['a']))
+            return torch.cos(arg_vals[0])
         elif func_name == 'TAN':
-            return torch.tan(to_tensor(arg_vals[0],variables['a']))
+            return torch.tan(arg_vals[0])
         elif func_name == 'MAX':
             return torch.max(*arg_vals)
         elif func_name == 'MIN':
             return torch.max(*arg_vals)
+        elif func_name == 'FLOOR':
+            return torch.floor(arg_vals[0])
+        elif func_name == 'CEIL':
+            return torch.ceil(arg_vals[0])
+        elif func_name == 'ROUND':
+            return torch.round(arg_vals[0])
+        elif func_name == 'ASIN':
+            return torch.asin(arg_vals[0])
+        elif func_name == 'ACOS':
+            return torch.acos(arg_vals[0])
+        elif func_name == 'ATAN':
+            return torch.atan(arg_vals[0])
+        elif func_name == 'ATAN2':
+            return torch.atan2(arg_vals[1], arg_vals[0])
+        elif func_name == 'LN':
+            return torch.log(arg_vals[0])
+        elif func_name == 'SINH':
+            return torch.sinh(arg_vals[0])
+        elif func_name == 'COSH':
+            return torch.cosh(arg_vals[0])
+        elif func_name == 'TANH':
+            return torch.tanh(arg_vals[0])
+        elif func_name == 'ASINH':
+            return torch.asinh(arg_vals[0])
+        elif func_name == 'ACOSH':
+            return torch.acosh(arg_vals[0])
+        elif func_name == 'ATANH':
+            return torch.atanh(arg_vals[0])
+        elif func_name == 'EXP':
+            return torch.exp(arg_vals[0])
+        elif func_name == 'LOG':
+            return torch.log10(arg_vals[0])
+        elif func_name == 'GAMMA':
+            return torch.gamma(arg_vals[0])
+        elif func_name == 'XOR':
+            return torch.logical_xor(arg_vals[0].bool(), arg_vals[1].bool())
         else:
             raise ValueError(f"Unsupported function: {func_name}")
 
@@ -73,10 +116,15 @@ def evaluate_tensor_expression(ast, variables):
             return torch.multiply(left_val, right_val)
         elif op == '/':
             return torch.divide(left_val, right_val)
-        elif op == '^':
-            return torch.pow(to_tensor(left_val,variables['a']).type(torch.complex64), to_tensor(right_val,variables['a']).type(torch.complex64)).real
         elif op == '%':
             return torch.fmod(left_val, right_val)
+        elif op == '&':
+            # Logický AND
+            return torch.logical_and(to_tensor(left_val, variables['a']).bool(), to_tensor(right_val, variables['a']).bool())
+        elif op == '|':
+            return torch.logical_or(to_tensor(left_val, variables['a']).bool(), to_tensor(right_val, variables['a']).bool())
+        elif op == '^':
+            return torch.pow(to_tensor(left_val, variables['a']).type(torch.complex64), to_tensor(right_val, variables['a']).type(torch.complex64)).real
         else:
             raise ValueError(f"Unsupported operator: {op}")
 
@@ -86,6 +134,7 @@ def evaluate_tensor_expression(ast, variables):
 
     else:
         raise ValueError(f"Unknown AST node type: {node_type}")
+
 def tokenize_expression(expr):
     f = StringIO(expr)
     tokens_gen = tokenize.generate_tokens(f.readline)

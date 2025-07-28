@@ -4,9 +4,9 @@ class Parser:
         self.pos = 0
 
     def peek(self):
-        # Skip INDENT/DEDENT/NEWLINE tokens
+        # Přeskoč NEWLINE/INDENT/DEDENT
         while self.pos < len(self.tokens) and self.tokens[self.pos][0] in {"INDENT", "DEDENT", "NEWLINE"}:
-            self.posF += 1
+            self.pos += 1
         return self.tokens[self.pos] if self.pos < len(self.tokens) else ('ENDMARKER', '')
 
     def consume(self):
@@ -14,43 +14,82 @@ class Parser:
         self.pos += 1
         return token
 
-    def expect(self, expected_type=None, expected_value=None):
-        tok_type, value = self.peek()
-        if expected_type and tok_type != expected_type:
-            raise SyntaxError(
-                f"Expected token type {expected_type}, got {tok_type} ('{value}') at position {self.pos}."
-            )
-        if expected_value and value != expected_value:
-            raise SyntaxError(
-                f"Expected token value '{expected_value}', got '{value}' at position {self.pos}."
-            )
-        return self.consume()
-
     def parse_expression(self):
-        left = self.parse_term()
+        # Logický OR
+        left = self.parse_xor()
+        while True:
+            tok_type, value = self.peek()
+            if value == '|':
+                self.consume()
+                right = self.parse_xor()
+                left = ('BINOP', ('|', left, right))
+            else:
+                break
+        return left
+
+    def parse_xor(self):
+        # XOR
+        left = self.parse_and()
+        while True:
+            tok_type, value = self.peek()
+            if value == '^':
+                self.consume()
+                right = self.parse_and()
+                left = ('BINOP', ('^', left, right))
+            else:
+                break
+        return left
+
+    def parse_and(self):
+        # Logický AND
+        left = self.parse_add_sub()
+        while True:
+            tok_type, value = self.peek()
+            if value == '&':
+                self.consume()
+                right = self.parse_add_sub()
+                left = ('BINOP', ('&', left, right))
+            else:
+                break
+        return left
+
+    def parse_add_sub(self):
+        # Sčítání, odčítání
+        left = self.parse_mul_div_mod()
         while True:
             tok_type, value = self.peek()
             if value in ['+', '-']:
                 op = value
                 self.consume()
-                right = self.parse_term()
+                right = self.parse_mul_div_mod()
                 left = ('BINOP', (op, left, right))
             else:
                 break
         return left
 
-    def parse_term(self):
-        left = self.parse_factor()
+    def parse_mul_div_mod(self):
+        # Násobení, dělení, modulo
+        left = self.parse_unary()
         while True:
             tok_type, value = self.peek()
-            if value in ['*', '/', '^', '%']:
+            if value in ['*', '/', '%']:
                 op = value
                 self.consume()
-                right = self.parse_factor()
+                right = self.parse_unary()
                 left = ('BINOP', (op, left, right))
             else:
                 break
         return left
+
+    def parse_unary(self):
+        # Unární operátory: !, +, -
+        tok_type, value = self.peek()
+        if tok_type == 'OP' and value in ('+', '-', '!'):
+            op = value
+            self.consume()
+            operand = self.parse_unary()
+            return ('UNARYOP', (op, operand))
+        return self.parse_factor()
 
     def parse_arguments(self):
         args = []
@@ -68,13 +107,6 @@ class Parser:
 
     def parse_factor(self):
         tok_type, value = self.peek()
-
-        # Podpora unárních operátorů + a -
-        if tok_type == 'OP' and value in ('+', '-'):
-            op = value
-            self.consume()
-            operand = self.parse_factor()
-            return ('UNARYOP', (op, operand))
 
         if tok_type == 'OP' and value == '(':
             self.consume()  # Skip '('

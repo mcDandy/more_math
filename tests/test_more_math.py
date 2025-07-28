@@ -7,6 +7,24 @@ from src.more_math.ConditioningMathNode import ConditioningMathNode
 from src.more_math.LatentMathNode import LatentMathNode
 from src.more_math.ImageMathNode import ImageMathNode
 from src.more_math.parser import Parser
+import tokenize
+from io import StringIO
+
+def tokenize_expression(expr):
+    if not expr.endswith('\n'):
+        expr = expr + '\n'
+    f = StringIO(expr)
+    tokens = tokenize.generate_tokens(f.readline)
+    filtered_tokens = []
+    for toktype, tokval, _, _, _ in tokens:
+        token_name = tokenize.tok_name[toktype]
+        # Opravíme ERRORTOKEN na OP pro !, &, |, ^
+        if token_name == 'ERRORTOKEN' and tokval in {'!', '&', '|', '^'}:
+            token_name = 'OP'
+        if token_name in {'COMMENT', 'NL', 'NEWLINE', 'INDENT', 'DEDENT'}:
+            continue
+        filtered_tokens.append((token_name, tokval.strip()))
+    return filtered_tokens
 
 def test_conditioning_math_node_initialization():
     node = ConditioningMathNode()
@@ -34,27 +52,6 @@ def test_image_math_node_metadata():
     assert ImageMathNode.RETURN_TYPES == ("IMAGE",)
     assert ImageMathNode.FUNCTION == "imgMathNode"
     assert ImageMathNode.CATEGORY == "More math"
-
-import tokenize
-from io import StringIO
-
-def tokenize_expression(expr):
-    # Always add a trailing newline to avoid TokenError on incomplete input
-    if not expr.endswith('\n'):
-        expr = expr + '\n'
-    f = StringIO(expr)
-    try:
-        tokens = tokenize.generate_tokens(f.readline)
-        filtered_tokens = []
-        for toktype, tokval, _, _, _ in tokens:
-            token_name = tokenize.tok_name[toktype]
-            if token_name in {'COMMENT', 'NL', 'NEWLINE', 'INDENT', 'DEDENT'}:
-                continue
-            filtered_tokens.append((token_name, tokval.strip()))
-        return filtered_tokens
-    except tokenize.TokenError as e:
-        # Return a special token to indicate tokenization error for incomplete input
-        return [('TOKENIZE_ERROR', str(e))]
 
 @pytest.mark.parametrize(
     "expr,expected_ast",
@@ -101,3 +98,123 @@ def test_parser_errors(expr, err_msg):
     with pytest.raises(SyntaxError) as excinfo:
         parser.parse_expression()
     assert err_msg in str(excinfo.value)
+
+@pytest.mark.parametrize(
+    "expr,expected_ast",
+    [
+        ("a ^ b", ('BINOP', ('^', ('VARIABLE', 'a'), ('VARIABLE', 'b')))),
+        ("a & b", ('BINOP', ('&', ('VARIABLE', 'a'), ('VARIABLE', 'b')))),
+        ("a | b", ('BINOP', ('|', ('VARIABLE', 'a'), ('VARIABLE', 'b')))),
+        ("!a", ('UNARYOP', ('!', ('VARIABLE', 'a')))),
+        ("!a & b", ('BINOP', ('&', ('UNARYOP', ('!', ('VARIABLE', 'a'))), ('VARIABLE', 'b')))),
+        ("a | b & c", ('BINOP', ('|', ('VARIABLE', 'a'), ('BINOP', ('&', ('VARIABLE', 'b'), ('VARIABLE', 'c')))))),
+        ("a ^ b | c", ('BINOP', ('|', ('BINOP', ('^', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), ('VARIABLE', 'c')))),
+    ]
+)
+def test_parser_logical_and_pow(expr, expected_ast):
+    tokens = tokenize_expression(expr)
+    parser = Parser(tokens)
+    ast = parser.parse_expression()
+    assert ast == expected_ast
+
+@pytest.mark.parametrize(
+    "expr,expected_ast",
+    [
+        # Priority: ! > * > + > & > ^ > |
+        ("a + b * c", 
+            ('BINOP', ('+', 
+                ('VARIABLE', 'a'), 
+                ('BINOP', ('*', ('VARIABLE', 'b'), ('VARIABLE', 'c')))
+            ))
+        ),
+        ("a * b + c", 
+            ('BINOP', ('+', 
+                ('BINOP', ('*', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("a + b & c", 
+            ('BINOP', ('&', 
+                ('BINOP', ('+', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("a & b + c", 
+            ('BINOP', ('&', 
+                ('VARIABLE', 'a'), 
+                ('BINOP', ('+', ('VARIABLE', 'b'), ('VARIABLE', 'c')))
+            ))
+        ),
+        ("a + b | c", 
+            ('BINOP', ('|', 
+                ('BINOP', ('+', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("a | b + c", 
+            ('BINOP', ('|', 
+                ('VARIABLE', 'a'), 
+                ('BINOP', ('+', ('VARIABLE', 'b'), ('VARIABLE', 'c')))
+            ))
+        ),
+        ("a * b & c", 
+            ('BINOP', ('&', 
+                ('BINOP', ('*', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("a & b * c", 
+            ('BINOP', ('&', 
+                ('VARIABLE', 'a'), 
+                ('BINOP', ('*', ('VARIABLE', 'b'), ('VARIABLE', 'c')))
+            ))
+        ),
+        ("a ^ b + c", 
+            ('BINOP', ('^', 
+                ('VARIABLE', 'a'), 
+                ('BINOP', ('+', ('VARIABLE', 'b'), ('VARIABLE', 'c')))
+            ))
+        ),
+        ("a + b ^ c", 
+            ('BINOP', ('^', 
+                ('BINOP', ('+', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("a | b ^ c", 
+            ('BINOP', ('|', 
+                ('VARIABLE', 'a'), 
+                ('BINOP', ('^', ('VARIABLE', 'b'), ('VARIABLE', 'c')))
+            ))
+        ),
+        ("a ^ b | c", 
+            ('BINOP', ('|', 
+                ('BINOP', ('^', ('VARIABLE', 'a'), ('VARIABLE', 'b'))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("!a * b", 
+            ('BINOP', ('*', 
+                ('UNARYOP', ('!', ('VARIABLE', 'a'))), 
+                ('VARIABLE', 'b')
+            ))
+        ),
+        ("!(a + b) * c", 
+            ('BINOP', ('*', 
+                ('UNARYOP', ('!', ('PARENTHESIS', ('BINOP', ('+', ('VARIABLE', 'a'), ('VARIABLE', 'b')))))), 
+                ('VARIABLE', 'c')
+            ))
+        ),
+        ("a + (b | c)", 
+            ('BINOP', ('+', 
+                ('VARIABLE', 'a'), 
+                ('PARENTHESIS', ('BINOP', ('|', ('VARIABLE', 'b'), ('VARIABLE', 'c'))))
+            ))
+        ),
+    ]
+)
+def test_parser_operator_priority(expr, expected_ast):
+    tokens = tokenize_expression(expr)
+    parser = Parser(tokens)
+    ast = parser.parse_expression()
+    assert ast == expected_ast

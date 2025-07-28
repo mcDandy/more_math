@@ -18,7 +18,7 @@ class ImageMathNode:
         w, x, y, z:
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Image expression:
-            String, describing expression to mix images. Valid functions are sin, cos, tan, abs, sqrt, min, max, norm. Valid operators are +, -, *, /, ^, %. Usable constants are e and pi.
+            String, describing expression to mix images. Valid functions are sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, min, max, norm, floor, ceil, round, gamma. Valid operators are +, -, *, /, %, ^,!˛&,|. Usable constants are e and pi.
         
     OUTPUTS:
         LATENT:

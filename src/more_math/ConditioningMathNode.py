@@ -41,12 +41,12 @@ class ConditioningMathNode:
                 "Tensor": ("STRING", {
                     "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
                     "default": "a*(1-w)+b*w",
-                    "description": "Describes composition of the image. Valid functions are sin,cos,tan,abs,sqrt,min,max. Valid operators are +,-,*,/,^,%"
+                    "description": "Describes composition of the image. Valid functions are sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, min, max, norm, floor, ceil, round, gamma. Valid operators are +, -, *, /, %, ^,!˛&,|. Usable constants are e and pi."
 
                 }),
                 "pooled_output": ("STRING", {
                     "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "a*w+b*(1-w)",
+                    "default": "a*(1-w)+b*w",
                     "description": "Can change some details of the image, probably also used for positional and temporal conditioning."
                 }),
             },

@@ -4,6 +4,9 @@ class Parser:
         self.pos = 0
 
     def peek(self):
+        # Skip INDENT/DEDENT/NEWLINE tokens
+        while self.pos < len(self.tokens) and self.tokens[self.pos][0] in {"INDENT", "DEDENT", "NEWLINE"}:
+            self.posF += 1
         return self.tokens[self.pos] if self.pos < len(self.tokens) else ('ENDMARKER', '')
 
     def consume(self):

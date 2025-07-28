@@ -1,11 +1,13 @@
 from inspect import cleandoc
 from math import e
 
+from antlr4 import CommonTokenStream
+from antlr4.atn.LexerActionExecutor import InputStream
 import torch
 
-from .helperFunc import evaluate_tensor_expression, to_tensor, tokenize_expression
-from .parser import Parser
-
+from .Parser.MathExprParser import MathExprParser
+from .Parser.MathExprLexer import MathExprLexer
+from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
 class ImageMathNode:
     """
@@ -90,20 +92,20 @@ class ImageMathNode:
         c = torch.zeros_like(a) if c is None else c
         d = torch.zeros_like(a) if d is None else d
 
-        tokens = tokenize_expression(Image)
-        parser = Parser(tokens)
-        ast = parser.parse_expression()
-        print(a.shape)
-        print("AST:", ast)
 
-        result1 = evaluate_tensor_expression(
-            ast, {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
-        )
 
-        result = to_tensor(result1, a)
-
+        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
+        input_stream = InputStream(Image)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = MathExprParser(stream)
+        tree = parser.expr()
+        print("Tensor\n"+tree.toStringTree(recog=parser))
+        visitor = TensorEvalVisitor(variables,a.shape)
+        result = visitor.visit(tree)
         print("Result:", result)
         return (result,)
+
 
     """
         The node will always be re executed if any of the inputs change but

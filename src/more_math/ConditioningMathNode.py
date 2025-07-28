@@ -1,8 +1,11 @@
 from inspect import cleandoc
+from antlr4 import CommonTokenStream, InputStream
 import torch
 
-from .helperFunc import evaluate_tensor_expression, to_tensor, tokenize_expression
-from .parser import Parser
+from .Parser.MathExprParser import MathExprParser
+from .Parser.MathExprLexer import MathExprLexer
+from .Parser.TensorEvalVisitor import TensorEvalVisitor
+
 
 
 class ConditioningMathNode:
@@ -96,15 +99,9 @@ class ConditioningMathNode:
         if c is None:
            c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]] 
         if d is None:
-           d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]] 
-        tokens = tokenize_expression(Tensor)
-        parser = Parser(tokens)
-        ast = parser.parse_expression()
-        tokens = tokenize_expression(pooled_output)
-        parser = Parser(tokens)
-        ast1 = parser.parse_expression()
-        print("AST:", ast)
-        print("AST1:", ast1)
+           d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
+
+
         ta = a[0][0].clone()
         tb = b[0][0].clone()
         pa = a[0][1]["pooled_output"].clone()
@@ -114,12 +111,27 @@ class ConditioningMathNode:
         pc = c[0][1]["pooled_output"].clone()
         pd = d[0][1]["pooled_output"].clone()
    
+        variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z}
+        input_stream = InputStream(Tensor)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = MathExprParser(stream)
+        tree = parser.expr()
+        print("Tensor\n"+tree.toStringTree(recog=parser))
+        visitor = TensorEvalVisitor(variables)
+        result1 = visitor.visit(tree)
+        
 
-        result1 = evaluate_tensor_expression(ast, {'a': ta, 'b': tb, 'c': tc, 'd': td,'w':w,'x':x,'y':y,'z':z})
-        result2 = evaluate_tensor_expression(ast1, {'a': pa, 'b': pb,'c': pc, 'd': pd,'w':w,'x':x,'y':y,'z':z})
+        variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z}
+        input_stream = InputStream(Tensor)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = MathExprParser(stream)
+        tree = parser.expr()
+        print("pooled_output\n"+tree.toStringTree(recog=parser))
+        visitor = TensorEvalVisitor(variables)
+        result2 = visitor.visit(tree)
 
-        result1 = to_tensor(result1, ta)
-        result2 = to_tensor(result2, pa)
 
         result = [[result1, {"pooled_output": result2}]]
         print("Result:", result)

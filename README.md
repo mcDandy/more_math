@@ -1,20 +1,17 @@
 # More Math
 
-Adds math nodes for numbers and types which do not need it.
-
-> [!NOTE]
-> This projected was created with a [cookiecutter](https://github.com/Comfy-Org/cookiecutter-comfy-extension) template. It helps you start writing custom nodes without worrying about the Python setup.
+Adds math nodes for numbers and types which do not need it. I got inspired by was_extras node.
 
 ## Quickstart
 
 1. Install [ComfyUI](https://docs.comfy.org/get_started).
-1. Install [ComfyUI-Manager](https://github.com/ltdrdata/ComfyUI-Manager)
-1. Look up this extension in ComfyUI-Manager. If you are installing manually, clone this repository under `ComfyUI/custom_nodes`.
+1. Clone this repository into `ComfyUI/custom_nodes`.
 1. Restart ComfyUI.
 
 # Features
 
-- A list of features
+- expression parsing with support for functions (sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, min, max, norm (norm not applicable on number math node), floor, ceil, round, gamma), math operators (binary and unary +,- and *,/,%), logical operators (&,|,!,^) and constants (e,pi)
+- run expressions on both components of CONDITIONING (not that I know what they do), LATENT, IMAGE and FLOAT
 
 ## Develop
 
@@ -29,21 +26,6 @@ pre-commit install
 The `-e` flag above will result in a "live" install, in the sense that any changes you make to your node extension will automatically be picked up the next time you run ComfyUI.
 
 ## Publish to Github
-
-Install Github Desktop or follow these [instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent) for ssh.
-
-1. Create a Github repository that matches the directory name. 
-2. Push the files to Git
-```
-git add .
-git commit -m "project scaffolding"
-git push
-``` 
-
-## Writing custom nodes
-
-An example custom node is located in [node.py](src/more_math/nodes.py). To learn more, read the [docs](https://docs.comfy.org/essentials/custom_node_overview).
-
 
 ## Tests
 

@@ -14,36 +14,6 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#ToXor.
-    def visitToXor(self, ctx:MathExprParser.ToXorContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#OrExp.
-    def visitOrExp(self, ctx:MathExprParser.OrExpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#XorExp.
-    def visitXorExp(self, ctx:MathExprParser.XorExpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#ToAnd.
-    def visitToAnd(self, ctx:MathExprParser.ToAndContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#AndExp.
-    def visitAndExp(self, ctx:MathExprParser.AndExpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#ToAdd.
-    def visitToAdd(self, ctx:MathExprParser.ToAddContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MathExprParser#AddExp.
     def visitAddExp(self, ctx:MathExprParser.AddExpContext):
         return self.visitChildren(ctx)
@@ -99,11 +69,6 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#NotExp.
-    def visitNotExp(self, ctx:MathExprParser.NotExpContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MathExprParser#ToAtom.
     def visitToAtom(self, ctx:MathExprParser.ToAtomContext):
         return self.visitChildren(ctx)
@@ -116,6 +81,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#Func2Exp.
     def visitFunc2Exp(self, ctx:MathExprParser.Func2ExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Func3Exp.
+    def visitFunc3Exp(self, ctx:MathExprParser.Func3ExpContext):
         return self.visitChildren(ctx)
 
 
@@ -229,8 +199,13 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#NormFunc.
-    def visitNormFunc(self, ctx:MathExprParser.NormFuncContext):
+    # Visit a parse tree produced by MathExprParser#TNormFunc.
+    def visitTNormFunc(self, ctx:MathExprParser.TNormFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SNormFunc.
+    def visitSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -254,6 +229,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#sigmoidFunc.
+    def visitSigmoidFunc(self, ctx:MathExprParser.SigmoidFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -261,6 +241,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#Atan2Func.
     def visitAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ClampFunc.
+    def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
 
 

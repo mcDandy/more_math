@@ -1,5 +1,6 @@
 from tkinter import SE
 import torch
+import torch.special
 from .MathExprVisitor import MathExprVisitor
 
 class TensorEvalVisitor(MathExprVisitor):
@@ -21,8 +22,11 @@ class TensorEvalVisitor(MathExprVisitor):
 
     def visitVariableExp(self, ctx):
         name = ctx.getText()
+        print("Visiting variable expression:", name)
+        print("Variable value:", self.variables[name])
         if name not in self.variables:
             raise ValueError(f"Variable '{name}' not found")
+        if not isinstance(self.variables[name], torch.Tensor):  return torch.full(self.shape,self.variables[name])
         return self.variables[name]
 
     def visitParenExp(self, ctx):
@@ -34,8 +38,6 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitUnaryMinus(self, ctx):
         return -self.visit(ctx.unaryExpr())
 
-    def visitNotExp(self, ctx):
-        return torch.logical_not(self.visit(ctx.unaryExpr()).bool())
 
     def visitAddExp(self, ctx):
         return torch.add(self.visit(ctx.addExpr()), self.visit(ctx.mulExpr()))
@@ -51,6 +53,7 @@ class TensorEvalVisitor(MathExprVisitor):
 
     def visitDivExp(self, ctx):
         return torch.div(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()))
+    
 
     def visitModExp(self, ctx):
         return torch.fmod(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()))
@@ -80,7 +83,7 @@ class TensorEvalVisitor(MathExprVisitor):
         return torch.logical_or(self.visit(ctx.orExpr()).bool(), self.visit(ctx.xorExpr()).bool())
 
     def visitXorExp(self, ctx):
-        return torch.logical_xor(self.visit(ctx.xorExpr()).bool(), self.visit(ctx.andExpr()).bool())
+        return torch.pow(self.visit(ctx.xorExpr()), self.visit(ctx.andExpr()))
 
     def visitAndExp(self, ctx):
         return torch.logical_and(self.visit(ctx.andExpr()).bool(), self.visit(ctx.addExpr()).bool())
@@ -103,11 +106,14 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitLnFunc(self, ctx):    return torch.log(self.visit(ctx.expr()))
     def visitLogFunc(self, ctx):   return torch.log10(self.visit(ctx.expr()))
     def visitExpFunc(self, ctx):   return torch.exp(self.visit(ctx.expr()))
-    def visitNormFunc(self, ctx):  return torch.nn.functional.normalize(self.visit(ctx.expr()), p=2, dim=-1)
+    def visitTNormFunc(self, ctx): return torch.nn.functional.normalize(self.visit(ctx.expr()), p=2, dim=-1)
+    def visitSNormFunc(self, ctx): return torch.full(self.shape,torch.linalg.norm(self.visit(ctx.expr())).data[0])
     def visitFloorFunc(self, ctx): return torch.floor(self.visit(ctx.expr()))
     def visitCeilFunc(self, ctx):  return torch.ceil(self.visit(ctx.expr()))
     def visitRoundFunc(self, ctx): return torch.round(self.visit(ctx.expr()))
-    def visitGammaFunc(self, ctx): return torch.special.gammaln(self.visit(ctx.expr())).exp()
+    def visitGammaFunc(self, ctx): return torch.special.gamma(self.visit(ctx.expr())).exp()
+    def visitSigmoidFunc(self, ctx): return torch.sigmoid(self.visit(ctx.expr()))
+    def visitClampFunc(self, ctx): return torch.clamp(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)))
 
     # Two-argument functions
     def visitPowFunc(self, ctx):

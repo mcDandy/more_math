@@ -2,23 +2,9 @@ grammar MathExpr;
 
 // Top-level expression, with operator precedence (lowest to highest)
 expr
-    : atom | orExpr
+    : atom | addExpr
     ;
 
-orExpr
-    : orExpr OR xorExpr   # OrExp
-    | xorExpr             # ToXor
-    ;
-
-xorExpr
-    : xorExpr XOR andExpr # XorExp
-    | andExpr             # ToAnd
-    ;
-
-andExpr
-    : andExpr AND addExpr # AndExp
-    | addExpr             # ToAdd
-    ;
 
 addExpr
     : addExpr PLUS mulExpr    # AddExp
@@ -41,7 +27,6 @@ powExpr
 unaryExpr
     : PLUS unaryExpr          # UnaryPlus
     | MINUS unaryExpr         # UnaryMinus
-    | NOT unaryExpr           # NotExp
     | atom                    # ToAtom
     ;
 
@@ -49,6 +34,7 @@ unaryExpr
 atom
     : func1                  # Func1Exp
     | func2                  # Func2Exp
+    | func3                  # Func3Exp
     | funcN                  # FuncNExp
     | VARIABLE               # VariableExp
     | NUMBER                 # NumberExp
@@ -75,19 +61,24 @@ func1
     | LN    '(' expr ')'     # LnFunc
     | LOG   '(' expr ')'     # LogFunc
     | EXP   '(' expr ')'     # ExpFunc
-    | NORM  '(' expr ')'     # NormFunc
+    | TNORM  '(' expr ')'     # TNormFunc
+    | SNORM  '(' expr ')'     # SNormFunc
     | FLOOR '(' expr ')'     # FloorFunc
     | CEIL  '(' expr ')'     # CeilFunc
     | ROUND '(' expr ')'     # RoundFunc
     | GAMMA '(' expr ')'     # GammaFunc
+    | SIGM  '(' expr ')'   # sigmoidFunc
+    
     ;
 
 // Two-argument functions
 func2
-    : POW   '(' expr ',' expr ')'   # PowFunc
+    : POWE   '(' expr ',' expr ')'   # PowFunc
     | ATAN2 '(' expr ',' expr ')'   # Atan2Func
     ;
-
+func3
+    : CLAMP  '(' expr ',' expr ',' expr ')'   # ClampFunc
+    ;
 // N-argument functions (at least 2 arguments)
 funcN
     : MIN   '(' expr (',' expr)+ ')'   # MinFunc
@@ -114,24 +105,24 @@ SQRT  : 'sqrt';
 LN    : 'ln';
 LOG   : 'log';
 EXP   : 'exp';
-POW   : 'pow';
 MIN   : 'min';
 MAX   : 'max';
-NORM  : 'norm';
+TNORM  : 'tnorm';
+SNORM  : 'snorm';
 FLOOR : 'floor';
 CEIL  : 'ceil';
 ROUND : 'round';
 GAMMA : 'gamma';
+POWE   : 'pow';
+SIGM  : 'sigmoid';
+CLAMP : 'clamp';
 
 PLUS        : '+';
 MINUS       : '-';
 MULT        : '*';
 DIV         : '/';
 MOD         : '%';
-AND         : '&';
-OR          : '|';
-XOR         : '^';
-NOT         : '!';
+POW         : '^';
 
 CONSTANT : ('pi'|'PI'|'e'|'E');
 NUMBER   : [0-9]+ ('.' [0-9]+)?;

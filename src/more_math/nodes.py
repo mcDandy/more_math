@@ -1,3 +1,4 @@
+from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
@@ -46,17 +47,20 @@ NODE_CLASS_MAPPINGS = {
     "mrmth_ImageMathNode": ImageMathNode,
     "mrmth_IntToFloat": IntToFloatNode,
     "mrmth_FloatToInt": FloatToIntNode,
+    "mrmth_FloatMathNode": FloatMathNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "mrmth_ConditioningMathNode": "Conditioning math node",
     "mrmth_LatentMathNode": "Latent math node",
     "mrmth_ImageMathNode": "Image math node",
-     "mrmth_IntToFloat": "Int → Float",
+    "mrmth_FloatMathNode": "Float math node",
+    "mrmth_IntToFloat": "Int → Float",
     "mrmth_FloatToInt": "Float → Int",
     "Tensor": "Tensor expression",
     "Latent": "Latent expression",
     "Image": "Image expression",
+    "FloatFunc": "Float expression",
     "pooled_output": "Pooled output tensor expression"
 }
 

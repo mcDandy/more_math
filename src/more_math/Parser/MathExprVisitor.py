@@ -244,18 +244,28 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#TMinFunc.
+    def visitTMinFunc(self, ctx:MathExprParser.TMinFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#TMaxFunc.
+    def visitTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#MinFunc.
-    def visitMinFunc(self, ctx:MathExprParser.MinFuncContext):
+    # Visit a parse tree produced by MathExprParser#SMinFunc.
+    def visitSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#MaxFunc.
-    def visitMaxFunc(self, ctx:MathExprParser.MaxFuncContext):
+    # Visit a parse tree produced by MathExprParser#SMaxFunc.
+    def visitSMaxFunc(self, ctx:MathExprParser.SMaxFuncContext):
         return self.visitChildren(ctx)
 
 

@@ -1,3 +1,4 @@
+from .NoiseMathNode import NoiseMathNode
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
@@ -45,16 +46,18 @@ NODE_CLASS_MAPPINGS = {
     "mrmth_ConditioningMathNode": ConditioningMathNode,
     "mrmth_LatentMathNode": LatentMathNode,
     "mrmth_ImageMathNode": ImageMathNode,
+    "mrmth_FloatMathNode": FloatMathNode,
+    "mrmth_NoiseMathNode": NoiseMathNode,
     "mrmth_IntToFloat": IntToFloatNode,
     "mrmth_FloatToInt": FloatToIntNode,
-    "mrmth_FloatMathNode": FloatMathNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "mrmth_ConditioningMathNode": "Conditioning math node",
-    "mrmth_LatentMathNode": "Latent math node",
-    "mrmth_ImageMathNode": "Image math node",
-    "mrmth_FloatMathNode": "Float math node",
+    "mrmth_ConditioningMathNode": "Conditioning math",
+    "mrmth_LatentMathNode": "Latent math",
+    "mrmth_ImageMathNode": "Image math",
+    "mrmth_FloatMathNode": "Float math",
+    "mrmth_NoiseMathNode": "Noise math",
     "mrmth_IntToFloat": "Int → Float",
     "mrmth_FloatToInt": "Float → Int",
     "Tensor": "Tensor expression",

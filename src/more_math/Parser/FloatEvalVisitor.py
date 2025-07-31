@@ -114,10 +114,10 @@ class FloatEvalVisitor(MathExprVisitor):
         return math.atan2(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
 
     # N-argument functions
-    def visitMinFunc(self, ctx):
+    def visitSMinFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
         return math.min(args)
-    def visitMaxFunc(self, ctx):
+    def visitSMaxFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
         return math.max(args)
 

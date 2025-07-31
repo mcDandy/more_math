@@ -122,12 +122,18 @@ class TensorEvalVisitor(MathExprVisitor):
         return torch.atan2(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
 
     # N-argument functions
-    def visitMinFunc(self, ctx):
+    def visitSMinFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
-        return torch.min(torch.stack(args))
-    def visitMaxFunc(self, ctx):
-        args = [self.visit(e) for e in ctx.expr()]
-        return torch.max(torch.stack(args))
+        return torch.full(self.shape,torch.min(torch.stack(args)))
+    def visitSMaxFunc(self, ctx):
+        args = [torch.reshape(self.visit(e),self.shape) for e in ctx.expr()]
+        return torch.full(self.shape,torch.max(torch.stack(args)))
+
+    def visitTMinFunc(self, ctx):
+        print("Visiting TMin function with args:", [a.getText() for a in ctx.expr()])
+        return torch.minimum(self.visit(ctx.expr(0)),self.visit(ctx.expr(1)))
+    def visitTMaxFunc(self, ctx):
+        return torch.maximum(self.visit(ctx.expr(0)),self.visit(ctx.expr(1)))
 
     def visitFunc1Exp(self, ctx):
         return self.visitChildren(ctx)

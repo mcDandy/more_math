@@ -75,14 +75,17 @@ func1
 func2
     : POWE   '(' expr ',' expr ')'   # PowFunc
     | ATAN2 '(' expr ',' expr ')'   # Atan2Func
+    | TMIN   '(' expr ',' expr ')'   # TMinFunc
+    | TMAX   '(' expr ',' expr ')'   # TMaxFunc
     ;
 func3
     : CLAMP  '(' expr ',' expr ',' expr ')'   # ClampFunc
     ;
 // N-argument functions (at least 2 arguments)
 funcN
-    : MIN   '(' expr (',' expr)+ ')'   # MinFunc
-    | MAX   '(' expr (',' expr)+ ')'   # MaxFunc
+    : SMIN   '(' expr (',' expr)+ ')'   # SMinFunc
+    | SMAX   '(' expr (',' expr)+ ')'   # SMaxFunc
+
     ;
 
 // LEXER RULES
@@ -105,8 +108,10 @@ SQRT  : 'sqrt';
 LN    : 'ln';
 LOG   : 'log';
 EXP   : 'exp';
-MIN   : 'min';
-MAX   : 'max';
+SMIN   : 'smin';
+SMAX   : 'smax';
+TMIN   : 'tmin';
+TMAX   : 'tmax';
 TNORM  : 'tnorm';
 SNORM  : 'snorm';
 FLOOR : 'floor';

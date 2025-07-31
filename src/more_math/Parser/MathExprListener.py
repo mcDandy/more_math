@@ -431,6 +431,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#TMinFunc.
+    def enterTMinFunc(self, ctx:MathExprParser.TMinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TMinFunc.
+    def exitTMinFunc(self, ctx:MathExprParser.TMinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TMaxFunc.
+    def enterTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TMaxFunc.
+    def exitTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ClampFunc.
     def enterClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         pass
@@ -440,21 +458,21 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#MinFunc.
-    def enterMinFunc(self, ctx:MathExprParser.MinFuncContext):
+    # Enter a parse tree produced by MathExprParser#SMinFunc.
+    def enterSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#MinFunc.
-    def exitMinFunc(self, ctx:MathExprParser.MinFuncContext):
+    # Exit a parse tree produced by MathExprParser#SMinFunc.
+    def exitSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#MaxFunc.
-    def enterMaxFunc(self, ctx:MathExprParser.MaxFuncContext):
+    # Enter a parse tree produced by MathExprParser#SMaxFunc.
+    def enterSMaxFunc(self, ctx:MathExprParser.SMaxFuncContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#MaxFunc.
-    def exitMaxFunc(self, ctx:MathExprParser.MaxFuncContext):
+    # Exit a parse tree produced by MathExprParser#SMaxFunc.
+    def exitSMaxFunc(self, ctx:MathExprParser.SMaxFuncContext):
         pass
 
 

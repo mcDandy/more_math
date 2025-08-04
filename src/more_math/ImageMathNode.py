@@ -1,9 +1,9 @@
 from inspect import cleandoc
-from math import e
 
 from antlr4 import CommonTokenStream
 from antlr4.atn.LexerActionExecutor import InputStream
 import torch
+from .helper_functions import getIndexTensorAlongDim
 
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
@@ -25,7 +25,11 @@ class ImageMathNode:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
     """
     def __init__(self):
-        pass
+        shape = []
+        B = None
+        C = None
+        X = None
+        Y = None
 
     @classmethod
     def INPUT_TYPES(s):
@@ -91,10 +95,18 @@ class ImageMathNode:
         b = torch.zeros_like(a) if b is None else b
         c = torch.zeros_like(a) if c is None else c
         d = torch.zeros_like(a) if d is None else d
+        
+        batch = range(0,a.shape[0],1)
+        width = range(0,a.shape[1],1)
+        height = range(0,a.shape[2],1)
+        color = range(0,a.shape[3],1)
 
+        B = getIndexTensorAlongDim(a, 0)
+        W = getIndexTensorAlongDim(a, 1)
+        H = getIndexTensorAlongDim(a, 2)
+        C = getIndexTensorAlongDim(a, 3)
 
-
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
+        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'W':a.shape[1],'H':a.shape[2] }
         input_stream = InputStream(Image)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

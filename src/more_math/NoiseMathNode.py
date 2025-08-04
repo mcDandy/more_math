@@ -138,9 +138,7 @@ class NoiseMathNode:
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
         tree = parser.expr()
-        print("Tensor\n"+tree.toStringTree(recog=parser))
+        print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,variables['a'].shape)
         result = visitor.visit(tree)
-        print("Result1:", result)
-        print("Result:", result)
         return result

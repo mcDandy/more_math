@@ -99,12 +99,10 @@ class LatentMathNode:
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
         tree = parser.expr()
-        print("Tensor\n"+tree.toStringTree(recog=parser))
+        print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,a.shape)
         result1 = visitor.visit(tree)
-        print("Result1:", result1)
         result = {"samples": result1}
-        print("Result:", result)
         return (result,)
 
     """

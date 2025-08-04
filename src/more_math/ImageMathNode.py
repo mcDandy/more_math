@@ -112,10 +112,9 @@ class ImageMathNode:
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
         tree = parser.expr()
-        print("Tensor\n"+tree.toStringTree(recog=parser))
+        print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,a.shape)
         result = visitor.visit(tree)
-        print("Result:", result)
         return (result,)
 
 

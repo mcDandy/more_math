@@ -134,7 +134,6 @@ class ConditioningMathNode:
 
 
         result = [[result1, {"pooled_output": result2}]]
-        print("Result:", result)
         return (result,)
 
     """

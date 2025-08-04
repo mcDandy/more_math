@@ -119,7 +119,7 @@ CEIL  : 'ceil';
 ROUND : 'round';
 GAMMA : 'gamma';
 POWE   : 'pow';
-SIGM  : 'sigmoid';
+SIGM  : 'sigm';
 CLAMP : 'clamp';
 
 PLUS        : '+';

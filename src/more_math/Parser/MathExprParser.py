@@ -120,8 +120,8 @@ class MathExprParser ( Parser ):
                      "'abs'", "'sqrt'", "'ln'", "'log'", "'exp'", "'smin'", 
                      "'smax'", "'tmin'", "'tmax'", "'tnorm'", "'snorm'", 
                      "'floor'", "'ceil'", "'round'", "'gamma'", "'pow'", 
-                     "'sigmoid'", "'clamp'", "'+'", "'-'", "'*'", "'/'", 
-                     "'%'", "'^'" ]
+                     "'sigm'", "'clamp'", "'+'", "'-'", "'*'", "'/'", "'%'", 
+                     "'^'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "ATAN2", 

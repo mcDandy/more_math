@@ -112,7 +112,7 @@ yarn-error.log*
 node.zip
 .vscode/
 .claude/
+
 /.vs
-/.github
 *.editorconfig
 *.yaml

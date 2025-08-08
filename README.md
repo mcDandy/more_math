@@ -12,7 +12,7 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
 
 # Features
 
-- expression parsing with support for functions (sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, min, max, tnorm,snorm (norm not applicable on number math node), floor, ceil, round, gamma,clamp,sigmoid), math operators (binary and unary +,- and ^,*,/,%) and constants (e,pi)
+- expression parsing with support for functions (sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, smin, tmin, smax, tmax, tnorm,snorm (norm not applicable on number math node), floor, ceil, round, gamma,clamp,sigmoid), math operators (binary and unary +,- and ^,*,/,%) and constants (e,pi)
 - run expressions on both components of CONDITIONING (not that I know what they do), LATENT, IMAGE and FLOAT
 
 ## Develop

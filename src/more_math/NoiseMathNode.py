@@ -4,6 +4,8 @@ from math import e
 from antlr4 import CommonTokenStream, InputStream
 import torch
 
+from .helper_functions import getIndexTensorAlongDim
+
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
@@ -102,6 +104,7 @@ class NoiseMathNode:
         self.vx = x
         self.vy = y
         self.vz = z
+
         self.expr = Noise
         return (self,)
 
@@ -132,7 +135,13 @@ class NoiseMathNode:
             self.vd = torch.zeros_like(input_latent["samples"])
         else:
             self.vd = self.vd.generate_noise(input_latent)
-        variables = {'a': self.va.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.vw, 'x': self.vx, 'y': self.vy, 'z': self.vz}
+
+        B = getIndexTensorAlongDim(input_latent["samples"], 0)
+        W = getIndexTensorAlongDim(input_latent["samples"], 2)
+        H = getIndexTensorAlongDim(input_latent["samples"], 3)
+        C = getIndexTensorAlongDim(input_latent["samples"], 1)
+
+        variables = {'a': self.va.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.vw, 'x': self.vx, 'y': self.vy, 'z': self.vz,'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[2],'H':input_latent["samples"].shape[3]}
         input_stream = InputStream(self.expr)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

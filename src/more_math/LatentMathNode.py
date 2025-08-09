@@ -4,6 +4,8 @@ from math import e
 from antlr4 import CommonTokenStream, InputStream
 import torch
 
+from .helper_functions import getIndexTensorAlongDim
+
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
@@ -92,8 +94,12 @@ class LatentMathNode:
         c = torch.zeros_like(a) if c is None else c["samples"]
         d = torch.zeros_like(a) if d is None else d["samples"]
 
+        B = getIndexTensorAlongDim(a, 0)
+        W = getIndexTensorAlongDim(a, 2)
+        H = getIndexTensorAlongDim(a, 3)
+        C = getIndexTensorAlongDim(a, 1)
 
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
+        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'W':a.shape[2],'H':a.shape[3]}
         input_stream = InputStream(Latent)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

@@ -103,6 +103,7 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitExpFunc(self, ctx):   return math.exp(self.visit(ctx.expr()))
     def visitNormFunc(self, ctx):  return math.sqrt(math.avg(x**2 for x in self.visit(ctx.expr())))
     def visitFloorFunc(self, ctx): return math.floor(self.visit(ctx.expr()))
+    def visitSigmoidFunc(self, ctx): return 1/(1+math.exp(-self.visit(ctx.expr())))
     def visitCeilFunc(self, ctx):  return math.ceil(self.visit(ctx.expr()))
     def visitRoundFunc(self, ctx): return math.round(self.visit(ctx.expr()))
     def visitGammaFunc(self, ctx): return math.gamma(self.visit(ctx.expr())).exp()

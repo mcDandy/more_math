@@ -15,10 +15,10 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
 - expression parsing with support for functions and variables:
   - functions:
     - sin, cos, tan
-    - asin, acos, atan
+    - asin, acos, atan (can produce NaN outside range -1...1)
     - atan2 (x,y)
     - sinh, cosh, tanh (can produce NaN outside range -1...1)
-    - asinh, acosh, atanh (can produce NaN outside range -1...1)
+    - asinh, acosh, atanh
     - abs, sqrt (produces NaN on negative numbers), ln (log with base e), log (base 10), exp, pow
     - smin, tmin, smax, tmax, tnorm, snorm (norm and t prefixed are not applicable on number math node) math operators (binary and unary +,- and ^,*,/,%) and constants (e,pi)
       - s prefixed return one number

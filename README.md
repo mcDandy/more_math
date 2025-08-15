@@ -20,9 +20,10 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
     - sinh, cosh, tanh (can produce NaN outside range -1...1)
     - asinh, acosh, atanh (can produce NaN outside range -1...1)
     - abs, sqrt (produces NaN on negative numbers), ln (log with base e), log (base 10), exp, pow
-    - smin, tmin, smax, tmax, tnorm,snorm (norm not applicable on number math node), floor, ceil, round, gamma,clamp,sigm, math operators (binary and unary +,- and ^,*,/,%) and constants (e,pi)
+    - smin, tmin, smax, tmax, tnorm, snorm (norm and t prefixed are not applicable on number math node) math operators (binary and unary +,- and ^,*,/,%) and constants (e,pi)
       - s prefixed return one number
       - t prefixed work element-wise
+    - floor, ceil, round, gamma, clamp, sigm (sigmoid)
   - variables
     - a, b, c, d : inputs of type based on node
     - w, x, y, z : each node allows use of 4 additional floats

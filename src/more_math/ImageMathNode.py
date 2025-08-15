@@ -44,7 +44,7 @@ class ImageMathNode:
                 "Image": ("STRING", {
                     "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
                     "default": "a*(1-w)+b*w",
-                    "description": "Describes composition of the image. Valid functions are sin,cos,tan,abs,sqrt,min,max. Valid operators are +,-,*,/,^,%"
+                    "description": "Describes expression to apply to the image."
 
                 }),
             },

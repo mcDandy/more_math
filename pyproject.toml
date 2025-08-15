@@ -31,10 +31,11 @@ dev = [
 [project.urls]
 bugs = "https://github.com/mcDandy/more_math/issues"
 homepage = "https://github.com/mcDandy/more_math"
+Repository = "https://github.com/mcDandy/more_math.git"
 
 
 [tool.comfy]
-PublisherId = "mcDandy"
+PublisherId = "mkdaniel"
 DisplayName = "More Math"
 Icon = ""
 

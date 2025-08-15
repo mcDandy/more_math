@@ -23,7 +23,7 @@ class FloatMathNode:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
     """
     def __init__(self):
-        print("FloatMathNode initialized")
+        pass
 
     @classmethod
     def INPUT_TYPES(s):

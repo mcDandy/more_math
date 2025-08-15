@@ -122,7 +122,6 @@ class NoiseMathNode:
 
     
     def generate_noise(self, input_latent:torch.Tensor) -> torch.Tensor:
-        print(input_latent)
         if self.vb is None:
             self.vb = torch.zeros_like(input_latent["samples"])
         else:

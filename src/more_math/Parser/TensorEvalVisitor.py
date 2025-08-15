@@ -9,7 +9,6 @@ class TensorEvalVisitor(MathExprVisitor):
         self.shape = shape
 
     def visitNumberExp(self, ctx):
-        print("Visiting number expression:", ctx.getText())
         return torch.full(self.shape,float(ctx.getText()))
 
     def visitConstantExp(self, ctx):
@@ -22,8 +21,6 @@ class TensorEvalVisitor(MathExprVisitor):
 
     def visitVariableExp(self, ctx):
         name = ctx.getText()
-        print("Visiting variable expression:", name)
-        print("Variable value:", self.variables[name])
         if name not in self.variables:
             raise ValueError(f"Variable '{name}' not found")
         if not isinstance(self.variables[name], torch.Tensor):  return torch.full(self.shape,self.variables[name])
@@ -130,7 +127,6 @@ class TensorEvalVisitor(MathExprVisitor):
         return torch.full(self.shape,torch.max(torch.stack(args)))
 
     def visitTMinFunc(self, ctx):
-        print("Visiting TMin function with args:", [a.getText() for a in ctx.expr()])
         return torch.minimum(self.visit(ctx.expr(0)),self.visit(ctx.expr(1)))
     def visitTMaxFunc(self, ctx):
         return torch.maximum(self.visit(ctx.expr(0)),self.visit(ctx.expr(1)))
@@ -148,5 +144,4 @@ class TensorEvalVisitor(MathExprVisitor):
         return self.visit(ctx.getChild(0))  # forward to Atan2Func, PowFunc, etc.
 
     def visitExpr(self, ctx):
-       print("Visiting expression:", ctx.getText())
        return self.visitChildren(ctx)

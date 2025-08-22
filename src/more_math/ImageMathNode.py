@@ -97,13 +97,13 @@ class ImageMathNode:
         d = torch.zeros_like(a) if d is None else d
         
         batch = range(0,a.shape[0],1)
-        width = range(0,a.shape[1],1)
-        height = range(0,a.shape[2],1)
+        width = range(0,a.shape[2],1)
+        height = range(0,a.shape[1],1)
         color = range(0,a.shape[3],1)
 
         B = getIndexTensorAlongDim(a, 0)
-        W = getIndexTensorAlongDim(a, 1)
-        H = getIndexTensorAlongDim(a, 2)
+        W = getIndexTensorAlongDim(a, 2)
+        H = getIndexTensorAlongDim(a, 1)
         C = getIndexTensorAlongDim(a, 3)
 
         variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'W':a.shape[1],'H':a.shape[2] }

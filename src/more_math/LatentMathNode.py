@@ -95,11 +95,11 @@ class LatentMathNode:
         d = torch.zeros_like(a) if d is None else d["samples"]
 
         B = getIndexTensorAlongDim(a, 0)
-        W = getIndexTensorAlongDim(a, 2)
-        H = getIndexTensorAlongDim(a, 3)
+        W = getIndexTensorAlongDim(a, 3)
+        H = getIndexTensorAlongDim(a, 2)
         C = getIndexTensorAlongDim(a, 1)
 
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'W':a.shape[2],'H':a.shape[3]}
+        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'W':a.shape[3],'H':a.shape[2]}
         input_stream = InputStream(Latent)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

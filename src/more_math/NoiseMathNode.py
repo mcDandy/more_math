@@ -136,11 +136,11 @@ class NoiseMathNode:
             self.vd = self.vd.generate_noise(input_latent)
 
         B = getIndexTensorAlongDim(input_latent["samples"], 0)
-        W = getIndexTensorAlongDim(input_latent["samples"], 2)
-        H = getIndexTensorAlongDim(input_latent["samples"], 3)
+        W = getIndexTensorAlongDim(input_latent["samples"], 3)
+        H = getIndexTensorAlongDim(input_latent["samples"], 2)
         C = getIndexTensorAlongDim(input_latent["samples"], 1)
 
-        variables = {'a': self.va.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.vw, 'x': self.vx, 'y': self.vy, 'z': self.vz,'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[2],'H':input_latent["samples"].shape[3],'I':input_latent["samples"]}
+        variables = {'a': self.va.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.vw, 'x': self.vx, 'y': self.vy, 'z': self.vz,'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[3],'H':input_latent["samples"].shape[2],'I':input_latent["samples"]}
         input_stream = InputStream(self.expr)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

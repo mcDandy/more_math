@@ -21,8 +21,8 @@ You can also get the node from comfy manager under the name of More math.
     - sin, cos, tan
     - asin, acos, atan (can produce NaN outside range -1...1)
     - atan2 (x,y)
-    - sinh, cosh, tanh (can produce NaN outside range -1...1)
-    - asinh, acosh, atanh
+    - sinh, cosh, tanh 
+    - asinh, acosh, atanh (can produce NaN outside range -1...1)
     - abs, sqrt (produces NaN on negative numbers), ln (log with base e), log (base 10), exp, pow
     - smin, tmin, smax, tmax, tnorm, snorm (norm and t prefixed are not applicable on float math node)
       - s prefixed return one number

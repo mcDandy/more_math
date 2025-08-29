@@ -3,7 +3,7 @@ from inspect import cleandoc
 from antlr4 import CommonTokenStream
 from antlr4.atn.LexerActionExecutor import InputStream
 import torch
-from .helper_functions import getIndexTensorAlongDim
+from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim
 
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
@@ -111,6 +111,7 @@ class ImageMathNode:
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
+        parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
         print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,a.shape)

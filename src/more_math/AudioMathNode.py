@@ -82,8 +82,6 @@ class AudioMathNode:
         bv = b if b else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
         cv = c if c else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
         dv = d if d else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
-        print("AudioMathNode: a shape:", a['waveform'].shape)
-
 
         B = getIndexTensorAlongDim(a['waveform'], 0)
         C = getIndexTensorAlongDim(a['waveform'], 1)
@@ -104,6 +102,10 @@ class AudioMathNode:
 
         visitor = TensorEvalVisitor(variables, a['waveform'].shape)
         result_tensor = visitor.visit(tree)
+
+        print("Audio Tree\n" + tree.toStringTree(recog=parser))
+        print("Result Tensor Shape: ", result_tensor.shape)
+        print("Result Tensor: ", result_tensor)
 
         # Create output dictionary with the same sample rate
         output = {

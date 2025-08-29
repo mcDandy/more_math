@@ -3,6 +3,8 @@ from math import e
 
 from antlr4 import CommonTokenStream, InputStream
 
+from .helper_functions import ThrowingErrorListener
+
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.FloatEvalVisitor import FloatEvalVisitor
@@ -98,6 +100,7 @@ class FloatMathNode:
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
+        parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
         print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = FloatEvalVisitor(variables)

@@ -57,17 +57,17 @@ class FloatEvalVisitor(MathExprVisitor):
         return math.pow(self.visit(ctx.unaryExpr()), self.visit(ctx.powExpr()))
 
     def visitNeExp(self, ctx):
-        return float(self.visit(ctx.neqExpr()) != self.visit(ctx.eqExpr()))
+        return float(self.visit(ctx.compExpr()) != self.visit(ctx.addExpr()))
     def visitEqExp(self, ctx):
-        return float(self.visit(ctx.eqExpr()) == self.visit(ctx.gtExpr()))
+        return float(self.visit(ctx.compExpr()) == self.visit(ctx.addExpr()))
     def visitGtExp(self, ctx):
-        return float(self.visit(ctx.gtExpr()) > self.visit(ctx.ltExpr()))
+        return float(self.visit(ctx.compExpr()) > self.visit(ctx.addExpr()))
     def visitLtExp(self, ctx):
-        return float(self.visit(ctx.ltExpr()) < self.visit(ctx.lteExpr()))
+        return float(self.visit(ctx.compExpr()) < self.visit(ctx.addExpr()))
     def visitGeExp(self, ctx):
-        return float(self.visit(ctx.gteExpr()) >= self.visit(ctx.neqExpr()))
+        return float(self.visit(ctx.compExpr()) >= self.visit(ctx.addExpr()))
     def visitLeExp(self, ctx):
-        return float(self.visit(ctx.lteExpr()) <= self.visit(ctx.neqExpr()))
+        return float(self.visit(ctx.compExpr()) <= self.visit(ctx.addExpr()))
 
     def visitToUnary(self, ctx):
         return self.visit(ctx.unaryExpr())

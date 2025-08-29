@@ -1,4 +1,4 @@
-from antlr4.error import ErrorListener
+from antlr4.error.ErrorListener import ErrorListener
 import torch
 
 def getIndexTensorAlongDim(tensor, dim):
@@ -86,6 +86,7 @@ def freq_to_time(freq_dict: torch.Tensor, n_fft: int = 512, hop_length: int = 25
             waveform[b, c] = istft_result
 
     return waveform
+
 class ThrowingErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise ValueError(f"Syntax error in AudioExpr at line {line}, col {column}: {msg}")

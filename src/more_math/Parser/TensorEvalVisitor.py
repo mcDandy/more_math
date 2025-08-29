@@ -113,17 +113,19 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitGammaFunc(self, ctx): return torch.special.gamma(self.visit(ctx.expr())).exp()
     def visitSigmoidFunc(self, ctx): return torch.sigmoid(self.visit(ctx.expr()))
     def visitClampFunc(self, ctx): return torch.clamp(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)))
+    def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
+
     def visitSfftFunc(self, ctx):
         s = self.shape
         
         hop_length = 256
         n_fft = 512
         if len(s) < 4:
-            raise ValueError("Input tensor must have at least 4 dimensions for SFFT operation. You might be forgetting to to use inverse function (ifft) before leaving node.")
+            raise ValueError("Input tensor must have at least 4 dimensions for SFFT operation. You might be forgetting to to use inverse function before leaving node.")
         self.shape=(s[0],
         s[1],
         s[3] * hop_length)
-
+        
         val = self.visit(ctx.expr());
         self.shape = s;
         return time_to_freq(val, n_fft, hop_length)

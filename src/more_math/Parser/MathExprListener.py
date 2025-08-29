@@ -431,6 +431,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#anglFunc.
+    def enterAnglFunc(self, ctx:MathExprParser.AnglFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#anglFunc.
+    def exitAnglFunc(self, ctx:MathExprParser.AnglFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass

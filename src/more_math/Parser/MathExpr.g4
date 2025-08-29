@@ -70,6 +70,7 @@ func1
     | SIGM  '(' expr ')'   # sigmoidFunc
     | SFFT  '(' expr ')'   # sfftFunc
     | SIFFT  '(' expr ')'   # sifftFunc
+    | ANGL  '(' expr ')'   # anglFunc
     
     ;
 
@@ -125,6 +126,7 @@ SIGM  : 'sigm';
 CLAMP : 'clamp';
 SFFT : 'fft';
 SIFFT : 'ifft';
+ANGL : 'angle';
 
 PLUS        : '+';
 MINUS       : '-';

@@ -88,17 +88,17 @@ class TensorEvalVisitor(MathExprVisitor):
         return torch.logical_and(self.visit(ctx.andExpr()).bool(), self.visit(ctx.addExpr()).bool())
 
     def visitNeExp(self, ctx):
-        return torch.ne(self.visit(ctx.neqExpr()), self.visit(ctx.eqExpr())).float()
+        return torch.ne(self.visit(ctx.compExpr()), self.visit(ctx.addExpr())).float()
     def visitEqExp(self, ctx):
-        return torch.eq(self.visit(ctx.eqExpr()), self.visit(ctx.gtExpr())).float()
+        return torch.eq(self.visit(ctx.compExpr()), self.visit(ctx.addExpr())).float()
     def visitGtExp(self, ctx):
-        return torch.gt(self.visit(ctx.gtExpr()), self.visit(ctx.ltExpr())).float()
+        return torch.gt(self.visit(ctx.compExpr()), self.visit(ctx.addExpr())).float()
     def visitLtExp(self, ctx):
-        return torch.lt(self.visit(ctx.ltExpr()), self.visit(ctx.lteExpr())).float()
+        return torch.lt(self.visit(ctx.compExpr()), self.visit(ctx.addExpr())).float()
     def visitGeExp(self, ctx):
-        return torch.ge(self.visit(ctx.gteExpr()), self.visit(ctx.neqExpr())).float()
+        return torch.ge(self.visit(ctx.compExpr()), self.visit(ctx.addExpr())).float()
     def visitLeExp(self, ctx):
-        return torch.le(self.visit(ctx.lteExpr()), self.visit(ctx.neqExpr())).float()
+        return torch.le(self.visit(ctx.compExpr()), self.visit(ctx.addExpr())).float()
 
     # Single-argument functions
     def visitSinFunc(self, ctx):   return torch.sin(self.visit(ctx.expr()))

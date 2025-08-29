@@ -104,8 +104,8 @@ class AudioMathNode:
         result_tensor = visitor.visit(tree)
 
         print("Audio Tree\n" + tree.toStringTree(recog=parser))
-        print("Result Tensor Shape: ", result_tensor.shape)
         print("Result Tensor: ", result_tensor)
+        print("Result Tensor Shape: ", result_tensor.shape)
 
         # Create output dictionary with the same sample rate
         output = {

@@ -2,7 +2,7 @@ grammar MathExpr;
 
 // Top-level expression, with operator precedence (lowest to highest)
 expr
-    : atom | addExpr
+    : atom | compExpr
     ;
 
 compExpr

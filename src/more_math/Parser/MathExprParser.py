@@ -34,7 +34,7 @@ def serializedATN():
         10,0,3,2,4,6,11,0,2,4,6,8,10,12,14,16,18,20,0,0,353,0,24,1,0,0,0,
         2,26,1,0,0,0,4,52,1,0,0,0,6,66,1,0,0,0,8,88,1,0,0,0,10,95,1,0,0,
         0,12,108,1,0,0,0,14,245,1,0,0,0,16,275,1,0,0,0,18,277,1,0,0,0,20,
-        308,1,0,0,0,22,25,3,12,6,0,23,25,3,4,2,0,24,22,1,0,0,0,24,23,1,0,
+        308,1,0,0,0,22,25,3,12,6,0,23,25,3,2,1,0,24,22,1,0,0,0,24,23,1,0,
         0,0,25,1,1,0,0,0,26,27,6,1,-1,0,27,28,3,4,2,0,28,49,1,0,0,0,29,30,
         10,7,0,0,30,31,5,45,0,0,31,48,3,4,2,0,32,33,10,6,0,0,33,34,5,44,
         0,0,34,48,3,4,2,0,35,36,10,5,0,0,36,37,5,47,0,0,37,48,3,4,2,0,38,
@@ -240,8 +240,8 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.AtomContext,0)
 
 
-        def addExpr(self):
-            return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
+        def compExpr(self):
+            return self.getTypedRuleContext(MathExprParser.CompExprContext,0)
 
 
         def getRuleIndex(self):
@@ -281,7 +281,7 @@ class MathExprParser ( Parser ):
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 23
-                self.addExpr(0)
+                self.compExpr(0)
                 pass
 
 

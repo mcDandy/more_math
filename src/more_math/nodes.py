@@ -1,9 +1,11 @@
 import torch
+
 from .NoiseMathNode import NoiseMathNode
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
+from .AudioMathNode import AudioMathNode
 
 class IntToFloatNode:
     """
@@ -51,6 +53,7 @@ NODE_CLASS_MAPPINGS = {
     "mrmth_NoiseMathNode": NoiseMathNode,
     "mrmth_IntToFloat": IntToFloatNode,
     "mrmth_FloatToInt": FloatToIntNode,
+    "mrmth_AudioMathNode": AudioMathNode, 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -59,6 +62,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "mrmth_ImageMathNode": "Image math",
     "mrmth_FloatMathNode": "Float math",
     "mrmth_NoiseMathNode": "Noise math",
+    "mrmth_AudioMathNode": "Audio math",
     "mrmth_IntToFloat": "Int → Float",
     "mrmth_FloatToInt": "Float → Int",
     "Tensor": "Tensor expression",

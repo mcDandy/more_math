@@ -1,6 +1,8 @@
 from tkinter import SE
 import torch
 import torch.special
+
+from ..helper_functions import freq_to_time, time_to_freq
 from .MathExprVisitor import MathExprVisitor
 
 class TensorEvalVisitor(MathExprVisitor):
@@ -111,6 +113,37 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitGammaFunc(self, ctx): return torch.special.gamma(self.visit(ctx.expr())).exp()
     def visitSigmoidFunc(self, ctx): return torch.sigmoid(self.visit(ctx.expr()))
     def visitClampFunc(self, ctx): return torch.clamp(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)))
+    def visitSfftFunc(self, ctx):
+        s = self.shape
+        
+        hop_length = 256
+        n_fft = 512
+        if len(s) < 4:
+            raise ValueError("Input tensor must have at least 4 dimensions for SFFT operation. You might be forgetting to to use inverse function (ifft) before leaving node.")
+        self.shape=(s[0],
+        s[1],
+        s[3] * hop_length)
+
+        val = self.visit(ctx.expr());
+        self.shape = s;
+        return time_to_freq(val, n_fft, hop_length)
+    def visitSifftFunc(self, ctx):
+        s = self.shape
+
+        hop_length = 256
+        n_fft = 512
+
+        
+        self.shape = (s[0],
+        s[1],
+        n_fft // 2 + 1,  # Frequency bins
+        s[2]//hop_length+1)
+
+        val = self.visit(ctx.expr())
+        return freq_to_time(val, n_fft, hop_length)
+        self.shape = s;
+
+
 
     # Two-argument functions
     def visitPowFunc(self, ctx):

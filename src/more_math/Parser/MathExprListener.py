@@ -413,6 +413,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#sfftFunc.
+    def enterSfftFunc(self, ctx:MathExprParser.SfftFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#sfftFunc.
+    def exitSfftFunc(self, ctx:MathExprParser.SfftFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#sifftFunc.
+    def enterSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#sifftFunc.
+    def exitSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass

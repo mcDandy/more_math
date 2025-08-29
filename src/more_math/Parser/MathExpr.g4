@@ -68,6 +68,8 @@ func1
     | ROUND '(' expr ')'     # RoundFunc
     | GAMMA '(' expr ')'     # GammaFunc
     | SIGM  '(' expr ')'   # sigmoidFunc
+    | SFFT  '(' expr ')'   # sfftFunc
+    | SIFFT  '(' expr ')'   # sifftFunc
     
     ;
 
@@ -121,6 +123,8 @@ GAMMA : 'gamma';
 POWE   : 'pow';
 SIGM  : 'sigm';
 CLAMP : 'clamp';
+SFFT : 'fft';
+SIFFT : 'ifft';
 
 PLUS        : '+';
 MINUS       : '-';

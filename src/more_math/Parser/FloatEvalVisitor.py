@@ -56,6 +56,19 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitPowExp(self, ctx):
         return math.pow(self.visit(ctx.unaryExpr()), self.visit(ctx.powExpr()))
 
+    def visitNeExp(self, ctx):
+        return float(self.visit(ctx.neqExpr()) != self.visit(ctx.eqExpr()))
+    def visitEqExp(self, ctx):
+        return float(self.visit(ctx.eqExpr()) == self.visit(ctx.gtExpr()))
+    def visitGtExp(self, ctx):
+        return float(self.visit(ctx.gtExpr()) > self.visit(ctx.ltExpr()))
+    def visitLtExp(self, ctx):
+        return float(self.visit(ctx.ltExpr()) < self.visit(ctx.lteExpr()))
+    def visitGeExp(self, ctx):
+        return float(self.visit(ctx.gteExpr()) >= self.visit(ctx.neqExpr()))
+    def visitLeExp(self, ctx):
+        return float(self.visit(ctx.lteExpr()) <= self.visit(ctx.neqExpr()))
+
     def visitToUnary(self, ctx):
         return self.visit(ctx.unaryExpr())
 
@@ -68,20 +81,18 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitToAdd(self, ctx):
         return self.visit(ctx.addExpr())
 
-    def visitToAnd(self, ctx):
-        return self.visit(ctx.andExpr())
-
-    def visitToXor(self, ctx):
-        return self.visit(ctx.xorExpr())
-
-    def visitOrExp(self, ctx):
-        return self.visit(ctx.orExpr()).bool() | self.visit(ctx.xorExpr()).bool()
-
-    def visitXorExp(self, ctx):
-        return self.visit(ctx.xorExpr()).bool() ^ self.visit(ctx.andExpr()).bool()
-
-    def visitAndExp(self, ctx):
-        return self.visit(ctx.andExpr()).bool() & self.visit(ctx.addExpr()).bool()
+    def visitToGt(self, ctx):
+        return self.visit(ctx.gtExpr())
+    def visitToLt(self, ctx):
+        return self.visit(ctx.ltExpr())
+    def visitToEq(self, ctx):
+        return self.visit(ctx.eqExpr())
+    def visitToNeq(self, ctx):
+        return self.visit(ctx.neqExpr())
+    def visitToGe(self, ctx):
+        return self.visit(ctx.gteExpr())
+    def visitToLe(self, ctx):
+        return self.visit(ctx.lteExpr())
 
     # Single-argument functions
     def visitSinFunc(self, ctx):   return math.sin(self.visit(ctx.expr()))

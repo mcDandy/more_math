@@ -87,6 +87,19 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitAndExp(self, ctx):
         return torch.logical_and(self.visit(ctx.andExpr()).bool(), self.visit(ctx.addExpr()).bool())
 
+    def visitNeExp(self, ctx):
+        return torch.ne(self.visit(ctx.neqExpr()), self.visit(ctx.eqExpr())).float()
+    def visitEqExp(self, ctx):
+        return torch.eq(self.visit(ctx.eqExpr()), self.visit(ctx.gtExpr())).float()
+    def visitGtExp(self, ctx):
+        return torch.gt(self.visit(ctx.gtExpr()), self.visit(ctx.ltExpr())).float()
+    def visitLtExp(self, ctx):
+        return torch.lt(self.visit(ctx.ltExpr()), self.visit(ctx.lteExpr())).float()
+    def visitGeExp(self, ctx):
+        return torch.ge(self.visit(ctx.gteExpr()), self.visit(ctx.neqExpr())).float()
+    def visitLeExp(self, ctx):
+        return torch.le(self.visit(ctx.lteExpr()), self.visit(ctx.neqExpr())).float()
+
     # Single-argument functions
     def visitSinFunc(self, ctx):   return torch.sin(self.visit(ctx.expr()))
     def visitCosFunc(self, ctx):   return torch.cos(self.visit(ctx.expr()))
@@ -112,9 +125,8 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitRoundFunc(self, ctx): return torch.round(self.visit(ctx.expr()))
     def visitGammaFunc(self, ctx): return torch.special.gamma(self.visit(ctx.expr())).exp()
     def visitSigmoidFunc(self, ctx): return torch.sigmoid(self.visit(ctx.expr()))
-    def visitClampFunc(self, ctx): return torch.clamp(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)))
     def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
-
+    
     def visitSfftFunc(self, ctx):
         s = self.shape
         
@@ -153,6 +165,7 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitAtan2Func(self, ctx):
         return torch.atan2(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
 
+    def visitClampFunc(self, ctx): return torch.clamp(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)))
     # N-argument functions
     def visitSMinFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]

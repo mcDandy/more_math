@@ -14,6 +14,41 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#LtExp.
+    def visitLtExp(self, ctx:MathExprParser.LtExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#EqExp.
+    def visitEqExp(self, ctx:MathExprParser.EqExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ToAdd.
+    def visitToAdd(self, ctx:MathExprParser.ToAddContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GeExp.
+    def visitGeExp(self, ctx:MathExprParser.GeExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LeExp.
+    def visitLeExp(self, ctx:MathExprParser.LeExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#NeExp.
+    def visitNeExp(self, ctx:MathExprParser.NeExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GtExp.
+    def visitGtExp(self, ctx:MathExprParser.GtExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#AddExp.
     def visitAddExp(self, ctx:MathExprParser.AddExpContext):
         return self.visitChildren(ctx)

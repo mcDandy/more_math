@@ -5,6 +5,15 @@ expr
     : atom | addExpr
     ;
 
+compExpr
+    : compExpr GT addExpr # GtExp
+    | compExpr GE addExpr # GeExp
+    | compExpr LT addExpr # LtExp
+    | compExpr LE addExpr # LeExp
+    | compExpr EQ addExpr # EqExp
+    | compExpr NE addExpr # NeExp
+    | addExpr # ToAdd
+    ;
 
 addExpr
     : addExpr PLUS mulExpr    # AddExp
@@ -134,6 +143,13 @@ MULT        : '*';
 DIV         : '/';
 MOD         : '%';
 POW         : '^';
+
+GE          : '>=';
+GT          : '>';
+LE          : '<=';
+LT          : '<';
+EQ          : '==';
+NE          : '!=';
 
 CONSTANT : ('pi'|'PI'|'e'|'E');
 NUMBER   : [0-9]+ ('.' [0-9]+)?;

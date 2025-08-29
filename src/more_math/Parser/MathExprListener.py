@@ -17,6 +17,69 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#LtExp.
+    def enterLtExp(self, ctx:MathExprParser.LtExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LtExp.
+    def exitLtExp(self, ctx:MathExprParser.LtExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EqExp.
+    def enterEqExp(self, ctx:MathExprParser.EqExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EqExp.
+    def exitEqExp(self, ctx:MathExprParser.EqExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToAdd.
+    def enterToAdd(self, ctx:MathExprParser.ToAddContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToAdd.
+    def exitToAdd(self, ctx:MathExprParser.ToAddContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GeExp.
+    def enterGeExp(self, ctx:MathExprParser.GeExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GeExp.
+    def exitGeExp(self, ctx:MathExprParser.GeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LeExp.
+    def enterLeExp(self, ctx:MathExprParser.LeExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LeExp.
+    def exitLeExp(self, ctx:MathExprParser.LeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NeExp.
+    def enterNeExp(self, ctx:MathExprParser.NeExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NeExp.
+    def exitNeExp(self, ctx:MathExprParser.NeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GtExp.
+    def enterGtExp(self, ctx:MathExprParser.GtExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GtExp.
+    def exitGtExp(self, ctx:MathExprParser.GtExpContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#AddExp.
     def enterAddExp(self, ctx:MathExprParser.AddExpContext):
         pass

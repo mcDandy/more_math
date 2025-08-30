@@ -18,6 +18,7 @@ You can also get the node from comfy manager under the name of More math.
   - functions:
     - run expressions on both components of CONDITIONING (not that I know what they do), LATENT, IMAGE, NOISE and FLOAT
     - math operators (binary and unary +,- and ^,*,/,%)
+    - boolean operators (false = 0.0; true = 1.0) (<,<=,>,>=,==,!=)
     - sin, cos, tan
     - asin, acos, atan (can produce NaN outside range -1...1)
     - atan2 (x,y)
@@ -28,6 +29,7 @@ You can also get the node from comfy manager under the name of More math.
       - s prefixed return one number
       - t prefixed work element-wise
     - floor, ceil, round, gamma, clamp, sigm (sigmoid)
+    - angle (audio node)
   - variables
     - a, b, c, d : inputs of type based on node
     - w, x, y, z : each node allows use of 4 additional floats

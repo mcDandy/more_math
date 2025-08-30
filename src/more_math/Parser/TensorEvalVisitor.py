@@ -129,76 +129,100 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
     
     def visitSfftFunc(self, ctx):
-        s = self.shape
-        
         hop_length = 256
         n_fft = 512
-        if len(s) < 4:
-            raise ValueError("Input tensor must have at least 4 dimensions for SFFT operation. You might be forgetting to to use inverse function before leaving node.")
-        self.shape=(s[0],
-        s[1],
-        s[3] * hop_length)
+    
+        # Current self.shape is freq-domain (B,C,F,T_spec)
+        if len(self.shape) == 4:
+            B, C, F, T_spec = self.shape
+            # Recompute approximate original time length
+            T = T_spec * hop_length
+        elif len(self.shape) == 3:
+            B, C, T = self.shape
+        else:
+            raise ValueError(f"SFFT input must be 3D or 4D, got {len(self.shape)}D")
+    
+        # Save original shape
+        old_shape = self.shape
 
-        shp = torch.zeros(self.shape)
-
-        self.variables['T'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
-
-        val = self.visit(ctx.expr());
-        self.shape = s;
-
-        shp = torch.zeros(self.shape)
-
-        vall = time_to_freq(val, n_fft, hop_length)
         self.variables['T'] = getIndexTensorAlongDim(shp, 3)
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
-
-        return vall
-
-
-    def visitSifftFunc(self, ctx):
-        s = self.shape
-
-        hop_length = 256
-        n_fft = 512
-        self.shape = (s[0],
-        s[1],
-        n_fft // 2 + 1,  # Frequency bins
-        s[2]//hop_length+1)
-
-        shp = torch.zeros(self.shape)
-
-        self.variables['F'] = getIndexTensorAlongDim(shp,2)
-        self.variables['K'] = torch.full(self.shape,self.shape[2]);
-
-        self.variables['T'] = torch.full(self.shape,self.shape[3]);
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 3)
-        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
-
-        val = self.visit(ctx.expr())
-
-        time = s[2];
-
-        return freq_to_time(val, n_fft, hop_length, time)
-        self.shape = s;
-
-
-        self.variables['T'] = torch.full(self.shape,self.shape[2]);
         self.variables['B'] = getIndexTensorAlongDim(shp, 0)
         self.variables['C'] = getIndexTensorAlongDim(shp, 1)
         self.variables['S'] = getIndexTensorAlongDim(shp, 2)
         self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
 
-        self.variables.pop('F',None)
-        self.variables.pop('K',None)
+
+        # === Evaluate children in time-domain shape ===
+        self.shape = (B, C, T)
+        val = self.visit(ctx.expr())
+        if val.ndim != 3:
+            raise ValueError(f"SFFT child must return 3D time-domain tensor, got {val.ndim}D")
+    
+        # === Convert to freq-domain shape for symbolic vars ===
+        num_freq_bins = n_fft // 2 + 1
+        num_frames = T // hop_length + 1
+        freq_shape = (B, C, num_freq_bins, num_frames)
+    
+        self.shape = freq_shape
+        shp = torch.zeros(freq_shape, device=val.device)
+        self.variables['T'] = getIndexTensorAlongDim(shp, 3)
+        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
+    
+        # Convert time-domain tensor to freq-domain
+        freq_val = time_to_freq(val, n_fft=n_fft, hop_length=hop_length)
+    
+        # Restore original shape for further tree evaluation
+        self.shape = old_shape
+        return freq_val    
+    
+    def visitSifftFunc(self, ctx):
+        """Visit SIFFT node: children see freq-domain shape; returns 3D time-domain tensor."""
+        time_shape = self.shape  # 3D (B, C, T)
+        hop_length = 256
+        n_fft = 512
+        B, C, T = time_shape
+    
+        num_freq_bins = n_fft // 2 + 1
+        num_frames = T // hop_length + 1
+        freq_shape = (B, C, num_freq_bins, num_frames)
+    
+        # Save original shape
+        old_shape = self.shape
+        # Set freq-domain shape for children
+        self.shape = freq_shape
+    
+        # Create freq-domain symbolic variables
+        shp = torch.zeros(freq_shape, device=self.variables.get('device', 'cpu'))
+        cleanup=True
+        if 'F' in self.variables:
+            cleanup=False
+        self.variables['F'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['K'] = torch.full(freq_shape, freq_shape[2])
+        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['T'] = getIndexTensorAlongDim(shp, 3)
+        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+        self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
+    
+        # === Evaluate child in freq-domain ===
+        val = self.visit(ctx.expr())
+        if val.ndim != 4:
+            raise ValueError(f"SIFFT child must return 4D freq-domain tensor, got {val.ndim}D")
+    
+        # Convert back to time-domain
+        wav = freq_to_time(val, n_fft=n_fft, hop_length=hop_length, time=T)
+    
+        # Cleanup freq-domain symbolic variables
+        if cleanup:
+            for v in ['F', 'K', 'S', 'T']:
+                self.variables.pop(v, None)
+    
+        # Restore time-domain shape
+        self.shape = old_shape
+        return wav
 
 
     # Two-argument functions

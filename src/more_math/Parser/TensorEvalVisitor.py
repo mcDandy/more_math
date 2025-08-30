@@ -128,77 +128,70 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitSigmoidFunc(self, ctx): return torch.sigmoid(self.visit(ctx.expr()))
     def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
     
-    def visitSfftFunc(self, ctx):
-        s = self.shape
-        
-        hop_length = 256
-        n_fft = 512
-        if len(s) < 4:
-            raise ValueError("Input tensor must have at least 4 dimensions for SFFT operation. You might be forgetting to to use inverse function before leaving node.")
-        self.shape=(s[0],
-        s[1],
-        s[3] * hop_length)
+def visitSfftFunc(self, ctx):
+    s = self.shape
+    hop_length = 256
+    n_fft = 512
+    print ("SFFT input shape:", s)
 
-        shp = torch.zeros(self.shape)
+    if len(s) < 3:
+        raise ValueError("Input tensor must have at least 3 dims (B, C, T) for SFFT")
 
-        self.variables['T'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
+    # Input: (B, C, T)
+    out_shape = (s[0],
+                 s[1],
+                 n_fft // 2 + 1,            # frequency bins
+                 (s[2] // hop_length) + 1) # frames
+    self.shape = out_shape
 
-        val = self.visit(ctx.expr());
-        self.shape = s;
+    shp = torch.zeros(out_shape)
+    self.variables['T'] = getIndexTensorAlongDim(shp, 3)       # time frames
+    self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+    self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+    self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
 
-        shp = torch.zeros(self.shape)
+    val = self.visit(ctx.expr())
 
-        vall = time_to_freq(val, n_fft, hop_length)
-        self.variables['T'] = getIndexTensorAlongDim(shp, 3)
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
-
-        return vall
+    # restore outer shape
+    self.shape = s
+    return time_to_freq(val, n_fft, hop_length)
 
 
-    def visitSifftFunc(self, ctx):
-        s = self.shape
+def visitSifftFunc(self, ctx):
+    s = self.shape
+    hop_length = 256
+    n_fft = 512
+    print ("SIFFT input shape:", s)
+    if len(s) < 4:
+        raise ValueError("Input tensor must have shape (B, C, F, T_spec) for SIFFT")
 
-        hop_length = 256
-        n_fft = 512
-        self.shape = (s[0],
-        s[1],
-        n_fft // 2 + 1,  # Frequency bins
-        s[2]//hop_length+1)
+    # Recover original time length
+    spec_T = s[3]
+    time_len = (spec_T - 1) * hop_length
 
-        shp = torch.zeros(self.shape)
+    # Create freq-domain variables for the subtree
+    shp = torch.zeros(s)
+    self.variables['F'] = getIndexTensorAlongDim(shp, 2)
+    self.variables['K'] = torch.full(s, s[2])
+    self.variables['T'] = getIndexTensorAlongDim(shp, 3)
+    self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+    self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+    self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
 
-        self.variables['F'] = getIndexTensorAlongDim(shp,2)
-        self.variables['K'] = torch.full(self.shape,self.shape[2]);
+    # evaluate inside ifft
+    val = self.visit(ctx.expr())
 
-        self.variables['T'] = torch.full(self.shape,self.shape[3]);
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 3)
-        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
+    # convert back to time domain
+    wav = freq_to_time(val, n_fft, hop_length, time=time_len)
+    print("SIFFT result shape:", wav.shape)
+    # cleanup: remove freq-domain vars (not valid outside)
+    for v in ['F', 'K']:
+        self.variables.pop(v, None)
 
-        val = self.visit(ctx.expr())
+    # restore outer shape
+    self.shape = (s[0], s[1], time_len)
 
-        time = s[2];
-
-        return freq_to_time(val, n_fft, hop_length, time)
-        self.shape = s;
-
-
-        self.variables['T'] = torch.full(self.shape,self.shape[2]);
-        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
-        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
-        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
-        self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
-
-        self.variables.pop('F',None)
-        self.variables.pop('K',None)
+    return wav
 
 
     # Two-argument functions

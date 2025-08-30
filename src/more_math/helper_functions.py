@@ -51,7 +51,7 @@ def time_to_freq(audio_dict: torch.Tensor, n_fft: int = 512, hop_length: int = 2
 
     return spectrogram
 
-def freq_to_time(freq_dict: torch.Tensor, n_fft: int = 512, hop_length: int = 256) -> torch.Tensor:
+def freq_to_time(freq_dict: torch.Tensor, n_fft: int = 512, hop_length: int = 256, time = None) -> torch.Tensor:
     spectrogram = freq_dict
 
     # Ensure the spectrogram is 3D with shape [batch, channels, freq, time]
@@ -62,7 +62,7 @@ def freq_to_time(freq_dict: torch.Tensor, n_fft: int = 512, hop_length: int = 25
     waveform = torch.zeros(
         spectrogram.shape[0],
         spectrogram.shape[1],
-        spectrogram.shape[3] * hop_length,  # Total time samples
+        time if time else spectrogram.shape[3] * hop_length,  # Total time samples
         dtype=torch.float32,
         device=spectrogram.device
     )
@@ -81,7 +81,7 @@ def freq_to_time(freq_dict: torch.Tensor, n_fft: int = 512, hop_length: int = 25
                 window=window,
                 center=True,
                 normalized=False,
-                length=spectrogram.shape[3] * hop_length
+                length= time if time else spectrogram.shape[3] * hop_length
             )
             waveform[b, c] = istft_result
 

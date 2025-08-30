@@ -1,3 +1,4 @@
+import re
 from tkinter import SE
 import torch
 import torch.special
@@ -138,12 +139,29 @@ class TensorEvalVisitor(MathExprVisitor):
         s[1],
         s[3] * hop_length)
 
-        self.variables.remove('F')
-        self.variables['T'] = getIndexTensorAlongDim(torch.zeros(self.shape),3)
+        shp = torch.zeros(self.shape)
+
+        self.variables['T'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
 
         val = self.visit(ctx.expr());
         self.shape = s;
-        return time_to_freq(val, n_fft, hop_length)
+
+        shp = torch.zeros(self.shape)
+
+        vall = time_to_freq(val, n_fft, hop_length)
+        self.variables['T'] = getIndexTensorAlongDim(shp, 3)
+        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
+
+        return vall
+
+
     def visitSifftFunc(self, ctx):
         s = self.shape
 
@@ -154,13 +172,33 @@ class TensorEvalVisitor(MathExprVisitor):
         n_fft // 2 + 1,  # Frequency bins
         s[2]//hop_length+1)
 
-        self.variables.add('F',getIndexTensorAlongDim(torch.zeros(self.shape),2))
-        self.variables['T'] = getIndexTensorAlongDim(torch.zeros(self.shape),3)
-        
+        shp = torch.zeros(self.shape)
+
+        self.variables['F'] = getIndexTensorAlongDim(shp,2)
+        self.variables['K'] = torch.full(self.shape,self.shape[2]);
+
+        self.variables['T'] = torch.full(self.shape,self.shape[3]);
+        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+        self.variables['S'] = getIndexTensorAlongDim(shp, 3)
+        self.variables['R'] = torch.full_like(shp,self.variables['R'].flatten()[0].item())
+
         val = self.visit(ctx.expr())
-        return freq_to_time(val, n_fft, hop_length)
+
+        time = s[2];
+
+        return freq_to_time(val, n_fft, hop_length, time)
         self.shape = s;
 
+
+        self.variables['T'] = torch.full(self.shape,self.shape[2]);
+        self.variables['B'] = getIndexTensorAlongDim(shp, 0)
+        self.variables['C'] = getIndexTensorAlongDim(shp, 1)
+        self.variables['S'] = getIndexTensorAlongDim(shp, 2)
+        self.variables['R'] = torch.full_like(shp, self.variables['R'].flatten()[0].item())
+
+        self.variables.pop('F',None)
+        self.variables.pop('K',None)
 
 
     # Two-argument functions

@@ -86,12 +86,13 @@ class AudioMathNode:
         B = getIndexTensorAlongDim(a['waveform'], 0)
         C = getIndexTensorAlongDim(a['waveform'], 1)
         S = getIndexTensorAlongDim(a['waveform'], 2)
-       
+        R = torch.full_like(S, a['sample_rate'], dtype=torch.float32)
+        T = torch.full_like(S, a['waveform'].shape[2], dtype=torch.float32)
 
         variables = {
             'a': a['waveform'], 'b': bv['waveform'], 'c': cv['waveform'], 'd': dv['waveform'],
             'w': w, 'x': x, 'y': y, 'z': z,
-            'B': B, 'C': C, 'S': S,'R': torch.full_like(S, a['sample_rate'], dtype=torch.float32), 'T' : torch.full_like(S, a['waveform'].shape[2], dtype=torch.float32)
+            'B': B, 'C': C, 'S': S,'R': R, 'T' : T
         }
 
         input_stream = InputStream(AudioExpr)

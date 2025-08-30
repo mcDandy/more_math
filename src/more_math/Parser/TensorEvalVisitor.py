@@ -2,7 +2,7 @@ from tkinter import SE
 import torch
 import torch.special
 
-from ..helper_functions import freq_to_time, time_to_freq
+from ..helper_functions import freq_to_time, getIndexTensorAlongDim, time_to_freq
 from .MathExprVisitor import MathExprVisitor
 
 class TensorEvalVisitor(MathExprVisitor):
@@ -137,7 +137,10 @@ class TensorEvalVisitor(MathExprVisitor):
         self.shape=(s[0],
         s[1],
         s[3] * hop_length)
-        
+
+        self.variables.remove('F')
+        self.variables['T'] = getIndexTensorAlongDim(torch.zeros(self.shape),3)
+
         val = self.visit(ctx.expr());
         self.shape = s;
         return time_to_freq(val, n_fft, hop_length)
@@ -146,13 +149,14 @@ class TensorEvalVisitor(MathExprVisitor):
 
         hop_length = 256
         n_fft = 512
-
-        
         self.shape = (s[0],
         s[1],
         n_fft // 2 + 1,  # Frequency bins
         s[2]//hop_length+1)
 
+        self.variables.add('F',getIndexTensorAlongDim(torch.zeros(self.shape),2))
+        self.variables['T'] = getIndexTensorAlongDim(torch.zeros(self.shape),3)
+        
         val = self.visit(ctx.expr())
         return freq_to_time(val, n_fft, hop_length)
         self.shape = s;

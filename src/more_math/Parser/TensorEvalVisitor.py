@@ -145,6 +145,7 @@ class TensorEvalVisitor(MathExprVisitor):
        self.shape = time_shape
        shp_time = torch.zeros(time_shape, device=self.variables.get('device', 'cpu'))
        self.variables['T'] = getIndexTensorAlongDim(shp_time, 2)
+       self.variables['S'] = torch.full_like(shp_time, self.shape[2])
        self.variables['B'] = getIndexTensorAlongDim(shp_time, 0)
        self.variables['C'] = getIndexTensorAlongDim(shp_time, 1)
        self.variables['R'] = torch.full_like(shp_time, self.variables['R'].flatten()[0].item())

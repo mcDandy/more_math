@@ -144,8 +144,8 @@ class TensorEvalVisitor(MathExprVisitor):
        time_shape = self.variables['a'].shape if 'a' in self.variables else time_shape
        self.shape = time_shape
        shp_time = torch.zeros(time_shape, device=self.variables.get('device', 'cpu'))
-       self.variables['T'] = getIndexTensorAlongDim(shp_time, 2)
-       self.variables['S'] = torch.full_like(shp_time, self.shape[2])
+       self.variables['S'] = getIndexTensorAlongDim(shp_time, 2)
+       self.variables['T'] = torch.full_like(shp_time, self.shape[2])
        self.variables['B'] = getIndexTensorAlongDim(shp_time, 0)
        self.variables['C'] = getIndexTensorAlongDim(shp_time, 1)
        self.variables['R'] = torch.full_like(shp_time, self.variables['R'].flatten()[0].item())
@@ -164,7 +164,7 @@ class TensorEvalVisitor(MathExprVisitor):
        self.variables['T'] = getIndexTensorAlongDim(shp_freq, 3)  # now frame index
        self.variables['B'] = getIndexTensorAlongDim(shp_freq, 0)
        self.variables['C'] = getIndexTensorAlongDim(shp_freq, 1)
-       self.variables['S'] = getIndexTensorAlongDim(shp_freq, 2)
+       self.variables['F'] = getIndexTensorAlongDim(shp_freq, 2)
        self.variables['R'] = torch.full_like(shp_freq, self.variables['R'].flatten()[0].item())
    
        # Convert time→freq

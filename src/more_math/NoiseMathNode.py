@@ -10,10 +10,12 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
-class NoiseMathNode:
+from comfy_api.latest import ComfyExtension, io
+
+class NoiseMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on Latents.
-    INPUTS:
+    inputs:
         a, b, c, d:
             Noise generators, bound to variables with the same name. Defaults to zero latent if not provided.
         w, x, y, z:
@@ -21,7 +23,7 @@ class NoiseMathNode:
         Latent expression:
             String, describing expression to mix noise.
         
-    OUTPUTS:
+    outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
     """
@@ -36,66 +38,37 @@ class NoiseMathNode:
         vz= 0.0
         expr="";
     @classmethod
-    def INPUT_TYPES(s):
+    def define_schema(cls) -> io.Schema:
         """
         """
-        return {
-            "required": {
-                "a": ("NOISE", {
-
-                }),
-
-                "Noise": ("STRING", {
-                    "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "a*(1-w)+b*w",
-                    "description": "Expression describing manipulation of noise."
-
-                }),
-            },
-            "optional": {
-                "b": ("NOISE", {
-                    "default": 0,
-                }),
-                "c": ("NOISE", {
-                    "default": 0,
-                }),
-                "d": ("NOISE", {
-                    "default": 0,
-                }),
-                "w": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "x": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "y": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "z": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-
-
-                # "int_field": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                # "float_field": ("FLOAT", {"default": 0.5, "min": -10.0, "max": 10.0, "step": 0.001}),
-            }
-        }
-
-    RETURN_TYPES = ("NOISE",)
+        return io.Schema(
+            node_id="mrmth_NoiseMathNode",
+            category="More math",
+            inputs=[
+                io.Noise.Input(id="a"),
+                io.Noise.Input(id="b", optional=True),
+                io.Noise.Input(id="c", optional=True),
+                io.Noise.Input(id="d", optional=True),
+                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.String.Input(id="Noise", default="a*(1-w)+b*w", tooltip="Expression to apply on input noise generators"),
+            ],
+            outputs=[
+                io.Noise.Output(),
+            ],
+        )
     #RETURN_NAMES = ("image_output_name",)
-    DESCRIPTION = cleandoc(__doc__)
-    FUNCTION = "noiMathNode"
+    tooltip = cleandoc(__doc__)
     seed = 0
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
     CATEGORY = "More math"
 
-    def noiMathNode(self, Noise, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    @classmethod
+    def execute(self, cls, Noise, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         self.va = a
         self.vb = b
         self.vc = c

@@ -1,5 +1,6 @@
 from inspect import cleandoc
-from math import e
+
+from comfy_api.latest import ComfyExtension, io
 
 from antlr4 import CommonTokenStream, InputStream
 import torch
@@ -10,10 +11,10 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
-class LatentMathNode:
+class LatentMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on Latents.
-    INPUTS:
+    inputs:
         a, b, c, d:
             Latent, bound to variables with the same name. Defaults to zero latent if not provided.
         w, x, y, z:
@@ -21,7 +22,7 @@ class LatentMathNode:
         Latent expression:
             String, describing expression to aply to latents.
         
-    OUTPUTS:
+    outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
     """
@@ -29,66 +30,37 @@ class LatentMathNode:
         pass
 
     @classmethod
-    def INPUT_TYPES(s):
+    def define_schema(cls) -> io.Schema:
         """
         """
-        return {
-            "required": {
-                "a": ("LATENT", {
+        return io.Schema(
+            node_id="mrmth_LatentMathNode",
+            category="More math",
+            inputs=[
+                io.Latent.Input(id="a"),
+                io.Latent.Input(id="b", optional=True),
+                io.Latent.Input(id="c", optional=True),
+                io.Latent.Input(id="d", optional=True),
+                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.String.Input(id="Latent", default="a*(1-w)+b*w", tooltip="Expression to apply on input latents"),
+            ],
+            outputs=[
+                io.Latent.Output(),
+            ],
+        )
 
-                }),
-
-                "Latent": ("STRING", {
-                    "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "a*(1-w)+b*w",
-                    "description": "Expression to apply on input latents"
-
-                }),
-            },
-            "optional": {
-                "b": ("LATENT", {
-                    "default": 0,
-                }),
-                "c": ("LATENT", {
-                    "default": 0,
-                }),
-                "d": ("LATENT", {
-                    "default": 0,
-                }),
-                "w": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "x": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "y": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "z": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-
-
-                # "int_field": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                # "float_field": ("FLOAT", {"default": 0.5, "min": -10.0, "max": 10.0, "step": 0.001}),
-            }
-        }
-
-    RETURN_TYPES = ("LATENT",)
     #RETURN_NAMES = ("image_output_name",)
-    DESCRIPTION = cleandoc(__doc__)
-    FUNCTION = "latMathNode"
+    tooltip = cleandoc(__doc__)
 
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
-    CATEGORY = "More math"
 
-    def latMathNode(self, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    @classmethod
+    def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
         a = a["samples"]
         b = torch.zeros_like(a) if b is None else b["samples"]
         c = torch.zeros_like(a) if c is None else c["samples"]

@@ -31,7 +31,7 @@ You can also get the node from comfy manager under the name of More math.
 - Audio-specific: `fft` (short-time FFT), `ifft` (inverse sFFT **always return audio back to time domain before leaving node**)
 
 ## Variables
-- **Inputs**: `a`, `b`, `c`, `d` (matches node input type)  
+- **inputs**: `a`, `b`, `c`, `d` (matches node input type)  
 - **Extra floats**: `w`, `x`, `y`, `z`   
 - **Tensor positions**:  `C` (channel), `B` (batch), `X`, `Y`, `W` (width), `H` (height) (not for FLOAT/AUDIO/CONDITIONING)
 - **Special**:

@@ -7,56 +7,54 @@ from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
 from .AudioMathNode import AudioMathNode
 
-class IntToFloatNode:
+from comfy_api.latest import ComfyExtension, io
+
+class IntToFloatNode(io.ComfyNode):
     """
     Converts int to float.
     """
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "value": ("INT", {"default": 0}),
-            }
-        }
-
-    RETURN_TYPES = ("FLOAT",)
-    FUNCTION = "convert"
-    CATEGORY = "More math"
-
-    def convert(self, value):
+    def define_schema(cls) -> io.Schema:
+         """
+         """
+         return io.Schema(
+             node_id="mrmth_IntToFloat",
+             category="More math",
+             inputs=[
+                 io.Int.Input(id="value", default=0),
+             ],
+             outputs=[
+                 io.Float.Output(),
+             ],
+         )
+    @classmethod
+    def execute(self,cls, value):
         return (float(value),)
 
-class FloatToIntNode:
+class FloatToIntNode(io.ComfyNode):
     """
     Converts float to int.
     """
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "value": ("FLOAT", {"default": 0.0}),
-            }
-        }
-
-    RETURN_TYPES = ("INT",)
-    FUNCTION = "convert"
-    CATEGORY = "More math"
-
-    def convert(self, value):
+    def define_schema(cls) -> io.Schema:
+        """
+        """
+        return io.Schema(
+            node_id="mrmth_FloatToInt",
+            category="More math",
+            inputs=[
+                io.Float.Input(id="value", default=0.0),
+            ],
+            outputs=[
+                io.Int.Output(),
+            ],
+        )
+    @classmethod
+    def execute(self, value):
         return (int(value),)
 
-NODE_CLASS_MAPPINGS = {
-    "mrmth_ConditioningMathNode": ConditioningMathNode,
-    "mrmth_LatentMathNode": LatentMathNode,
-    "mrmth_ImageMathNode": ImageMathNode,
-    "mrmth_FloatMathNode": FloatMathNode,
-    "mrmth_NoiseMathNode": NoiseMathNode,
-    "mrmth_IntToFloat": IntToFloatNode,
-    "mrmth_FloatToInt": FloatToIntNode,
-    "mrmth_AudioMathNode": AudioMathNode, 
-}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
+NODE_id_MAPPINGS = {
     "mrmth_ConditioningMathNode": "Conditioning math",
     "mrmth_LatentMathNode": "Latent math",
     "mrmth_ImageMathNode": "Image math",
@@ -72,5 +70,20 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "pooled_output": "Pooled output tensor expression"
 }
 
-
-
+class MoreMathExtension(ComfyExtension):
+    def __init__(self):
+        pass
+    @classmethod
+    async def get_node_list(self) -> list[type[io.ComfyNode]]:
+            return [
+                ConditioningMathNode,
+                LatentMathNode,
+                ImageMathNode,
+                FloatMathNode,
+                NoiseMathNode,
+                IntToFloatNode,
+                FloatToIntNode,
+                AudioMathNode, 
+            ]
+async def comfy_entrypoint() -> MoreMathExtension:
+    return MoreMathExtension()

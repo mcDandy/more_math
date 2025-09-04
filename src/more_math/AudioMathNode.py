@@ -6,10 +6,12 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 from .helper_functions import getIndexTensorAlongDim
 
-class AudioMathNode:
+from comfy_api.latest import ComfyExtension, io
+
+class AudioMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on AUDIO tensors.
-    INPUTS:
+    inputs:
         a, b, c, d:
             AUDIO, bound to variables with the same name. Defaults to zero AUDIO if not provided.
         w, x, y, z:
@@ -17,66 +19,36 @@ class AudioMathNode:
         Audio expression:
             String, describing expression to apply to audio tensors.
 
-    OUTPUTS:
+    outputs:
         AUDIO:
             Returns an AUDIO object that contains the result of the math expression applied to the input audio tensors.
     """
     def __init__(self):
         pass
 
-    @classmethod   
-    def INPUT_TYPES(s):
-        """
-        """
-        return {
-            "required": {
-                "a": ("AUDIO", {
-                    "description": "Input audio tensor"
-                }),
-                "AudioExpr": ("STRING", {
-                    "multiline": False,
-                    "default": "a*(1-w)+b*w",
-                    "description": "Expression to apply on input audio tensors"
-                }),
-            },
-            "optional": {
-                "b": ("AUDIO", {
-                    "default": 0,
-                    "description": "Second input audio tensor"
-                }),
-                "c": ("AUDIO", {
-                    "default": 0,
-                    "description": "Third input audio tensor"
-                }),
-                "d": ("AUDIO", {
-                    "default": 0,
-                    "description": "Fourth input audio tensor"
-                }),
-                "w": ("FLOAT", {
-                    "default": 0,
-                    "forceInput": True
-                }),
-                "x": ("FLOAT", {
-                    "default": 0,
-                    "forceInput": True
-                }),
-                "y": ("FLOAT", {
-                    "default": 0,
-                    "forceInput": True
-                }),
-                "z": ("FLOAT", {
-                    "default": 0,
-                    "forceInput": True
-                }),
-            }
-        }
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id="mrmth_AudioMathNode",
+            category="More math",
+            inputs=[
+                io.Audio.Input(id="a", tooltip="Input audio tensor"),
+                io.Audio.Input(id="b", optional=True, tooltip="Second input audio tensor"),
+                io.Audio.Input(id="c", optional=True, tooltip="Third input audio tensor"),
+                io.Audio.Input(id="d", optional=True, tooltip="Fourth input audio tensor"),
+                io.Float.Input(id="w", default=0.0, optional=True, force_input=True),
+                io.Float.Input(id="x", default=0.0, optional=True, force_input=True),
+                io.Float.Input(id="y", default=0.0, optional=True, force_input=True),
+                io.Float.Input(id="z", default=0.0, optional=True, force_input=True),
+                io.String.Input(id="AudioExpr", default="a*(1-w)+b*w", tooltip="Expression to apply on input audio tensors"),
+            ],
+            outputs=[
+                io.Audio.Output(),
+            ],
+        )
 
-    RETURN_TYPES = ("AUDIO",)
-    DESCRIPTION = cleandoc(__doc__)
-    FUNCTION = "audioMathNode"
-    CATEGORY = "More math"
-
-    def audioMathNode(self, a, AudioExpr, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    @classmethod
+    def execute(self,cls, a, AudioExpr, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
    
 
         bv = b if b else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}

@@ -6,12 +6,12 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
+from comfy_api.latest import ComfyExtension, io
 
-
-class ConditioningMathNode:
+class ConditioningMathNode(io.ComfyNode):
     """
     This node enables the use of math on conditionings. It is recommended to keep the Tensor expression the same as the pooled_output expression.
-    INPUTS:
+    inputs:
         a, b, c, d:
             Conditioning, bound to variables with the same name. Defaults to zero conditioning if not provided.
         w, x, y, z:
@@ -21,7 +21,7 @@ class ConditioningMathNode:
         Pooled output expression:
             String, describing expression to mix pooled_output part of conditioning. pooled_output does not have that much say in the image but can change some details of the image or completly change the image in some cases, probably also used for positional and temporal conditioning. Expression uses same syntax as Tensor expression.
         
-    OUTPUTS:
+    outputs:
         CONDITIONING:
             Returns a CONDITIONING object that contains the result of the math expression applied to the input conditionings.
     """
@@ -29,71 +29,34 @@ class ConditioningMathNode:
         pass
 
     @classmethod
-    def INPUT_TYPES(s):
-        """
-        """
-        return {
-            "required": {
-                "a": ("CONDITIONING", {
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id="mrmth_ConditioningMathNode",
+            category="More math",
+            inputs=[
+                io.Conditioning.Input(id="a"),
+                io.Conditioning.Input(id="b", optional=True),
+                io.Conditioning.Input(id="c", optional=True),
+                io.Conditioning.Input(id="d", optional=True),
+                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.String.Input(id="Tensor", default="a*(1-w)+b*w", tooltip="Describes composition of the image."),
+                io.String.Input(id="pooled_output", default="a*(1-w)+b*w", tooltip="Can change some details of the image. Idk."),
+            ],
+            outputs=[
+                io.Conditioning.Output(),
+            ],
+        )
 
-                }),
-
-                "Tensor": ("STRING", {
-                    "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "a*(1-w)+b*w",
-                    "description": "Describes composition of the image. Valid functions are sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, min, max, norm, floor, ceil, round, gamma. Valid operators are +, -, *, /, %, ^,!˛&,|. Usable constants are e and pi."
-
-                }),
-                "pooled_output": ("STRING", {
-                    "multiline": False, #True if you want the field to look like the one on the ClipTextEncode node
-                    "default": "a*(1-w)+b*w",
-                    "description": "Can change some details of the image, probably also used for positional and temporal conditioning."
-                }),
-            },
-            "optional": {
-                "b": ("CONDITIONING", {
-                    "default": 0,
-                }),
-                "c": ("CONDITIONING", {
-                    "default": 0,
-                }),
-                "d": ("CONDITIONING", {
-                    "default": 0,
-                }),
-                "w": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "x": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "y": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-                "z": ("FLOAT", {
-                    "default": 0,
-                    "forceInput":True
-                }),
-
-
-                # "int_field": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                # "float_field": ("FLOAT", {"default": 0.5, "min": -10.0, "max": 10.0, "step": 0.001}),
-            }
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    #RETURN_NAMES = ("image_output_name",)
-    DESCRIPTION = cleandoc(__doc__)
-    FUNCTION = "condMathNode"
+    tooltip = cleandoc(__doc__)
 
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
-    CATEGORY = "More math"
-
-    def condMathNode(self, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
+    @classmethod
+    def execute(self,cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
         if b is None:
            b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]] 
         if c is None:

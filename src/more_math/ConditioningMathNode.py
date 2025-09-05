@@ -32,6 +32,7 @@ class ConditioningMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_ConditioningMathNode",
+            display_name="Conditioning math",
             category="More math",
             inputs=[
                 io.Conditioning.Input(id="a"),
@@ -56,7 +57,7 @@ class ConditioningMathNode(io.ComfyNode):
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
     @classmethod
-    def execute(self,cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
+    def execute(cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
         if b is None:
            b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]] 
         if c is None:

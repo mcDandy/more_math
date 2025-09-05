@@ -28,7 +28,7 @@ class IntToFloatNode(io.ComfyNode):
              ],
          )
     @classmethod
-    def execute(self,cls, value):
+    def execute(cls, value):
         return (float(value),)
 
 class FloatToIntNode(io.ComfyNode):
@@ -50,7 +50,7 @@ class FloatToIntNode(io.ComfyNode):
             ],
         )
     @classmethod
-    def execute(self, value):
+    def execute(cls, value):
         return (int(value),)
 
 

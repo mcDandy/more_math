@@ -58,7 +58,7 @@ class FloatMathNode(io.ComfyNode):
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
     @classmethod
-    def execute(self,cls, FloatFunc, a, b=0.0, c=0.0, d=0.0, w=0.0, x=0.0, y=0.0, z=0.0):
+    def execute(cls, FloatFunc, a, b=0.0, c=0.0, d=0.0, w=0.0, x=0.0, y=0.0, z=0.0):
 
 
 

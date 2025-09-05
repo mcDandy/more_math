@@ -52,16 +52,8 @@ class ImageMathNode(io.ComfyNode):
             ],
         )
 
-   
-    #RETURN_NAMES = ("image_output_name",)
-    tooltip = cleandoc(__doc__)
-
-    #OUTPUT_NODE = False
-    #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
-
-    CATEGORY = "More math"
     @classmethod
-    def execute(self,cls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    def execute(scls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         b = torch.zeros_like(a) if b is None else b
         c = torch.zeros_like(a) if c is None else c
         d = torch.zeros_like(a) if d is None else d

@@ -28,15 +28,7 @@ class NoiseMathNode(io.ComfyNode):
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
     """
     def __init__(self):
-        va= None
-        vb= None
-        vc= None
-        vd= None
-        vw= 0.0
-        vx= 0.0
-        vy= 0.0
-        vz= 0.0
-        expr="";
+       pass
     @classmethod
     def define_schema(cls) -> io.Schema:
         """
@@ -68,18 +60,8 @@ class NoiseMathNode(io.ComfyNode):
     CATEGORY = "More math"
 
     @classmethod
-    def execute(self, cls, Noise, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
-        self.va = a
-        self.vb = b
-        self.vc = c
-        self.vd = d
-        self.vw = w
-        self.vx = x
-        self.vy = y
-        self.vz = z
-
-        self.expr = Noise
-        return (self,)
+    def execute(cls, Noise, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+        return (NoiseExecutor(a, b, c, d, w, x, y, z, Noise),)
 
     """
         The node will always be re executed if any of the inputs change but
@@ -94,6 +76,20 @@ class NoiseMathNode(io.ComfyNode):
     #    return ""
 
     
+
+
+class NoiseExecutor():
+    def __init__(self,a,b,c,d,w,x,y,z, Noise):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.w = w
+        self.x = x
+        self.y = y
+        self.z = z
+        self.expr = Noise
+
     def generate_noise(self, input_latent:torch.Tensor) -> torch.Tensor:
         if self.vb is None:
             self.vb = torch.zeros_like(input_latent["samples"])

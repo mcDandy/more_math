@@ -35,6 +35,7 @@ class LatentMathNode(io.ComfyNode):
         """
         return io.Schema(
             node_id="mrmth_LatentMathNode",
+            display_name="Latent math",
             category="More math",
             inputs=[
                 io.Latent.Input(id="a"),

@@ -20,7 +20,7 @@ class ImageMathNode(io.ComfyNode):
         w, x, y, z:
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Image expression:
-            String, describing expression to mix images. Valid functions are sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, asinh, acosh, atanh, abs, sqrt, ln, log, exp, pow, min, max, norm, floor, ceil, round, gamma. Valid operators are +, -, *, /, %, ^,!˛&,|. Usable constants are e and pi.
+            String, describing expression to mix images. 
         
     outputs:
         LATENT:
@@ -36,6 +36,7 @@ class ImageMathNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ImageMathNode",
             category="More math",
+            display_name="Image math",
             inputs=[
                 io.Image.Input(id="a"),
                 io.Image.Input(id="b", optional=True),

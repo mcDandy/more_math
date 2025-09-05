@@ -31,6 +31,7 @@ class AudioMathNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_AudioMathNode",
             category="More math",
+            display_name="Audio math",
             inputs=[
                 io.Audio.Input(id="a", tooltip="Input audio tensor"),
                 io.Audio.Input(id="b", optional=True, tooltip="Second input audio tensor"),

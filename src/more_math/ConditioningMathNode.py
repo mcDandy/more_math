@@ -17,9 +17,9 @@ class ConditioningMathNode(io.ComfyNode):
         w, x, y, z:
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Tensor expression:
-            String, describing expression to mix tensor part of conditioning. Tensor probably describes the composition of the image as it has the say what is on the image. Valid functions are sin, cos, tan, abs, sqrt, min, max, norm. Valid operators are +, -, *, /, ^, %. Usable constants are e and pi.
+            String, describing expression to mix tensor part of conditioning. Tensor probably describes the composition of the image as it has the say what is on the image.
         Pooled output expression:
-            String, describing expression to mix pooled_output part of conditioning. pooled_output does not have that much say in the image but can change some details of the image or completly change the image in some cases, probably also used for positional and temporal conditioning. Expression uses same syntax as Tensor expression.
+            String, describing expression to mix pooled_output part of conditioning. pooled_output is Tensor compressed into 1 token.
         
     outputs:
         CONDITIONING:

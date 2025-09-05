@@ -36,6 +36,7 @@ class FloatMathNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_FloatMathNode",
             category="More math",
+            display_name="Float math",
             inputs=[
                 io.Float.Input(id="a", force_input=True),
                 io.Float.Input(id="b", default=0.0,optional=True, force_input=True),

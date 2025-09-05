@@ -19,6 +19,7 @@ class IntToFloatNode(io.ComfyNode):
          """
          return io.Schema(
              node_id="mrmth_IntToFloat",
+             display_name="Int -> Float",
              category="More math",
              inputs=[
                  io.Int.Input(id="value", default=0),
@@ -42,6 +43,7 @@ class FloatToIntNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_FloatToInt",
             category="More math",
+            display_name="Float -> Int",
             inputs=[
                 io.Float.Input(id="value", default=0.0),
             ],
@@ -53,22 +55,6 @@ class FloatToIntNode(io.ComfyNode):
     def execute(cls, value):
         return (int(value),)
 
-
-NODE_id_MAPPINGS = {
-    "mrmth_ConditioningMathNode": "Conditioning math",
-    "mrmth_LatentMathNode": "Latent math",
-    "mrmth_ImageMathNode": "Image math",
-    "mrmth_FloatMathNode": "Float math",
-    "mrmth_NoiseMathNode": "Noise math",
-    "mrmth_AudioMathNode": "Audio math",
-    "mrmth_IntToFloat": "Int → Float",
-    "mrmth_FloatToInt": "Float → Int",
-    "Tensor": "Tensor expression",
-    "Latent": "Latent expression",
-    "Image": "Image expression",
-    "FloatFunc": "Float expression",
-    "pooled_output": "Pooled output tensor expression"
-}
 
 class MoreMathExtension(ComfyExtension):
     def __init__(self):

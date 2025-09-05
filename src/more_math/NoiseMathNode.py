@@ -36,6 +36,7 @@ class NoiseMathNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_NoiseMathNode",
             category="More math",
+            display_name="Noise math",
             inputs=[
                 io.Noise.Input(id="a"),
                 io.Noise.Input(id="b", optional=True),

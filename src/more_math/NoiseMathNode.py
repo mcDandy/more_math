@@ -53,7 +53,6 @@ class NoiseMathNode(io.ComfyNode):
         )
     #RETURN_NAMES = ("image_output_name",)
     tooltip = cleandoc(__doc__)
-    seed = 0
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
@@ -89,27 +88,27 @@ class NoiseExecutor():
         self.y = y
         self.z = z
         self.expr = Noise
-
+    seed = -1;
     def generate_noise(self, input_latent:torch.Tensor) -> torch.Tensor:
-        if self.vb is None:
+        if self.b is None:
             self.vb = torch.zeros_like(input_latent["samples"])
         else:
-            self.vb = self.vb.generate_noise(input_latent)
-        if self.vc is None:
+            self.vb = self.b.generate_noise(input_latent)
+        if self.c is None:
             self.vc = torch.zeros_like(input_latent["samples"])
         else:
-            self.vc = self.vc.generate_noise(input_latent)
-        if self.vd is None:
+            self.vc = self.c.generate_noise(input_latent)
+        if self.d is None:
             self.vd = torch.zeros_like(input_latent["samples"])
         else:
-            self.vd = self.vd.generate_noise(input_latent)
+            self.vd = self.d.generate_noise(input_latent)
 
         B = getIndexTensorAlongDim(input_latent["samples"], 0)
         W = getIndexTensorAlongDim(input_latent["samples"], 3)
         H = getIndexTensorAlongDim(input_latent["samples"], 2)
         C = getIndexTensorAlongDim(input_latent["samples"], 1)
 
-        variables = {'a': self.va.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.vw, 'x': self.vx, 'y': self.vy, 'z': self.vz,'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[3],'H':input_latent["samples"].shape[2],'I':input_latent["samples"]}
+        variables = {'a': self.a.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[3],'H':input_latent["samples"].shape[2],'I':input_latent["samples"]}
         input_stream = InputStream(self.expr)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

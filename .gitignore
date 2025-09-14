@@ -116,3 +116,4 @@ node.zip
 /.vs
 *.editorconfig
 *.yaml
+/more_math.pyproj

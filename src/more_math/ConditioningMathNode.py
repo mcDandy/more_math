@@ -81,7 +81,6 @@ class ConditioningMathNode(io.ComfyNode):
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
         tree = parser.expr()
-        print("Tensor\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,ta.shape)
         result1 = visitor.visit(tree)
         
@@ -92,7 +91,6 @@ class ConditioningMathNode(io.ComfyNode):
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
         tree = parser.expr()
-        print("pooled_output\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,pa.shape)
         result2 = visitor.visit(tree)
 

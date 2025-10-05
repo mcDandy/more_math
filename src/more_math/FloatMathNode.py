@@ -70,7 +70,6 @@ class FloatMathNode(io.ComfyNode):
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
-        print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = FloatEvalVisitor(variables)
         result = visitor.visit(tree)
         return (result,)

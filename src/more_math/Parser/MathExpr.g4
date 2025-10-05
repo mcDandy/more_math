@@ -80,6 +80,7 @@ func1
     | SFFT  '(' expr ')'   # sfftFunc
     | SIFFT  '(' expr ')'   # sifftFunc
     | ANGL  '(' expr ')'   # anglFunc
+    | PRNT  '(' expr ')'   # printFunc
     
     ;
 
@@ -136,6 +137,7 @@ CLAMP : 'clamp';
 SFFT : 'fft';
 SIFFT : 'ifft';
 ANGL : 'angle';
+PRNT : 'print';
 
 PLUS        : '+';
 MINUS       : '-';

@@ -127,6 +127,10 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitGammaFunc(self, ctx): return torch.special.gamma(self.visit(ctx.expr())).exp()
     def visitSigmoidFunc(self, ctx): return torch.sigmoid(self.visit(ctx.expr()))
     def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
+    def visitPrintFunc(self, ctx):
+        val = self.visit(ctx.expr())
+        print(val,"\n")
+        return val
     
     def visitSfftFunc(self, ctx):
        hop_length = 256

@@ -118,6 +118,10 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitCeilFunc(self, ctx):  return math.ceil(self.visit(ctx.expr()))
     def visitRoundFunc(self, ctx): return math.round(self.visit(ctx.expr()))
     def visitGammaFunc(self, ctx): return math.gamma(self.visit(ctx.expr())).exp()
+    def visitPrintFunc(self, ctx): 
+        val = self.visit(ctx.expr())
+        print(val,"\n")
+        return val
 
     # Two-argument functions
     def visitPowFunc(self, ctx):

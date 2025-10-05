@@ -79,7 +79,6 @@ class LatentMathNode(io.ComfyNode):
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
-        print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,a.shape)
         result1 = visitor.visit(tree)
         result = {"samples": result1}

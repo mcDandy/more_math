@@ -120,7 +120,7 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitGammaFunc(self, ctx): return math.gamma(self.visit(ctx.expr())).exp()
     def visitPrintFunc(self, ctx): 
         val = self.visit(ctx.expr())
-        print(val,"\n")
+        print(val,end="\n")
         return val
 
     # Two-argument functions
@@ -150,5 +150,4 @@ class FloatEvalVisitor(MathExprVisitor):
         return self.visit(ctx.getChild(0))  # forward to Atan2Func, PowFunc, etc.
 
     def visitExpr(self, ctx):
-       print("Visiting expression:", ctx.getText())
        return self.visitChildren(ctx)

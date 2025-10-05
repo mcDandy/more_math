@@ -116,7 +116,6 @@ class NoiseExecutor():
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
-        print("Tree\n"+tree.toStringTree(recog=parser))
         visitor = TensorEvalVisitor(variables,variables['a'].shape)
         result = visitor.visit(tree)
         return result

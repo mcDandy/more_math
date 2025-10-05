@@ -46,9 +46,6 @@ class TensorEvalVisitor(MathExprVisitor):
         return torch.sub(self.visit(ctx.addExpr()), self.visit(ctx.mulExpr()))
 
     def visitMulExp(self, ctx):
-        print("Visiting multiplication expression:", ctx.getText())
-        if ctx.mulExpr() is None or ctx.powExpr() is None:
-            raise ValueError("Invalid multiplication expression")
         return torch.mul(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()))
 
     def visitDivExp(self, ctx):
@@ -129,7 +126,7 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
     def visitPrintFunc(self, ctx):
         val = self.visit(ctx.expr())
-        print(val,"\n")
+        print(val,end="\n")
         return val
     
     def visitSfftFunc(self, ctx):

@@ -33,12 +33,12 @@ You can also get the node from comfy manager under the name of More math.
 ## Variables
 - **inputs**: `a`, `b`, `c`, `d` (matches node input type)  
 - **Extra floats**: `w`, `x`, `y`, `z`   
-- **Tensor positions**:  `C` (channel), `B` (batch), `X`, `Y`, `W` (width), `H` (height) (not for FLOAT/AUDIO/CONDITIONING)
+- **Tensor positions**:  `C` (channel), `B` (frame number in image part of VIDEO node and BATCH everywhere else), {`X`, `Y`, `W` (width), `H` (height)} (not for FLOAT/AUDIO/VIDEO (audio part)/CONDITIONING)
 - **Special**:
   - `I` – sampler init tensor (for NOISE only)  
-  - `S` – current audio sample (AUDIO only)  
-  - `T` – audio length  (AUDIO only)  
-  - `R` – sample rate (AUDIO only)  
+  - `S` – current audio sample (AUDIO and audio part of VIDEO only)  
+  - `T` – audio length  (AUDIO and audio part of VIDEO only)  
+  - `R` – sample rate (AUDIO and audio part of VIDEO only)  
   - `F` – frequency count (freq domain, iFFT only)  
   - `K` – current frequency (freq domain, iFFT only)  
 - Constants: `e`, `pi`

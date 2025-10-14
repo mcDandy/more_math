@@ -6,6 +6,7 @@ from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
 from .AudioMathNode import AudioMathNode
+from .VideoMathNode import VideoMathNode
 
 from comfy_api.latest import ComfyExtension, io
 
@@ -70,6 +71,7 @@ class MoreMathExtension(ComfyExtension):
                 IntToFloatNode,
                 FloatToIntNode,
                 AudioMathNode, 
+                VideoMathNode
             ]
 async def comfy_entrypoint() -> MoreMathExtension:
     return MoreMathExtension()

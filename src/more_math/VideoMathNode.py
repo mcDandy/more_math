@@ -78,8 +78,12 @@ class VideoMathNode(io.ComfyNode):
         H = getIndexTensorAlongDim(ac.images, 1)
         C = getIndexTensorAlongDim(ac.images, 3)
         R = torch.full_like(H, float(ac.frame_rate), dtype=torch.float32)
+        T = torch.full_like(H, ac.images.shape[0], dtype=torch.float32)
        
-        variables = {'a': ac.images, 'b': bc.images, 'c': cc.images, 'd': dc.images, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'R':R,'W':ac.images.shape[1],'H':ac.images.shape[2] }
+        variables = {'a': ac.images, 'b': bc.images, 'c': cc.images, 'd': dc.images, 'w': w, 'x': x, 'y': y, 'z': z,
+                     'B':B,'X':W,'Y':H,'C':C,'R':R,'W':ac.images.shape[1],'H':ac.images.shape[2],
+                    'frame':B, 'width':a.shape[1],'height':a.shape[2],'channel':C, 'frame_count':a.shape[0],'channel_count':a.shape[3]}
+
         input_stream = InputStream(Images)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -99,7 +103,8 @@ class VideoMathNode(io.ComfyNode):
         variables = {
             'a': ac.audio['waveform'], 'b': bc.audio['waveform'], 'c': cc.audio['waveform'], 'd': dc.audio['waveform'],
             'w': w, 'x': x, 'y': y, 'z': z,
-            'B': B, 'C': C, 'S': S,'R': R, 'T' : T
+            'B': B, 'C': C, 'S': S,'R': R, 'T' : T,
+            'batch': B, 'channel': C, 'sample': S, 'sample_rate': R, 'sample_count': T,'channel_count': ac.audio['waveform'].shape[1]
         }
 
         input_stream = InputStream(Audio)

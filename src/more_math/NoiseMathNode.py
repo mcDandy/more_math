@@ -109,7 +109,11 @@ class NoiseExecutor():
         H = getIndexTensorAlongDim(input_latent["samples"], 2)
         C = getIndexTensorAlongDim(input_latent["samples"], 1)
 
-        variables = {'a': self.a.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[3],'H':input_latent["samples"].shape[2],'I':input_latent["samples"]}
+        variables = {'a': self.a.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
+                     'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[3],'H':input_latent["samples"].shape[2],'I':input_latent["samples"],
+                     'T':input_latent["samples"].shape[0],'N':input_latent["samples"].shape[3],
+                     'batch':B, 'width':input_latent["samples"].shape[3],'height':input_latent["samples"].shape[2],'channel':C,
+                    'batch_count':input_latent["samples"].shape[0],'channel_count':input_latent["samples"].shape[1],'input_latent': input_latent["samples"]}
         input_stream = InputStream(self.expr)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

@@ -65,7 +65,8 @@ class AudioMathNode(io.ComfyNode):
         variables = {
             'a': a['waveform'], 'b': bv['waveform'], 'c': cv['waveform'], 'd': dv['waveform'],
             'w': w, 'x': x, 'y': y, 'z': z,
-            'B': B, 'C': C, 'S': S,'R': R, 'T' : T
+            'B': B, 'C': C, 'S': S,'R': R, 'T' : T, 'N': a['waveform'].shape[1],
+            'batch': B, 'channel': C, 'sample': S, 'sample_rate': R, 'sample_count': T,'channel_count': a['waveform'].shape[1]
         }
 
         input_stream = InputStream(AudioExpr)

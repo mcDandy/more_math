@@ -72,7 +72,9 @@ class LatentMathNode(io.ComfyNode):
         H = getIndexTensorAlongDim(a, 2)
         C = getIndexTensorAlongDim(a, 1)
 
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,'B':B,'X':W,'Y':H,'C':C,'W':a.shape[3],'H':a.shape[2]}
+        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,
+                     'B':B,'X':W,'Y':H,'C':C,'W':a.shape[3],'H':a.shape[2],'T':a.shape[0],'N':a.shape[3],
+                     'batch':B, 'width':a.shape[3],'height':a.shape[2],'channel':C, 'batch_count':a.shape[0],'channel_count':a.shape[1]}
         input_stream = InputStream(Latent)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

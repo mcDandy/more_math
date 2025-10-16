@@ -82,7 +82,7 @@ class VideoMathNode(io.ComfyNode):
        
         variables = {'a': ac.images, 'b': bc.images, 'c': cc.images, 'd': dc.images, 'w': w, 'x': x, 'y': y, 'z': z,
                      'B':B,'X':W,'Y':H,'C':C,'R':R,'W':ac.images.shape[1],'H':ac.images.shape[2],
-                    'frame':B, 'width':a.shape[1],'height':a.shape[2],'channel':C, 'frame_count':a.shape[0],'channel_count':a.shape[3]}
+                    'frame':B, 'width':a.images.shape[1],'height':a.images.shape[2],'channel':C, 'frame_count':a.images.shape[0],'channel_count':a.images.shape[3]}
 
         input_stream = InputStream(Images)
         lexer = MathExprLexer(input_stream)

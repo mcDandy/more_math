@@ -44,7 +44,7 @@ class ConditioningMathNode(io.ComfyNode):
                 io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
                 io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
                 io.String.Input(id="Tensor", default="a*(1-w)+b*w", tooltip="Describes composition of the image."),
-                io.String.Input(id="pooled_output", default="a*(1-w)+b*w", tooltip="Can change some details of the image. Idk."),
+                io.String.Input(id="pooled_output", default="a*(1-w)+b*w", tooltip="Composition of the image condensed into one vector"),
             ],
             outputs=[
                 io.Conditioning.Output(),
@@ -74,7 +74,9 @@ class ConditioningMathNode(io.ComfyNode):
         td = d[0][0].clone()
         pc = c[0][1]["pooled_output"].clone()
         pd = d[0][1]["pooled_output"].clone()
-   
+        
+        print(ta.shape,pa.shape);
+
         variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z}
         input_stream = InputStream(Tensor)
         lexer = MathExprLexer(input_stream)

@@ -12,7 +12,7 @@ authors = [
 readme = "README.md"
 license = {text = "GNU General Public License v3"}
 classifiers = []
-description = "Adds math nodes for FLOAT, CONDITIONING, LATENT, IMAGE, NOISE, AUDIO and VIDEO.
+description = "Adds math nodes for FLOAT, CONDITIONING, LATENT, IMAGE, NOISE, AUDIO and VIDEO types.
 
 Allows usage of math expressions with variety of functions and variables, not limited to inputs. List of those is on github of this extension."
 dependencies = [

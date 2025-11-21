@@ -116,7 +116,7 @@ class NoiseExecutor():
                     'batch_count':input_latent["samples"].shape[0],'channel_count':input_latent["samples"].shape[1],'input_latent': input_latent["samples"]}
         input_stream = InputStream(self.expr)
         lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
+        stream = CommonTokenStream(lexer)   
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()

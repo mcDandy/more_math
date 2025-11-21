@@ -144,13 +144,20 @@ class TensorEvalVisitor(MathExprVisitor):
        time_shape = (B, C, T)
        time_shape = self.variables['a'].shape if 'a' in self.variables else time_shape
        self.shape = time_shape
-       shp_time = torch.zeros(time_shape, device=self.variables.get('device', 'cpu'))
+       shp_time = torch.zeros(time_shape)
        self.variables['S'] = getIndexTensorAlongDim(shp_time, 2)
+       self.variables['sample'] = self.variables['S']
+       self.variables['N'] = self.shape[1]
+       self.variables['channel_count'] = self.shape[1]
        self.variables['T'] = torch.full_like(shp_time, self.shape[2])
+       self.variables['sample_count'] = self.variables['T']
        self.variables['B'] = getIndexTensorAlongDim(shp_time, 0)
+       self.variables['batch'] = self.variables['B']
        self.variables['C'] = getIndexTensorAlongDim(shp_time, 1)
+       self.variables['channel'] = self.variables['C']
        self.variables['R'] = torch.full_like(shp_time, self.variables['R'].flatten()[0].item())
-   
+       self.variables['sample_rate'] = self.variables['R']
+
        # Child sees time-domain
        val = self.visit(ctx.expr())
        if val.ndim != 3:
@@ -164,12 +171,21 @@ class TensorEvalVisitor(MathExprVisitor):
        self.shape = freq_shape
        shp_freq = torch.zeros(freq_shape, device=shp_time.device)
        self.variables['S'] = getIndexTensorAlongDim(shp_freq, 3)  # now frame index
+       self.variables['sample'] = self.variables['S']
        self.variables['T'] = torch.full_like(shp_freq, shp_freq.shape[3])  # now num frames
+       self.variables['sample_count'] = self.variables['T']
        self.variables['B'] = getIndexTensorAlongDim(shp_freq, 0)
+       self.variables['batch'] = self.variables['B']
        self.variables['C'] = getIndexTensorAlongDim(shp_freq, 1)
+       self.variables['channel'] = self.variables['C']
        self.variables['F'] = getIndexTensorAlongDim(shp_freq, 2)
+       self.variables['freqency'] = self.variables['F']
        self.variables['K'] = shp_freq.shape[2]
+       self.variables['frequency_count'] = self.variables['K']
        self.variables['R'] = torch.full_like(shp_freq, self.variables['R'].flatten()[0].item())
+       self.variables['sample_rate'] = self.variables['R']
+       self.variables['N'] = self.shape[1]
+       self.variables['channel_count'] = self.shape[1]
    
        # Convert time→freq
        freq_val = time_to_freq(val, n_fft=n_fft, hop_length=hop_length)
@@ -193,14 +209,21 @@ class TensorEvalVisitor(MathExprVisitor):
         num_frames = T // hop_length + 1
         freq_shape = (B, C, num_freq_bins, num_frames)
         self.shape = freq_shape
-        shp_freq = torch.zeros(freq_shape, device=self.variables.get('device', 'cpu'))
+        shp_freq = torch.zeros(freq_shape)
         self.variables['K'] = getIndexTensorAlongDim(shp_freq, 2)
+        self.variables['frequency_count'] = self.variables['K']
         self.variables['F'] = shp_freq.shape[2]
+        self.variables['frequency'] = self.variables['F']
         self.variables['T'] = getIndexTensorAlongDim(shp_freq, 3)
+        self.variables['sample_count'] = self.variables['T']
         self.variables['B'] = getIndexTensorAlongDim(shp_freq, 0)
+        self.variables['batch'] = self.variables['B']
         self.variables['C'] = getIndexTensorAlongDim(shp_freq, 1)
+        self.variables['channel'] = self.variables['C']
         self.variables['S'] = getIndexTensorAlongDim(shp_freq, 2)
+        self.variables['sample'] = self.variables['S']
         self.variables['R'] = torch.full_like(shp_freq, self.variables['R'].flatten()[0].item())
+        self.variables['sample_rate'] = self.variables['R']
      
         # Child sees freq-domain
         val = self.visit(ctx.expr())
@@ -209,13 +232,18 @@ class TensorEvalVisitor(MathExprVisitor):
      
         # --- Back to time-domain after child ---
         self.shape = old_shape
-        shp_time = torch.zeros(old_shape, device=shp_freq.device)
+        shp_time = torch.zeros(old_shape)
         self.variables['T'] = getIndexTensorAlongDim(shp_time, 2)
+        self.variables['sample_count'] = self.variables['T']
         self.variables['B'] = getIndexTensorAlongDim(shp_time, 0)
+        self.variables['batch'] = self.variables['B']
         self.variables['C'] = getIndexTensorAlongDim(shp_time, 1)
+        self.variables['channel'] = self.variables['C']
         self.variables['S'] = getIndexTensorAlongDim(shp_freq, 2)
+        self.variables['sample'] = self.variables['S']
         self.variables['R'] = torch.full_like(shp_time, self.variables['R'].flatten()[0].item())
-     
+        self.variables['sample_rate'] = self.variables['R']
+        
         # Convert freq→time
         wav = freq_to_time(val, n_fft=n_fft, hop_length=hop_length, time=T)
      

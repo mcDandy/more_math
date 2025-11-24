@@ -21,7 +21,7 @@ class LatentMathNode(io.ComfyNode):
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Latent expression:
             String, describing expression to aply to latents.
-        
+
     outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
@@ -92,13 +92,24 @@ class LatentMathNode(io.ComfyNode):
         frame_count = a.shape[time_dim] if time_dim is not None else a.shape[batch_dim]
         T = a.shape[0]
 
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,
-                     'B':B,'X':W,'Y':H,'C':C,'W':width_val,'H':height_val,'T':T,'N':channel_count,
-                     'batch':B, 'width':width_val,'height':height_val,'channel':C, 'batch_count':batch_count,'channel_count':channel_count}
+        variables = {
+            # core tensors and floats
+            'a': a, 'b': b, 'c': c, 'd': d,
+            'w': w, 'x': x, 'y': y, 'z': z,
+
+             'X': W, 'Y': H,
+            'B': B, 'batch': B,
+            'C': C, 'channel': C,
+            # scalar dims and counts
+            'W': width_val, 'width': width_val,
+            'H': height_val, 'height': height_val,
+            'T': batch_count, 'batch_count': batch_count,
+            'N': channel_count, 'channel_count': channel_count,
+        }
         # expose time/frame if present
         if time_dim is not None:
             F = getIndexTensorAlongDim(a, time_dim)
-            variables.update({'frame': F, 'frame_count': frame_count})
+            variables.update({'frame_idx': F, 'frame': F, 'frame_count': frame_count})
 
         input_stream = InputStream(Latent)
         lexer = MathExprLexer(input_stream)

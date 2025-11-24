@@ -20,8 +20,8 @@ class ImageMathNode(io.ComfyNode):
         w, x, y, z:
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Image expression:
-            String, describing expression to mix images. 
-        
+            String, describing expression to mix images.
+
     outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
@@ -64,9 +64,17 @@ class ImageMathNode(io.ComfyNode):
         H = getIndexTensorAlongDim(a, 1)
         C = getIndexTensorAlongDim(a, 3)
 
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,
-                     'B':B,'X':W,'Y':H,'C':C,'W':a.shape[1],'H':a.shape[2],'T':a.shape[0],'N':a.shape[3],
-                     'batch':B, 'width':a.shape[1],'height':a.shape[2],'channel':C, 'batch_count':a.shape[0],'channel_count':a.shape[3]}
+        variables = {
+            'a': a, 'b': b, 'c': c, 'd': d,
+            'w': w, 'x': x, 'y': y, 'z': z,
+            'X': W, 'Y': H,
+            'B': B,'batch': B,
+            'C': C,'channel': C,
+            'W': a.shape[1], 'width': a.shape[1],
+            'H': a.shape[2], 'height': a.shape[2],
+            'T': a.shape[0], 'batch_count': a.shape[0],
+            'N': a.shape[3], 'channel_count': a.shape[3],
+        }
         input_stream = InputStream(Image)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

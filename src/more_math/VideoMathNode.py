@@ -24,7 +24,7 @@ class VideoMathNode(io.ComfyNode):
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Latent expression:
             String, describing expression to aply to latents.
-        
+
     outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
@@ -66,7 +66,7 @@ class VideoMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, Audio,Images, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
-        
+
         ac = a.get_components()
         bc = b.get_components() if b is not None else VideoComponents(images=torch.zeros_like(ac.images), audio={'waveform':torch.zeros_like(ac.audio['waveform']),'sample_rate':ac.audio['sample_rate']}, frame_rate=ac.frame_rate,metadata=None)
         cc = c.get_components() if c is not None else VideoComponents(images=torch.zeros_like(ac.images), audio={'waveform':torch.zeros_like(ac.audio['waveform']),'sample_rate':ac.audio['sample_rate']}, frame_rate=ac.frame_rate,metadata=None)
@@ -74,15 +74,23 @@ class VideoMathNode(io.ComfyNode):
 
 
         B = getIndexTensorAlongDim(ac.images, 0)
-        W = getIndexTensorAlongDim(ac.images, 2)
-        H = getIndexTensorAlongDim(ac.images, 1)
+        X = getIndexTensorAlongDim(ac.images, 2)
+        Y = getIndexTensorAlongDim(ac.images, 1)
+        W = torch.full_like(Y, ac.images.shape[2], dtype=torch.float32)
+        H = torch.full_like(Y, ac.images.shape[1], dtype=torch.float32)
         C = getIndexTensorAlongDim(ac.images, 3)
-        R = torch.full_like(H, float(ac.frame_rate), dtype=torch.float32)
-        T = torch.full_like(H, ac.images.shape[0], dtype=torch.float32)
-       
+        R = torch.full_like(Y, float(ac.frame_rate), dtype=torch.float32)
+        T = torch.full_like(Y, ac.images.shape[0], dtype=torch.float32)
+
         variables = {'a': ac.images, 'b': bc.images, 'c': cc.images, 'd': dc.images, 'w': w, 'x': x, 'y': y, 'z': z,
-                     'B':B,'X':W,'Y':H,'C':C,'R':R,'W':ac.images.shape[1],'H':ac.images.shape[2],
-                    'frame':B, 'width':ac.images.shape[1],'height':ac.images.shape[2],'channel':C, 'frame_count':ac.images.shape[0],'channel_count':ac.images.shape[3]}
+                     'X':X,'Y':Y,
+                     'B':B,'frame':B,
+                     'W':W,'width':W,
+                     'H':H,'height':H,
+                     'C':C,'channel':C,
+                     'R':R,'frame_rate':R,
+                     'frame_count':ac.images.shape[0],
+                     'N':ac.images.shape[3],'channel_count':ac.images.shape[3]}
 
         input_stream = InputStream(Images)
         lexer = MathExprLexer(input_stream)
@@ -99,12 +107,18 @@ class VideoMathNode(io.ComfyNode):
         S = getIndexTensorAlongDim(ac.audio['waveform'], 2)
         R = torch.full_like(S, ac.audio['sample_rate'], dtype=torch.float32)
         T = torch.full_like(S, ac.audio['waveform'].shape[2], dtype=torch.float32)
+        N= ac.audio['waveform'].shape[1]
 
         variables = {
             'a': ac.audio['waveform'], 'b': bc.audio['waveform'], 'c': cc.audio['waveform'], 'd': dc.audio['waveform'],
             'w': w, 'x': x, 'y': y, 'z': z,
-            'B': B, 'C': C, 'S': S,'R': R, 'T' : T,
-            'batch': B, 'channel': C, 'sample': S, 'sample_rate': R, 'sample_count': T,'channel_count': ac.audio['waveform'].shape[1]
+
+            'B': B, 'batch': B,
+            'C': C, 'channel': C,
+            'S': S, 'sample': S,
+            'R': R, 'sample_rate': R,
+            'T': T, 'sample_count': T,
+            'N': N, 'channel_count': N
         }
 
         input_stream = InputStream(Audio)
@@ -121,7 +135,6 @@ class VideoMathNode(io.ComfyNode):
             'waveform': result_tensor,
             'sample_rate': ac.audio['sample_rate']
         }
-
 
 
 

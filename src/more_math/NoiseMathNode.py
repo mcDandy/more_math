@@ -12,6 +12,14 @@ from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
 from comfy_api.latest import ComfyExtension, io
 
+# try to import NestedTensor type if available
+try:
+    import comfy.nested_tensor as _nested_tensor_module
+    _NESTED_TENSOR_AVAILABLE = True
+except Exception:
+    _nested_tensor_module = None
+    _NESTED_TENSOR_AVAILABLE = False
+
 class NoiseMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on Latents.
@@ -89,22 +97,162 @@ class NoiseExecutor():
         self.y = y
         self.z = z
         self.expr = Noise
+        # parse expression once
+        input_stream = InputStream(Noise)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = MathExprParser(stream)
+        parser.addErrorListener(ThrowingErrorListener())
+        self.tree = parser.expr()
     seed = -1;
     def generate_noise(self, input_latent:torch.Tensor) -> torch.Tensor:
-        if self.b is None:
-            self.vb = torch.zeros_like(input_latent["samples"])
-        else:
-            self.vb = self.b.generate_noise(input_latent)
-        if self.c is None:
-            self.vc = torch.zeros_like(input_latent["samples"])
-        else:
-            self.vc = self.c.generate_noise(input_latent)
-        if self.d is None:
-            self.vd = torch.zeros_like(input_latent["samples"])
-        else:
-            self.vd = self.d.generate_noise(input_latent)
-
         samples = input_latent["samples"]
+
+        # evaluate generators / default zeros
+        a_val = self.a.generate_noise(input_latent) if self.a is not None else None
+        b_val = self.b.generate_noise(input_latent) if self.b is not None else None
+        c_val = self.c.generate_noise(input_latent) if self.c is not None else None
+        d_val = self.d.generate_noise(input_latent) if self.d is not None else None
+
+        # helper to convert a returned value into a list matching ref_list
+        def to_list(val, ref_list):
+            if val is None:
+                return [torch.zeros_like(r) for r in ref_list]
+            # If val is a NestedTensor-like, return underlying list
+            if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
+                return val.unbind()
+            if isinstance(val, list) or isinstance(val, tuple):
+                return list(val)
+            # If val is a single tensor that encodes multiple subtensors along batch dim,
+            # try to split it into pieces that match ref_list batch sizes.
+            if torch.is_tensor(val):
+                try:
+                    sizes = [r.shape[0] for r in ref_list]
+                    if val.shape[0] == sum(sizes):
+                        return list(val.split(sizes, dim=0))
+                except Exception:
+                    pass
+            # single tensor broadcast
+            return [val for _ in ref_list]
+
+        # nested case: merge subtensors, evaluate once, split back
+        if hasattr(samples, 'is_nested') and getattr(samples, 'is_nested'):
+            sample_list = samples.unbind()
+            sizes = [t.shape[0] for t in sample_list]
+            merged_samples = torch.cat(sample_list, dim=0)
+
+            def merge_to_tensor(val, ref):
+                if val is None:
+                    return torch.zeros_like(ref)
+                if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
+                    lst = val.unbind()
+                    return torch.cat(lst, dim=0)
+                if isinstance(val, (list, tuple)):
+                    return torch.cat(list(val), dim=0)
+                if torch.is_tensor(val):
+                    if val.shape == ref.shape:
+                        return val
+                    if val.shape[0] == sum(sizes):
+                        return val
+                    # if val has per-subtensor batches, try to split and cat
+                    try:
+                        if val.shape[0] == len(sample_list):
+                            return torch.cat([val[i].unsqueeze(0).expand(sample_list[i].shape[0], *val.shape[1:]) for i in range(len(sample_list))], dim=0)
+                    except Exception:
+                        pass
+                return torch.zeros_like(ref)
+
+            merged_a = merge_to_tensor(a_val, merged_samples)
+            merged_b = merge_to_tensor(b_val, merged_samples)
+            merged_c = merge_to_tensor(c_val, merged_samples)
+            merged_d = merge_to_tensor(d_val, merged_samples)
+
+            # evaluate once
+            ndim = merged_samples.ndim
+            batch_dim = 0
+            channel_dim = -3
+            height_dim = -2
+            width_dim = -1
+            time_dim = None
+            if ndim >= 5:
+                time_dim = -4
+
+            B = getIndexTensorAlongDim(merged_samples, batch_dim)
+            W = getIndexTensorAlongDim(merged_samples, width_dim)
+            H = getIndexTensorAlongDim(merged_samples, height_dim)
+            C = getIndexTensorAlongDim(merged_samples, channel_dim)
+
+            variables = {
+                'a': merged_a, 'b': merged_b, 'c': merged_c, 'd': merged_d,
+                'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
+                'B': B, 'X': W, 'Y': H, 'C': C,
+                'W': merged_samples.shape[width_dim], 'H': merged_samples.shape[height_dim],
+                'I': merged_samples, 'T': merged_samples.shape[0], 'N': merged_samples.shape[channel_dim],
+                'batch': B, 'width': merged_samples.shape[width_dim], 'height': merged_samples.shape[height_dim], 'channel': C,
+                'batch_count': merged_samples.shape[0], 'channel_count': merged_samples.shape[1], 'input_latent': merged_samples,
+            }
+            if time_dim is not None:
+                F = getIndexTensorAlongDim(merged_samples, time_dim)
+                variables.update({'frame': F, 'frame_count': merged_samples.shape[time_dim]})
+
+            visitor = TensorEvalVisitor(variables, variables['a'].shape)
+            merged_result = visitor.visit(self.tree)
+
+            split_results = list(merged_result.split(sizes, dim=0))
+            if _NESTED_TENSOR_AVAILABLE and _nested_tensor_module is not None:
+                return _nested_tensor_module.NestedTensor(split_results)
+            return split_results
+
+        # non-nested path
+        # fallback zeros if any generator missing
+        def to_tensor(val, ref):
+            if val is None:
+                return torch.zeros_like(ref)
+            # get list of tensors from NestedTensor or list/tuple
+            if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
+                lst = val.unbind()
+            elif isinstance(val, (list, tuple)):
+                lst = list(val)
+            else:
+                return val
+
+            if len(lst) == 0:
+                return torch.zeros_like(ref)
+            if len(lst) == 1:
+                return lst[0]
+
+            # try to concatenate along batch dim
+            try:
+                cat = torch.cat(lst, dim=0)
+                if cat.shape == ref.shape or (cat.shape[0] == ref.shape[0] and cat.shape[1:] == ref.shape[1:]):
+                    return cat
+            except Exception:
+                pass
+
+            # try stack
+            try:
+                stk = torch.stack(lst, dim=0)
+                # direct match
+                if stk.shape == ref.shape or (stk.shape[0] == ref.shape[0] and stk.shape[1:] == ref.shape[1:]):
+                    return stk
+                # try merging first dim into batch if possible
+                try:
+                    merged = stk.view(-1, *stk.shape[2:]) if stk.ndim >= 3 else stk.view(-1)
+                    if merged.shape == ref.shape:
+                        return merged
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+            # fallback to first element
+            return lst[0]
+
+        a_tensor = to_tensor(a_val, samples)
+        b_tensor = to_tensor(b_val, samples)
+        c_tensor = to_tensor(c_val, samples)
+        d_tensor = to_tensor(d_val, samples)
+
         ndim = samples.ndim
         batch_dim = 0
         channel_dim = -3
@@ -119,21 +267,21 @@ class NoiseExecutor():
         H = getIndexTensorAlongDim(samples, height_dim)
         C = getIndexTensorAlongDim(samples, channel_dim)
 
-        variables = {'a': self.a.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
-                     'B':B,'X':W,'Y':H,'C':C,'W':samples.shape[width_dim],'H':samples.shape[height_dim],'I':samples,
-                     'T':samples.shape[0],'N':samples.shape[channel_dim],
+        variables = {'a': a_tensor, 'b': b_tensor, 'c': c_tensor, 'd': d_tensor, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
+                     'B':B,
+                     'X':W,'Y':H,
+                     'C':C,
+                     'W':samples.shape[width_dim],
+                     'H':samples.shape[height_dim],
+                     'I':samples,
+                     'T':samples.shape[0],
+                     'N':samples.shape[channel_dim],
                      'batch':B, 'width':samples.shape[width_dim],'height':samples.shape[height_dim],'channel':C,
                     'batch_count':samples.shape[0],'channel_count':samples.shape[1],'input_latent': samples}
         if time_dim is not None:
             F = getIndexTensorAlongDim(samples, time_dim)
             variables.update({'frame': F, 'frame_count': samples.shape[time_dim]})
 
-        input_stream = InputStream(self.expr)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        parser.addErrorListener(ThrowingErrorListener())
-        tree = parser.expr()
         visitor = TensorEvalVisitor(variables,variables['a'].shape)
-        result = visitor.visit(tree)
+        result = visitor.visit(self.tree)
         return result

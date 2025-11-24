@@ -22,7 +22,7 @@ class NoiseMathNode(io.ComfyNode):
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Latent expression:
             String, describing expression to mix noise.
-        
+
     outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
@@ -75,7 +75,7 @@ class NoiseMathNode(io.ComfyNode):
     #def IS_CHANGED(s, image, string_field, int_field, float_field, print_to_screen):
     #    return ""
 
-    
+
 
 
 class NoiseExecutor():
@@ -104,19 +104,33 @@ class NoiseExecutor():
         else:
             self.vd = self.d.generate_noise(input_latent)
 
-        B = getIndexTensorAlongDim(input_latent["samples"], 0)
-        W = getIndexTensorAlongDim(input_latent["samples"], 3)
-        H = getIndexTensorAlongDim(input_latent["samples"], 2)
-        C = getIndexTensorAlongDim(input_latent["samples"], 1)
+        samples = input_latent["samples"]
+        ndim = samples.ndim
+        batch_dim = 0
+        channel_dim = -3
+        height_dim = -2
+        width_dim = -1
+        time_dim = None
+        if ndim >= 5:
+            time_dim = -4
+
+        B = getIndexTensorAlongDim(samples, batch_dim)
+        W = getIndexTensorAlongDim(samples, width_dim)
+        H = getIndexTensorAlongDim(samples, height_dim)
+        C = getIndexTensorAlongDim(samples, channel_dim)
 
         variables = {'a': self.a.generate_noise(input_latent), 'b': self.vb, 'c': self.vc, 'd': self.vd, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
-                     'B':B,'X':W,'Y':H,'C':C,'W':input_latent["samples"].shape[3],'H':input_latent["samples"].shape[2],'I':input_latent["samples"],
-                     'T':input_latent["samples"].shape[0],'N':input_latent["samples"].shape[3],
-                     'batch':B, 'width':input_latent["samples"].shape[3],'height':input_latent["samples"].shape[2],'channel':C,
-                    'batch_count':input_latent["samples"].shape[0],'channel_count':input_latent["samples"].shape[1],'input_latent': input_latent["samples"]}
+                     'B':B,'X':W,'Y':H,'C':C,'W':samples.shape[width_dim],'H':samples.shape[height_dim],'I':samples,
+                     'T':samples.shape[0],'N':samples.shape[channel_dim],
+                     'batch':B, 'width':samples.shape[width_dim],'height':samples.shape[height_dim],'channel':C,
+                    'batch_count':samples.shape[0],'channel_count':samples.shape[1],'input_latent': samples}
+        if time_dim is not None:
+            F = getIndexTensorAlongDim(samples, time_dim)
+            variables.update({'frame': F, 'frame_count': samples.shape[time_dim]})
+
         input_stream = InputStream(self.expr)
         lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)   
+        stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()

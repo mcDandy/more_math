@@ -67,14 +67,39 @@ class LatentMathNode(io.ComfyNode):
         c = torch.zeros_like(a) if c is None else c["samples"]
         d = torch.zeros_like(a) if d is None else d["samples"]
 
-        B = getIndexTensorAlongDim(a, 0)
-        W = getIndexTensorAlongDim(a, 3)
-        H = getIndexTensorAlongDim(a, 2)
-        C = getIndexTensorAlongDim(a, 1)
+        # support tensors with >=4 dims (e.g. 4D latents [B,C,H,W] or 5D [B,T,C,H,W])
+        ndim = a.ndim
+        # use negative indexing so that channel/height/width mapping works for 4D and 5D
+        batch_dim = 0
+        channel_dim = -3
+        height_dim = -2
+        width_dim = -1
+        time_dim = None
+        if ndim >= 5:
+            # time/frame dim is the one before channels when present
+            time_dim = -4
+
+        B = getIndexTensorAlongDim(a, batch_dim)
+        C = getIndexTensorAlongDim(a, channel_dim)
+        H = getIndexTensorAlongDim(a, height_dim)
+        W = getIndexTensorAlongDim(a, width_dim)
+
+        # fill scalar/value tensors
+        width_val = a.shape[width_dim]
+        height_val = a.shape[height_dim]
+        channel_count = a.shape[channel_dim]
+        batch_count = a.shape[batch_dim]
+        frame_count = a.shape[time_dim] if time_dim is not None else a.shape[batch_dim]
+        T = a.shape[0]
 
         variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z,
-                     'B':B,'X':W,'Y':H,'C':C,'W':a.shape[3],'H':a.shape[2],'T':a.shape[0],'N':a.shape[3],
-                     'batch':B, 'width':a.shape[3],'height':a.shape[2],'channel':C, 'batch_count':a.shape[0],'channel_count':a.shape[1]}
+                     'B':B,'X':W,'Y':H,'C':C,'W':width_val,'H':height_val,'T':T,'N':channel_count,
+                     'batch':B, 'width':width_val,'height':height_val,'channel':C, 'batch_count':batch_count,'channel_count':channel_count}
+        # expose time/frame if present
+        if time_dim is not None:
+            F = getIndexTensorAlongDim(a, time_dim)
+            variables.update({'frame': F, 'frame_count': frame_count})
+
         input_stream = InputStream(Latent)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)

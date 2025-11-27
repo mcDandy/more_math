@@ -13,12 +13,9 @@ from .Parser.TensorEvalVisitor import TensorEvalVisitor
 from comfy_api.latest import ComfyExtension, io
 
 # try to import NestedTensor type if available
-try:
-    import comfy.nested_tensor as _nested_tensor_module
-    _NESTED_TENSOR_AVAILABLE = True
-except Exception:
-    _nested_tensor_module = None
-    _NESTED_TENSOR_AVAILABLE = False
+import comfy.nested_tensor as _nested_tensor_module
+
+
 
 class NoiseMathNode(io.ComfyNode):
     """
@@ -181,27 +178,31 @@ class NoiseExecutor():
             W = getIndexTensorAlongDim(merged_samples, width_dim)
             H = getIndexTensorAlongDim(merged_samples, height_dim)
             C = getIndexTensorAlongDim(merged_samples, channel_dim)
+        else:
+            merged_samples = samples
+            merged_a = a_val
+            merged_b = b_val
+            merged_c = c_val
+            merged_d = d_val
+        variables = {
+            'a': merged_a, 'b': merged_b, 'c': merged_c, 'd': merged_d,
+            'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
+            'B': B, 'X': W, 'Y': H, 'C': C,
+            'W': merged_samples.shape[width_dim], 'H': merged_samples.shape[height_dim],
+            'I': merged_samples, 'T': merged_samples.shape[0], 'N': merged_samples.shape[channel_dim],
+            'batch': B, 'width': merged_samples.shape[width_dim], 'height': merged_samples.shape[height_dim], 'channel': C,
+            'batch_count': merged_samples.shape[0], 'channel_count': merged_samples.shape[1], 'input_latent': merged_samples,
+        }
+        if time_dim is not None:
+            F = getIndexTensorAlongDim(merged_samples, time_dim)
+            variables.update({'frame': F, 'frame_count': merged_samples.shape[time_dim]})
 
-            variables = {
-                'a': merged_a, 'b': merged_b, 'c': merged_c, 'd': merged_d,
-                'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
-                'B': B, 'X': W, 'Y': H, 'C': C,
-                'W': merged_samples.shape[width_dim], 'H': merged_samples.shape[height_dim],
-                'I': merged_samples, 'T': merged_samples.shape[0], 'N': merged_samples.shape[channel_dim],
-                'batch': B, 'width': merged_samples.shape[width_dim], 'height': merged_samples.shape[height_dim], 'channel': C,
-                'batch_count': merged_samples.shape[0], 'channel_count': merged_samples.shape[1], 'input_latent': merged_samples,
-            }
-            if time_dim is not None:
-                F = getIndexTensorAlongDim(merged_samples, time_dim)
-                variables.update({'frame': F, 'frame_count': merged_samples.shape[time_dim]})
+        visitor = TensorEvalVisitor(variables, variables['a'].shape)
+        merged_result = visitor.visit(self.tree)
 
-            visitor = TensorEvalVisitor(variables, variables['a'].shape)
-            merged_result = visitor.visit(self.tree)
-
-            split_results = list(merged_result.split(sizes, dim=0))
-            if _NESTED_TENSOR_AVAILABLE and _nested_tensor_module is not None:
-                return _nested_tensor_module.NestedTensor(split_results)
-            return split_results
+        split_results = list(merged_result.split(sizes, dim=0))
+        return _nested_tensor_module.NestedTensor(split_results)
+        return split_results
 
         # non-nested path
         # fallback zeros if any generator missing
@@ -248,40 +249,8 @@ class NoiseExecutor():
             # fallback to first element
             return lst[0]
 
-        a_tensor = to_tensor(a_val, samples)
-        b_tensor = to_tensor(b_val, samples)
-        c_tensor = to_tensor(c_val, samples)
-        d_tensor = to_tensor(d_val, samples)
-
-        ndim = samples.ndim
-        batch_dim = 0
-        channel_dim = -3
-        height_dim = -2
-        width_dim = -1
-        time_dim = None
-        if ndim >= 5:
-            time_dim = -4
-
-        B = getIndexTensorAlongDim(samples, batch_dim)
-        W = getIndexTensorAlongDim(samples, width_dim)
-        H = getIndexTensorAlongDim(samples, height_dim)
-        C = getIndexTensorAlongDim(samples, channel_dim)
-
-        variables = {'a': a_tensor, 'b': b_tensor, 'c': c_tensor, 'd': d_tensor, 'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
-                     'B':B,
-                     'X':W,'Y':H,
-                     'C':C,
-                     'W':samples.shape[width_dim],
-                     'H':samples.shape[height_dim],
-                     'I':samples,
-                     'T':samples.shape[0],
-                     'N':samples.shape[channel_dim],
-                     'batch':B, 'width':samples.shape[width_dim],'height':samples.shape[height_dim],'channel':C,
-                    'batch_count':samples.shape[0],'channel_count':samples.shape[1],'input_latent': samples}
-        if time_dim is not None:
-            F = getIndexTensorAlongDim(samples, time_dim)
-            variables.update({'frame': F, 'frame_count': samples.shape[time_dim]})
-
         visitor = TensorEvalVisitor(variables,variables['a'].shape)
         result = visitor.visit(self.tree)
+        if hasattr(input_latent, 'is_nested') and getattr(val, 'is_nested'):
+            input_latent
         return result

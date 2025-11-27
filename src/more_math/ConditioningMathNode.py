@@ -20,7 +20,7 @@ class ConditioningMathNode(io.ComfyNode):
             String, describing expression to mix tensor part of conditioning. Tensor probably describes the composition of the image as it has the say what is on the image.
         Pooled output expression:
             String, describing expression to mix pooled_output part of conditioning. pooled_output is Tensor compressed into 1 token.
-        
+
     outputs:
         CONDITIONING:
             Returns a CONDITIONING object that contains the result of the math expression applied to the input conditionings.
@@ -59,23 +59,24 @@ class ConditioningMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
         if b is None:
-           b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]] 
+           b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
         if c is None:
-           c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]] 
+           c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
         if d is None:
            d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
 
 
         ta = a[0][0].clone()
         tb = b[0][0].clone()
-        pa = a[0][1]["pooled_output"].clone()
-        pb = b[0][1]["pooled_output"].clone()
         tc = c[0][0].clone()
         td = d[0][0].clone()
-        pc = c[0][1]["pooled_output"].clone()
-        pd = d[0][1]["pooled_output"].clone()
-        
-        print(ta.shape,pa.shape);
+        if a[0][1]["pooled_output"]:
+            pa = a[0][1]["pooled_output"].clone()
+            pb = b[0][1]["pooled_output"].clone()
+            pc = c[0][1]["pooled_output"].clone()
+            pd = d[0][1]["pooled_output"].clone()
+
+        print(ta.shape,pa.shape if pa != None else 0);
 
         variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z}
         input_stream = InputStream(Tensor)
@@ -85,17 +86,19 @@ class ConditioningMathNode(io.ComfyNode):
         tree = parser.expr()
         visitor = TensorEvalVisitor(variables,ta.shape)
         result1 = visitor.visit(tree)
-        
 
-        variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z}
-        input_stream = InputStream(Tensor)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        tree = parser.expr()
-        visitor = TensorEvalVisitor(variables,pa.shape)
-        result2 = visitor.visit(tree)
-
+        if a[0][1]["pooled_output"]:
+            variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z}
+            input_stream = InputStream(Tensor)
+            lexer = MathExprLexer(input_stream)
+            stream = CommonTokenStream(lexer)
+            parser = MathExprParser(stream)
+            tree = parser.expr()
+            visitor = TensorEvalVisitor(variables,pa.shape)
+            result2 = visitor.visit(tree)
+        else:
+            result2 = None
+            print("No pooled_output found in input conditioning, skipping pooled_output calculation.")
 
         result = [[result1, {"pooled_output": result2}]]
         return (result,)

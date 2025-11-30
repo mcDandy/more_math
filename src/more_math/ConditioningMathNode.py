@@ -59,11 +59,11 @@ class ConditioningMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
         if b is None:
-           b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
+           b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] else None}]]
         if c is None:
-           c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
+           c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] else None}]]
         if d is None:
-           d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"])}]]
+           d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] else None}]]
 
 
         ta = a[0][0].clone()

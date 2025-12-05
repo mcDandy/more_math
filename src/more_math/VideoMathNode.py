@@ -73,12 +73,18 @@ class VideoMathNode(io.ComfyNode):
         dc = d.get_components() if d is not None else VideoComponents(images=torch.zeros_like(ac.images), audio={'waveform':torch.zeros_like(ac.audio['waveform']),'sample_rate':ac.audio['sample_rate']}, frame_rate=ac.frame_rate,metadata=None)
 
 
+        # permute images to B, C, H, W
+        ac.images = ac.images.permute(0, 3, 1, 2)
+        bc.images = bc.images.permute(0, 3, 1, 2)
+        cc.images = cc.images.permute(0, 3, 1, 2)
+        dc.images = dc.images.permute(0, 3, 1, 2)
+
         B = getIndexTensorAlongDim(ac.images, 0)
-        X = getIndexTensorAlongDim(ac.images, 2)
-        Y = getIndexTensorAlongDim(ac.images, 1)
-        W = torch.full_like(Y, ac.images.shape[2], dtype=torch.float32)
-        H = torch.full_like(Y, ac.images.shape[1], dtype=torch.float32)
-        C = getIndexTensorAlongDim(ac.images, 3)
+        C = getIndexTensorAlongDim(ac.images, 1)
+        X = getIndexTensorAlongDim(ac.images, 3) # W
+        Y = getIndexTensorAlongDim(ac.images, 2) # H
+        W = torch.full_like(Y, ac.images.shape[3], dtype=torch.float32)
+        H = torch.full_like(Y, ac.images.shape[2], dtype=torch.float32)
         R = torch.full_like(Y, float(ac.frame_rate), dtype=torch.float32)
         T = torch.full_like(Y, ac.images.shape[0], dtype=torch.float32)
 
@@ -90,7 +96,7 @@ class VideoMathNode(io.ComfyNode):
                      'C':C,'channel':C,
                      'R':R,'frame_rate':R,
                      'frame_count':ac.images.shape[0],
-                     'N':ac.images.shape[3],'channel_count':ac.images.shape[3]}
+                     'N':ac.images.shape[1],'channel_count':ac.images.shape[1]}
 
         input_stream = InputStream(Images)
         lexer = MathExprLexer(input_stream)
@@ -100,6 +106,8 @@ class VideoMathNode(io.ComfyNode):
         tree = parser.expr()
         visitor = TensorEvalVisitor(variables,ac.images.shape)
         imgs = visitor.visit(tree)
+        # permute back to B, H, W, C
+        imgs = imgs.permute(0, 2, 3, 1)
 
 
         B = getIndexTensorAlongDim(ac.audio['waveform'], 0)

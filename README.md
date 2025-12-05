@@ -27,8 +27,7 @@ You can also get the node from comfy manager under the name of More math.
 - Trigonometric: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`
 - Hyperbolic: `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
 - Aggregates: `smin`, `smax` , `snorm` (scalar), `tmin`, `tmax`, `tnorm` (elementwise)
-- Other: `floor`, `ceil`, `round`, `gamma`, `clamp`, `sigm` (sigmoid)
-- Audio-specific: `fft` (short-time FFT), `ifft` (inverse sFFT **always return audio back to time domain before leaving node**), `angle` (in ifft only)
+- Other: `floor`, `ceil`, `round`, `gamma`, `clamp`, `sigm` (sigmoid) `fft` (short-time FFT), `ifft` (inverse sFFT **always return data back to time or position domain before leaving node**), `angle` (in ifft only)
 
 ## Variables
 - **common inputs** (matches node input type):

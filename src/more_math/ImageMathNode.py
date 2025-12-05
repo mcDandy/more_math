@@ -58,11 +58,17 @@ class ImageMathNode(io.ComfyNode):
         b = torch.zeros_like(a) if b is None else b
         c = torch.zeros_like(a) if c is None else c
         d = torch.zeros_like(a) if d is None else d
+        
+        # permute to B, C, H, W
+        a = a.permute(0, 3, 1, 2)
+        b = b.permute(0, 3, 1, 2)
+        c = c.permute(0, 3, 1, 2)
+        d = d.permute(0, 3, 1, 2)
 
         B = getIndexTensorAlongDim(a, 0)
-        W = getIndexTensorAlongDim(a, 2)
-        H = getIndexTensorAlongDim(a, 1)
-        C = getIndexTensorAlongDim(a, 3)
+        C = getIndexTensorAlongDim(a, 1)
+        H = getIndexTensorAlongDim(a, 2)
+        W = getIndexTensorAlongDim(a, 3)
 
         variables = {
             'a': a, 'b': b, 'c': c, 'd': d,
@@ -70,10 +76,10 @@ class ImageMathNode(io.ComfyNode):
             'X': W, 'Y': H,
             'B': B,'batch': B,
             'C': C,'channel': C,
-            'W': a.shape[1], 'width': a.shape[1],
+            'W': a.shape[3], 'width': a.shape[3],
             'H': a.shape[2], 'height': a.shape[2],
             'T': a.shape[0], 'batch_count': a.shape[0],
-            'N': a.shape[3], 'channel_count': a.shape[3],
+            'N': a.shape[1], 'channel_count': a.shape[1],
         }
         input_stream = InputStream(Image)
         lexer = MathExprLexer(input_stream)
@@ -83,6 +89,9 @@ class ImageMathNode(io.ComfyNode):
         tree = parser.expr()
         visitor = TensorEvalVisitor(variables,a.shape)
         result = visitor.visit(tree)
+        
+        # permute back to B, H, W, C
+        result = result.permute(0, 2, 3, 1)
         return (result,)
 
 

@@ -9,6 +9,7 @@ from .MathExprVisitor import MathExprVisitor
 class TensorEvalVisitor(MathExprVisitor):
     def __init__(self, variables,shape):
         self.variables = variables
+        self.spatial_variables = variables.copy()
         self.shape = shape
 
     def visitNumberExp(self, ctx):
@@ -130,124 +131,75 @@ class TensorEvalVisitor(MathExprVisitor):
         return val
     
     def visitSfftFunc(self, ctx):
-       hop_length = 256
-       n_fft = 512
-   
-       # Must start in freq-domain
-       if len(self.shape) != 4:
-           raise ValueError(f"SFFT input must be 4D freq-domain, got {len(self.shape)}D")
-       B, C, F, T_spec = self.shape
-       T = T_spec * hop_length
-       old_shape = self.shape
-   
-       # --- Switch to time-domain for child ---
-       time_shape = (B, C, T)
-       time_shape = self.variables['a'].shape if 'a' in self.variables else time_shape
-       self.shape = time_shape
-       shp_time = torch.zeros(time_shape)
-       self.variables['S'] = getIndexTensorAlongDim(shp_time, 2)
-       self.variables['sample'] = self.variables['S']
-       self.variables['N'] = self.shape[1]
-       self.variables['channel_count'] = self.shape[1]
-       self.variables['T'] = torch.full_like(shp_time, self.shape[2])
-       self.variables['sample_count'] = self.variables['T']
-       self.variables['B'] = getIndexTensorAlongDim(shp_time, 0)
-       self.variables['batch'] = self.variables['B']
-       self.variables['C'] = getIndexTensorAlongDim(shp_time, 1)
-       self.variables['channel'] = self.variables['C']
-       self.variables['R'] = torch.full_like(shp_time, self.variables['R'].flatten()[0].item())
-       self.variables['sample_rate'] = self.variables['R']
-
-       # Child sees time-domain
-       val = self.visit(ctx.expr())
-       if val.ndim != 3:
-           raise ValueError(f"SFFT child must return 3D time-domain, got {val.ndim}D")
-
-       # --- Back to freq-domain after child ---
-       num_freq_bins = n_fft // 2 + 1
-       num_frames = T // hop_length + 1
-       freq_shape = (B, C, num_freq_bins, num_frames)
-       freq_shape = old_shape
-       self.shape = freq_shape
-       shp_freq = torch.zeros(freq_shape, device=shp_time.device)
-       self.variables['S'] = getIndexTensorAlongDim(shp_freq, 3)  # now frame index
-       self.variables['sample'] = self.variables['S']
-       self.variables['T'] = torch.full_like(shp_freq, shp_freq.shape[3])  # now num frames
-       self.variables['sample_count'] = self.variables['T']
-       self.variables['B'] = getIndexTensorAlongDim(shp_freq, 0)
-       self.variables['batch'] = self.variables['B']
-       self.variables['C'] = getIndexTensorAlongDim(shp_freq, 1)
-       self.variables['channel'] = self.variables['C']
-       self.variables['F'] = getIndexTensorAlongDim(shp_freq, 2)
-       self.variables['freqency'] = self.variables['F']
-       self.variables['K'] = shp_freq.shape[2]
-       self.variables['frequency_count'] = self.variables['K']
-       self.variables['R'] = torch.full_like(shp_freq, self.variables['R'].flatten()[0].item())
-       self.variables['sample_rate'] = self.variables['R']
-       self.variables['N'] = self.shape[1]
-       self.variables['channel_count'] = self.shape[1]
-   
-       # Convert time→freq
-       freq_val = time_to_freq(val, n_fft=n_fft, hop_length=hop_length)
-   
-       # Restore caller’s view
-       self.shape = old_shape
-       return freq_val
+        old_vars = self.variables
+        self.variables = self.spatial_variables.copy()
+        try:
+            val = self.visit(ctx.expr())
+            return time_to_freq(val)
+        finally:
+            self.variables = old_vars
     
     def visitSifftFunc(self, ctx):
-        hop_length = 256
-        n_fft = 512
-     
-        # Must start in time-domain
-        if len(self.shape) != 3:
-            raise ValueError(f"SIFFT input must be 3D time-domain, got {len(self.shape)}D")
-        B, C, T = self.shape
-        old_shape = self.shape
-     
-        # --- Switch to freq-domain for child ---
-        num_freq_bins = n_fft // 2 + 1
-        num_frames = T // hop_length + 1
-        freq_shape = (B, C, num_freq_bins, num_frames)
-        self.shape = freq_shape
-        shp_freq = torch.zeros(freq_shape)
-        self.variables['K'] = getIndexTensorAlongDim(shp_freq, 2)
-        self.variables['frequency_count'] = self.variables['K']
-        self.variables['F'] = shp_freq.shape[2]
-        self.variables['frequency'] = self.variables['F']
-        self.variables['T'] = getIndexTensorAlongDim(shp_freq, 3)
-        self.variables['sample_count'] = self.variables['T']
-        self.variables['B'] = getIndexTensorAlongDim(shp_freq, 0)
-        self.variables['batch'] = self.variables['B']
-        self.variables['C'] = getIndexTensorAlongDim(shp_freq, 1)
-        self.variables['channel'] = self.variables['C']
-        self.variables['S'] = getIndexTensorAlongDim(shp_freq, 2)
-        self.variables['sample'] = self.variables['S']
-        self.variables['R'] = torch.full_like(shp_freq, self.variables['R'].flatten()[0].item())
-        self.variables['sample_rate'] = self.variables['R']
-     
-        # Child sees freq-domain
-        val = self.visit(ctx.expr())
-        if val.ndim != 4:
-            raise ValueError(f"SIFFT child must return 4D freq-domain, got {val.ndim}D")
-     
-        # --- Back to time-domain after child ---
-        self.shape = old_shape
-        shp_time = torch.zeros(old_shape)
-        self.variables['T'] = getIndexTensorAlongDim(shp_time, 2)
-        self.variables['sample_count'] = self.variables['T']
-        self.variables['B'] = getIndexTensorAlongDim(shp_time, 0)
-        self.variables['batch'] = self.variables['B']
-        self.variables['C'] = getIndexTensorAlongDim(shp_time, 1)
-        self.variables['channel'] = self.variables['C']
-        self.variables['S'] = getIndexTensorAlongDim(shp_freq, 2)
-        self.variables['sample'] = self.variables['S']
-        self.variables['R'] = torch.full_like(shp_time, self.variables['R'].flatten()[0].item())
-        self.variables['sample_rate'] = self.variables['R']
+        old_vars = self.variables
+        # Switch to freq variables
+        self.variables = self.variables.copy()
         
-        # Convert freq→time
-        wav = freq_to_time(val, n_fft=n_fft, hop_length=hop_length, time=T)
-     
-        return wav
+        # Inject Freq variables based on shape
+        # Dimensions being transformed are 2 onwards
+        # We use a reference tensor from existing variables to get device/dtype if possible, 
+        # or use val from a visit? We need vars BEFORE visit.
+        # We can construct index tensors using torch.arange like getIndexTensorAlongDim does.
+        # We need the device. 'a' is a safe bet for device source.
+        device = self.spatial_variables['a'].device if 'a' in self.spatial_variables else torch.device('cpu')
+        
+        dims = range(2, len(self.shape))
+        for d in dims:
+            # Create index tensor for dim d
+            # Shape: ones with size at dim d
+            # getIndexTensorAlongDim logic:
+            #   shape = tensor.shape
+            #   values = torch.arange(shape[dim], ...)
+            #   reshape and expand
+            size_d = self.shape[d]
+            values = torch.arange(size_d, dtype=torch.float32, device=device)
+            view_shape = [1] * len(self.shape)
+            view_shape[d] = size_d
+            values = values.view(*view_shape).expand(*self.shape)
+            
+            # Bind variables
+            if d == 2:
+                self.variables['K'] = values
+                self.variables['F'] = size_d
+                self.variables['Ky'] = values
+                self.variables['Fy'] = size_d
+                self.variables['frequency'] = self.variables['K'] # K is index
+                self.variables['frequency_count'] = self.variables['F'] # F is scalar
+            if d == 3:
+                self.variables['Kx'] = values
+                self.variables['Fx'] = size_d
+            
+            # Generic fallback
+            self.variables[f'K_dim{d}'] = values
+            self.variables[f'F_dim{d}'] = size_d
+
+        # Calculate isotropic K (Euclidean distance from DC)
+        # K = sqrt(K_2^2 + K_3^2 + ...)
+        k_sq_sum = torch.zeros(self.shape, device=device)
+        dims = range(2, len(self.shape))
+        for d in dims:
+             # Re-access the K variable for this dim (safe way)
+             k_val = self.variables.get(f'K_dim{d}')
+             if k_val is not None:
+                k_sq_sum = torch.add(k_sq_sum, torch.pow(k_val, 2))
+        
+        self.variables['K'] = torch.sqrt(k_sq_sum)
+        self.variables['frequency'] = self.variables['K']
+
+        try:
+            val = self.visit(ctx.expr())
+            return freq_to_time(val)
+        finally:
+            self.variables = old_vars
     
     # Two-argument functions
     def visitPowFunc(self, ctx):

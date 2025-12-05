@@ -27,7 +27,7 @@ You can also get the node from comfy manager under the name of More math.
 - Trigonometric: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`
 - Hyperbolic: `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
 - Aggregates: `smin`, `smax` , `snorm` (scalar), `tmin`, `tmax`, `tnorm` (elementwise)
-- Other: `floor`, `ceil`, `round`, `gamma`, `clamp`, `sigm` (sigmoid) `fft` (short-time FFT), `ifft` (inverse sFFT **always return data back to time or position domain before leaving node**), `angle` (in ifft only)
+- Other: `floor`, `ceil`, `round`, `gamma`, `clamp`, `sigm` (sigmoid) `fft` (N-D FFT on non-batch/channel dims), `ifft` (Inverse N-D FFT, returns real component), `angle` (in ifft only)
 
 ## Variables
 - **common inputs** (matches node input type):
@@ -43,14 +43,19 @@ You can also get the node from comfy manager under the name of More math.
   - `B` or 'batch' - position in batch
   - 'T' or 'batch_count` - number of batches
   - `N` or `channel_count` - count of channels
+  - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
+  - `K` or `frequency` – isotropic frequency (Euclidean norm of indices, iFFT only)
+  - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
+  - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
 - **AUDIO**:
   - `B` or 'batch' - position in batch
   - `N` or `channel_count` - count of channels
   - `S` or `sample` – current audio sample
   - 'T' or 'sample_count` - audio lenght in samples
   - `R` or `sample_rate` – sample rate
-  - `F` – frequency count (freq domain, iFFT only)  
-  - `K` – current frequency (freq domain, iFFT only)
+
+  - `F` – frequency count (freq domain, iFFT only)
+  - `K` – isotropic frequency (freq domain, iFFT only)
 - **VIDEO**
   - refer to `IMAGE and LATENT` for visual part (but `batch` is `frame` and `batch_count` is `frame_count`)
   - refer to `AUDIO` for sound part

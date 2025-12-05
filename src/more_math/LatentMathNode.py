@@ -67,30 +67,6 @@ class LatentMathNode(io.ComfyNode):
 
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
-    async def check_lazy_status(self,Latent,a,b='',c='',d='',w='',x='',y='',z=''):
-        input_stream = InputStream(Latent)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        need_load = ['a'] if a is None else []
-        for v in stream.getTokens():
-            if v.type == MathExprParser.VARIABLE:
-                var_name = v.text
-                if var_name == 'b' and b is None:
-                    need_load.append('b')
-                elif var_name == 'c' and c is None:
-                    need_load.append('c')
-                elif var_name == 'd' and d is None:
-                    need_load.append('d')
-                elif var_name == 'w' and w is None:
-                    need_load.append('w')
-                elif var_name == 'x' and x is None:
-                    need_load.append('x')
-                elif var_name == 'y' and y is None:
-                    need_load.append('y')
-                elif var_name == 'z' and z is None:
-                    need_load.append('z')
-
-        return need_load
 
     @classmethod
     def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:

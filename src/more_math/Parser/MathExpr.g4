@@ -44,6 +44,7 @@ atom
     : func1                  # Func1Exp
     | func2                  # Func2Exp
     | func3                  # Func3Exp
+    | func4                  # Func4Exp
     | funcN                  # FuncNExp
     | VARIABLE               # VariableExp
     | NUMBER                 # NumberExp
@@ -79,8 +80,13 @@ func1
     | SIGM  '(' expr ')'   # sigmoidFunc
     | SFFT  '(' expr ')'   # sfftFunc
     | SIFFT  '(' expr ')'   # sifftFunc
-    | ANGL  '(' expr ')'   # anglFunc
-    | PRNT  '(' expr ')'   # printFunc
+    | ANGL  '(' expr ')'     # anglFunc
+    | PRNT  '(' expr ')'     # printFunc
+    | FRACT '(' expr ')'     # FractFunc
+    | RELU  '(' expr ')'     # ReluFunc
+    | SOFTPLUS '(' expr ')'  # SoftplusFunc
+    | GELU  '(' expr ')'     # GeluFunc
+    | SIGN  '(' expr ')'     # SignFunc
     
     ;
 
@@ -90,9 +96,16 @@ func2
     | ATAN2 '(' expr ',' expr ')'   # Atan2Func
     | TMIN   '(' expr ',' expr ')'   # TMinFunc
     | TMAX   '(' expr ',' expr ')'   # TMaxFunc
+    | STEP   '(' expr ',' expr ')'   # StepFunc
     ;
 func3
-    : CLAMP  '(' expr ',' expr ',' expr ')'   # ClampFunc
+    : CLAMP      '(' expr ',' expr ',' expr ')'   # ClampFunc
+    | LERP       '(' expr ',' expr ',' expr ')'   # LerpFunc
+    | SMOOTHSTEP '(' expr ',' expr ',' expr ')'   # SmoothstepFunc
+    ;
+
+func4
+    : SWAP   '(' expr ',' expr ',' expr ',' expr ')'   # SwapFunc
     ;
 // N-argument functions (at least 2 arguments)
 funcN
@@ -138,6 +151,15 @@ SFFT : 'fft';
 SIFFT : 'ifft';
 ANGL : 'angle';
 PRNT : 'print';
+LERP : 'lerp';
+STEP : 'step';
+SMOOTHSTEP : 'smoothstep';
+FRACT : 'fract';
+RELU : 'relu';
+SOFTPLUS : 'softplus';
+GELU : 'gelu';
+SIGN : 'sign';
+SWAP : 'swap';
 
 PLUS        : '+';
 MINUS       : '-';

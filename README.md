@@ -28,6 +28,9 @@ You can also get the node from comfy manager under the name of More math.
 - Hyperbolic: `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
 - Aggregates: `smin`, `smax` , `snorm` (scalar), `tmin`, `tmax`, `tnorm` (elementwise)
 - Other: `floor`, `ceil`, `round`, `gamma`, `clamp`, `sigm` (sigmoid) `fft` (N-D FFT on non-batch/channel dims), `ifft` (Inverse N-D FFT, returns real component), `angle` (in ifft only)
+- Shaders: `lerp(a, b, w)`, `step(edge, x)`, `smoothstep(edge0, edge1, x)`, `fract(x)`
+- ML: `relu(x)`, `softplus(x)`, `gelu(x)`, `sign(x)`
+- Tensor: `swap(tensor, dim, index1, index2)` (swaps two slices of a tensor along a dimension)
 
 ## Variables
 - **common inputs** (matches node input type):
@@ -66,3 +69,9 @@ You can also get the node from comfy manager under the name of More math.
   - no additional variables
 
 - Constants: `e`, `pi`
+
+## Examples
+
+### Swap Red and Blue Channels
+`swap(a, 1, 0, 2)` 
+*(for ImageMathNode, where dim 1 is Channel)*

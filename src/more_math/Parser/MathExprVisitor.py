@@ -1,4 +1,4 @@
-# Generated from MathExpr.g4 by ANTLR 4.13.2
+# Generated from src/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -121,6 +121,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#Func3Exp.
     def visitFunc3Exp(self, ctx:MathExprParser.Func3ExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Func4Exp.
+    def visitFunc4Exp(self, ctx:MathExprParser.Func4ExpContext):
         return self.visitChildren(ctx)
 
 
@@ -289,6 +294,31 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#FractFunc.
+    def visitFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ReluFunc.
+    def visitReluFunc(self, ctx:MathExprParser.ReluFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SoftplusFunc.
+    def visitSoftplusFunc(self, ctx:MathExprParser.SoftplusFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GeluFunc.
+    def visitGeluFunc(self, ctx:MathExprParser.GeluFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SignFunc.
+    def visitSignFunc(self, ctx:MathExprParser.SignFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -309,8 +339,28 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#StepFunc.
+    def visitStepFunc(self, ctx:MathExprParser.StepFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LerpFunc.
+    def visitLerpFunc(self, ctx:MathExprParser.LerpFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SmoothstepFunc.
+    def visitSmoothstepFunc(self, ctx:MathExprParser.SmoothstepFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SwapFunc.
+    def visitSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         return self.visitChildren(ctx)
 
 

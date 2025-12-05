@@ -114,7 +114,24 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitExpFunc(self, ctx):   return math.exp(self.visit(ctx.expr()))
     def visitNormFunc(self, ctx):  return math.sqrt(math.avg(x**2 for x in self.visit(ctx.expr())))
     def visitFloorFunc(self, ctx): return math.floor(self.visit(ctx.expr()))
+    def visitFractFunc(self, ctx): 
+        val = self.visit(ctx.expr())
+        return val - math.floor(val)
     def visitSigmoidFunc(self, ctx): return 1/(1+math.exp(-self.visit(ctx.expr())))
+    def visitReluFunc(self, ctx): return max(0.0, self.visit(ctx.expr()))
+    def visitSoftplusFunc(self, ctx): 
+        # log(1 + exp(x))
+        x = self.visit(ctx.expr())
+        # stability check? math.log1p(math.exp(x)) is better but might overflow for large x
+        if x > 20: return x 
+        return math.log(1 + math.exp(x))
+    def visitGeluFunc(self, ctx): 
+        # 0.5 * x * (1 + erf(x / sqrt(2)))
+        x = self.visit(ctx.expr())
+        return 0.5 * x * (1 + math.erf(x / 1.4142135623730951))
+    def visitSignFunc(self, ctx): 
+        x = self.visit(ctx.expr())
+        return math.copysign(1.0, x) if x != 0 else 0.0
     def visitCeilFunc(self, ctx):  return math.ceil(self.visit(ctx.expr()))
     def visitRoundFunc(self, ctx): return math.round(self.visit(ctx.expr()))
     def visitGammaFunc(self, ctx): return math.gamma(self.visit(ctx.expr())).exp()
@@ -128,6 +145,10 @@ class FloatEvalVisitor(MathExprVisitor):
         return math.pow(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
     def visitAtan2Func(self, ctx):
         return math.atan2(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
+    def visitStepFunc(self, ctx):
+        edge = self.visit(ctx.expr(0))
+        x = self.visit(ctx.expr(1))
+        return 1.0 if x >= edge else 0.0
 
     # N-argument functions
     def visitSMinFunc(self, ctx):
@@ -137,9 +158,37 @@ class FloatEvalVisitor(MathExprVisitor):
         args = [self.visit(e) for e in ctx.expr()]
         return math.max(args)
 
+    def visitClampFunc(self, ctx):
+        x = self.visit(ctx.expr(0))
+        min_val = self.visit(ctx.expr(1))
+        max_val = self.visit(ctx.expr(2))
+        return max(min(x, max_val), min_val)
+
+    def visitLerpFunc(self, ctx):
+        # a + (b - a) * w
+        a = self.visit(ctx.expr(0))
+        b = self.visit(ctx.expr(1))
+        w = self.visit(ctx.expr(2))
+        return a + (b - a) * w
+
+    def visitSmoothstepFunc(self, ctx):
+        edge0 = self.visit(ctx.expr(0))
+        edge1 = self.visit(ctx.expr(1))
+        x = self.visit(ctx.expr(2))
+        
+        # Scale, bias and saturate x to 0..1 range
+        t = (x - edge0) / (edge1 - edge0)
+        t = max(0.0, min(1.0, t))
+        # Evaluate polynomial
+        return t * t * (3.0 - 2.0 * t)
+
     def visitFunc1Exp(self, ctx):
         return self.visitChildren(ctx)
     def visitFunc2Exp(self, ctx):
+        return self.visitChildren(ctx)
+    def visitFunc3Exp(self, ctx):
+        return self.visitChildren(ctx)
+    def visitFunc4Exp(self, ctx):
         return self.visitChildren(ctx)
     def visitFuncNExp(self, ctx):
         return self.visitChildren(ctx)

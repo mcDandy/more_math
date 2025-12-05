@@ -121,7 +121,7 @@ class LatentMathNode(io.ComfyNode):
                 # scalar dims and counts
                 'W': width_val, 'width': width_val,
                 'H': height_val, 'height': height_val,
-                'T': batch_count, 'batch_count': batch_count,
+                'T': frame_count, 'batch_count': batch_count,
                 'N': channel_count, 'channel_count': channel_count,
             }
 

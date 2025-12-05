@@ -181,6 +181,8 @@ class NoiseExecutor():
         if ndim >= 5:
             time_dim = -4
 
+        frame_count = merged_samples.shape[time_dim] if time_dim is not None else merged_samples.shape[batch_dim]
+
         B = getIndexTensorAlongDim(merged_samples, batch_dim)
         W = getIndexTensorAlongDim(merged_samples, width_dim)
         H = getIndexTensorAlongDim(merged_samples, height_dim)
@@ -190,13 +192,13 @@ class NoiseExecutor():
             'w': self.w, 'x': self.x, 'y': self.y, 'z': self.z,
             'B': B, 'X': W, 'Y': H, 'C': C,
             'W': merged_samples.shape[width_dim], 'H': merged_samples.shape[height_dim],
-            'I': merged_samples, 'T': merged_samples.shape[0], 'N': merged_samples.shape[channel_dim],
+            'I': merged_samples, 'T': frame_count, 'N': merged_samples.shape[channel_dim],
             'batch': B, 'width': merged_samples.shape[width_dim], 'height': merged_samples.shape[height_dim], 'channel': C,
             'batch_count': merged_samples.shape[0], 'channel_count': merged_samples.shape[1], 'input_latent': merged_samples,
         }
         if time_dim is not None:
             F = getIndexTensorAlongDim(merged_samples, time_dim)
-            variables.update({'frame': F, 'frame_count': merged_samples.shape[time_dim]})
+            variables.update({'frame': F, 'frame_count': frame_count})
 
         visitor = TensorEvalVisitor(variables, variables['a'].shape)
         merged_result = visitor.visit(self.tree)

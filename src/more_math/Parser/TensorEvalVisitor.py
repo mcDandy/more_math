@@ -51,7 +51,7 @@ class TensorEvalVisitor(MathExprVisitor):
 
     def visitDivExp(self, ctx):
         return torch.div(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()))
-    
+
 
     def visitModExp(self, ctx):
         return torch.fmod(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()))
@@ -128,16 +128,16 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitSoftplusFunc(self, ctx): return torch.nn.functional.softplus(self.visit(ctx.expr()))
     def visitGeluFunc(self, ctx): return torch.nn.functional.gelu(self.visit(ctx.expr()))
     def visitSignFunc(self, ctx): return torch.sign(self.visit(ctx.expr()))
-    def visitFractFunc(self, ctx): 
+    def visitFractFunc(self, ctx):
         val = self.visit(ctx.expr())
         return val - torch.floor(val)
-        
+
     def visitAnglFunc(self, ctx): return torch.angle(self.visit(ctx.expr()))
     def visitPrintFunc(self, ctx):
         val = self.visit(ctx.expr())
         print(val,end="\n")
         return val
-    
+
     def visitSfftFunc(self, ctx):
         old_vars = self.variables
         self.variables = self.spatial_variables.copy()
@@ -147,7 +147,7 @@ class TensorEvalVisitor(MathExprVisitor):
         finally:
             self.variables = old_vars
 
-    
+
     def visitSwapFunc(self, ctx):
         tsr = self.visit(ctx.expr(0))
         # Evaluate arguments for dim, idx1, idx2. They return full tensors, so we take scalar value.
@@ -155,14 +155,14 @@ class TensorEvalVisitor(MathExprVisitor):
         dim_t = self.visit(ctx.expr(1))
         idx1_t = self.visit(ctx.expr(2))
         idx2_t = self.visit(ctx.expr(3))
-        
+
         dim = int(dim_t.flatten()[0].item())
         i = int(idx1_t.flatten()[0].item())
         j = int(idx2_t.flatten()[0].item())
-        
+
         # Handle negative dim
         if dim < 0: dim += tsr.ndim
-        
+
         # Create permuted index
         indices = torch.arange(tsr.shape[dim], device=tsr.device)
         # Swap
@@ -170,26 +170,26 @@ class TensorEvalVisitor(MathExprVisitor):
         # Support python style negative indexing for indices
         if i < 0: i += tsr.shape[dim]
         if j < 0: j += tsr.shape[dim]
-        
+
         val_i = indices[i].clone()
         indices[i] = indices[j]
         indices[j] = val_i
-        
+
         return torch.index_select(tsr, dim, indices)
 
     def visitSifftFunc(self, ctx):
         old_vars = self.variables
         # Switch to freq variables
         self.variables = self.variables.copy()
-        
+
         # Inject Freq variables based on shape
         # Dimensions being transformed are 2 onwards
-        # We use a reference tensor from existing variables to get device/dtype if possible, 
+        # We use a reference tensor from existing variables to get device/dtype if possible,
         # or use val from a visit? We need vars BEFORE visit.
         # We can construct index tensors using torch.arange like getIndexTensorAlongDim does.
         # We need the device. 'a' is a safe bet for device source.
         device = self.spatial_variables['a'].device if 'a' in self.spatial_variables else torch.device('cpu')
-        
+
         dims = range(2, len(self.shape))
         for d in dims:
             # Create index tensor for dim d
@@ -203,7 +203,7 @@ class TensorEvalVisitor(MathExprVisitor):
             view_shape = [1] * len(self.shape)
             view_shape[d] = size_d
             values = values.view(*view_shape).expand(*self.shape)
-            
+
             # Bind variables
             if d == 2:
                 self.variables['K'] = values
@@ -215,7 +215,7 @@ class TensorEvalVisitor(MathExprVisitor):
             if d == 3:
                 self.variables['Kx'] = values
                 self.variables['Fx'] = size_d
-            
+
             # Generic fallback
             self.variables[f'K_dim{d}'] = values
             self.variables[f'F_dim{d}'] = size_d
@@ -229,7 +229,7 @@ class TensorEvalVisitor(MathExprVisitor):
              k_val = self.variables.get(f'K_dim{d}')
              if k_val is not None:
                 k_sq_sum = torch.add(k_sq_sum, torch.pow(k_val, 2))
-        
+
         self.variables['K'] = torch.sqrt(k_sq_sum)
         self.variables['frequency'] = self.variables['K']
 
@@ -238,7 +238,7 @@ class TensorEvalVisitor(MathExprVisitor):
             return freq_to_time(val)
         finally:
             self.variables = old_vars
-    
+
     # Two-argument functions
     def visitPowFunc(self, ctx):
         return torch.pow(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
@@ -253,18 +253,18 @@ class TensorEvalVisitor(MathExprVisitor):
         return torch.lerp(a, b, w)
 
     def visitSmoothstepFunc(self, ctx):
-        edge0 = self.visit(ctx.expr(0))
-        edge1 = self.visit(ctx.expr(1))
-        x = self.visit(ctx.expr(2))
-        
+        x = self.visit(ctx.expr(0))
+        edge0 = self.visit(ctx.expr(1))
+        edge1 = self.visit(ctx.expr(2))
+
         # Scale, bias and saturate x to 0..1 range
         t = torch.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
         # Evaluate polynomial
         return t * t * (3.0 - 2.0 * t)
 
     def visitStepFunc(self, ctx):
-        edge = self.visit(ctx.expr(0))
-        x = self.visit(ctx.expr(1))
+        x = self.visit(ctx.expr(0))
+        edge = self.visit(ctx.expr(1))
         # step(edge, x) = 1 if x >= edge else 0
         return torch.where(x >= edge, 1.0, 0.0)
     # N-argument functions
@@ -291,7 +291,7 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitFunc4Exp(self, ctx):
         return self.visitChildren(ctx)
     def visitAtomExp(self, ctx):
-        return self.visitChildren(ctx) 
+        return self.visitChildren(ctx)
 
     def visitFunc2Expr(self, ctx):
         return self.visit(ctx.getChild(0))  # forward to Atan2Func, PowFunc, etc.

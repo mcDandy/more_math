@@ -74,7 +74,7 @@ class ConditioningMathNode(io.ComfyNode):
         pb = None
         pc = None
         pd = None
-        if a[0][1]["pooled_output"]:
+        if a[0][1]["pooled_output"] is not None:
             pa = a[0][1]["pooled_output"].clone()
             pb = b[0][1]["pooled_output"].clone()
             pc = c[0][1]["pooled_output"].clone()

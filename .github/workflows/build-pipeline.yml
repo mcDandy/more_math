@@ -3,7 +3,6 @@ name: "{{ cookiecutter.project_slug }} CI build"
 on:
   pull_request:
     branches:
-      - master
       - main
 jobs:
   build:

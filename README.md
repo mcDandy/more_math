@@ -36,7 +36,7 @@ You can also get the node from comfy manager under the name of More math.
 - **common inputs** (matches node input type):
   - `a`, `b`, `c`, `d` 
 - **Extra floats**:
-  - `w`, `x`, `y`, `z`
+  - `w`, `x`, `y`, `z` 
 - **INSIDE IFFT**
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
   - `K` or `frequency` – isotropic frequency (Euclidean norm of indices, iFFT only)

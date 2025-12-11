@@ -17,10 +17,10 @@ elif _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 import torch
-from more_math.ConditioningMathNode import ConditioningMathNode
-from more_math.LatentMathNode import LatentMathNode
-from more_math.ImageMathNode import ImageMathNode
-from more_math.FloatMathNode import FloatMathNode
+from ....more_math.ConditioningMathNode import ConditioningMathNode
+from ....more_math.LatentMathNode import LatentMathNode
+from ....more_math.ImageMathNode import ImageMathNode
+from ....more_math.FloatMathNode import FloatMathNode
 
 
 # ==========================================

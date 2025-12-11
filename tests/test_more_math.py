@@ -356,21 +356,6 @@ def test_nested_tensor_support():
     assert torch.allclose(res_list[1], torch.full_like(t2, 3.0))
 #!/usr/bin/env python
 
-"""Tests for `more_math` package."""
-
-import pytest
-import torch
-
-# Guard imports so discovery doesn't fail silently in Visual Studio.
-# If imports raise, pytest will skip the module and Test Explorer will show tests.
-try:
-    from more_math.ConditioningMathNode import ConditioningMathNode
-    from more_math.LatentMathNode import LatentMathNode
-    from more_math.ImageMathNode import ImageMathNode
-    from more_math.FloatMathNode import FloatMathNode
-except Exception as exc:
-    pytest.skip(f"Skipping more_math tests — import failed: {exc}", allow_module_level=True)
-
 
 # ==========================================
 # Node Initialization and Metadata Tests

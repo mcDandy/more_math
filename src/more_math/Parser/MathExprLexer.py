@@ -1,6 +1,5 @@
 # Generated from src/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
-from antlr4 import *
-from io import StringIO
+from antlr4 import ATNDeserializer, LexerATNSimulator, PredictionContextCache, Lexer,DFA
 import sys
 if sys.version_info[1] > 5:
     from typing import TextIO
@@ -237,34 +236,34 @@ class MathExprLexer(Lexer):
     modeNames = [ "DEFAULT_MODE" ]
 
     literalNames = [ "<INVALID>",
-            "'('", "')'", "','", "'sin'", "'cos'", "'tan'", "'asin'", "'acos'", 
-            "'atan'", "'atan2'", "'sinh'", "'cosh'", "'tanh'", "'asinh'", 
-            "'acosh'", "'atanh'", "'abs'", "'sqrt'", "'ln'", "'log'", "'exp'", 
-            "'smin'", "'smax'", "'tmin'", "'tmax'", "'tnorm'", "'snorm'", 
-            "'floor'", "'ceil'", "'round'", "'gamma'", "'pow'", "'sigm'", 
-            "'clamp'", "'fft'", "'ifft'", "'angle'", "'print'", "'lerp'", 
-            "'step'", "'smoothstep'", "'fract'", "'relu'", "'softplus'", 
-            "'gelu'", "'sign'", "'swap'", "'+'", "'-'", "'*'", "'/'", "'%'", 
+            "'('", "')'", "','", "'sin'", "'cos'", "'tan'", "'asin'", "'acos'",
+            "'atan'", "'atan2'", "'sinh'", "'cosh'", "'tanh'", "'asinh'",
+            "'acosh'", "'atanh'", "'abs'", "'sqrt'", "'ln'", "'log'", "'exp'",
+            "'smin'", "'smax'", "'tmin'", "'tmax'", "'tnorm'", "'snorm'",
+            "'floor'", "'ceil'", "'round'", "'gamma'", "'pow'", "'sigm'",
+            "'clamp'", "'fft'", "'ifft'", "'angle'", "'print'", "'lerp'",
+            "'step'", "'smoothstep'", "'fract'", "'relu'", "'softplus'",
+            "'gelu'", "'sign'", "'swap'", "'+'", "'-'", "'*'", "'/'", "'%'",
             "'^'", "'>='", "'>'", "'<='", "'<'", "'=='", "'!='" ]
 
     symbolicNames = [ "<INVALID>",
-            "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "ATAN2", "SINH", 
-            "COSH", "TANH", "ASINH", "ACOSH", "ATANH", "ABS", "SQRT", "LN", 
-            "LOG", "EXP", "SMIN", "SMAX", "TMIN", "TMAX", "TNORM", "SNORM", 
-            "FLOOR", "CEIL", "ROUND", "GAMMA", "POWE", "SIGM", "CLAMP", 
-            "SFFT", "SIFFT", "ANGL", "PRNT", "LERP", "STEP", "SMOOTHSTEP", 
-            "FRACT", "RELU", "SOFTPLUS", "GELU", "SIGN", "SWAP", "PLUS", 
-            "MINUS", "MULT", "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", 
+            "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "ATAN2", "SINH",
+            "COSH", "TANH", "ASINH", "ACOSH", "ATANH", "ABS", "SQRT", "LN",
+            "LOG", "EXP", "SMIN", "SMAX", "TMIN", "TMAX", "TNORM", "SNORM",
+            "FLOOR", "CEIL", "ROUND", "GAMMA", "POWE", "SIGM", "CLAMP",
+            "SFFT", "SIFFT", "ANGL", "PRNT", "LERP", "STEP", "SMOOTHSTEP",
+            "FRACT", "RELU", "SOFTPLUS", "GELU", "SIGN", "SWAP", "PLUS",
+            "MINUS", "MULT", "DIV", "MOD", "POW", "GE", "GT", "LE", "LT",
             "EQ", "NE", "CONSTANT", "NUMBER", "VARIABLE", "WS" ]
 
-    ruleNames = [ "T__0", "T__1", "T__2", "SIN", "COS", "TAN", "ASIN", "ACOS", 
-                  "ATAN", "ATAN2", "SINH", "COSH", "TANH", "ASINH", "ACOSH", 
-                  "ATANH", "ABS", "SQRT", "LN", "LOG", "EXP", "SMIN", "SMAX", 
-                  "TMIN", "TMAX", "TNORM", "SNORM", "FLOOR", "CEIL", "ROUND", 
-                  "GAMMA", "POWE", "SIGM", "CLAMP", "SFFT", "SIFFT", "ANGL", 
-                  "PRNT", "LERP", "STEP", "SMOOTHSTEP", "FRACT", "RELU", 
-                  "SOFTPLUS", "GELU", "SIGN", "SWAP", "PLUS", "MINUS", "MULT", 
-                  "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", "EQ", "NE", 
+    ruleNames = [ "T__0", "T__1", "T__2", "SIN", "COS", "TAN", "ASIN", "ACOS",
+                  "ATAN", "ATAN2", "SINH", "COSH", "TANH", "ASINH", "ACOSH",
+                  "ATANH", "ABS", "SQRT", "LN", "LOG", "EXP", "SMIN", "SMAX",
+                  "TMIN", "TMAX", "TNORM", "SNORM", "FLOOR", "CEIL", "ROUND",
+                  "GAMMA", "POWE", "SIGM", "CLAMP", "SFFT", "SIFFT", "ANGL",
+                  "PRNT", "LERP", "STEP", "SMOOTHSTEP", "FRACT", "RELU",
+                  "SOFTPLUS", "GELU", "SIGN", "SWAP", "PLUS", "MINUS", "MULT",
+                  "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", "EQ", "NE",
                   "CONSTANT", "NUMBER", "VARIABLE", "WS" ]
 
     grammarFileName = "MathExpr.g4"

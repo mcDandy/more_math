@@ -206,5 +206,5 @@ class NoiseExecutor():
         if hasattr(samples, 'is_nested') and getattr(samples, 'is_nested'):
             split_results = list(merged_result.split(sizes, dim=0))
             return _nested_tensor_module.NestedTensor(split_results)
-        
+
         return merged_result

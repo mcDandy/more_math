@@ -1,7 +1,6 @@
 from inspect import cleandoc
-from math import e
 
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import io
 
 from antlr4 import CommonTokenStream, InputStream
 import torch

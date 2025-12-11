@@ -3,7 +3,7 @@
 __all__ = [
     "NODE_CLASS_MAPPINGS",
     "NODE_id_MAPPINGS",
-    
+
 ]
 
 __author__ = """Daniel Martinek"""

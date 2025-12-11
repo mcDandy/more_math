@@ -1,4 +1,3 @@
-import torch
 
 from .NoiseMathNode import NoiseMathNode
 from .FloatMathNode import FloatMathNode
@@ -70,7 +69,7 @@ class MoreMathExtension(ComfyExtension):
                 NoiseMathNode,
                 IntToFloatNode,
                 FloatToIntNode,
-                AudioMathNode, 
+                AudioMathNode,
                 VideoMathNode
             ]
 async def comfy_entrypoint() -> MoreMathExtension:

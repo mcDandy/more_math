@@ -19,7 +19,7 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Operators
 - Math: `+`, `-`, `*`, `/`, `%`, `^`
-- Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`  
+- Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
 
 ## Functions
@@ -34,16 +34,16 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Variables
 - **common inputs** (matches node input type):
-  - `a`, `b`, `c`, `d` 
+  - `a`, `b`, `c`, `d`
 - **Extra floats**:
-  - `w`, `x`, `y`, `z` 
+  - `w`, `x`, `y`, `z`
 - **INSIDE IFFT**
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
   - `K` or `frequency` – isotropic frequency (Euclidean norm of indices, iFFT only)
   - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
   - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
 - **IMAGE and LATENT**:
-  - `C` or `channel` - channel of image 
+  - `C` or `channel` - channel of image
   - `X` - position X in image. 0 is in top left
   - `Y` - position Y in image. 0 is in top left
   - `W` or `width` - width of image. y/width = 1

@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from math import e
 
 from antlr4 import CommonTokenStream, InputStream
 
@@ -9,7 +8,7 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.FloatEvalVisitor import FloatEvalVisitor
 
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import io
 
 class FloatMathNode(io.ComfyNode):
     """
@@ -21,7 +20,7 @@ class FloatMathNode(io.ComfyNode):
             Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
         Latent expression:
             String, describing expression to mix latents. Valid functions are sin, cos, tan, abs, sqrt, min, max, norm. Valid operators are +, -, *, /, ^, %. Usable constants are e and pi.
-        
+
     outputs:
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
@@ -55,7 +54,7 @@ class FloatMathNode(io.ComfyNode):
 
     #RETURN_NAMES = ("image_output_name",)
     tooltip = cleandoc(__doc__)
-    
+
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
     @classmethod

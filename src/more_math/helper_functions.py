@@ -3,7 +3,7 @@ import torch
 
 def getIndexTensorAlongDim(tensor, dim):
     shape = tensor.shape
-    
+
     # Create values: shape (size of dim)
     values = torch.arange(shape[dim], dtype=torch.float32)
 

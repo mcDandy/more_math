@@ -1,4 +1,3 @@
-from inspect import cleandoc
 import torch
 from antlr4 import CommonTokenStream, InputStream
 from .Parser.MathExprParser import MathExprParser
@@ -6,7 +5,7 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 from .helper_functions import getIndexTensorAlongDim
 
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import io
 
 class AudioMathNode(io.ComfyNode):
     """
@@ -50,7 +49,7 @@ class AudioMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, a, AudioExpr, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
-   
+
 
         bv = b if b else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
         cv = c if c else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}

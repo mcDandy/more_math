@@ -155,28 +155,28 @@ class MathExprParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'('", "')'", "','", "'sin'", "'cos'", 
-                     "'tan'", "'asin'", "'acos'", "'atan'", "'atan2'", "'sinh'", 
-                     "'cosh'", "'tanh'", "'asinh'", "'acosh'", "'atanh'", 
-                     "'abs'", "'sqrt'", "'ln'", "'log'", "'exp'", "'smin'", 
-                     "'smax'", "'tmin'", "'tmax'", "'tnorm'", "'snorm'", 
-                     "'floor'", "'ceil'", "'round'", "'gamma'", "'pow'", 
-                     "'sigm'", "'clamp'", "'fft'", "'ifft'", "'angle'", 
-                     "'print'", "'lerp'", "'step'", "'smoothstep'", "'fract'", 
-                     "'relu'", "'softplus'", "'gelu'", "'sign'", "'swap'", 
-                     "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", "'>='", "'>'", 
+    literalNames = [ "<INVALID>", "'('", "')'", "','", "'sin'", "'cos'",
+                     "'tan'", "'asin'", "'acos'", "'atan'", "'atan2'", "'sinh'",
+                     "'cosh'", "'tanh'", "'asinh'", "'acosh'", "'atanh'",
+                     "'abs'", "'sqrt'", "'ln'", "'log'", "'exp'", "'smin'",
+                     "'smax'", "'tmin'", "'tmax'", "'tnorm'", "'snorm'",
+                     "'floor'", "'ceil'", "'round'", "'gamma'", "'pow'",
+                     "'sigm'", "'clamp'", "'fft'", "'ifft'", "'angle'",
+                     "'print'", "'lerp'", "'step'", "'smoothstep'", "'fract'",
+                     "'relu'", "'softplus'", "'gelu'", "'sign'", "'swap'",
+                     "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", "'>='", "'>'",
                      "'<='", "'<'", "'=='", "'!='" ]
 
-    symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "ATAN2", 
-                      "SINH", "COSH", "TANH", "ASINH", "ACOSH", "ATANH", 
-                      "ABS", "SQRT", "LN", "LOG", "EXP", "SMIN", "SMAX", 
-                      "TMIN", "TMAX", "TNORM", "SNORM", "FLOOR", "CEIL", 
-                      "ROUND", "GAMMA", "POWE", "SIGM", "CLAMP", "SFFT", 
-                      "SIFFT", "ANGL", "PRNT", "LERP", "STEP", "SMOOTHSTEP", 
-                      "FRACT", "RELU", "SOFTPLUS", "GELU", "SIGN", "SWAP", 
-                      "PLUS", "MINUS", "MULT", "DIV", "MOD", "POW", "GE", 
-                      "GT", "LE", "LT", "EQ", "NE", "CONSTANT", "NUMBER", 
+    symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>",
+                      "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "ATAN2",
+                      "SINH", "COSH", "TANH", "ASINH", "ACOSH", "ATANH",
+                      "ABS", "SQRT", "LN", "LOG", "EXP", "SMIN", "SMAX",
+                      "TMIN", "TMAX", "TNORM", "SNORM", "FLOOR", "CEIL",
+                      "ROUND", "GAMMA", "POWE", "SIGM", "CLAMP", "SFFT",
+                      "SIFFT", "ANGL", "PRNT", "LERP", "STEP", "SMOOTHSTEP",
+                      "FRACT", "RELU", "SOFTPLUS", "GELU", "SIGN", "SWAP",
+                      "PLUS", "MINUS", "MULT", "DIV", "MOD", "POW", "GE",
+                      "GT", "LE", "LT", "EQ", "NE", "CONSTANT", "NUMBER",
                       "VARIABLE", "WS" ]
 
     RULE_expr = 0
@@ -192,8 +192,8 @@ class MathExprParser ( Parser ):
     RULE_func4 = 10
     RULE_funcN = 11
 
-    ruleNames =  [ "expr", "compExpr", "addExpr", "mulExpr", "powExpr", 
-                   "unaryExpr", "atom", "func1", "func2", "func3", "func4", 
+    ruleNames =  [ "expr", "compExpr", "addExpr", "mulExpr", "powExpr",
+                   "unaryExpr", "atom", "func1", "func2", "func3", "func4",
                    "funcN" ]
 
     EOF = Token.EOF
@@ -338,7 +338,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_compExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -598,7 +598,7 @@ class MathExprParser ( Parser ):
                         self.addExpr(0)
                         pass
 
-             
+
                 self.state = 53
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,2,self._ctx)
@@ -623,7 +623,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_addExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -743,7 +743,7 @@ class MathExprParser ( Parser ):
                         self.mulExpr(0)
                         pass
 
-             
+
                 self.state = 67
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,4,self._ctx)
@@ -768,7 +768,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_mulExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -923,7 +923,7 @@ class MathExprParser ( Parser ):
                         self.powExpr()
                         pass
 
-             
+
                 self.state = 84
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,6,self._ctx)
@@ -948,7 +948,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_powExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -1041,7 +1041,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_unaryExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -1156,7 +1156,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_atom
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -1402,7 +1402,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func1
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -2463,7 +2463,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func2
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -2691,7 +2691,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func3
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -2855,7 +2855,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func4
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -2931,7 +2931,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_funcN
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -3000,7 +3000,7 @@ class MathExprParser ( Parser ):
                 self.match(MathExprParser.T__0)
                 self.state = 359
                 self.expr()
-                self.state = 362 
+                self.state = 362
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -3008,7 +3008,7 @@ class MathExprParser ( Parser ):
                     self.match(MathExprParser.T__2)
                     self.state = 361
                     self.expr()
-                    self.state = 364 
+                    self.state = 364
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (_la==3):
@@ -3026,7 +3026,7 @@ class MathExprParser ( Parser ):
                 self.match(MathExprParser.T__0)
                 self.state = 370
                 self.expr()
-                self.state = 373 
+                self.state = 373
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
@@ -3034,7 +3034,7 @@ class MathExprParser ( Parser ):
                     self.match(MathExprParser.T__2)
                     self.state = 372
                     self.expr()
-                    self.state = 375 
+                    self.state = 375
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     if not (_la==3):
@@ -3071,49 +3071,49 @@ class MathExprParser ( Parser ):
     def compExpr_sempred(self, localctx:CompExprContext, predIndex:int):
             if predIndex == 0:
                 return self.precpred(self._ctx, 7)
-         
+
 
             if predIndex == 1:
                 return self.precpred(self._ctx, 6)
-         
+
 
             if predIndex == 2:
                 return self.precpred(self._ctx, 5)
-         
+
 
             if predIndex == 3:
                 return self.precpred(self._ctx, 4)
-         
+
 
             if predIndex == 4:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 5:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def addExpr_sempred(self, localctx:AddExprContext, predIndex:int):
             if predIndex == 6:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 7:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def mulExpr_sempred(self, localctx:MulExprContext, predIndex:int):
             if predIndex == 8:
                 return self.precpred(self._ctx, 4)
-         
+
 
             if predIndex == 9:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 10:
                 return self.precpred(self._ctx, 2)
-         
+
 
 
 

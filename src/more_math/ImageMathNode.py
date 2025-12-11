@@ -1,4 +1,3 @@
-from inspect import cleandoc
 
 from antlr4 import CommonTokenStream
 from antlr4.atn.LexerActionExecutor import InputStream
@@ -9,7 +8,7 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import io
 
 class ImageMathNode(io.ComfyNode):
     """
@@ -58,7 +57,7 @@ class ImageMathNode(io.ComfyNode):
         b = torch.zeros_like(a) if b is None else b
         c = torch.zeros_like(a) if c is None else c
         d = torch.zeros_like(a) if d is None else d
-        
+
         # permute to B, C, H, W
         a = a.permute(0, 3, 1, 2)
         b = b.permute(0, 3, 1, 2)
@@ -89,7 +88,7 @@ class ImageMathNode(io.ComfyNode):
         tree = parser.expr()
         visitor = TensorEvalVisitor(variables,a.shape)
         result = visitor.visit(tree)
-        
+
         # permute back to B, H, W, C
         result = result.permute(0, 2, 3, 1)
         return (result,)

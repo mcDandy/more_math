@@ -6,7 +6,7 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import io
 
 class ConditioningMathNode(io.ComfyNode):
     """

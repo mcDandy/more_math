@@ -87,7 +87,7 @@ func1
     | SOFTPLUS '(' expr ')'  # SoftplusFunc
     | GELU  '(' expr ')'     # GeluFunc
     | SIGN  '(' expr ')'     # SignFunc
-    
+
     ;
 
 // Two-argument functions

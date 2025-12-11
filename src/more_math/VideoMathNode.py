@@ -1,8 +1,8 @@
 from inspect import cleandoc
 
-from comfy_api.latest import ComfyExtension, io
-from comfy_api.input_impl import VideoFromComponents, VideoFromFile
-from comfy_api.util import VideoCodec, VideoComponents, VideoContainer
+from comfy_api.latest import io
+from comfy_api.input_impl import VideoFromComponents
+from comfy_api.util import VideoComponents
 
 
 from antlr4 import CommonTokenStream, InputStream

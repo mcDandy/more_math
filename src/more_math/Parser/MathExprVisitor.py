@@ -1,5 +1,5 @@
 # Generated from src/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
-from antlr4 import *
+from antlr4 import ParseTreeVisitor
 if "." in __name__:
     from .MathExprParser import MathExprParser
 else:

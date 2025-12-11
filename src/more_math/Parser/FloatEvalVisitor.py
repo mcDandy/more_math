@@ -1,7 +1,4 @@
 import math
-from tkinter import SE
-from sympy import true
-import torch
 from .MathExprVisitor import MathExprVisitor
 
 class FloatEvalVisitor(MathExprVisitor):

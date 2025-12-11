@@ -1,5 +1,4 @@
 from inspect import cleandoc
-from math import e
 
 from antlr4 import CommonTokenStream, InputStream
 import torch
@@ -10,7 +9,7 @@ from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
-from comfy_api.latest import ComfyExtension, io
+from comfy_api.latest import io
 
 # try to import NestedTensor type if available
 import comfy.nested_tensor as _nested_tensor_module

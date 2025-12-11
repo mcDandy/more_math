@@ -10,6 +10,5 @@ __author__ = """Daniel Martinek"""
 __email__ = "danda.martinek@gmail.com"
 __version__ = "0.0.1"
 
-from .src.more_math.nodes import comfy_entrypoint
 
 

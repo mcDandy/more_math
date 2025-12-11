@@ -19,17 +19,57 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Backup pyproject.toml
+        run: cp pyproject.toml pyproject.toml.ci.bak
+
+      - name: Strip tooltip entries from pyproject.toml for CI
+        run: |
+          # Remove `tooltip = ...` from [project] and drop [project.tooltip] section if present.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('pyproject.toml')
+          text = p.read_text()
+          out_lines = []
+          cur_section = None
+          skip_section = False
+          for line in text.splitlines():
+              s = line.strip()
+              if s.startswith('[') and s.endswith(']'):
+                  cur_section = s.strip('[]')
+                  # skip any subsection that starts with project.tooltip (or exact match)
+                  if cur_section == 'project.tooltip' or cur_section.startswith('project.tooltip'):
+                      skip_section = True
+                      continue
+                  else:
+                      skip_section = False
+              if skip_section:
+                  continue
+              # drop top-level tooltip = ... when inside [project]
+              if cur_section == 'project' and s and s.split('=')[0].strip() == 'tooltip':
+                  continue
+              out_lines.append(line)
+          p.write_text('\n'.join(out_lines) + '\n')
+          PY
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
+
       - name: Run Linting
         run: |
           ruff check .
+
       - name: Run Tests
         run: |
           pytest tests/
+
+      - name: Restore original pyproject.toml
+        if: always()
+        run: mv pyproject.toml.ci.bak pyproject.toml

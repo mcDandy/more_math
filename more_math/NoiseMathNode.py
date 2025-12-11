@@ -105,10 +105,10 @@ class NoiseExecutor():
         samples = input_latent["samples"]
 
         # evaluate generators / default zeros
-        a_val = self.a.generate_noise(input_latent) if self.a is not None else None
-        b_val = self.b.generate_noise(input_latent) if self.b is not None else None
-        c_val = self.c.generate_noise(input_latent) if self.c is not None else None
-        d_val = self.d.generate_noise(input_latent) if self.d is not None else None
+        a_val = self.a.generate_noise(input_latent) if self.a is not None else torch.zeros_like(samples)
+        b_val = self.b.generate_noise(input_latent) if self.b is not None else torch.zeros_like(samples)
+        c_val = self.c.generate_noise(input_latent) if self.c is not None else torch.zeros_like(samples)
+        d_val = self.d.generate_noise(input_latent) if self.d is not None else torch.zeros_like(samples)
 
         # helper to convert a returned value into a list matching ref_list
         def to_list(val, ref_list):

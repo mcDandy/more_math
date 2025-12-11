@@ -59,11 +59,11 @@ class ConditioningMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
         if b is None:
-           b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] else None}]]
+           b = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] is not None else None}]]
         if c is None:
-           c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] else None}]]
+           c = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] is not None else None}]]
         if d is None:
-           d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] else None}]]
+           d = [[torch.zeros_like(a[0][0]), {"pooled_output": torch.zeros_like(a[0][1]["pooled_output"]) if a[0][1]["pooled_output"] is not None else None}]]
 
 
         ta = a[0][0].clone()
@@ -80,9 +80,9 @@ class ConditioningMathNode(io.ComfyNode):
             pc = c[0][1]["pooled_output"].clone()
             pd = d[0][1]["pooled_output"].clone()
 
-        print(ta.shape,pa.shape if pa != None else 0);
 
         variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z}
+
         input_stream = InputStream(Tensor)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -91,7 +91,7 @@ class ConditioningMathNode(io.ComfyNode):
         visitor = TensorEvalVisitor(variables,ta.shape)
         result1 = visitor.visit(tree)
 
-        if a[0][1]["pooled_output"]:
+        if a[0][1]["pooled_output"] is not None:
             variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z}
             input_stream = InputStream(Tensor)
             lexer = MathExprLexer(input_stream)

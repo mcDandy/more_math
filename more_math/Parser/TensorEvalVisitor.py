@@ -5,27 +5,32 @@ from ..helper_functions import freq_to_time, time_to_freq
 from .MathExprVisitor import MathExprVisitor
 
 class TensorEvalVisitor(MathExprVisitor):
-    def __init__(self, variables,shape):
+    def __init__(self, variables, shape, device=None):
         self.variables = variables
         self.spatial_variables = variables.copy()
         self.shape = shape
+        # Infer device from variables if not provided
+        if device is None:
+             self.device = next((v.device for v in variables.values() if isinstance(v, torch.Tensor)), torch.device("cpu"))
+        else:
+             self.device = device
 
     def visitNumberExp(self, ctx):
-        return torch.full(self.shape,float(ctx.getText()))
+        return torch.full(self.shape, float(ctx.getText()), device=self.device)
 
     def visitConstantExp(self, ctx):
         name = ctx.getText().lower()
         if name == "pi":
-            return torch.full(self.shape,3.141592653589793,)
+            return torch.full(self.shape, 3.141592653589793, device=self.device)
         if name == "e":
-            return torch.full(self.shape,2.718281828459045)
+            return torch.full(self.shape, 2.718281828459045, device=self.device)
         raise ValueError(f"Unknown constant: {name}")
 
     def visitVariableExp(self, ctx):
         name = ctx.getText()
         if name not in self.variables:
             raise ValueError(f"Variable '{name}' not found")
-        if not isinstance(self.variables[name], torch.Tensor):  return torch.full(self.shape,self.variables[name])
+        if not isinstance(self.variables[name], torch.Tensor):  return torch.full(self.shape, self.variables[name], device=self.device)
         return self.variables[name]
 
     def visitParenExp(self, ctx):
@@ -116,7 +121,7 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitLogFunc(self, ctx):   return torch.log10(self.visit(ctx.expr()))
     def visitExpFunc(self, ctx):   return torch.exp(self.visit(ctx.expr()))
     def visitTNormFunc(self, ctx): return torch.nn.functional.normalize(self.visit(ctx.expr()), p=2, dim=-1)
-    def visitSNormFunc(self, ctx): return torch.full(self.shape,torch.linalg.norm(self.visit(ctx.expr())).data[0])
+    def visitSNormFunc(self, ctx): return torch.full(self.shape, torch.linalg.norm(self.visit(ctx.expr())).data[0], device=self.device)
     def visitFloorFunc(self, ctx): return torch.floor(self.visit(ctx.expr()))
     def visitCeilFunc(self, ctx):  return torch.ceil(self.visit(ctx.expr()))
     def visitRoundFunc(self, ctx): return torch.round(self.visit(ctx.expr()))
@@ -268,10 +273,10 @@ class TensorEvalVisitor(MathExprVisitor):
     # N-argument functions
     def visitSMinFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
-        return torch.full(self.shape,torch.min(torch.stack(args)))
+        return torch.full(self.shape, torch.min(torch.stack(args)), device=self.device)
     def visitSMaxFunc(self, ctx):
-        args = [torch.reshape(self.visit(e),self.shape) for e in ctx.expr()]
-        return torch.full(self.shape,torch.max(torch.stack(args)))
+        args = [torch.reshape(self.visit(e), self.shape) for e in ctx.expr()]
+        return torch.full(self.shape, torch.max(torch.stack(args)), device=self.device)
 
     def visitTMinFunc(self, ctx):
         return torch.minimum(self.visit(ctx.expr(0)),self.visit(ctx.expr(1)))

@@ -23,14 +23,58 @@ You can also get the node from comfy manager under the name of More math.
   (`false = 0.0`, `true = 1.0`)
 
 ## Functions
-- Basic: `abs`, `sqrt`, `ln`, `log`, `exp`, `pow`
-- Trigonometric: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`
-- Hyperbolic: `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`
-- Aggregates: `smin`, `smax` , `snorm` (scalar), `tmin`, `tmax`, `tnorm` (elementwise)
-- Other: `floor`, `ceil`, `round`, `gamma`, `clamp`, `sigm` (sigmoid) `fft` (N-D FFT on non-batch/channel dims), `ifft` (Inverse N-D FFT, returns real component), `angle` (in ifft only)
-- Shaders: `lerp(a, b, w)`, `step(x, edge)`, `smoothstep(x,edge0, edge1)`, `fract(x)`
-- ML: `relu(x)`, `softplus(x)`, `gelu(x)`, `sign(x)`
-- Tensor: `swap(tensor, dim, index1, index2)` (swaps two slices of a tensor along a dimension)
+
+### Basic Math
+- `abs(x)`: Absolute value.
+- `sqrt(x)`: Square root.
+- `ln(x)`: Natural logarithm (base e).
+- `log(x)`: Logarithm base 10.
+- `exp(x)`: Exponential function (e^x).
+- `pow(x, y)`: Power function (x^y).
+- `floor(x)`: Rounds down to nearest integer.
+- `ceil(x)`: Rounds up to nearest integer.
+- `round(x)`: Rounds to nearest integer.
+- `fract(x)`: Returns the fractional part of x (x - floor(x)).
+- `sign(x)`: Returns -1 for negative, 1 for positive, 0 for zero.
+- `gamma(x)`: Gamma function.
+
+### Trigonometric
+- `sin(x)`, `cos(x)`, `tan(x)`
+- `asin(x)`, `acos(x)`, `atan(x)`
+- `atan2(y, x)`: Arctangent of y/x, handling quadrants.
+
+### Hyperbolic
+- `sinh(x)`, `cosh(x)`, `tanh(x)`
+- `asinh(x)`, `acosh(x)`, `atanh(x)`
+
+### Machine Learning / Activation
+- `relu(x)`: Rectified Linear Unit (max(0, x)).
+- `gelu(x)`: Gaussian Error Linear Unit.
+- `softplus(x)`: Softplus function (log(1 + e^x)).
+- `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
+
+### Shaders / Interpolation
+- `clamp(x, min, max)`: Constrains x to be between min and max.
+- `lerp(a, b, w)`: Linear interpolation: `a + (b - a) * w`.
+- `step(edge, x)`: Returns 1.0 if x >= edge, else 0.0.
+- `smoothstep(edge0, edge1, x)`: Hermite interpolation between edge0 and edge1.
+
+### Aggregates & Tensor Operations
+- `tmin(x, y)`: Element-wise minimum of x and y.
+- `tmax(x, y)`: Element-wise maximum of x and y.
+- `smin(x, y, ...)`: **Scalar** minimum. Returns the single smallest value across all input tensors/values.
+- `smax(x, y, ...)`: **Scalar** maximum. Returns the single largest value across all input tensors/values.
+- `tnorm(x)`: **Tensor** Normalizes x (L2 norm along last dimension).
+- `snorm(x)`: **Scalar** L2 norm of the entire tensor.
+- `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension. (Tensor only)
+
+### FFT (Tensor Only)
+- `fft(x)`: Fast Fourier Transform (Time to Frequency).
+- `ifft(x)`: Inverse Fast Fourier Transform (Frequency to Time).
+- `angle(x)`: Returns the element-wise angle (phase) of the complex tensor.
+
+### Utility
+- `print(x)`: Prints the value of x to the console and returns x.
 
 ## Variables
 - **common inputs** (matches node input type):

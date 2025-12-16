@@ -7,6 +7,7 @@ from .ImageMathNode import ImageMathNode
 from .AudioMathNode import AudioMathNode
 from .VideoMathNode import VideoMathNode
 
+from .ModelMathNode import ModelMathNode, CLIPMathNode, VAEMathNode
 from comfy_api.latest import ComfyExtension, io
 
 class IntToFloatNode(io.ComfyNode):
@@ -63,6 +64,9 @@ class MoreMathExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
             return [
                 ConditioningMathNode,
+                ModelMathNode,
+                CLIPMathNode,
+                VAEMathNode,
                 LatentMathNode,
                 ImageMathNode,
                 FloatMathNode,

@@ -86,7 +86,7 @@ class ImageMathNode(io.ComfyNode):
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
-        visitor = TensorEvalVisitor(variables,a.shape)
+        visitor = TensorEvalVisitor(variables, a.shape)
         result = visitor.visit(tree)
 
         # permute back to B, H, W, C

@@ -104,7 +104,7 @@ class VideoMathNode(io.ComfyNode):
         parser = MathExprParser(stream)
         parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
-        visitor = TensorEvalVisitor(variables,ac.images.shape)
+        visitor = TensorEvalVisitor(variables, ac.images.shape)
         imgs = visitor.visit(tree)
         # permute back to B, H, W, C
         imgs = imgs.permute(0, 2, 3, 1)

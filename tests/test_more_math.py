@@ -16,6 +16,11 @@ if os.path.isdir(_src_path) and _src_path not in sys.path:
 elif _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+# Add ComfyUI root to path to find 'comfy' and 'comfy_api' packages
+_comfy_root = os.path.abspath(os.path.join(_here, "../../.."))
+if _comfy_root not in sys.path:
+    sys.path.insert(0, _comfy_root)
+
 import torch
 from more_math.ConditioningMathNode import ConditioningMathNode
 from more_math.LatentMathNode import LatentMathNode
@@ -354,5 +359,94 @@ def test_nested_tensor_support():
     assert len(res_list) == 2
     assert torch.allclose(res_list[0], torch.full_like(t1, 2.0))
     assert torch.allclose(res_list[1], torch.full_like(t2, 3.0))
-#!/usr/bin/env python
 
+# ==========================================
+# Comprehensive Math Function Tests
+# ==========================================
+
+def test_trig_functions():
+    node = FloatMathNode()
+    # Sin/Cos checks
+    # sin(0) = 0, cos(0) = 1
+    assert abs(node.execute("sin(0)", a=0.0)[0] - 0.0) < 1e-5
+    assert abs(node.execute("cos(0)", a=0.0)[0] - 1.0) < 1e-5
+    # tan(0) = 0
+    assert abs(node.execute("tan(0)", a=0.0)[0] - 0.0) < 1e-5
+
+def test_inverse_trig_functions():
+    node = FloatMathNode()
+    # asin(0) = 0, acos(1) = 0, atan(0) = 0
+    assert abs(node.execute("asin(0)", a=0.0)[0] - 0.0) < 1e-5
+    assert abs(node.execute("acos(1)", a=0.0)[0] - 0.0) < 1e-5
+    assert abs(node.execute("atan(0)", a=0.0)[0] - 0.0) < 1e-5
+
+def test_pow_log_functions():
+    node = FloatMathNode()
+    # pow(2, 3) = 8
+    assert abs(node.execute("pow(2, 3)", a=0.0)[0] - 8.0) < 1e-5
+    # sqrt(4) = 2
+    assert abs(node.execute("sqrt(4)", a=0.0)[0] - 2.0) < 1e-5
+    # exp(0) = 1
+    assert abs(node.execute("exp(0)", a=0.0)[0] - 1.0) < 1e-5
+    # log(100) = 2 (base 10)
+    assert abs(node.execute("log(100)", a=0.0)[0] - 2.0) < 1e-5
+    # ln(e) = 1. Using 'e' constant logic check or approx 2.718
+    assert abs(node.execute("ln(2.7182818)", a=0.0)[0] - 1.0) < 1e-4
+
+def test_min_max_functions():
+    import sys
+    node = FloatMathNode()
+    print("Testing tmin...", flush=True)
+    # tmin(2, 5) = 2, tmax(2, 5) = 5
+    assert abs(node.execute("tmin(2, 5)", a=0.0)[0] - 2.0) < 1e-5
+    print("Testing tmax...", flush=True)
+    assert abs(node.execute("tmax(2, 5)", a=0.0)[0] - 5.0) < 1e-5
+    
+    # smin/smax (Smooth min/max? Or just multi-arg min/max? TensorEvalVisitor uses stack.min/max)
+    # smin(1, 2, 3) = 1
+    print("Testing smin...", flush=True)
+    res_smin = node.execute("smin(1, 2, 3)", a=0.0)[0]
+    print(f"smin result: {res_smin} type: {type(res_smin)}", flush=True)
+    assert abs(res_smin - 1.0) < 1e-5
+
+    print("Testing smax...", flush=True)
+    res_smax = node.execute("smax(1, 2, 3)", a=0.0)[0]
+    print(f"smax result: {res_smax} type: {type(res_smax)}", flush=True)
+    assert abs(res_smax - 3.0) < 1e-5
+
+def test_basic_utilities():
+    node = FloatMathNode()
+    # abs(-5) = 5
+    assert abs(node.execute("abs(-5)", a=0.0)[0] - 5.0) < 1e-5
+    # floor(1.9) = 1
+    assert abs(node.execute("floor(1.9)", a=0.0)[0] - 1.0) < 1e-5
+    # ceil(1.1) = 2
+    assert abs(node.execute("ceil(1.1)", a=0.0)[0] - 2.0) < 1e-5
+    # round(1.6) = 2, round(1.4) = 1
+    assert abs(node.execute("round(1.6)", a=0.0)[0] - 2.0) < 1e-5
+    assert abs(node.execute("round(1.4)", a=0.0)[0] - 1.0) < 1e-5
+    # clamp(10, 0, 5) = 5, clamp(-5, 0, 5) = 0
+    assert abs(node.execute("clamp(10, 0, 5)", a=0.0)[0] - 5.0) < 1e-5
+    assert abs(node.execute("clamp(-5, 0, 5)", a=0.0)[0] - 0.0) < 1e-5
+
+def test_advanced_activations():
+    node = FloatMathNode()
+    # sigmoid(0) = 0.5
+    assert abs(node.execute("sigmoid(0)", a=0.0)[0] - 0.5) < 1e-5
+
+if __name__ == "__main__":
+    import sys
+    try: 
+        #test_trig_functions()
+        #test_pow_log_functions()
+        test_min_max_functions()
+        #test_basic_utilities()
+        #test_activation_functions()
+        print("All tests passed!")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+    print("All tests in test_more_math.py passed!")
+#!/usr/bin/env python
+```

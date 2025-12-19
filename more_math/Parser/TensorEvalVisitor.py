@@ -185,23 +185,9 @@ class TensorEvalVisitor(MathExprVisitor):
         old_vars = self.variables
         # Switch to freq variables
         self.variables = self.variables.copy()
-
-        # Inject Freq variables based on shape
-        # Dimensions being transformed are 2 onwards
-        # We use a reference tensor from existing variables to get device/dtype if possible,
-        # or use val from a visit? We need vars BEFORE visit.
-        # We can construct index tensors using torch.arange like getIndexTensorAlongDim does.
-        # We need the device. 'a' is a safe bet for device source.
         device = self.spatial_variables['a'].device if 'a' in self.spatial_variables else torch.device('cpu')
-
         dims = range(2, len(self.shape))
         for d in dims:
-            # Create index tensor for dim d
-            # Shape: ones with size at dim d
-            # getIndexTensorAlongDim logic:
-            #   shape = tensor.shape
-            #   values = torch.arange(shape[dim], ...)
-            #   reshape and expand
             size_d = self.shape[d]
             values = torch.arange(size_d, dtype=torch.float32, device=device)
             view_shape = [1] * len(self.shape)

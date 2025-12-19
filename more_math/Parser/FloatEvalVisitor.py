@@ -144,8 +144,8 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitAtan2Func(self, ctx):
         return math.atan2(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)))
     def visitStepFunc(self, ctx):
-        edge = self.visit(ctx.expr(0))
-        x = self.visit(ctx.expr(1))
+        x = self.visit(ctx.expr(0))
+        edge = self.visit(ctx.expr(1))
         return 1.0 if x >= edge else 0.0
 
     # N-argument functions

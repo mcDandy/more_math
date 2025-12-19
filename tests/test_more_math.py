@@ -448,5 +448,4 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
     print("All tests in test_more_math.py passed!")
-#!/usr/bin/env python
-```
+

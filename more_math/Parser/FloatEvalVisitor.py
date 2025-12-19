@@ -170,9 +170,9 @@ class FloatEvalVisitor(MathExprVisitor):
         return a + (b - a) * w
 
     def visitSmoothstepFunc(self, ctx):
-        edge0 = self.visit(ctx.expr(0))
-        edge1 = self.visit(ctx.expr(1))
-        x = self.visit(ctx.expr(2))
+        x = self.visit(ctx.expr(0))
+        edge0 = self.visit(ctx.expr(1))
+        edge1 = self.visit(ctx.expr(2))
 
         # Scale, bias and saturate x to 0..1 range
         t = (x - edge0) / (edge1 - edge0)

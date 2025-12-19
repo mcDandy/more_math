@@ -50,6 +50,7 @@ atom
     | NUMBER                 # NumberExp
     | CONSTANT               # ConstantExp
     | '(' expr ')'           # ParenExp
+    | PIPE expr PIPE         # AbsExp
     ;
 
 // Single-argument functions
@@ -174,6 +175,7 @@ LE          : '<=';
 LT          : '<';
 EQ          : '==';
 NE          : '!=';
+PIPE        : '|';
 
 CONSTANT : ('pi'|'PI'|'e'|'E');
 NUMBER   : [0-9]+ ('.' [0-9]+)?;

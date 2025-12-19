@@ -18,14 +18,14 @@ You can also get the node from comfy manager under the name of More math.
 - Nodes for CONDITIONING, LATENT, IMAGE, NOISE, FLOAT, VIDEO and AUDIO
 
 ## Operators
-- Math: `+`, `-`, `*`, `/`, `%`, `^`
+- Math: `+`, `-`, `*`, `/`, `%`, `^`, `||`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
 
 ## Functions
 
 ### Basic Math
-- `abs(x)`: Absolute value.
+- `abs(x)` or `|x|`: Absolute value. For **float** `abs(x)` and `|x|` are the same. For **tensor** `abs(x)` calculates element-wise absolute value and for `|x|` it calculates L2 norm (euclidean norm).
 - `sqrt(x)`: Square root.
 - `ln(x)`: Natural logarithm (base e).
 - `log(x)`: Logarithm base 10.

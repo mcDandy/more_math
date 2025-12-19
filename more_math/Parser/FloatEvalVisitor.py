@@ -105,6 +105,7 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitAcoshFunc(self, ctx): return math.acosh(self.visit(ctx.expr()))
     def visitAtanhFunc(self, ctx): return math.atanh(self.visit(ctx.expr()))
     def visitAbsFunc(self, ctx):   return math.abs(self.visit(ctx.expr()))
+    def visitAbsExp(self, ctx):    return math.abs(self.visit(ctx.expr()))
     def visitSqrtFunc(self, ctx):  return math.sqrt(self.visit(ctx.expr()))
     def visitLnFunc(self, ctx):    return math.log(self.visit(ctx.expr()))
     def visitLogFunc(self, ctx):   return math.log10(self.visit(ctx.expr()))

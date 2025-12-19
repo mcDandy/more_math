@@ -116,6 +116,7 @@ class TensorEvalVisitor(MathExprVisitor):
     def visitAcoshFunc(self, ctx): return torch.acosh(self.visit(ctx.expr()))
     def visitAtanhFunc(self, ctx): return torch.atanh(self.visit(ctx.expr()))
     def visitAbsFunc(self, ctx):   return torch.abs(self.visit(ctx.expr()))
+    def visitNormExp(self, ctx):   return torch.full(self.shape, torch.linalg.norm(self.visit(ctx.expr())).item(), device=self.device)
     def visitSqrtFunc(self, ctx):  return torch.sqrt(self.visit(ctx.expr()))
     def visitLnFunc(self, ctx):    return torch.log(self.visit(ctx.expr()))
     def visitLogFunc(self, ctx):   return torch.log10(self.visit(ctx.expr()))

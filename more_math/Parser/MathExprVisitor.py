@@ -1,5 +1,5 @@
-# Generated from src/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
-from antlr4 import ParseTreeVisitor
+# Generated from ./MathExpr.g4 by ANTLR 4.13.2
+from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
 else:
@@ -151,6 +151,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ParenExp.
     def visitParenExp(self, ctx:MathExprParser.ParenExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#AbsExp.
+    def visitAbsExp(self, ctx:MathExprParser.AbsExpContext):
         return self.visitChildren(ctx)
 
 

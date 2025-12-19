@@ -56,8 +56,8 @@ You can also get the node from comfy manager under the name of More math.
 ### Shaders / Interpolation
 - `clamp(x, min, max)`: Constrains x to be between min and max.
 - `lerp(a, b, w)`: Linear interpolation: `a + (b - a) * w`.
-- `step(edge, x)`: Returns 1.0 if x >= edge, else 0.0.
-- `smoothstep(edge0, edge1, x)`: Hermite interpolation between edge0 and edge1.
+- `step(x, edge)`: Returns 1.0 if x >= edge, else 0.0.
+- `smoothstep(x, edge0, edge1)`: Hermite interpolation between edge0 and edge1.
 
 ### Aggregates & Tensor Operations
 - `tmin(x, y)`: Element-wise minimum of x and y.

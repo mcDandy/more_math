@@ -2,7 +2,7 @@
 
 Adds math nodes for numbers and types which do not need it. I got inspired by was_extras node.
 
-#WARNING This node is not compatible to ComfyUI-Impact-Pack which forces older antlr version.
+## WARNING This node is not compatible to ComfyUI-Impact-Pack and ComfyUI-Ovi which forces older antlr version
 
 ## Quickstart
 
@@ -12,12 +12,13 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
 
 You can also get the node from comfy manager under the name of More math.
 
-# Features
+## Features
 
 - functions and variables in math expressions
 - Nodes for CONDITIONING, LATENT, IMAGE, NOISE, FLOAT, VIDEO and AUDIO
 
 ## Operators
+
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `||`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
@@ -25,6 +26,7 @@ You can also get the node from comfy manager under the name of More math.
 ## Functions
 
 ### Basic Math
+
 - `abs(x)` or `|x|`: Absolute value. For **float** `abs(x)` and `|x|` are the same. For **tensor** `abs(x)` calculates element-wise absolute value and for `|x|` it calculates L2 norm (euclidean norm).
 - `sqrt(x)`: Square root.
 - `ln(x)`: Natural logarithm (base e).
@@ -39,27 +41,32 @@ You can also get the node from comfy manager under the name of More math.
 - `gamma(x)`: Gamma function.
 
 ### Trigonometric
+
 - `sin(x)`, `cos(x)`, `tan(x)`
 - `asin(x)`, `acos(x)`, `atan(x)`
 - `atan2(y, x)`: Arctangent of y/x, handling quadrants.
 
 ### Hyperbolic
+
 - `sinh(x)`, `cosh(x)`, `tanh(x)`
 - `asinh(x)`, `acosh(x)`, `atanh(x)`
 
 ### Machine Learning / Activation
+
 - `relu(x)`: Rectified Linear Unit (max(0, x)).
 - `gelu(x)`: Gaussian Error Linear Unit.
 - `softplus(x)`: Softplus function (log(1 + e^x)).
 - `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
 
 ### Shaders / Interpolation
+
 - `clamp(x, min, max)`: Constrains x to be between min and max.
 - `lerp(a, b, w)`: Linear interpolation: `a + (b - a) * w`.
 - `step(x, edge)`: Returns 1.0 if x >= edge, else 0.0.
 - `smoothstep(x, edge0, edge1)`: Hermite interpolation between edge0 and edge1.
 
 ### Aggregates & Tensor Operations
+
 - `tmin(x, y)`: Element-wise minimum of x and y.
 - `tmax(x, y)`: Element-wise maximum of x and y.
 - `smin(x, y, ...)`: **Scalar** minimum. Returns the single smallest value across all input tensors/values.
@@ -69,14 +76,17 @@ You can also get the node from comfy manager under the name of More math.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension. (Tensor only)
 
 ### FFT (Tensor Only)
+
 - `fft(x)`: Fast Fourier Transform (Time to Frequency).
 - `ifft(x)`: Inverse Fast Fourier Transform (Frequency to Time).
 - `angle(x)`: Returns the element-wise angle (phase) of the complex tensor.
 
 ### Utility
+
 - `print(x)`: Prints the value of x to the console and returns x.
 
 ## Variables
+
 - **common inputs** (matches node input type):
   - `a`, `b`, `c`, `d`
 - **Extra floats**:

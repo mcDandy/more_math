@@ -3,7 +3,7 @@ from inspect import cleandoc
 from antlr4 import CommonTokenStream, InputStream
 import torch
 
-from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim
+from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim,comonLazy
 
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
@@ -43,13 +43,13 @@ class NoiseMathNode(io.ComfyNode):
             display_name="Noise math",
             inputs=[
                 io.Noise.Input(id="a"),
-                io.Noise.Input(id="b", optional=True),
-                io.Noise.Input(id="c", optional=True),
-                io.Noise.Input(id="d", optional=True),
-                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.Noise.Input(id="b", optional=True,lazy=True),
+                io.Noise.Input(id="c", optional=True,lazy=True),
+                io.Noise.Input(id="d", optional=True,lazy=True),
+                io.Float.Input(id="w", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True,lazy=True, force_input=True),
                 io.String.Input(id="Noise", default="a*(1-w)+b*w", tooltip="Expression to apply on input noise generators"),
             ],
             outputs=[
@@ -62,7 +62,9 @@ class NoiseMathNode(io.ComfyNode):
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
 
     CATEGORY = "More math"
-
+    @classmethod
+    def check_lazy_status(cls, Noise, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return comonLazy(Noise, a, b, c, d)
     @classmethod
     def execute(cls, Noise, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         return (NoiseExecutor(a, b, c, d, w, x, y, z, Noise),)

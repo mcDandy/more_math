@@ -2,12 +2,11 @@ from inspect import cleandoc
 
 from antlr4 import CommonTokenStream, InputStream
 
-from .helper_functions import ThrowingErrorListener
+from .helper_functions import ThrowingErrorListener, comonLazy
 
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.FloatEvalVisitor import FloatEvalVisitor
-
 from comfy_api.latest import io
 
 class FloatMathNode(io.ComfyNode):
@@ -27,7 +26,9 @@ class FloatMathNode(io.ComfyNode):
     """
     def __init__(self):
         pass
-
+        @classmethod
+    def check_lazy_status(cls, Model, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return comonLazy(Model, a, b, c, d)
     @classmethod
     def define_schema(cls) -> io.Schema:
         """
@@ -38,13 +39,13 @@ class FloatMathNode(io.ComfyNode):
             display_name="Float math",
             inputs=[
                 io.Float.Input(id="a", force_input=True),
-                io.Float.Input(id="b", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="c", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="d", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="b", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="c", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="d", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="w", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True,lazy=True, force_input=True),
                 io.String.Input(id="FloatFunc", default="a*(1-w)+b*w", tooltip="Expression to use on inputs"),
             ],
             outputs=[
@@ -58,9 +59,10 @@ class FloatMathNode(io.ComfyNode):
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
     @classmethod
+    def check_lazy_status(cls, FloatFunc, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return comonLazy(FloatFunc, a, b, c, d)
+    @classmethod
     def execute(cls, FloatFunc, a, b=0.0, c=0.0, d=0.0, w=0.0, x=0.0, y=0.0, z=0.0):
-
-
 
         variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
         input_stream = InputStream(FloatFunc)

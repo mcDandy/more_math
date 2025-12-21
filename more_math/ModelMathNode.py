@@ -1,11 +1,8 @@
 from inspect import cleandoc
 from comfy_api.latest import io
-from antlr4 import CommonTokenStream, InputStream
-from .Parser.MathExprLexer import MathExprLexer
 from .helper_functions import comonLazy
 from .modelLikeCommon import calculate_patches
 
-import copy
 
 
 class ModelMathNode(io.ComfyNode):

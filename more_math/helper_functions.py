@@ -1,5 +1,8 @@
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4 import InputStream
+from .Parser.MathExprLexer import MathExprLexer
+from .Parser.MathExprParser import MathExprParser
+from antlr4 import CommonTokenStream
 
 import torch
 
@@ -31,7 +34,7 @@ def freq_to_time(element: torch.Tensor) -> torch.Tensor:
 
 class ThrowingErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise ValueError(f"Syntax error in AudioExpr at line {line}, col {column}: {msg}")
+        raise ValueError(f"Syntax error in expression at line {line}, col {column}: {msg}")
 
 
 def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):

@@ -3,7 +3,7 @@ from antlr4 import CommonTokenStream, InputStream
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
-from .helper_functions import getIndexTensorAlongDim
+from .helper_functions import getIndexTensorAlongDim, comonLazy
 
 from comfy_api.latest import io
 
@@ -33,20 +33,22 @@ class AudioMathNode(io.ComfyNode):
             display_name="Audio math",
             inputs=[
                 io.Audio.Input(id="a", tooltip="Input audio tensor"),
-                io.Audio.Input(id="b", optional=True, tooltip="Second input audio tensor"),
-                io.Audio.Input(id="c", optional=True, tooltip="Third input audio tensor"),
-                io.Audio.Input(id="d", optional=True, tooltip="Fourth input audio tensor"),
-                io.Float.Input(id="w", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, optional=True, force_input=True),
+                io.Audio.Input(id="b", optional=True,lazy=True, tooltip="Second input audio tensor"),
+                io.Audio.Input(id="c", optional=True,lazy=True, tooltip="Third input audio tensor"),
+                io.Audio.Input(id="d", optional=True,lazy=True, tooltip="Fourth input audio tensor"),
+                io.Float.Input(id="w", default=0.0, optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0, optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0, optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0, optional=True,lazy=True, force_input=True),
                 io.String.Input(id="AudioExpr", default="a*(1-w)+b*w", tooltip="Expression to apply on input audio tensors"),
             ],
             outputs=[
                 io.Audio.Output(),
             ],
         )
-
+    @classmethod
+    def check_lazy_status(cls, AudioExpr, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return comonLazy(AudioExpr, a, b, c, d)
     @classmethod
     def execute(cls, a, AudioExpr, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
 

@@ -2,7 +2,7 @@
 from antlr4 import CommonTokenStream
 from antlr4.atn.LexerActionExecutor import InputStream
 import torch
-from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim
+from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim, comonLazy
 
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
@@ -38,20 +38,22 @@ class ImageMathNode(io.ComfyNode):
             display_name="Image math",
             inputs=[
                 io.Image.Input(id="a"),
-                io.Image.Input(id="b", optional=True),
-                io.Image.Input(id="c", optional=True),
-                io.Image.Input(id="d", optional=True),
-                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.Image.Input(id="b", optional=True,lazy=True),
+                io.Image.Input(id="c", optional=True,lazy=True),
+                io.Image.Input(id="d", optional=True,lazy=True),
+                io.Float.Input(id="w", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True,lazy=True, force_input=True),
                 io.String.Input(id="Image", default="a*(1-w)+b*w", tooltip="Expression to apply on input images"),
             ],
             outputs=[
                 io.Image.Output(),
             ],
         )
-
+    @classmethod
+    def check_lazy_status(cls, Image, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return comonLazy(Image, a, b, c, d)
     @classmethod
     def execute(scls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         b = torch.zeros_like(a) if b is None else b

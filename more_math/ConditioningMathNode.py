@@ -5,6 +5,7 @@ import torch
 from .Parser.MathExprParser import MathExprParser
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.TensorEvalVisitor import TensorEvalVisitor
+from .helper_functions import ThrowingErrorListener, comonLazy
 
 from comfy_api.latest import io
 
@@ -36,13 +37,13 @@ class ConditioningMathNode(io.ComfyNode):
             category="More math",
             inputs=[
                 io.Conditioning.Input(id="a"),
-                io.Conditioning.Input(id="b", optional=True),
-                io.Conditioning.Input(id="c", optional=True),
-                io.Conditioning.Input(id="d", optional=True),
-                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.Conditioning.Input(id="b", optional=True,lazy=True),
+                io.Conditioning.Input(id="c", optional=True,lazy=True),
+                io.Conditioning.Input(id="d", optional=True,lazy=True),
+                io.Float.Input(id="w", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,optional=True,lazy=True, force_input=True),
                 io.String.Input(id="Tensor", default="a*(1-w)+b*w", tooltip="Describes composition of the image."),
                 io.String.Input(id="pooled_output", default="a*(1-w)+b*w", tooltip="Composition of the image condensed into one vector"),
             ],
@@ -55,7 +56,9 @@ class ConditioningMathNode(io.ComfyNode):
 
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
-
+    @classmethod
+    def check_lazy_status(cls, Tensor,pooled_output, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return list(set(comonLazy(Tensor, a, b, c, d)).union(comonLazy(pooled_output, a, b, c, d)))
     @classmethod
     def execute(cls, Tensor,pooled_output, a, b=None, c=None, d=None,w=0.0,x=0.0,y=0.0,z=0.0):
         if b is None:
@@ -87,6 +90,7 @@ class ConditioningMathNode(io.ComfyNode):
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = MathExprParser(stream)
+        parser.addErrorListener(ThrowingErrorListener())
         tree = parser.expr()
         visitor = TensorEvalVisitor(variables,ta.shape)
         result1 = visitor.visit(tree)

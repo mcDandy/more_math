@@ -2,6 +2,7 @@ from inspect import cleandoc
 from comfy_api.latest import io
 import copy
 from .modelLikeCommon import calculate_patches
+from .helper_functions import comonLazy
 
 class VAEMathNode(io.ComfyNode):
     """
@@ -15,13 +16,13 @@ class VAEMathNode(io.ComfyNode):
             category="More math",
             inputs=[
                 io.Vae.Input(id="a", tooltip="Main VAE (base)"),
-                io.Vae.Input(id="b", optional=True, tooltip="Optional 2nd VAE"),
-                io.Vae.Input(id="c", optional=True, tooltip="Optional 3rd VAE"),
-                io.Vae.Input(id="d", optional=True, tooltip="Optional 4th VAE"),
-                io.Float.Input(id="w", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, optional=True, force_input=True),
+                io.Vae.Input(id="b", optional=True,lazy=True, tooltip="Optional 2nd VAE"),
+                io.Vae.Input(id="c", optional=True,lazy=True, tooltip="Optional 3rd VAE"),
+                io.Vae.Input(id="d", optional=True,lazy=True, tooltip="Optional 4th VAE"),
+                io.Float.Input(id="w", default=0.0,lazy=True, optional=True, force_input=True),
+                io.Float.Input(id="x", default=0.0,lazy=True, optional=True, force_input=True),
+                io.Float.Input(id="y", default=0.0,lazy=True, optional=True, force_input=True),
+                io.Float.Input(id="z", default=0.0,lazy=True, optional=True, force_input=True),
                 io.String.Input(id="Model", default="a*(1-w)+b*w", tooltip="Expression to apply on weights"),
             ],
             outputs=[
@@ -30,7 +31,9 @@ class VAEMathNode(io.ComfyNode):
         )
 
     tooltip = cleandoc(__doc__)
-
+    @classmethod
+    def check_lazy_status(cls, Model, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
+        return comonLazy(Model, a, b, c, d)
     @classmethod
     def execute(cls, Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
         patcher_a = a.patcher

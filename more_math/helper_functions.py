@@ -1,4 +1,6 @@
 from antlr4.error.ErrorListener import ErrorListener
+from antlr4 import InputStream
+
 import torch
 
 def getIndexTensorAlongDim(tensor, dim):
@@ -30,3 +32,15 @@ def freq_to_time(element: torch.Tensor) -> torch.Tensor:
 class ThrowingErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise ValueError(f"Syntax error in AudioExpr at line {line}, col {column}: {msg}")
+
+
+def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    variables = {'a':a,'b':b,'c':c,'d':d,'w':w,'x':x,'y':y,'z':z}
+    need_eval = []
+    input_stream = InputStream(expr)
+    lexer = MathExprLexer(input_stream)
+    stream = CommonTokenStream(lexer)
+    for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
+        if token in variables and variables[token] is None:
+            need_eval.append(token)
+    print ("Need eval:", need_eval)

@@ -7,7 +7,9 @@ from .ImageMathNode import ImageMathNode
 from .AudioMathNode import AudioMathNode
 from .VideoMathNode import VideoMathNode
 
-from .ModelMathNode import ModelMathNode, CLIPMathNode, VAEMathNode
+from .ModelMathNode import ModelMathNode
+from .VaeMathNode import VAEMathNode
+from .ClipMathNode import CLIPMathNode
 from comfy_api.latest import ComfyExtension, io
 
 class IntToFloatNode(io.ComfyNode):

@@ -48,7 +48,7 @@ class AudioMathNode(io.ComfyNode):
         )
     @classmethod
     def check_lazy_status(cls, AudioExpr, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
-        return comonLazy(AudioExpr, a, b, c, d)
+        return comonLazy(AudioExpr, a, b, c, d,w,x,y,z)
     @classmethod
     def execute(cls, a, AudioExpr, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
 

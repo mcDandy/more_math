@@ -64,7 +64,7 @@ class NoiseMathNode(io.ComfyNode):
     CATEGORY = "More math"
     @classmethod
     def check_lazy_status(cls, Noise, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
-        return comonLazy(Noise, a, b, c, d)
+        return comonLazy(Noise, a, b, c, d,w,x,y,z)
     @classmethod
     def execute(cls, Noise, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         return (NoiseExecutor(a, b, c, d, w, x, y, z, Noise),)

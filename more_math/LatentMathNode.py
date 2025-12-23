@@ -68,7 +68,7 @@ class LatentMathNode(io.ComfyNode):
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
     @classmethod
     def check_lazy_status(cls, Latent, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
-        return comonLazy(Latent, a, b, c, d)
+        return comonLazy(Latent, a, b, c, d,w,x,y,z)
     @classmethod
     def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
         # Extract raw sample tensors (may be Tensor or NestedTensor)

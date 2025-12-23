@@ -26,9 +26,9 @@ class FloatMathNode(io.ComfyNode):
     """
     def __init__(self):
         pass
-        @classmethod
+    @classmethod
     def check_lazy_status(cls, Model, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
-        return comonLazy(Model, a, b, c, d)
+        return comonLazy(Model, a, b, c, d,w,x,y,z)
     @classmethod
     def define_schema(cls) -> io.Schema:
         """

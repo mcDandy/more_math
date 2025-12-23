@@ -55,3 +55,4 @@ def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         if token.text in variables and variables[token.text] is None:
             need_eval.append(token.text)
     print ("Need eval:", need_eval)
+    return need_eval

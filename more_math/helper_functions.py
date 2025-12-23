@@ -46,13 +46,7 @@ def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     lexer = MathExprLexer(input_stream)
     stream = CommonTokenStream(lexer)
     stream.fill()
-    print("Tokens:", stream.tokens)
     for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
-        print("Token:", token.text)
-        print("Variables:", variables)
-        print("Token in variables:", token.text in variables)
-        print("Variable is None:", variables.get(token.text) is None)
         if token.text in variables and variables[token.text] is None:
             need_eval.append(token.text)
-    print ("Need eval:", need_eval)
     return need_eval

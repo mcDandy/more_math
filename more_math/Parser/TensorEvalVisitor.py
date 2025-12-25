@@ -255,10 +255,10 @@ class TensorEvalVisitor(MathExprVisitor):
     # N-argument functions
     def visitSMinFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
-        return torch.full(self.shape, torch.min(torch.stack(args)), device=self.device)
+        return torch.min(torch.stack(torch.broadcast_tensors(*args)))
     def visitSMaxFunc(self, ctx):
-        args = [torch.reshape(self.visit(e), self.shape) for e in ctx.expr()]
-        return torch.full(self.shape, torch.max(torch.stack(args)), device=self.device)
+        args = [self.visit(e) for e in ctx.expr()]
+        return torch.max(torch.stack(torch.broadcast_tensors(*args)))
 
     def visitTMinFunc(self, ctx):
         return torch.minimum(self.visit(ctx.expr(0)),self.visit(ctx.expr(1)))

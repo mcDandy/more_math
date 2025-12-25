@@ -4,38 +4,27 @@ from comfy_api.latest import io
 from comfy_api.input_impl import VideoFromComponents
 from comfy_api.util import VideoComponents
 
-
-from antlr4 import CommonTokenStream, InputStream
 import torch
 
-from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim
+from .helper_functions import getIndexTensorAlongDim, eval_tensor_expr, make_zero_like
 
-from .Parser.MathExprParser import MathExprParser
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.TensorEvalVisitor import TensorEvalVisitor
 
 class VideoMathNode(io.ComfyNode):
     """
-    This node enables the use of math expressions on Latents.
-    inputs:
-        a, b, c, d:
-            Latent, bound to variables with the same name. Defaults to zero latent if not provided.
-        w, x, y, z:
-            Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
-        Latent expression:
-            String, describing expression to aply to latents.
-
-    outputs:
-        LATENT:
-            Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
+    Enables math expressions on Video (images + audio).
+    
+    Inputs:
+        a, b, c, d: Video inputs (b, c, d default to zero if not provided)
+        w, x, y, z: Float variables for expressions
+        Audio: Expression for audio component
+        Images: Expression for image component
+    
+    Outputs:
+        VIDEO: Result of applying expressions to input videos
     """
-    def __init__(self):
-        pass
 
     @classmethod
     def define_schema(cls) -> io.Schema:
-        """
-        """
         return io.Schema(
             node_id="mrmth_VideoMathNode",
             display_name="Video math",
@@ -45,10 +34,10 @@ class VideoMathNode(io.ComfyNode):
                 io.Video.Input(id="b", optional=True),
                 io.Video.Input(id="c", optional=True),
                 io.Video.Input(id="d", optional=True),
-                io.Float.Input(id="w", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0,optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0,optional=True, force_input=True),
+                io.Float.Input(id="w", default=0.0, optional=True, force_input=True),
+                io.Float.Input(id="x", default=0.0, optional=True, force_input=True),
+                io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0, optional=True, force_input=True),
                 io.String.Input(id="Audio", default="a*(1-w)+b*w", tooltip="Expression to apply on audio part of video"),
                 io.String.Input(id="Images", default="a*(1-w)+b*w", tooltip="Expression to apply on image part of video"),
             ],
@@ -57,109 +46,62 @@ class VideoMathNode(io.ComfyNode):
             ],
         )
 
-    #RETURN_NAMES = ("image_output_name",)
     tooltip = cleandoc(__doc__)
 
-    #OUTPUT_NODE = False
-    #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
-
-
     @classmethod
-    def execute(cls, Audio,Images, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
-
+    def execute(cls, Audio, Images, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
         ac = a.get_components()
-        bc = b.get_components() if b is not None else VideoComponents(images=torch.zeros_like(ac.images), audio={'waveform':torch.zeros_like(ac.audio['waveform']),'sample_rate':ac.audio['sample_rate']}, frame_rate=ac.frame_rate,metadata=None)
-        cc = c.get_components() if c is not None else VideoComponents(images=torch.zeros_like(ac.images), audio={'waveform':torch.zeros_like(ac.audio['waveform']),'sample_rate':ac.audio['sample_rate']}, frame_rate=ac.frame_rate,metadata=None)
-        dc = d.get_components() if d is not None else VideoComponents(images=torch.zeros_like(ac.images), audio={'waveform':torch.zeros_like(ac.audio['waveform']),'sample_rate':ac.audio['sample_rate']}, frame_rate=ac.frame_rate,metadata=None)
+        
+        bc = b.get_components() if b is not None else make_zero_like(ac)
+        cc = c.get_components() if c is not None else make_zero_like(ac)
+        dc = d.get_components() if d is not None else make_zero_like(ac)
 
+        # Process images (permute to B, C, H, W)
+        imgs_a = ac.images.permute(0, 3, 1, 2)
+        imgs_b = bc.images.permute(0, 3, 1, 2)
+        imgs_c = cc.images.permute(0, 3, 1, 2)
+        imgs_d = dc.images.permute(0, 3, 1, 2)
 
-        # permute images to B, C, H, W
-        ac.images = ac.images.permute(0, 3, 1, 2)
-        bc.images = bc.images.permute(0, 3, 1, 2)
-        cc.images = cc.images.permute(0, 3, 1, 2)
-        dc.images = dc.images.permute(0, 3, 1, 2)
-
-        B = getIndexTensorAlongDim(ac.images, 0)
-        C = getIndexTensorAlongDim(ac.images, 1)
-        X = getIndexTensorAlongDim(ac.images, 3) # W
-        Y = getIndexTensorAlongDim(ac.images, 2) # H
-        W = torch.full_like(Y, ac.images.shape[3], dtype=torch.float32)
-        H = torch.full_like(Y, ac.images.shape[2], dtype=torch.float32)
-        R = torch.full_like(Y, float(ac.frame_rate), dtype=torch.float32)
-        T = torch.full_like(Y, ac.images.shape[0], dtype=torch.float32)
-
-        variables = {'a': ac.images, 'b': bc.images, 'c': cc.images, 'd': dc.images, 'w': w, 'x': x, 'y': y, 'z': z,
-                     'X':X,'Y':Y,
-                     'B':B,'frame':B,
-                     'W':W,'width':W,
-                     'H':H,'height':H,
-                     'C':C,'channel':C,
-                     'R':R,'frame_rate':R,
-                     'frame_count':ac.images.shape[0],
-                     'N':ac.images.shape[1],'channel_count':ac.images.shape[1]}
-
-        input_stream = InputStream(Images)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        parser.addErrorListener(ThrowingErrorListener())
-        tree = parser.expr()
-        visitor = TensorEvalVisitor(variables, ac.images.shape)
-        imgs = visitor.visit(tree)
-        # permute back to B, H, W, C
-        imgs = imgs.permute(0, 2, 3, 1)
-
-
-        B = getIndexTensorAlongDim(ac.audio['waveform'], 0)
-        C = getIndexTensorAlongDim(ac.audio['waveform'], 1)
-        S = getIndexTensorAlongDim(ac.audio['waveform'], 2)
-        R = torch.full_like(S, ac.audio['sample_rate'], dtype=torch.float32)
-        T = torch.full_like(S, ac.audio['waveform'].shape[2], dtype=torch.float32)
-        N= ac.audio['waveform'].shape[1]
-
-        variables = {
-            'a': ac.audio['waveform'], 'b': bc.audio['waveform'], 'c': cc.audio['waveform'], 'd': dc.audio['waveform'],
+        img_vars = {
+            'a': imgs_a, 'b': imgs_b, 'c': imgs_c, 'd': imgs_d,
             'w': w, 'x': x, 'y': y, 'z': z,
-
-            'B': B, 'batch': B,
-            'C': C, 'channel': C,
-            'S': S, 'sample': S,
-            'R': R, 'sample_rate': R,
-            'T': T, 'sample_count': T,
-            'N': N, 'channel_count': N
+            'X': getIndexTensorAlongDim(imgs_a, 3),
+            'Y': getIndexTensorAlongDim(imgs_a, 2),
+            'B': getIndexTensorAlongDim(imgs_a, 0), 'frame': getIndexTensorAlongDim(imgs_a, 0),
+            'C': getIndexTensorAlongDim(imgs_a, 1), 'channel': getIndexTensorAlongDim(imgs_a, 1),
+            'W': imgs_a.shape[3], 'width': imgs_a.shape[3],
+            'H': imgs_a.shape[2], 'height': imgs_a.shape[2],
+            'R': float(ac.frame_rate), 'frame_rate': float(ac.frame_rate),
+            'T': imgs_a.shape[0], 'frame_count': imgs_a.shape[0],
+            'N': imgs_a.shape[1], 'channel_count': imgs_a.shape[1],
         }
 
-        input_stream = InputStream(Audio)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        tree = parser.expr()
+        result_imgs = eval_tensor_expr(Images, img_vars, imgs_a.shape)
+        result_imgs = result_imgs.permute(0, 2, 3, 1)  # Back to B, H, W, C
 
-        visitor = TensorEvalVisitor(variables, ac.audio['waveform'].shape)
-        result_tensor = visitor.visit(tree)
+        # Process audio
+        audio_a = ac.audio['waveform']
+        audio_b = bc.audio['waveform']
+        audio_c = cc.audio['waveform']
+        audio_d = dc.audio['waveform']
 
-        # Create output dictionary with the same sample rate
-        audioo = {
-            'waveform': result_tensor,
-            'sample_rate': ac.audio['sample_rate']
+        audio_vars = {
+            'a': audio_a, 'b': audio_b, 'c': audio_c, 'd': audio_d,
+            'w': w, 'x': x, 'y': y, 'z': z,
+            'B': getIndexTensorAlongDim(audio_a, 0), 'batch': getIndexTensorAlongDim(audio_a, 0),
+            'C': getIndexTensorAlongDim(audio_a, 1), 'channel': getIndexTensorAlongDim(audio_a, 1),
+            'S': getIndexTensorAlongDim(audio_a, 2), 'sample': getIndexTensorAlongDim(audio_a, 2),
+            'R': ac.audio['sample_rate'], 'sample_rate': ac.audio['sample_rate'],
+            'T': audio_a.shape[2], 'sample_count': audio_a.shape[2],
+            'N': audio_a.shape[1], 'channel_count': audio_a.shape[1],
         }
 
+        result_audio = eval_tensor_expr(Audio, audio_vars, audio_a.shape)
 
-
-
-
-        out = VideoFromComponents(VideoComponents(images=imgs, audio=audioo, frame_rate=ac.frame_rate,metadata=ac.metadata))
-        return (out,)
-
-
-    """
-        The node will always be re executed if any of the inputs change but
-        this method can be used to force the node to execute again even when the inputs don't change.
-        You can make this node return a number or a string. This value will be compared to the one returned the last time the node was
-        executed, if it is different the node will be executed again.
-        This method is used in the core repo for the LoadImage node where they return the image hash as a string, if the image hash
-        changes between executions the LoadImage node is executed again.
-    """
-    #@classmethod
-    #def IS_CHANGED(s, image, string_field, int_field, float_field, print_to_screen):
-    #    return ""
+        output = VideoFromComponents(VideoComponents(
+            images=result_imgs,
+            audio={'waveform': result_audio, 'sample_rate': ac.audio['sample_rate']},
+            frame_rate=ac.frame_rate,
+            metadata=ac.metadata
+        ))
+        return (output,)

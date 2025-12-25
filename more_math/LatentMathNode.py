@@ -2,14 +2,9 @@ from inspect import cleandoc
 
 from comfy_api.latest import io
 
-from antlr4 import CommonTokenStream, InputStream
 import torch
 
-from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim,comonLazy
-
-from .Parser.MathExprParser import MathExprParser
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.TensorEvalVisitor import TensorEvalVisitor
+from .helper_functions import getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
 
 # try to import NestedTensor type if available
 try:
@@ -18,6 +13,8 @@ try:
 except Exception:
     _nested_tensor_module = None
     _NESTED_TENSOR_AVAILABLE = False
+
+
 
 class LatentMathNode(io.ComfyNode):
     """
@@ -78,12 +75,7 @@ class LatentMathNode(io.ComfyNode):
         d_in = None if d is None else d["samples"]
 
         # parse expression once
-        input_stream = InputStream(Latent)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        parser.addErrorListener(ThrowingErrorListener())
-        tree = parser.expr()
+        tree = parse_expr(Latent)
 
         # Helper to evaluate for a single tensor
         def eval_single_tensor(a_t, b_t, c_t, d_t):
@@ -131,8 +123,7 @@ class LatentMathNode(io.ComfyNode):
                 F = getIndexTensorAlongDim(a_t, time_dim)
                 variables.update({'frame_idx': F, 'frame': F, 'frame_count': frame_count})
 
-            visitor = TensorEvalVisitor(variables, a_t.shape)
-            return visitor.visit(tree)
+            return eval_tensor_expr_with_tree(tree, variables, a_t.shape)
 
         # If input is a NestedTensor (from comfy), evaluate per-subtensor and return NestedTensor result
         if hasattr(a_in, 'is_nested') and getattr(a_in, 'is_nested'):
@@ -145,7 +136,7 @@ class LatentMathNode(io.ComfyNode):
             def merge_to_tensor(val, ref):
                 # ref is merged_a
                 if val is None:
-                    return torch.zeros_like(ref)
+                    return make_zero_like(ref)
                 if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
                     lst = val.unbind()
                     return torch.cat(lst, dim=0)
@@ -166,7 +157,7 @@ class LatentMathNode(io.ComfyNode):
                     if val.shape[0] == sum(sizes):
                         return val
                 # fallback
-                return torch.zeros_like(ref)
+                return make_zero_like(ref)
 
             merged_b = merge_to_tensor(b_in, merged_a)
             merged_c = merge_to_tensor(c_in, merged_a)
@@ -187,7 +178,7 @@ class LatentMathNode(io.ComfyNode):
         # ensure b/c/d are set appropriately (zeros_like if None)
         def to_tensor(val, ref):
             if val is None:
-                return torch.zeros_like(ref)
+                return make_zero_like(ref)
             if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
                 lst = val.unbind()
             elif isinstance(val, (list, tuple)):
@@ -196,7 +187,7 @@ class LatentMathNode(io.ComfyNode):
                 return val
 
             if len(lst) == 0:
-                return torch.zeros_like(ref)
+                return make_zero_like(ref)
             if len(lst) == 1:
                 return lst[0]
             try:

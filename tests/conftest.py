@@ -1,21 +1,17 @@
 import os
 import sys
 
-# Ensure test discovery (Visual Studio / pytest) can import the package.
-# conftest.py is imported during collection, so top-level path changes affect discovery.
 _here = os.path.abspath(os.path.dirname(__file__))
 _project_root = os.path.abspath(os.path.join(_here, os.pardir))
-_src_path = os.path.join(_project_root, "src")
+_comfy_root = os.path.abspath(os.path.join(_project_root, os.pardir, os.pardir))
 
-if os.path.isdir(_src_path):
-    _path_to_add = _src_path
-else:
-    _path_to_add = _project_root
-
-if _path_to_add not in sys.path:
-    sys.path.insert(0, _path_to_add)
-    # also make it visible to subprocesses that inspect PYTHONPATH
-    os.environ["PYTHONPATH"] = _path_to_add + os.pathsep + os.environ.get("PYTHONPATH", "")
+# Add project root and ComfyUI root to sys.path
+# This ensures import comfy_api and import comfy work.
+for p in [_project_root, _comfy_root]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+        # also make it visible to subprocesses that inspect PYTHONPATH
+        os.environ["PYTHONPATH"] = p + os.pathsep + os.environ.get("PYTHONPATH", "")
 
 import pytest
 

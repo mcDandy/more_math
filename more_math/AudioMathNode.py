@@ -1,29 +1,21 @@
 import torch
-from antlr4 import CommonTokenStream, InputStream
-from .Parser.MathExprParser import MathExprParser
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.TensorEvalVisitor import TensorEvalVisitor
-from .helper_functions import getIndexTensorAlongDim, comonLazy
+from .helper_functions import getIndexTensorAlongDim, comonLazy, eval_tensor_expr, make_zero_like
 
 from comfy_api.latest import io
 
+
 class AudioMathNode(io.ComfyNode):
     """
-    This node enables the use of math expressions on AUDIO tensors.
-    inputs:
-        a, b, c, d:
-            AUDIO, bound to variables with the same name. Defaults to zero AUDIO if not provided.
-        w, x, y, z:
-            Floats, bound to variables of the expression. Defaults to 0.0 if not provided.
-        Audio expression:
-            String, describing expression to apply to audio tensors.
-
-    outputs:
-        AUDIO:
-            Returns an AUDIO object that contains the result of the math expression applied to the input audio tensors.
+    Enables math expressions on Audio tensors.
+    
+    Inputs:
+        a, b, c, d: Audio inputs (b, c, d default to zero if not provided)
+        w, x, y, z: Float variables for expressions
+        AudioExpr: Expression to apply on audio tensors
+    
+    Outputs:
+        AUDIO: Result of applying expression to input audio
     """
-    def __init__(self):
-        pass
 
     @classmethod
     def define_schema(cls) -> io.Schema:
@@ -33,56 +25,52 @@ class AudioMathNode(io.ComfyNode):
             display_name="Audio math",
             inputs=[
                 io.Audio.Input(id="a", tooltip="Input audio tensor"),
-                io.Audio.Input(id="b", optional=True,lazy=True, tooltip="Second input audio tensor"),
-                io.Audio.Input(id="c", optional=True,lazy=True, tooltip="Third input audio tensor"),
-                io.Audio.Input(id="d", optional=True,lazy=True, tooltip="Fourth input audio tensor"),
-                io.Float.Input(id="w", default=0.0, optional=True,lazy=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, optional=True,lazy=True, force_input=True),
-                io.Float.Input(id="y", default=0.0, optional=True,lazy=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, optional=True,lazy=True, force_input=True),
+                io.Audio.Input(id="b", optional=True, lazy=True, tooltip="Second input audio tensor"),
+                io.Audio.Input(id="c", optional=True, lazy=True, tooltip="Third input audio tensor"),
+                io.Audio.Input(id="d", optional=True, lazy=True, tooltip="Fourth input audio tensor"),
+                io.Float.Input(id="w", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
                 io.String.Input(id="AudioExpr", default="a*(1-w)+b*w", tooltip="Expression to apply on input audio tensors"),
             ],
             outputs=[
                 io.Audio.Output(),
             ],
         )
+
     @classmethod
-    def check_lazy_status(cls, AudioExpr, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
-        return comonLazy(AudioExpr, a, b, c, d,w,x,y,z)
+    def check_lazy_status(cls, AudioExpr, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+        return comonLazy(AudioExpr, a, b, c, d, w, x, y, z)
+
     @classmethod
     def execute(cls, a, AudioExpr, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+        waveform = a['waveform']
+        sample_rate = a['sample_rate']
 
+        b = b if b else make_zero_like(a)
+        c = c if c else make_zero_like(a)
+        d = d if d else make_zero_like(a)
 
-        bv = b if b else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
-        cv = c if c else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
-        dv = d if d else {'waveform':torch.zeros_like(a['waveform']),'sample_rate':a['sample_rate']}
-
-        B = getIndexTensorAlongDim(a['waveform'], 0)
-        C = getIndexTensorAlongDim(a['waveform'], 1)
-        S = getIndexTensorAlongDim(a['waveform'], 2)
-        R = torch.full_like(S, a['sample_rate'], dtype=torch.float32)
-        T = torch.full_like(S, a['waveform'].shape[2], dtype=torch.float32)
+        bv, cv, dv = b['waveform'], c['waveform'], d['waveform']
 
         variables = {
-            'a': a['waveform'], 'b': bv['waveform'], 'c': cv['waveform'], 'd': dv['waveform'],
+            'a': waveform, 'b': bv, 'c': cv, 'd': dv,
             'w': w, 'x': x, 'y': y, 'z': z,
-            'B': B, 'C': C, 'S': S,'R': R, 'T' : T, 'N': a['waveform'].shape[1],
-            'batch': B, 'channel': C, 'sample': S, 'sample_rate': R, 'sample_count': T,'channel_count': a['waveform'].shape[1]
+            'B': getIndexTensorAlongDim(waveform, 0),
+            'C': getIndexTensorAlongDim(waveform, 1),
+            'S': getIndexTensorAlongDim(waveform, 2),
+            'R': torch.full_like(waveform, sample_rate, dtype=torch.float32),
+            'T': torch.full_like(waveform, waveform.shape[2], dtype=torch.float32),
+            'N': waveform.shape[1],
+            'batch': getIndexTensorAlongDim(waveform, 0),
+            'channel': getIndexTensorAlongDim(waveform, 1),
+            'sample': getIndexTensorAlongDim(waveform, 2),
+            'sample_rate': torch.full_like(waveform, sample_rate, dtype=torch.float32),
+            'sample_count': torch.full_like(waveform, waveform.shape[2], dtype=torch.float32),
+            'channel_count': waveform.shape[1],
         }
 
-        input_stream = InputStream(AudioExpr)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        tree = parser.expr()
+        result_tensor = eval_tensor_expr(AudioExpr, variables, waveform.shape)
 
-        visitor = TensorEvalVisitor(variables, a['waveform'].shape)
-        result_tensor = visitor.visit(tree)
-
-        # Create output dictionary with the same sample rate
-        output = {
-            'waveform': result_tensor,
-            'sample_rate': a['sample_rate']
-        }
-
-        return (output,)
+        return ({'waveform': result_tensor, 'sample_rate': sample_rate},)

@@ -1,17 +1,11 @@
 from inspect import cleandoc
 
-from antlr4 import CommonTokenStream, InputStream
 import torch
 
-from .helper_functions import ThrowingErrorListener, getIndexTensorAlongDim,comonLazy
-
-from .Parser.MathExprParser import MathExprParser
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.TensorEvalVisitor import TensorEvalVisitor
+from .helper_functions import getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
 
 from comfy_api.latest import io
 
-# try to import NestedTensor type if available
 import comfy.nested_tensor as _nested_tensor_module
 
 
@@ -95,27 +89,20 @@ class NoiseExecutor():
         self.y = y
         self.z = z
         self.expr = Noise
-        # parse expression once
-        input_stream = InputStream(Noise)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-        parser.addErrorListener(ThrowingErrorListener())
-        self.tree = parser.expr()
+        self.tree = parse_expr(Noise)
     seed = -1;
     def generate_noise(self, input_latent:torch.Tensor) -> torch.Tensor:
         samples = input_latent["samples"]
 
-        # evaluate generators / default zeros
-        a_val = self.a.generate_noise(input_latent) if self.a is not None else torch.zeros_like(samples)
-        b_val = self.b.generate_noise(input_latent) if self.b is not None else torch.zeros_like(samples)
-        c_val = self.c.generate_noise(input_latent) if self.c is not None else torch.zeros_like(samples)
-        d_val = self.d.generate_noise(input_latent) if self.d is not None else torch.zeros_like(samples)
+        a_val = self.a.generate_noise(input_latent) if self.a is not None else make_zero_like(samples)
+        b_val = self.b.generate_noise(input_latent) if self.b is not None else make_zero_like(samples)
+        c_val = self.c.generate_noise(input_latent) if self.c is not None else make_zero_like(samples)
+        d_val = self.d.generate_noise(input_latent) if self.d is not None else make_zero_like(samples)
 
         # helper to convert a returned value into a list matching ref_list
         def to_list(val, ref_list):
             if val is None:
-                return [torch.zeros_like(r) for r in ref_list]
+                return [make_zero_like(r) for r in ref_list]
             # If val is a NestedTensor-like, return underlying list
             if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
                 return val.unbind()
@@ -141,7 +128,7 @@ class NoiseExecutor():
 
             def merge_to_tensor(val, ref):
                 if val is None:
-                    return torch.zeros_like(ref)
+                    return make_zero_like(ref)
                 if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
                     lst = val.unbind()
                     return torch.cat(lst, dim=0)
@@ -158,7 +145,7 @@ class NoiseExecutor():
                             return torch.cat([val[i].unsqueeze(0).expand(sample_list[i].shape[0], *val.shape[1:]) for i in range(len(sample_list))], dim=0)
                     except Exception:
                         pass
-                return torch.zeros_like(ref)
+                return make_zero_like(ref)
 
             merged_a = merge_to_tensor(a_val, merged_samples)
             merged_b = merge_to_tensor(b_val, merged_samples)
@@ -201,8 +188,7 @@ class NoiseExecutor():
             F = getIndexTensorAlongDim(merged_samples, time_dim)
             variables.update({'frame': F, 'frame_count': frame_count})
 
-        visitor = TensorEvalVisitor(variables, variables['a'].shape)
-        merged_result = visitor.visit(self.tree)
+        merged_result = eval_tensor_expr_with_tree(self.tree, variables, variables['a'].shape)
 
         if hasattr(samples, 'is_nested') and getattr(samples, 'is_nested'):
             split_results = list(merged_result.split(sizes, dim=0))

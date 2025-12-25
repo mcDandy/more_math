@@ -154,8 +154,7 @@ class TensorEvalVisitor(MathExprVisitor):
 
     def visitSwapFunc(self, ctx):
         tsr = self.visit(ctx.expr(0))
-        # Evaluate arguments for dim, idx1, idx2. They return full tensors, so we take scalar value.
-        # We use .data.flatten()[0] to get the scalar safely from any shape
+
         dim_t = self.visit(ctx.expr(1))
         idx1_t = self.visit(ctx.expr(2))
         idx2_t = self.visit(ctx.expr(3))
@@ -165,15 +164,11 @@ class TensorEvalVisitor(MathExprVisitor):
         j = int(idx2_t.flatten()[0].item())
 
         # Handle negative dim
-        if dim < 0: dim += tsr.ndim
+        while dim < 0: dim += tsr.ndim
+        while i < 0: i += tsr.shape[dim]
+        while j < 0: j += tsr.shape[dim]
 
-        # Create permuted index
         indices = torch.arange(tsr.shape[dim], device=tsr.device)
-        # Swap
-        # Check bounds? Torch index_select will check bounds or crash.
-        # Support python style negative indexing for indices
-        if i < 0: i += tsr.shape[dim]
-        if j < 0: j += tsr.shape[dim]
 
         val_i = indices[i].clone()
         indices[i] = indices[j]

@@ -40,7 +40,6 @@ class ThrowingErrorListener(ErrorListener):
 def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     variables = {'a':a,'b':b,'c':c,'d':d,'w':w,'x':x,'y':y,'z':z}
     need_eval = []
-    print(a,b,c,d,w,x,y,z)
     input_stream = InputStream(expr)
 
     lexer = MathExprLexer(input_stream)

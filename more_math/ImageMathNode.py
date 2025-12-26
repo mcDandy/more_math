@@ -4,7 +4,9 @@ from .helper_functions import getIndexTensorAlongDim, comonLazy, eval_tensor_exp
 from comfy_api.latest import io
 
 
-class ImageMathNode(io.ComfyNode):
+from .MathNodeBase import MathNodeBase
+
+class ImageMathNode(MathNodeBase):
     """
     Enables math expressions on Images.
     
@@ -40,14 +42,8 @@ class ImageMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Image, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
-        return comonLazy(Image, a, b, c, d, w, x, y, z)
-
-    @classmethod
     def execute(cls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
-        b = make_zero_like(a) if b is None else b
-        c = make_zero_like(a) if c is None else c
-        d = make_zero_like(a) if d is None else d
+        a, b, c, d = cls.prepare_inputs(a, b, c, d)
 
         # Permute to B, C, H, W for processing
         a = a.permute(0, 3, 1, 2)

@@ -6,7 +6,9 @@ from comfy_api.latest import io
 
 
 
-class ConditioningMathNode(io.ComfyNode):
+from .MathNodeBase import MathNodeBase
+
+class ConditioningMathNode(MathNodeBase):
     """
     Enables math operations on conditionings.
     
@@ -54,9 +56,7 @@ class ConditioningMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, Tensor, pooled_output, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         # Default missing conditionings to zero
-        b = b if b is not None else make_zero_like(a)
-        c = c if c is not None else make_zero_like(a)
-        d = d if d is not None else make_zero_like(a)
+        a, b, c, d = cls.prepare_inputs(a, b, c, d)
 
         # Extract tensors
         ta, tb, tc, td = a[0][0], b[0][0], c[0][0], d[0][0]

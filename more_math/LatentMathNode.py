@@ -6,6 +6,8 @@ import torch
 
 from .helper_functions import getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
 
+from .MathNodeBase import MathNodeBase
+
 # try to import NestedTensor type if available
 try:
     import comfy.nested_tensor as _nested_tensor_module
@@ -15,8 +17,7 @@ except Exception:
     _NESTED_TENSOR_AVAILABLE = False
 
 
-
-class LatentMathNode(io.ComfyNode):
+class LatentMathNode(MathNodeBase):
     """
     This node enables the use of math expressions on Latents.
     inputs:
@@ -63,9 +64,6 @@ class LatentMathNode(io.ComfyNode):
 
     #OUTPUT_NODE = False
     #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
-    @classmethod
-    def check_lazy_status(cls, Latent, a, b=[], c=[], d=[],w=0,x=0,y=0,z=0):
-        return comonLazy(Latent, a, b, c, d,w,x,y,z)
     @classmethod
     def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
         # Extract raw sample tensors (may be Tensor or NestedTensor)

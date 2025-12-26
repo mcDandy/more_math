@@ -9,7 +9,9 @@ import torch
 from .helper_functions import getIndexTensorAlongDim, eval_tensor_expr, make_zero_like
 
 
-class VideoMathNode(io.ComfyNode):
+from .MathNodeBase import MathNodeBase
+
+class VideoMathNode(MathNodeBase):
     """
     Enables math expressions on Video (images + audio).
     

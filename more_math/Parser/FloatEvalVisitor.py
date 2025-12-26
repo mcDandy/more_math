@@ -104,13 +104,18 @@ class FloatEvalVisitor(MathExprVisitor):
     def visitAsinhFunc(self, ctx): return math.asinh(self.visit(ctx.expr()))
     def visitAcoshFunc(self, ctx): return math.acosh(self.visit(ctx.expr()))
     def visitAtanhFunc(self, ctx): return math.atanh(self.visit(ctx.expr()))
-    def visitAbsFunc(self, ctx):   return math.abs(self.visit(ctx.expr()))
-    def visitAbsExp(self, ctx):    return math.abs(self.visit(ctx.expr()))
+    def visitAbsFunc(self, ctx):   return abs(self.visit(ctx.expr()))
+    def visitAbsExp(self, ctx):    return abs(self.visit(ctx.expr()))
+    def visitListExp(self, ctx):   return self.visit(ctx.expr(0))
     def visitSqrtFunc(self, ctx):  return math.sqrt(self.visit(ctx.expr()))
     def visitLnFunc(self, ctx):    return math.log(self.visit(ctx.expr()))
     def visitLogFunc(self, ctx):   return math.log10(self.visit(ctx.expr()))
     def visitExpFunc(self, ctx):   return math.exp(self.visit(ctx.expr()))
-    def visitNormFunc(self, ctx):  return math.sqrt(math.avg(x**2 for x in self.visit(ctx.expr())))
+    def visitNormFunc(self, ctx):
+        vals = self.visit(ctx.expr())
+        if isinstance(vals, (list, tuple)):
+             return math.sqrt(sum(x**2 for x in vals) / len(vals))
+        return abs(vals)
     def visitFloorFunc(self, ctx): return math.floor(self.visit(ctx.expr()))
     def visitFractFunc(self, ctx):
         val = self.visit(ctx.expr())
@@ -131,7 +136,7 @@ class FloatEvalVisitor(MathExprVisitor):
         x = self.visit(ctx.expr())
         return math.copysign(1.0, x) if x != 0 else 0.0
     def visitCeilFunc(self, ctx):  return math.ceil(self.visit(ctx.expr()))
-    def visitRoundFunc(self, ctx): return math.round(self.visit(ctx.expr()))
+    def visitRoundFunc(self, ctx): return round(self.visit(ctx.expr()))
     def visitGammaFunc(self, ctx): return math.gamma(self.visit(ctx.expr())).exp()
     def visitPrintFunc(self, ctx):
         val = self.visit(ctx.expr())
@@ -151,10 +156,10 @@ class FloatEvalVisitor(MathExprVisitor):
     # N-argument functions
     def visitSMinFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
-        return math.min(args)
+        return min(args)
     def visitSMaxFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
-        return math.max(args)
+        return max(args)
 
     def visitClampFunc(self, ctx):
         x = self.visit(ctx.expr(0))
@@ -188,6 +193,13 @@ class FloatEvalVisitor(MathExprVisitor):
         return self.visitChildren(ctx)
     def visitFunc4Exp(self, ctx):
         return self.visitChildren(ctx)
+
+    def visitMapFunc(self, ctx):
+        return self.visit(ctx.expr(0))
+
+    def visitConvFunc(self, ctx):
+        return self.visit(ctx.expr(0))
+
     def visitFuncNExp(self, ctx):
         return self.visitChildren(ctx)
     def visitAtomExp(self, ctx):

@@ -51,6 +51,7 @@ atom
     | CONSTANT               # ConstantExp
     | '(' expr ')'           # ParenExp
     | PIPE expr PIPE         # AbsExp
+    | '[' expr (',' expr)* ']' # ListExp
     ;
 
 // Single-argument functions
@@ -88,7 +89,6 @@ func1
     | SOFTPLUS '(' expr ')'  # SoftplusFunc
     | GELU  '(' expr ')'     # GeluFunc
     | SIGN  '(' expr ')'     # SignFunc
-
     ;
 
 // Two-argument functions
@@ -99,6 +99,7 @@ func2
     | TMAX   '(' expr ',' expr ')'   # TMaxFunc
     | STEP   '(' expr ',' expr ')'   # StepFunc
     ;
+
 func3
     : CLAMP      '(' expr ',' expr ',' expr ')'   # ClampFunc
     | LERP       '(' expr ',' expr ',' expr ')'   # LerpFunc
@@ -108,11 +109,14 @@ func3
 func4
     : SWAP   '(' expr ',' expr ',' expr ',' expr ')'   # SwapFunc
     ;
-// N-argument functions (at least 2 arguments)
-funcN
-    : SMIN   '(' expr (',' expr)+ ')'   # SMinFunc
-    | SMAX   '(' expr (',' expr)+ ')'   # SMaxFunc
 
+// N-argument functions
+funcN
+    : SMIN   '(' expr (',' expr)* ')'   # SMinFunc
+    | SMAX   '(' expr (',' expr)* ')'   # SMaxFunc
+    | MAP    '(' expr (',' expr)+ ')'   # MapFunc
+    | CONV   '(' expr (',' expr)+ ')'   # ConvFunc
+    | PERM   '(' expr ',' expr ')'      # PermuteFunc
     ;
 
 // LEXER RULES
@@ -160,7 +164,10 @@ RELU : 'relu';
 SOFTPLUS : 'softplus';
 GELU : 'gelu';
 SIGN : 'sign';
+MAP : 'map';
+CONV : 'conv';
 SWAP : 'swap';
+PERM : 'permute';
 
 PLUS        : '+';
 MINUS       : '-';

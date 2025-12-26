@@ -159,6 +159,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ListExp.
+    def visitListExp(self, ctx:MathExprParser.ListExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SinFunc.
     def visitSinFunc(self, ctx:MathExprParser.SinFuncContext):
         return self.visitChildren(ctx)
@@ -376,6 +381,21 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#SMaxFunc.
     def visitSMaxFunc(self, ctx:MathExprParser.SMaxFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MapFunc.
+    def visitMapFunc(self, ctx:MathExprParser.MapFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ConvFunc.
+    def visitConvFunc(self, ctx:MathExprParser.ConvFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PermuteFunc.
+    def visitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         return self.visitChildren(ctx)
 
 

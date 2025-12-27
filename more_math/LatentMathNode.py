@@ -4,7 +4,7 @@ from comfy_api.latest import io
 
 import torch
 
-from .helper_functions import getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
 
 from .MathNodeBase import MathNodeBase
 
@@ -114,7 +114,7 @@ class LatentMathNode(MathNodeBase):
                 'H': height_val, 'height': height_val,
                 'T': frame_count, 'batch_count': batch_count,
                 'N': channel_count, 'channel_count': channel_count,
-            }
+            } | generate_dim_variables(a_t)
 
             # expose time/frame if present
             if time_dim is not None:

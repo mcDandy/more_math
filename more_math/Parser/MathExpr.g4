@@ -89,6 +89,8 @@ func1
     | SOFTPLUS '(' expr ')'  # SoftplusFunc
     | GELU  '(' expr ')'     # GeluFunc
     | SIGN  '(' expr ')'     # SignFunc
+    | PRINT_SHAPE_L '(' expr ')' # PrintShapeFunc
+    | PRINT_SHAPE   '(' expr ')' # PrintShapeFunc
     ;
 
 // Two-argument functions
@@ -156,6 +158,8 @@ SFFT : 'fft';
 SIFFT : 'ifft';
 ANGL : 'angle';
 PRNT : 'print';
+PRINT_SHAPE_L : 'print_shape';
+PRINT_SHAPE : 'pshp';
 LERP : 'lerp';
 STEP : 'step';
 SMOOTHSTEP : 'smoothstep';

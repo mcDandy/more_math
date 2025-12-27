@@ -26,13 +26,13 @@ def parse_expr(expr: str):
 
 def eval_tensor_expr(expr: str, variables: dict, shape: tuple, device=None):
     """Parse and evaluate a tensor math expression.
-    
+
     Args:
         expr: Math expression string
         variables: Dict of variable names to tensor/scalar values
         shape: Shape tuple for the TensorEvalVisitor
         device: Optional device override
-    
+
     Returns:
         Result tensor from evaluating the expression
     """
@@ -55,7 +55,6 @@ def eval_float_expr(expr: str, variables: dict):
     tree = parse_expr(expr)
     visitor = FloatEvalVisitor(variables)
     return visitor.visit(tree)
-
 
 def eval_float_expr_with_tree(tree, variables: dict):
     """Evaluate a pre-parsed expression tree with FloatEvalVisitor."""
@@ -87,6 +86,18 @@ def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
             need_eval.append(token.text)
     return need_eval
 
+def generate_dim_variables(tensor):
+    """Generate index and size tensors for each dimension of the input tensor."""
+    variables = {}
+    for dim, size in enumerate(tensor.shape):
+        variables[f'D{dim}'] = getIndexTensorAlongDim(tensor, dim)
+        print(tensor)
+        print(tensor.shape)
+        print(variables[f'D{dim}'])
+        print(dim)
+        print(size)
+        variables[f'S{dim}'] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
+    return variables
 
 def make_zero_like(ref):
     """

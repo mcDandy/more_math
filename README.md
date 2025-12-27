@@ -22,6 +22,7 @@ You can also get the node from comfy manager under the name of More math.
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `||`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
+- Lists: `[v1, v2, ...]` (Vector math supported, only usefull in `conv`)
 
 ## Functions
 
@@ -69,11 +70,21 @@ You can also get the node from comfy manager under the name of More math.
 
 - `tmin(x, y)`: Element-wise minimum of x and y.
 - `tmax(x, y)`: Element-wise maximum of x and y.
-- `smin(x, y, ...)`: **Scalar** minimum. Returns the single smallest value across all input tensors/values.
-- `smax(x, y, ...)`: **Scalar** maximum. Returns the single largest value across all input tensors/values.
+- `smin(x, ...)`: **Scalar** minimum. Returns the single smallest value across all input tensors/values.
+- `smax(x, ...)`: **Scalar** maximum. Returns the single largest value across all input tensors/values.
 - `tnorm(x)`: **Tensor** Normalizes x (L2 norm along last dimension).
 - `snorm(x)`: **Scalar** L2 norm of the entire tensor.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension. (Tensor only)
+
+### Advanced Tensor Operations (Tensor Only)
+
+- `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
+  - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor.
+  - If less than 3 functions are provided and shape of tensor > 3, the remaining dimensions are assumed to be identity functions.
+- `conv(tensor, kw, [kh], [kd], k_expr)`: Applies a convolution to `tensor`.
+  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
+
+- `permute(tensor, [dims])`: Rearranges the dimensions of the tensor. (e.g., `permute(a, [2, 3, 0, 1])`)
 
 ### FFT (Tensor Only)
 
@@ -84,9 +95,13 @@ You can also get the node from comfy manager under the name of More math.
 ### Utility
 
 - `print(x)`: Prints the value of x to the console and returns x.
+- `print_shape(x)` or `pshp`: Prints the shape of x to the console and returns x.
 
 ## Variables
 
+- **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
+  - `D{N}` - position in n-th dimension of tensor (for example D0, D1, D2, ...)
+  - `S{N}` - size of n-th dimension of tensor (for example S0, S1, S2, ...)
 - **common inputs** (matches node input type):
   - `a`, `b`, `c`, `d`
 - **Extra floats**:
@@ -103,8 +118,13 @@ You can also get the node from comfy manager under the name of More math.
   - `W` or `width` - width of image. y/width = 1
   - `H` or `height`- height of image. x/height = 1
   - `B` or 'batch' - position in batch
-  - 'T' or 'batch_count` - number of batches
+  - `T` or `batch_count` - number of batches
   - `N` or `channel_count` - count of channels
+- **IMAGE KERNEL**:
+  - `kX`, `kY` - position in kernel. Centered at 0.0.
+  - `kW`, `kernel_width` - width of kernel.
+  - `kH`, `kernel_height` - height of kernel.
+  - `kD`, `kernel_depth` - depth of kernel.
 
 - **AUDIO**:
   - `B` or 'batch' - position in batch
@@ -124,6 +144,6 @@ You can also get the node from comfy manager under the name of More math.
   - no additional variables
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
   - `K` or `frequency` – isotropic frequency (Euclidean norm of indices, iFFT only)
-  - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
-  - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
+  - `Kx`, `Ky`, `Kz`, `Kw`,`Kv`, `Ku`, `K_dimN` - frequency index for specific dimension
+  - `Fx`, `Fy`, `Fz`, `Fw`,`Fv`,`Fu`, `F_dimN` - frequency count for specific dimension
 - Constants: `e`, `pi`

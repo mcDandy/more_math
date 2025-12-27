@@ -1,7 +1,7 @@
 from inspect import cleandoc
 import torch
 
-from .helper_functions import comonLazy, eval_tensor_expr, make_zero_like
+from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, make_zero_like
 from comfy_api.latest import io
 
 
@@ -11,17 +11,17 @@ from .MathNodeBase import MathNodeBase
 class ConditioningMathNode(MathNodeBase):
     """
     Enables math operations on conditionings.
-    
+
     Inputs:
         a, b, c, d: Conditioning inputs (b, c, d default to zero if not provided)
         w, x, y, z: Float variables for expressions
         Tensor: Expression for the tensor part (describes image composition)
         pooled_output: Expression for the pooled output (condensed representation)
-    
+
     Outputs:
         CONDITIONING: Result of applying expressions to input conditionings
     """
-    
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -60,9 +60,9 @@ class ConditioningMathNode(MathNodeBase):
 
         # Extract tensors
         ta, tb, tc, td = a[0][0], b[0][0], c[0][0], d[0][0]
-        
+
         # Evaluate tensor expression
-        variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z}
+        variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z} | generate_dim_variables(ta)
         result_tensor = eval_tensor_expr(Tensor, variables, ta.shape)
 
         # Evaluate pooled_output expression if available
@@ -71,7 +71,7 @@ class ConditioningMathNode(MathNodeBase):
             pb = b[0][1].get("pooled_output")
             pc = c[0][1].get("pooled_output")
             pd = d[0][1].get("pooled_output")
-            variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z}
+            variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z} | generate_dim_variables(pa)
             result_pooled = eval_tensor_expr(pooled_output, variables, pa.shape)
         else:
             result_pooled = None

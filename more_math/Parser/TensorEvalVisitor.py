@@ -2,6 +2,7 @@ import torch
 import torch.special
 
 from .MathExprVisitor import MathExprVisitor
+from ..helper_functions import generate_dim_variables
 
 class TensorEvalVisitor(MathExprVisitor):
     def __init__(self, variables, shape, device=None):
@@ -290,7 +291,6 @@ class TensorEvalVisitor(MathExprVisitor):
             self.variables[f'F_dim{dim_idx}'] = float(size_d)
 
             k_components.append(values)
-
         # Calculate isotropic K (Euclidean distance from DC)
         k_sq_sum = torch.zeros(self.shape, device=device)
         for k_val in k_components:
@@ -302,6 +302,7 @@ class TensorEvalVisitor(MathExprVisitor):
         # Legacy aliases
         if 'Kx' in self.variables:
             self.variables['frequency_count'] = self.variables.get('Fx', 1.0)
+        self.variables = self.variables | generate_dim_variables(values)
 
         try:
             val = self.visit(ctx.expr())
@@ -377,78 +378,57 @@ class TensorEvalVisitor(MathExprVisitor):
         coords = [self.visit(ctx.expr(i)) for i in range(1, len(ctx.expr()))]
         num_coords = len(coords)
 
-        if num_coords == 0:
-            return tensor
+        if num_coords == 0: return tensor
+        if num_coords > 3:
+            raise ValueError("map() supports max 3 mapping functions.")
 
-        is_1d = (num_coords == 1)
-        if is_1d:
-            tensor = tensor.unsqueeze(-2)
-            zeros = torch.zeros_like(coords[0])
-            coords.append(zeros)
-
-        working_num_coords = len(coords)
-
-
-        spatial_in_shape = tensor.shape[-working_num_coords:]
-        leading_shape = tensor.shape[:-working_num_coords]
+        spatial_in_shape = tensor.shape[-num_coords:]
+        leading_shape = tensor.shape[:-num_coords]
 
         batch_size = 1
-        for s in leading_shape:
-            batch_size *= s
+        for s in leading_shape: batch_size *= s
 
-        if len(leading_shape) == 0:
-            input_view = tensor.view(1, 1, *spatial_in_shape)
-        else:
-            input_view = tensor.view(batch_size, 1, *spatial_in_shape)
+        input_view = tensor.reshape(batch_size, 1, *spatial_in_shape)
 
         norm_coords_list = []
-        for i, coord in enumerate(coords):
+        for i in range(num_coords):
             dim_size = spatial_in_shape[-(i+1)]
-            norm = self._normalize_coord(coord, dim_size)
+            norm = self._normalize_coord(coords[i], dim_size)
             norm_coords_list.append(norm)
 
-        try:
-            broadcasted_coords = torch.broadcast_tensors(*norm_coords_list)
-        except RuntimeError:
-             raise ValueError(f"map(): Coordinate shapes {[c.shape for c in coords]} cannot be broadcast together.")
-
-        grid = torch.stack(broadcasted_coords, dim=-1)
-
+        broadcasted = torch.broadcast_tensors(*norm_coords_list)
+        grid = torch.stack(broadcasted, dim=-1)
         grid_spatial_shape = grid.shape[:-1]
-        is_batched = False
-        if len(leading_shape) > 0 and len(grid_spatial_shape) >= len(leading_shape):
-             if grid_spatial_shape[:len(leading_shape)] == leading_shape:
-                 is_batched = True
 
-        if batch_size > 1 and not is_batched:
-             grid = grid.expand(batch_size, *grid.shape)
-             grid_spatial_shape = grid.shape[1:-1]
-        elif is_batched:
-             flatten_shape = (batch_size,) + grid_spatial_shape[len(leading_shape):] + (grid.shape[-1],)
-             grid = grid.reshape(flatten_shape)
-             grid_spatial_shape = flatten_shape[1:-1]
-
-        total_output_elements = grid.numel() // working_num_coords // batch_size
-
-        if working_num_coords == 2:
-            grid_view = grid.reshape(batch_size, 1, total_output_elements, 2)
-            output = torch.nn.functional.grid_sample(
-                input_view, grid_view, mode='bilinear', padding_mode='zeros', align_corners=True
-            )
-        elif working_num_coords == 3:
-            grid_view = grid.reshape(batch_size, 1, 1, total_output_elements, 3)
-            output = torch.nn.functional.grid_sample(
-                input_view, grid_view, mode='bilinear', padding_mode='zeros', align_corners=True
-            )
+        if grid.numel() // max(2, num_coords) >= batch_size and \
+           grid.shape[:len(leading_shape)] == leading_shape:
+            grid_view = grid.reshape(batch_size, -1, num_coords)
         else:
-             raise ValueError(f"map() supports up to 3 coordinate dimensions, got {num_coords} original coords.")
+            grid_view = grid.expand(batch_size, *([-1] * len(grid_spatial_shape)), -1)
+            grid_view = grid_view.reshape(batch_size, -1, num_coords)
 
-        output = output.view(batch_size, total_output_elements)
+        if num_coords == 1:
+            y_zeros = torch.zeros_like(grid_view[..., :1])
+            grid_final = torch.cat([grid_view, y_zeros], dim=-1).reshape(batch_size, 1, -1, 2)
+            input_final = input_view.reshape(batch_size, 1, 1, -1)
+            output = torch.nn.functional.grid_sample(input_final, grid_final, align_corners=True)
+        elif num_coords == 2:
+            grid_final = grid_view.reshape(batch_size, 1, -1, 2)
+            output = torch.nn.functional.grid_sample(input_view, grid_final, align_corners=True)
+        else: # 3D
+            grid_final = grid_view.reshape(batch_size, 1, 1, -1, 3)
+            output = torch.nn.functional.grid_sample(input_view, grid_final, align_corners=True)
 
-        final_shape = list(leading_shape) + list(grid_spatial_shape)
-        output = output.view(final_shape)
 
-        return output
+        actual_spatial = grid_spatial_shape
+        if len(grid_spatial_shape) >= len(leading_shape) and \
+           grid_spatial_shape[:len(leading_shape)] == leading_shape:
+            actual_spatial = grid_spatial_shape[len(leading_shape):]
+
+        final_shape = list(leading_shape) + list(actual_spatial)
+        return output.reshape(final_shape)
+
+
 
     def _kernel_coords(self, size, device):
         half = size // 2
@@ -499,7 +479,8 @@ class TensorEvalVisitor(MathExprVisitor):
         k_variables = self.variables.copy()
         k_variables.update({
             'kX': kx, 'kY': ky, 'kZ': kz,
-            'kW': float(kw), 'kH': float(kh), 'kD': float(kd)
+            'kW': float(kw), 'kH': float(kh), 'kD': float(kd),
+            'kernel_width': float(kw), 'kernel_height': float(kh), 'kernel_depth': float(kd)
         })
 
         k_visitor = TensorEvalVisitor(k_variables, (kd, kh, kw), device=self.device)
@@ -555,3 +536,8 @@ class TensorEvalVisitor(MathExprVisitor):
 
     def visitExpr(self, ctx):
        return self.visitChildren(ctx)
+
+    def visitPrintShapeFunc(self, ctx):
+        tsr = self.visit(ctx.expr())
+        print(tsr.shape)
+        return tsr

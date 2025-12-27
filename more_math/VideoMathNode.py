@@ -6,7 +6,7 @@ from comfy_api.util import VideoComponents
 
 import torch
 
-from .helper_functions import getIndexTensorAlongDim, eval_tensor_expr, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, make_zero_like
 
 
 from .MathNodeBase import MathNodeBase
@@ -76,7 +76,7 @@ class VideoMathNode(MathNodeBase):
             'R': float(ac.frame_rate), 'frame_rate': float(ac.frame_rate),
             'T': imgs_a.shape[0], 'frame_count': imgs_a.shape[0],
             'N': imgs_a.shape[1], 'channel_count': imgs_a.shape[1],
-        }
+        } | generate_dim_variables(imgs_a)
 
         result_imgs = eval_tensor_expr(Images, img_vars, imgs_a.shape)
         result_imgs = result_imgs.permute(0, 2, 3, 1)  # Back to B, H, W, C
@@ -96,7 +96,7 @@ class VideoMathNode(MathNodeBase):
             'R': ac.audio['sample_rate'], 'sample_rate': ac.audio['sample_rate'],
             'T': audio_a.shape[2], 'sample_count': audio_a.shape[2],
             'N': audio_a.shape[1], 'channel_count': audio_a.shape[1],
-        }
+        } | generate_dim_variables(audio_a)
 
         result_audio = eval_tensor_expr(Audio, audio_vars, audio_a.shape)
 

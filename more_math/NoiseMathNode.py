@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 import torch
 
-from .helper_functions import getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
 
 from comfy_api.latest import io
 
@@ -183,7 +183,7 @@ class NoiseExecutor():
             'I': merged_samples, 'T': frame_count, 'N': merged_samples.shape[channel_dim],
             'batch': B, 'width': merged_samples.shape[width_dim], 'height': merged_samples.shape[height_dim], 'channel': C,
             'batch_count': merged_samples.shape[0], 'channel_count': merged_samples.shape[1], 'input_latent': merged_samples,
-        }
+        } | generate_dim_variables(merged_samples)
         if time_dim is not None:
             F = getIndexTensorAlongDim(merged_samples, time_dim)
             variables.update({'frame': F, 'frame_count': frame_count})

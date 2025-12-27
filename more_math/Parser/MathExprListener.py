@@ -584,6 +584,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#PrintShapeFunc.
+    def enterPrintShapeFunc(self, ctx:MathExprParser.PrintShapeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PrintShapeFunc.
+    def exitPrintShapeFunc(self, ctx:MathExprParser.PrintShapeFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass

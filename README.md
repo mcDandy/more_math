@@ -8,6 +8,9 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
 
 1. Install [ComfyUI](https://docs.comfy.org/get_started).
 1. Clone this repository into `ComfyUI/custom_nodes`.
+2. open command prompt/terminal/bash in your comfy folder
+3. activate environment `./venv/Scripts/activate`
+4. install antlr `pip install -U antlr4-python3-runtime==4.13.2`
 1. Restart ComfyUI.
 
 You can also get the node from comfy manager under the name of More math.

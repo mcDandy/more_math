@@ -85,9 +85,7 @@ You can also get the node from comfy manager under the name of More math.
 ### Advanced Tensor Operations (Tensor Only)
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
-  - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor.
-  - If less than 3 functions are provided and shape of tensor >= 3, the remaining dimensions are assumed to be identity functions.
-  - That means map(tensor4,func) where tensor4 has shape [a,b,c,d] will map 2nd dimension and map(tensor4,func,func) will map 2nd and 3rd dimension. map(tensor4,func,func,func) will map last 3 dimensions.
+  - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor. Rest uses identity mapping.
 - `conv(tensor, kw, [kh], [kd], k_expr)`: Applies a convolution to `tensor`.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 

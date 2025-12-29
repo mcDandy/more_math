@@ -18,8 +18,10 @@ You can also get the node from comfy manager under the name of More math.
 ## Features
 
 - functions and variables in math expressions
-- conversions between int and float
+- Conversion between INT and FLOAT; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
 - Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, NOISE, AUDIO, VIDEO, MODEL, CLIP and VAE
+
+- Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars
 
 ## Operators
 

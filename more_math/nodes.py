@@ -6,10 +6,12 @@ from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
 from .AudioMathNode import AudioMathNode
 from .VideoMathNode import VideoMathNode
-
 from .ModelMathNode import ModelMathNode
 from .VaeMathNode import VAEMathNode
 from .ClipMathNode import CLIPMathNode
+from .SpectrogramToAudioNode import SpectrogramToAudio
+from .AudioToSpectrogramNode import AudioToSpectrogram
+
 from comfy_api.latest import ComfyExtension, io
 
 class IntToFloatNode(io.ComfyNode):
@@ -76,7 +78,9 @@ class MoreMathExtension(ComfyExtension):
                 IntToFloatNode,
                 FloatToIntNode,
                 AudioMathNode,
-                VideoMathNode
+                VideoMathNode,
+                AudioToSpectrogram,
+                SpectrogramToAudio
             ]
 async def comfy_entrypoint() -> MoreMathExtension:
     return MoreMathExtension()

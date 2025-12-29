@@ -15,14 +15,15 @@ You can also get the node from comfy manager under the name of More math.
 ## Features
 
 - functions and variables in math expressions
-- Nodes for CONDITIONING, LATENT, IMAGE, NOISE, FLOAT, VIDEO and AUDIO
+- conversions between int and float
+- Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, NOISE, AUDIO, VIDEO, MODEL, CLIP and VAE
 
 ## Operators
 
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `||`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
-- Lists: `[v1, v2, ...]` (Vector math supported, only usefull in `conv`)
+- Lists: `[v1, v2, ...]` (Vector math supported, only usefull in `conv` and `permute`)
 
 ## Functions
 
@@ -80,11 +81,12 @@ You can also get the node from comfy manager under the name of More math.
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
   - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor.
-  - If less than 3 functions are provided and shape of tensor > 3, the remaining dimensions are assumed to be identity functions.
+  - If less than 3 functions are provided and shape of tensor >= 3, the remaining dimensions are assumed to be identity functions.
+  - That means map(tensor4,func) where tensor4 has shape [a,b,c,d] will map 2nd dimension and map(tensor4,func,func) will map 2nd and 3rd dimension. map(tensor4,func,func,func) will map last 3 dimensions.
 - `conv(tensor, kw, [kh], [kd], k_expr)`: Applies a convolution to `tensor`.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 
-- `permute(tensor, [dims])`: Rearranges the dimensions of the tensor. (e.g., `permute(a, [2, 3, 0, 1])`)
+- `permute(tensor, dims)`: Rearranges the dimensions of the tensor. (e.g., `permute(a, [2, 3, 0, 1])`)
 
 ### FFT (Tensor Only)
 

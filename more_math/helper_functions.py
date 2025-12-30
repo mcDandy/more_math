@@ -91,11 +91,6 @@ def generate_dim_variables(tensor):
     variables = {}
     for dim, size in enumerate(tensor.shape):
         variables[f'D{dim}'] = getIndexTensorAlongDim(tensor, dim)
-        print(tensor)
-        print(tensor.shape)
-        print(variables[f'D{dim}'])
-        print(dim)
-        print(size)
         variables[f'S{dim}'] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
     return variables
 

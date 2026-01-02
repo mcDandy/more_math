@@ -431,21 +431,29 @@ def test_basic_utilities():
 
 def test_advanced_activations():
     node = FloatMathNode()
-    # sigmoid(0) = 0.5
-    assert abs(node.execute("sigmoid(0)", a=0.0)[0] - 0.5) < 1e-5
+    # sigm(0) = 0.5
+    assert abs(node.execute("sigm(0)", a=0.0)[0] - 0.5) < 1e-5
 
 if __name__ == "__main__":
     import sys
     try: 
-        #test_trig_functions()
-        #test_pow_log_functions()
+        test_conditioning_math_node_initialization()
+        test_conditioning_math_node_metadata()
+        test_latent_math_node_initialization()
+        test_latent_math_node_metadata()
+        test_image_math_node_initialization()
+        test_image_math_node_metadata()
+        test_trig_functions()
+        test_inverse_trig_functions()
+        test_pow_log_functions()
         test_min_max_functions()
-        #test_basic_utilities()
-        #test_activation_functions()
+        test_basic_utilities()
+        test_advanced_activations()
         print("All tests passed!")
     except Exception as e:
         import traceback
         traceback.print_exc()
         sys.exit(1)
     print("All tests in test_more_math.py passed!")
+
 

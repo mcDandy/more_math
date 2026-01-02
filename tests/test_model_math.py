@@ -1,5 +1,6 @@
 import sys
 import os
+import comfy_api
 
 # Ensure test runner (Visual Studio) can import the package regardless of working dir.
 # If repository uses `src/` layout, add that to sys.path; otherwise add project root.
@@ -13,35 +14,14 @@ _comfy_root = os.path.abspath(os.path.join(_here, "../../.."))
 if _comfy_root not in sys.path:
     sys.path.insert(0, _comfy_root)
 
-from unittest.mock import MagicMock
-
-# Mock comfy_api
-try:
-    import comfy_api
-except ImportError:
-    mock_io = MagicMock()
-    mock_io.ComfyNode = object
-    mock_io.Schema = MagicMock()
-    mock_io.Model = MagicMock()
-    mock_io.Model.Input = MagicMock()
-    mock_io.Model.Output = MagicMock()
-    mock_io.Float = MagicMock()
-    mock_io.Float.Input = MagicMock()
-    mock_io.String = MagicMock()
-    mock_io.String.Input = MagicMock()
-
-    mock_comfy = MagicMock()
-    mock_comfy.latest.io = mock_io
-    sys.modules["comfy_api"] = mock_comfy
-    sys.modules["comfy_api.latest"] = mock_comfy.latest
 
 import torch
 from more_math.ModelMathNode import ModelMathNode
 
 class MockModelPatcher:
     def __init__(self, state_dict):
-        self.model = MagicMock()
-        self.model.state_dict.return_value = state_dict
+        self.model = comfy_api.Model()
+        self.model.state_dict = state_dict
         self.patches = {}
 
     def clone(self):

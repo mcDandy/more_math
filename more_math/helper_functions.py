@@ -25,41 +25,32 @@ def parse_expr(expr: str):
 
 
 def eval_tensor_expr(expr: str, variables: dict, shape: tuple, device=None):
-    """Parse and evaluate a tensor math expression.
-
-    Args:
-        expr: Math expression string
-        variables: Dict of variable names to tensor/scalar values
-        shape: Shape tuple for the TensorEvalVisitor
-        device: Optional device override
-
-    Returns:
-        Result tensor from evaluating the expression
-    """
-    from .Parser.TensorEvalVisitor import TensorEvalVisitor
+    """Parse and evaluate a tensor math expression."""
+    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
     tree = parse_expr(expr)
-    visitor = TensorEvalVisitor(variables, shape, device=device)
+    visitor = UnifiedMathVisitor(variables, shape, device=device)
     return visitor.visit(tree)
 
 
 def eval_tensor_expr_with_tree(tree, variables: dict, shape: tuple, device=None):
-    """Evaluate a pre-parsed expression tree with TensorEvalVisitor."""
-    from .Parser.TensorEvalVisitor import TensorEvalVisitor
-    visitor = TensorEvalVisitor(variables, shape, device=device)
+    """Evaluate a pre-parsed expression tree with UnifiedMathVisitor."""
+    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+    visitor = UnifiedMathVisitor(variables, shape, device=device)
     return visitor.visit(tree)
 
 
 def eval_float_expr(expr: str, variables: dict):
     """Parse and evaluate a float math expression."""
-    from .Parser.FloatEvalVisitor import FloatEvalVisitor
+    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
     tree = parse_expr(expr)
-    visitor = FloatEvalVisitor(variables)
+    # Float eval context often has no shape. Pass None/Empty.
+    visitor = UnifiedMathVisitor(variables, shape=None)
     return visitor.visit(tree)
 
 def eval_float_expr_with_tree(tree, variables: dict):
-    """Evaluate a pre-parsed expression tree with FloatEvalVisitor."""
-    from .Parser.FloatEvalVisitor import FloatEvalVisitor
-    visitor = FloatEvalVisitor(variables)
+    """Evaluate a pre-parsed expression tree with UnifiedMathVisitor."""
+    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+    visitor = UnifiedMathVisitor(variables, shape=None)
     return visitor.visit(tree)
 
 
@@ -86,7 +77,7 @@ def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
             need_eval.append(token.text)
     return need_eval
 
-def generate_dim_variables(tensor):
+def generate_dim_variables(tensor: torch.Tensor):
     """Generate index and size tensors for each dimension of the input tensor."""
     variables = {}
     for dim, size in enumerate(tensor.shape):

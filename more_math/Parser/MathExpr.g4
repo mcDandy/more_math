@@ -119,6 +119,7 @@ funcN
     | MAP    '(' expr (',' expr)+ ')'   # MapFunc
     | CONV   '(' expr (',' expr)+ ')'   # ConvFunc
     | PERM   '(' expr ',' expr ')'      # PermuteFunc
+    | RESHAPE '(' expr ',' expr ')'     # ReshapeFunc
     ;
 
 // LEXER RULES
@@ -172,6 +173,7 @@ MAP : 'map';
 CONV : 'conv';
 SWAP : 'swap';
 PERM : 'permute';
+RESHAPE : 'reshape';
 
 PLUS        : '+';
 MINUS       : '-';

@@ -1,4 +1,4 @@
-# Generated from ./MathExpr.g4 by ANTLR 4.13.2
+# Generated from MathExpr.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,71,438,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,72,445,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,1,0,1,0,3,0,27,8,0,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,1,1,1,1,5,1,50,8,1,10,1,12,1,53,9,1,1,2,1,2,1,2,1,2,
@@ -39,131 +39,134 @@ def serializedATN():
         9,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,5,11,400,8,11,10,11,12,11,
         403,9,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,4,11,412,8,11,11,11,
         12,11,413,1,11,1,11,1,11,1,11,1,11,1,11,1,11,4,11,423,8,11,11,11,
-        12,11,424,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,3,11,436,
-        8,11,1,11,0,3,2,4,6,12,0,2,4,6,8,10,12,14,16,18,20,22,0,0,499,0,
-        26,1,0,0,0,2,28,1,0,0,0,4,54,1,0,0,0,6,68,1,0,0,0,8,90,1,0,0,0,10,
-        97,1,0,0,0,12,126,1,0,0,0,14,303,1,0,0,0,16,340,1,0,0,0,18,369,1,
-        0,0,0,20,371,1,0,0,0,22,435,1,0,0,0,24,27,3,12,6,0,25,27,3,2,1,0,
-        26,24,1,0,0,0,26,25,1,0,0,0,27,1,1,0,0,0,28,29,6,1,-1,0,29,30,3,
-        4,2,0,30,51,1,0,0,0,31,32,10,7,0,0,32,33,5,62,0,0,33,50,3,4,2,0,
-        34,35,10,6,0,0,35,36,5,61,0,0,36,50,3,4,2,0,37,38,10,5,0,0,38,39,
-        5,64,0,0,39,50,3,4,2,0,40,41,10,4,0,0,41,42,5,63,0,0,42,50,3,4,2,
-        0,43,44,10,3,0,0,44,45,5,65,0,0,45,50,3,4,2,0,46,47,10,2,0,0,47,
-        48,5,66,0,0,48,50,3,4,2,0,49,31,1,0,0,0,49,34,1,0,0,0,49,37,1,0,
-        0,0,49,40,1,0,0,0,49,43,1,0,0,0,49,46,1,0,0,0,50,53,1,0,0,0,51,49,
-        1,0,0,0,51,52,1,0,0,0,52,3,1,0,0,0,53,51,1,0,0,0,54,55,6,2,-1,0,
-        55,56,3,6,3,0,56,65,1,0,0,0,57,58,10,3,0,0,58,59,5,55,0,0,59,64,
-        3,6,3,0,60,61,10,2,0,0,61,62,5,56,0,0,62,64,3,6,3,0,63,57,1,0,0,
-        0,63,60,1,0,0,0,64,67,1,0,0,0,65,63,1,0,0,0,65,66,1,0,0,0,66,5,1,
-        0,0,0,67,65,1,0,0,0,68,69,6,3,-1,0,69,70,3,8,4,0,70,82,1,0,0,0,71,
-        72,10,4,0,0,72,73,5,57,0,0,73,81,3,8,4,0,74,75,10,3,0,0,75,76,5,
-        58,0,0,76,81,3,8,4,0,77,78,10,2,0,0,78,79,5,59,0,0,79,81,3,8,4,0,
-        80,71,1,0,0,0,80,74,1,0,0,0,80,77,1,0,0,0,81,84,1,0,0,0,82,80,1,
-        0,0,0,82,83,1,0,0,0,83,7,1,0,0,0,84,82,1,0,0,0,85,86,3,10,5,0,86,
-        87,5,60,0,0,87,88,3,8,4,0,88,91,1,0,0,0,89,91,3,10,5,0,90,85,1,0,
-        0,0,90,89,1,0,0,0,91,9,1,0,0,0,92,93,5,55,0,0,93,98,3,10,5,0,94,
-        95,5,56,0,0,95,98,3,10,5,0,96,98,3,12,6,0,97,92,1,0,0,0,97,94,1,
-        0,0,0,97,96,1,0,0,0,98,11,1,0,0,0,99,127,3,14,7,0,100,127,3,16,8,
-        0,101,127,3,18,9,0,102,127,3,20,10,0,103,127,3,22,11,0,104,127,5,
-        70,0,0,105,127,5,69,0,0,106,127,5,68,0,0,107,108,5,1,0,0,108,109,
-        3,0,0,0,109,110,5,2,0,0,110,127,1,0,0,0,111,112,5,67,0,0,112,113,
-        3,0,0,0,113,114,5,67,0,0,114,127,1,0,0,0,115,116,5,3,0,0,116,121,
-        3,0,0,0,117,118,5,4,0,0,118,120,3,0,0,0,119,117,1,0,0,0,120,123,
-        1,0,0,0,121,119,1,0,0,0,121,122,1,0,0,0,122,124,1,0,0,0,123,121,
-        1,0,0,0,124,125,5,5,0,0,125,127,1,0,0,0,126,99,1,0,0,0,126,100,1,
-        0,0,0,126,101,1,0,0,0,126,102,1,0,0,0,126,103,1,0,0,0,126,104,1,
-        0,0,0,126,105,1,0,0,0,126,106,1,0,0,0,126,107,1,0,0,0,126,111,1,
-        0,0,0,126,115,1,0,0,0,127,13,1,0,0,0,128,129,5,6,0,0,129,130,5,1,
-        0,0,130,131,3,0,0,0,131,132,5,2,0,0,132,304,1,0,0,0,133,134,5,7,
-        0,0,134,135,5,1,0,0,135,136,3,0,0,0,136,137,5,2,0,0,137,304,1,0,
-        0,0,138,139,5,8,0,0,139,140,5,1,0,0,140,141,3,0,0,0,141,142,5,2,
-        0,0,142,304,1,0,0,0,143,144,5,9,0,0,144,145,5,1,0,0,145,146,3,0,
-        0,0,146,147,5,2,0,0,147,304,1,0,0,0,148,149,5,10,0,0,149,150,5,1,
-        0,0,150,151,3,0,0,0,151,152,5,2,0,0,152,304,1,0,0,0,153,154,5,11,
-        0,0,154,155,5,1,0,0,155,156,3,0,0,0,156,157,5,2,0,0,157,304,1,0,
-        0,0,158,159,5,13,0,0,159,160,5,1,0,0,160,161,3,0,0,0,161,162,5,2,
-        0,0,162,304,1,0,0,0,163,164,5,14,0,0,164,165,5,1,0,0,165,166,3,0,
-        0,0,166,167,5,2,0,0,167,304,1,0,0,0,168,169,5,15,0,0,169,170,5,1,
-        0,0,170,171,3,0,0,0,171,172,5,2,0,0,172,304,1,0,0,0,173,174,5,16,
-        0,0,174,175,5,1,0,0,175,176,3,0,0,0,176,177,5,2,0,0,177,304,1,0,
-        0,0,178,179,5,17,0,0,179,180,5,1,0,0,180,181,3,0,0,0,181,182,5,2,
-        0,0,182,304,1,0,0,0,183,184,5,18,0,0,184,185,5,1,0,0,185,186,3,0,
-        0,0,186,187,5,2,0,0,187,304,1,0,0,0,188,189,5,19,0,0,189,190,5,1,
-        0,0,190,191,3,0,0,0,191,192,5,2,0,0,192,304,1,0,0,0,193,194,5,20,
-        0,0,194,195,5,1,0,0,195,196,3,0,0,0,196,197,5,2,0,0,197,304,1,0,
-        0,0,198,199,5,21,0,0,199,200,5,1,0,0,200,201,3,0,0,0,201,202,5,2,
-        0,0,202,304,1,0,0,0,203,204,5,22,0,0,204,205,5,1,0,0,205,206,3,0,
-        0,0,206,207,5,2,0,0,207,304,1,0,0,0,208,209,5,23,0,0,209,210,5,1,
-        0,0,210,211,3,0,0,0,211,212,5,2,0,0,212,304,1,0,0,0,213,214,5,28,
-        0,0,214,215,5,1,0,0,215,216,3,0,0,0,216,217,5,2,0,0,217,304,1,0,
-        0,0,218,219,5,29,0,0,219,220,5,1,0,0,220,221,3,0,0,0,221,222,5,2,
-        0,0,222,304,1,0,0,0,223,224,5,30,0,0,224,225,5,1,0,0,225,226,3,0,
-        0,0,226,227,5,2,0,0,227,304,1,0,0,0,228,229,5,31,0,0,229,230,5,1,
-        0,0,230,231,3,0,0,0,231,232,5,2,0,0,232,304,1,0,0,0,233,234,5,32,
-        0,0,234,235,5,1,0,0,235,236,3,0,0,0,236,237,5,2,0,0,237,304,1,0,
-        0,0,238,239,5,33,0,0,239,240,5,1,0,0,240,241,3,0,0,0,241,242,5,2,
-        0,0,242,304,1,0,0,0,243,244,5,35,0,0,244,245,5,1,0,0,245,246,3,0,
-        0,0,246,247,5,2,0,0,247,304,1,0,0,0,248,249,5,37,0,0,249,250,5,1,
-        0,0,250,251,3,0,0,0,251,252,5,2,0,0,252,304,1,0,0,0,253,254,5,38,
-        0,0,254,255,5,1,0,0,255,256,3,0,0,0,256,257,5,2,0,0,257,304,1,0,
-        0,0,258,259,5,39,0,0,259,260,5,1,0,0,260,261,3,0,0,0,261,262,5,2,
-        0,0,262,304,1,0,0,0,263,264,5,40,0,0,264,265,5,1,0,0,265,266,3,0,
-        0,0,266,267,5,2,0,0,267,304,1,0,0,0,268,269,5,46,0,0,269,270,5,1,
-        0,0,270,271,3,0,0,0,271,272,5,2,0,0,272,304,1,0,0,0,273,274,5,47,
-        0,0,274,275,5,1,0,0,275,276,3,0,0,0,276,277,5,2,0,0,277,304,1,0,
-        0,0,278,279,5,48,0,0,279,280,5,1,0,0,280,281,3,0,0,0,281,282,5,2,
-        0,0,282,304,1,0,0,0,283,284,5,49,0,0,284,285,5,1,0,0,285,286,3,0,
-        0,0,286,287,5,2,0,0,287,304,1,0,0,0,288,289,5,50,0,0,289,290,5,1,
-        0,0,290,291,3,0,0,0,291,292,5,2,0,0,292,304,1,0,0,0,293,294,5,41,
-        0,0,294,295,5,1,0,0,295,296,3,0,0,0,296,297,5,2,0,0,297,304,1,0,
-        0,0,298,299,5,42,0,0,299,300,5,1,0,0,300,301,3,0,0,0,301,302,5,2,
-        0,0,302,304,1,0,0,0,303,128,1,0,0,0,303,133,1,0,0,0,303,138,1,0,
-        0,0,303,143,1,0,0,0,303,148,1,0,0,0,303,153,1,0,0,0,303,158,1,0,
-        0,0,303,163,1,0,0,0,303,168,1,0,0,0,303,173,1,0,0,0,303,178,1,0,
-        0,0,303,183,1,0,0,0,303,188,1,0,0,0,303,193,1,0,0,0,303,198,1,0,
-        0,0,303,203,1,0,0,0,303,208,1,0,0,0,303,213,1,0,0,0,303,218,1,0,
-        0,0,303,223,1,0,0,0,303,228,1,0,0,0,303,233,1,0,0,0,303,238,1,0,
-        0,0,303,243,1,0,0,0,303,248,1,0,0,0,303,253,1,0,0,0,303,258,1,0,
-        0,0,303,263,1,0,0,0,303,268,1,0,0,0,303,273,1,0,0,0,303,278,1,0,
-        0,0,303,283,1,0,0,0,303,288,1,0,0,0,303,293,1,0,0,0,303,298,1,0,
-        0,0,304,15,1,0,0,0,305,306,5,34,0,0,306,307,5,1,0,0,307,308,3,0,
-        0,0,308,309,5,4,0,0,309,310,3,0,0,0,310,311,5,2,0,0,311,341,1,0,
-        0,0,312,313,5,12,0,0,313,314,5,1,0,0,314,315,3,0,0,0,315,316,5,4,
-        0,0,316,317,3,0,0,0,317,318,5,2,0,0,318,341,1,0,0,0,319,320,5,26,
-        0,0,320,321,5,1,0,0,321,322,3,0,0,0,322,323,5,4,0,0,323,324,3,0,
-        0,0,324,325,5,2,0,0,325,341,1,0,0,0,326,327,5,27,0,0,327,328,5,1,
-        0,0,328,329,3,0,0,0,329,330,5,4,0,0,330,331,3,0,0,0,331,332,5,2,
-        0,0,332,341,1,0,0,0,333,334,5,44,0,0,334,335,5,1,0,0,335,336,3,0,
-        0,0,336,337,5,4,0,0,337,338,3,0,0,0,338,339,5,2,0,0,339,341,1,0,
-        0,0,340,305,1,0,0,0,340,312,1,0,0,0,340,319,1,0,0,0,340,326,1,0,
-        0,0,340,333,1,0,0,0,341,17,1,0,0,0,342,343,5,36,0,0,343,344,5,1,
-        0,0,344,345,3,0,0,0,345,346,5,4,0,0,346,347,3,0,0,0,347,348,5,4,
-        0,0,348,349,3,0,0,0,349,350,5,2,0,0,350,370,1,0,0,0,351,352,5,43,
-        0,0,352,353,5,1,0,0,353,354,3,0,0,0,354,355,5,4,0,0,355,356,3,0,
-        0,0,356,357,5,4,0,0,357,358,3,0,0,0,358,359,5,2,0,0,359,370,1,0,
-        0,0,360,361,5,45,0,0,361,362,5,1,0,0,362,363,3,0,0,0,363,364,5,4,
-        0,0,364,365,3,0,0,0,365,366,5,4,0,0,366,367,3,0,0,0,367,368,5,2,
-        0,0,368,370,1,0,0,0,369,342,1,0,0,0,369,351,1,0,0,0,369,360,1,0,
-        0,0,370,19,1,0,0,0,371,372,5,53,0,0,372,373,5,1,0,0,373,374,3,0,
-        0,0,374,375,5,4,0,0,375,376,3,0,0,0,376,377,5,4,0,0,377,378,3,0,
-        0,0,378,379,5,4,0,0,379,380,3,0,0,0,380,381,5,2,0,0,381,21,1,0,0,
-        0,382,383,5,24,0,0,383,384,5,1,0,0,384,389,3,0,0,0,385,386,5,4,0,
-        0,386,388,3,0,0,0,387,385,1,0,0,0,388,391,1,0,0,0,389,387,1,0,0,
-        0,389,390,1,0,0,0,390,392,1,0,0,0,391,389,1,0,0,0,392,393,5,2,0,
-        0,393,436,1,0,0,0,394,395,5,25,0,0,395,396,5,1,0,0,396,401,3,0,0,
-        0,397,398,5,4,0,0,398,400,3,0,0,0,399,397,1,0,0,0,400,403,1,0,0,
-        0,401,399,1,0,0,0,401,402,1,0,0,0,402,404,1,0,0,0,403,401,1,0,0,
-        0,404,405,5,2,0,0,405,436,1,0,0,0,406,407,5,51,0,0,407,408,5,1,0,
-        0,408,411,3,0,0,0,409,410,5,4,0,0,410,412,3,0,0,0,411,409,1,0,0,
-        0,412,413,1,0,0,0,413,411,1,0,0,0,413,414,1,0,0,0,414,415,1,0,0,
-        0,415,416,5,2,0,0,416,436,1,0,0,0,417,418,5,52,0,0,418,419,5,1,0,
-        0,419,422,3,0,0,0,420,421,5,4,0,0,421,423,3,0,0,0,422,420,1,0,0,
-        0,423,424,1,0,0,0,424,422,1,0,0,0,424,425,1,0,0,0,425,426,1,0,0,
-        0,426,427,5,2,0,0,427,436,1,0,0,0,428,429,5,54,0,0,429,430,5,1,0,
-        0,430,431,3,0,0,0,431,432,5,4,0,0,432,433,3,0,0,0,433,434,5,2,0,
-        0,434,436,1,0,0,0,435,382,1,0,0,0,435,394,1,0,0,0,435,406,1,0,0,
-        0,435,417,1,0,0,0,435,428,1,0,0,0,436,23,1,0,0,0,19,26,49,51,63,
-        65,80,82,90,97,121,126,303,340,369,389,401,413,424,435
+        12,11,424,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,1,11,
+        1,11,1,11,1,11,1,11,1,11,3,11,443,8,11,1,11,0,3,2,4,6,12,0,2,4,6,
+        8,10,12,14,16,18,20,22,0,0,507,0,26,1,0,0,0,2,28,1,0,0,0,4,54,1,
+        0,0,0,6,68,1,0,0,0,8,90,1,0,0,0,10,97,1,0,0,0,12,126,1,0,0,0,14,
+        303,1,0,0,0,16,340,1,0,0,0,18,369,1,0,0,0,20,371,1,0,0,0,22,442,
+        1,0,0,0,24,27,3,12,6,0,25,27,3,2,1,0,26,24,1,0,0,0,26,25,1,0,0,0,
+        27,1,1,0,0,0,28,29,6,1,-1,0,29,30,3,4,2,0,30,51,1,0,0,0,31,32,10,
+        7,0,0,32,33,5,63,0,0,33,50,3,4,2,0,34,35,10,6,0,0,35,36,5,62,0,0,
+        36,50,3,4,2,0,37,38,10,5,0,0,38,39,5,65,0,0,39,50,3,4,2,0,40,41,
+        10,4,0,0,41,42,5,64,0,0,42,50,3,4,2,0,43,44,10,3,0,0,44,45,5,66,
+        0,0,45,50,3,4,2,0,46,47,10,2,0,0,47,48,5,67,0,0,48,50,3,4,2,0,49,
+        31,1,0,0,0,49,34,1,0,0,0,49,37,1,0,0,0,49,40,1,0,0,0,49,43,1,0,0,
+        0,49,46,1,0,0,0,50,53,1,0,0,0,51,49,1,0,0,0,51,52,1,0,0,0,52,3,1,
+        0,0,0,53,51,1,0,0,0,54,55,6,2,-1,0,55,56,3,6,3,0,56,65,1,0,0,0,57,
+        58,10,3,0,0,58,59,5,56,0,0,59,64,3,6,3,0,60,61,10,2,0,0,61,62,5,
+        57,0,0,62,64,3,6,3,0,63,57,1,0,0,0,63,60,1,0,0,0,64,67,1,0,0,0,65,
+        63,1,0,0,0,65,66,1,0,0,0,66,5,1,0,0,0,67,65,1,0,0,0,68,69,6,3,-1,
+        0,69,70,3,8,4,0,70,82,1,0,0,0,71,72,10,4,0,0,72,73,5,58,0,0,73,81,
+        3,8,4,0,74,75,10,3,0,0,75,76,5,59,0,0,76,81,3,8,4,0,77,78,10,2,0,
+        0,78,79,5,60,0,0,79,81,3,8,4,0,80,71,1,0,0,0,80,74,1,0,0,0,80,77,
+        1,0,0,0,81,84,1,0,0,0,82,80,1,0,0,0,82,83,1,0,0,0,83,7,1,0,0,0,84,
+        82,1,0,0,0,85,86,3,10,5,0,86,87,5,61,0,0,87,88,3,8,4,0,88,91,1,0,
+        0,0,89,91,3,10,5,0,90,85,1,0,0,0,90,89,1,0,0,0,91,9,1,0,0,0,92,93,
+        5,56,0,0,93,98,3,10,5,0,94,95,5,57,0,0,95,98,3,10,5,0,96,98,3,12,
+        6,0,97,92,1,0,0,0,97,94,1,0,0,0,97,96,1,0,0,0,98,11,1,0,0,0,99,127,
+        3,14,7,0,100,127,3,16,8,0,101,127,3,18,9,0,102,127,3,20,10,0,103,
+        127,3,22,11,0,104,127,5,71,0,0,105,127,5,70,0,0,106,127,5,69,0,0,
+        107,108,5,1,0,0,108,109,3,0,0,0,109,110,5,2,0,0,110,127,1,0,0,0,
+        111,112,5,68,0,0,112,113,3,0,0,0,113,114,5,68,0,0,114,127,1,0,0,
+        0,115,116,5,3,0,0,116,121,3,0,0,0,117,118,5,4,0,0,118,120,3,0,0,
+        0,119,117,1,0,0,0,120,123,1,0,0,0,121,119,1,0,0,0,121,122,1,0,0,
+        0,122,124,1,0,0,0,123,121,1,0,0,0,124,125,5,5,0,0,125,127,1,0,0,
+        0,126,99,1,0,0,0,126,100,1,0,0,0,126,101,1,0,0,0,126,102,1,0,0,0,
+        126,103,1,0,0,0,126,104,1,0,0,0,126,105,1,0,0,0,126,106,1,0,0,0,
+        126,107,1,0,0,0,126,111,1,0,0,0,126,115,1,0,0,0,127,13,1,0,0,0,128,
+        129,5,6,0,0,129,130,5,1,0,0,130,131,3,0,0,0,131,132,5,2,0,0,132,
+        304,1,0,0,0,133,134,5,7,0,0,134,135,5,1,0,0,135,136,3,0,0,0,136,
+        137,5,2,0,0,137,304,1,0,0,0,138,139,5,8,0,0,139,140,5,1,0,0,140,
+        141,3,0,0,0,141,142,5,2,0,0,142,304,1,0,0,0,143,144,5,9,0,0,144,
+        145,5,1,0,0,145,146,3,0,0,0,146,147,5,2,0,0,147,304,1,0,0,0,148,
+        149,5,10,0,0,149,150,5,1,0,0,150,151,3,0,0,0,151,152,5,2,0,0,152,
+        304,1,0,0,0,153,154,5,11,0,0,154,155,5,1,0,0,155,156,3,0,0,0,156,
+        157,5,2,0,0,157,304,1,0,0,0,158,159,5,13,0,0,159,160,5,1,0,0,160,
+        161,3,0,0,0,161,162,5,2,0,0,162,304,1,0,0,0,163,164,5,14,0,0,164,
+        165,5,1,0,0,165,166,3,0,0,0,166,167,5,2,0,0,167,304,1,0,0,0,168,
+        169,5,15,0,0,169,170,5,1,0,0,170,171,3,0,0,0,171,172,5,2,0,0,172,
+        304,1,0,0,0,173,174,5,16,0,0,174,175,5,1,0,0,175,176,3,0,0,0,176,
+        177,5,2,0,0,177,304,1,0,0,0,178,179,5,17,0,0,179,180,5,1,0,0,180,
+        181,3,0,0,0,181,182,5,2,0,0,182,304,1,0,0,0,183,184,5,18,0,0,184,
+        185,5,1,0,0,185,186,3,0,0,0,186,187,5,2,0,0,187,304,1,0,0,0,188,
+        189,5,19,0,0,189,190,5,1,0,0,190,191,3,0,0,0,191,192,5,2,0,0,192,
+        304,1,0,0,0,193,194,5,20,0,0,194,195,5,1,0,0,195,196,3,0,0,0,196,
+        197,5,2,0,0,197,304,1,0,0,0,198,199,5,21,0,0,199,200,5,1,0,0,200,
+        201,3,0,0,0,201,202,5,2,0,0,202,304,1,0,0,0,203,204,5,22,0,0,204,
+        205,5,1,0,0,205,206,3,0,0,0,206,207,5,2,0,0,207,304,1,0,0,0,208,
+        209,5,23,0,0,209,210,5,1,0,0,210,211,3,0,0,0,211,212,5,2,0,0,212,
+        304,1,0,0,0,213,214,5,28,0,0,214,215,5,1,0,0,215,216,3,0,0,0,216,
+        217,5,2,0,0,217,304,1,0,0,0,218,219,5,29,0,0,219,220,5,1,0,0,220,
+        221,3,0,0,0,221,222,5,2,0,0,222,304,1,0,0,0,223,224,5,30,0,0,224,
+        225,5,1,0,0,225,226,3,0,0,0,226,227,5,2,0,0,227,304,1,0,0,0,228,
+        229,5,31,0,0,229,230,5,1,0,0,230,231,3,0,0,0,231,232,5,2,0,0,232,
+        304,1,0,0,0,233,234,5,32,0,0,234,235,5,1,0,0,235,236,3,0,0,0,236,
+        237,5,2,0,0,237,304,1,0,0,0,238,239,5,33,0,0,239,240,5,1,0,0,240,
+        241,3,0,0,0,241,242,5,2,0,0,242,304,1,0,0,0,243,244,5,35,0,0,244,
+        245,5,1,0,0,245,246,3,0,0,0,246,247,5,2,0,0,247,304,1,0,0,0,248,
+        249,5,37,0,0,249,250,5,1,0,0,250,251,3,0,0,0,251,252,5,2,0,0,252,
+        304,1,0,0,0,253,254,5,38,0,0,254,255,5,1,0,0,255,256,3,0,0,0,256,
+        257,5,2,0,0,257,304,1,0,0,0,258,259,5,39,0,0,259,260,5,1,0,0,260,
+        261,3,0,0,0,261,262,5,2,0,0,262,304,1,0,0,0,263,264,5,40,0,0,264,
+        265,5,1,0,0,265,266,3,0,0,0,266,267,5,2,0,0,267,304,1,0,0,0,268,
+        269,5,46,0,0,269,270,5,1,0,0,270,271,3,0,0,0,271,272,5,2,0,0,272,
+        304,1,0,0,0,273,274,5,47,0,0,274,275,5,1,0,0,275,276,3,0,0,0,276,
+        277,5,2,0,0,277,304,1,0,0,0,278,279,5,48,0,0,279,280,5,1,0,0,280,
+        281,3,0,0,0,281,282,5,2,0,0,282,304,1,0,0,0,283,284,5,49,0,0,284,
+        285,5,1,0,0,285,286,3,0,0,0,286,287,5,2,0,0,287,304,1,0,0,0,288,
+        289,5,50,0,0,289,290,5,1,0,0,290,291,3,0,0,0,291,292,5,2,0,0,292,
+        304,1,0,0,0,293,294,5,41,0,0,294,295,5,1,0,0,295,296,3,0,0,0,296,
+        297,5,2,0,0,297,304,1,0,0,0,298,299,5,42,0,0,299,300,5,1,0,0,300,
+        301,3,0,0,0,301,302,5,2,0,0,302,304,1,0,0,0,303,128,1,0,0,0,303,
+        133,1,0,0,0,303,138,1,0,0,0,303,143,1,0,0,0,303,148,1,0,0,0,303,
+        153,1,0,0,0,303,158,1,0,0,0,303,163,1,0,0,0,303,168,1,0,0,0,303,
+        173,1,0,0,0,303,178,1,0,0,0,303,183,1,0,0,0,303,188,1,0,0,0,303,
+        193,1,0,0,0,303,198,1,0,0,0,303,203,1,0,0,0,303,208,1,0,0,0,303,
+        213,1,0,0,0,303,218,1,0,0,0,303,223,1,0,0,0,303,228,1,0,0,0,303,
+        233,1,0,0,0,303,238,1,0,0,0,303,243,1,0,0,0,303,248,1,0,0,0,303,
+        253,1,0,0,0,303,258,1,0,0,0,303,263,1,0,0,0,303,268,1,0,0,0,303,
+        273,1,0,0,0,303,278,1,0,0,0,303,283,1,0,0,0,303,288,1,0,0,0,303,
+        293,1,0,0,0,303,298,1,0,0,0,304,15,1,0,0,0,305,306,5,34,0,0,306,
+        307,5,1,0,0,307,308,3,0,0,0,308,309,5,4,0,0,309,310,3,0,0,0,310,
+        311,5,2,0,0,311,341,1,0,0,0,312,313,5,12,0,0,313,314,5,1,0,0,314,
+        315,3,0,0,0,315,316,5,4,0,0,316,317,3,0,0,0,317,318,5,2,0,0,318,
+        341,1,0,0,0,319,320,5,26,0,0,320,321,5,1,0,0,321,322,3,0,0,0,322,
+        323,5,4,0,0,323,324,3,0,0,0,324,325,5,2,0,0,325,341,1,0,0,0,326,
+        327,5,27,0,0,327,328,5,1,0,0,328,329,3,0,0,0,329,330,5,4,0,0,330,
+        331,3,0,0,0,331,332,5,2,0,0,332,341,1,0,0,0,333,334,5,44,0,0,334,
+        335,5,1,0,0,335,336,3,0,0,0,336,337,5,4,0,0,337,338,3,0,0,0,338,
+        339,5,2,0,0,339,341,1,0,0,0,340,305,1,0,0,0,340,312,1,0,0,0,340,
+        319,1,0,0,0,340,326,1,0,0,0,340,333,1,0,0,0,341,17,1,0,0,0,342,343,
+        5,36,0,0,343,344,5,1,0,0,344,345,3,0,0,0,345,346,5,4,0,0,346,347,
+        3,0,0,0,347,348,5,4,0,0,348,349,3,0,0,0,349,350,5,2,0,0,350,370,
+        1,0,0,0,351,352,5,43,0,0,352,353,5,1,0,0,353,354,3,0,0,0,354,355,
+        5,4,0,0,355,356,3,0,0,0,356,357,5,4,0,0,357,358,3,0,0,0,358,359,
+        5,2,0,0,359,370,1,0,0,0,360,361,5,45,0,0,361,362,5,1,0,0,362,363,
+        3,0,0,0,363,364,5,4,0,0,364,365,3,0,0,0,365,366,5,4,0,0,366,367,
+        3,0,0,0,367,368,5,2,0,0,368,370,1,0,0,0,369,342,1,0,0,0,369,351,
+        1,0,0,0,369,360,1,0,0,0,370,19,1,0,0,0,371,372,5,53,0,0,372,373,
+        5,1,0,0,373,374,3,0,0,0,374,375,5,4,0,0,375,376,3,0,0,0,376,377,
+        5,4,0,0,377,378,3,0,0,0,378,379,5,4,0,0,379,380,3,0,0,0,380,381,
+        5,2,0,0,381,21,1,0,0,0,382,383,5,24,0,0,383,384,5,1,0,0,384,389,
+        3,0,0,0,385,386,5,4,0,0,386,388,3,0,0,0,387,385,1,0,0,0,388,391,
+        1,0,0,0,389,387,1,0,0,0,389,390,1,0,0,0,390,392,1,0,0,0,391,389,
+        1,0,0,0,392,393,5,2,0,0,393,443,1,0,0,0,394,395,5,25,0,0,395,396,
+        5,1,0,0,396,401,3,0,0,0,397,398,5,4,0,0,398,400,3,0,0,0,399,397,
+        1,0,0,0,400,403,1,0,0,0,401,399,1,0,0,0,401,402,1,0,0,0,402,404,
+        1,0,0,0,403,401,1,0,0,0,404,405,5,2,0,0,405,443,1,0,0,0,406,407,
+        5,51,0,0,407,408,5,1,0,0,408,411,3,0,0,0,409,410,5,4,0,0,410,412,
+        3,0,0,0,411,409,1,0,0,0,412,413,1,0,0,0,413,411,1,0,0,0,413,414,
+        1,0,0,0,414,415,1,0,0,0,415,416,5,2,0,0,416,443,1,0,0,0,417,418,
+        5,52,0,0,418,419,5,1,0,0,419,422,3,0,0,0,420,421,5,4,0,0,421,423,
+        3,0,0,0,422,420,1,0,0,0,423,424,1,0,0,0,424,422,1,0,0,0,424,425,
+        1,0,0,0,425,426,1,0,0,0,426,427,5,2,0,0,427,443,1,0,0,0,428,429,
+        5,54,0,0,429,430,5,1,0,0,430,431,3,0,0,0,431,432,5,4,0,0,432,433,
+        3,0,0,0,433,434,5,2,0,0,434,443,1,0,0,0,435,436,5,55,0,0,436,437,
+        5,1,0,0,437,438,3,0,0,0,438,439,5,4,0,0,439,440,3,0,0,0,440,441,
+        5,2,0,0,441,443,1,0,0,0,442,382,1,0,0,0,442,394,1,0,0,0,442,406,
+        1,0,0,0,442,417,1,0,0,0,442,428,1,0,0,0,442,435,1,0,0,0,443,23,1,
+        0,0,0,19,26,49,51,63,65,80,82,90,97,121,126,303,340,369,389,401,
+        413,424,442
     ]
 
 class MathExprParser ( Parser ):
@@ -186,8 +189,8 @@ class MathExprParser ( Parser ):
                      "'print'", "'print_shape'", "'pshp'", "'lerp'", "'step'", 
                      "'smoothstep'", "'fract'", "'relu'", "'softplus'", 
                      "'gelu'", "'sign'", "'map'", "'conv'", "'swap'", "'permute'", 
-                     "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", "'>='", "'>'", 
-                     "'<='", "'<'", "'=='", "'!='", "'|'" ]
+                     "'reshape'", "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", 
+                     "'>='", "'>'", "'<='", "'<'", "'=='", "'!='", "'|'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "SIN", "COS", "TAN", "ASIN", 
@@ -198,9 +201,9 @@ class MathExprParser ( Parser ):
                       "CLAMP", "SFFT", "SIFFT", "ANGL", "PRNT", "PRINT_SHAPE_L", 
                       "PRINT_SHAPE", "LERP", "STEP", "SMOOTHSTEP", "FRACT", 
                       "RELU", "SOFTPLUS", "GELU", "SIGN", "MAP", "CONV", 
-                      "SWAP", "PERM", "PLUS", "MINUS", "MULT", "DIV", "MOD", 
-                      "POW", "GE", "GT", "LE", "LT", "EQ", "NE", "PIPE", 
-                      "CONSTANT", "NUMBER", "VARIABLE", "WS" ]
+                      "SWAP", "PERM", "RESHAPE", "PLUS", "MINUS", "MULT", 
+                      "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", "EQ", 
+                      "NE", "PIPE", "CONSTANT", "NUMBER", "VARIABLE", "WS" ]
 
     RULE_expr = 0
     RULE_compExpr = 1
@@ -274,23 +277,24 @@ class MathExprParser ( Parser ):
     CONV=52
     SWAP=53
     PERM=54
-    PLUS=55
-    MINUS=56
-    MULT=57
-    DIV=58
-    MOD=59
-    POW=60
-    GE=61
-    GT=62
-    LE=63
-    LT=64
-    EQ=65
-    NE=66
-    PIPE=67
-    CONSTANT=68
-    NUMBER=69
-    VARIABLE=70
-    WS=71
+    RESHAPE=55
+    PLUS=56
+    MINUS=57
+    MULT=58
+    DIV=59
+    MOD=60
+    POW=61
+    GE=62
+    GT=63
+    LE=64
+    LT=65
+    EQ=66
+    NE=67
+    PIPE=68
+    CONSTANT=69
+    NUMBER=70
+    VARIABLE=71
+    WS=72
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -318,14 +322,6 @@ class MathExprParser ( Parser ):
 
         def getRuleIndex(self):
             return MathExprParser.RULE_expr
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpr" ):
-                listener.enterExpr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpr" ):
-                listener.exitExpr(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitExpr" ):
@@ -397,14 +393,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLtExp" ):
-                listener.enterLtExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLtExp" ):
-                listener.exitLtExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitLtExp" ):
                 return visitor.visitLtExp(self)
@@ -427,14 +415,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterEqExp" ):
-                listener.enterEqExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitEqExp" ):
-                listener.exitEqExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitEqExp" ):
                 return visitor.visitEqExp(self)
@@ -451,14 +431,6 @@ class MathExprParser ( Parser ):
         def addExpr(self):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterToAdd" ):
-                listener.enterToAdd(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitToAdd" ):
-                listener.exitToAdd(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitToAdd" ):
@@ -482,14 +454,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGeExp" ):
-                listener.enterGeExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGeExp" ):
-                listener.exitGeExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitGeExp" ):
                 return visitor.visitGeExp(self)
@@ -511,14 +475,6 @@ class MathExprParser ( Parser ):
         def addExpr(self):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLeExp" ):
-                listener.enterLeExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLeExp" ):
-                listener.exitLeExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitLeExp" ):
@@ -542,14 +498,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNeExp" ):
-                listener.enterNeExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNeExp" ):
-                listener.exitNeExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitNeExp" ):
                 return visitor.visitNeExp(self)
@@ -571,14 +519,6 @@ class MathExprParser ( Parser ):
         def addExpr(self):
             return self.getTypedRuleContext(MathExprParser.AddExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGtExp" ):
-                listener.enterGtExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGtExp" ):
-                listener.exitGtExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitGtExp" ):
@@ -738,14 +678,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.MulExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAddExp" ):
-                listener.enterAddExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAddExp" ):
-                listener.exitAddExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAddExp" ):
                 return visitor.visitAddExp(self)
@@ -762,14 +694,6 @@ class MathExprParser ( Parser ):
         def mulExpr(self):
             return self.getTypedRuleContext(MathExprParser.MulExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterToMul" ):
-                listener.enterToMul(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitToMul" ):
-                listener.exitToMul(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitToMul" ):
@@ -792,14 +716,6 @@ class MathExprParser ( Parser ):
         def mulExpr(self):
             return self.getTypedRuleContext(MathExprParser.MulExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubExp" ):
-                listener.enterSubExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubExp" ):
-                listener.exitSubExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSubExp" ):
@@ -907,14 +823,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.PowExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMulExp" ):
-                listener.enterMulExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMulExp" ):
-                listener.exitMulExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitMulExp" ):
                 return visitor.visitMulExp(self)
@@ -936,14 +844,6 @@ class MathExprParser ( Parser ):
         def powExpr(self):
             return self.getTypedRuleContext(MathExprParser.PowExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterModExp" ):
-                listener.enterModExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitModExp" ):
-                listener.exitModExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitModExp" ):
@@ -967,14 +867,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.PowExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDivExp" ):
-                listener.enterDivExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDivExp" ):
-                listener.exitDivExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitDivExp" ):
                 return visitor.visitDivExp(self)
@@ -991,14 +883,6 @@ class MathExprParser ( Parser ):
         def powExpr(self):
             return self.getTypedRuleContext(MathExprParser.PowExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterToPow" ):
-                listener.enterToPow(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitToPow" ):
-                listener.exitToPow(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitToPow" ):
@@ -1120,14 +1004,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.PowExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPowExp" ):
-                listener.enterPowExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPowExp" ):
-                listener.exitPowExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitPowExp" ):
                 return visitor.visitPowExp(self)
@@ -1144,14 +1020,6 @@ class MathExprParser ( Parser ):
         def unaryExpr(self):
             return self.getTypedRuleContext(MathExprParser.UnaryExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterToUnary" ):
-                listener.enterToUnary(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitToUnary" ):
-                listener.exitToUnary(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitToUnary" ):
@@ -1226,14 +1094,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.UnaryExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryPlus" ):
-                listener.enterUnaryPlus(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryPlus" ):
-                listener.exitUnaryPlus(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitUnaryPlus" ):
                 return visitor.visitUnaryPlus(self)
@@ -1253,14 +1113,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.UnaryExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryMinus" ):
-                listener.enterUnaryMinus(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryMinus" ):
-                listener.exitUnaryMinus(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitUnaryMinus" ):
                 return visitor.visitUnaryMinus(self)
@@ -1278,14 +1130,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.AtomContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterToAtom" ):
-                listener.enterToAtom(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitToAtom" ):
-                listener.exitToAtom(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitToAtom" ):
                 return visitor.visitToAtom(self)
@@ -1302,7 +1146,7 @@ class MathExprParser ( Parser ):
             self.state = 97
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [55]:
+            if token in [56]:
                 localctx = MathExprParser.UnaryPlusContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 92
@@ -1310,7 +1154,7 @@ class MathExprParser ( Parser ):
                 self.state = 93
                 self.unaryExpr()
                 pass
-            elif token in [56]:
+            elif token in [57]:
                 localctx = MathExprParser.UnaryMinusContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 94
@@ -1318,7 +1162,7 @@ class MathExprParser ( Parser ):
                 self.state = 95
                 self.unaryExpr()
                 pass
-            elif token in [1, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 67, 68, 69, 70]:
+            elif token in [1, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 68, 69, 70, 71]:
                 localctx = MathExprParser.ToAtomContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
                 self.state = 96
@@ -1363,14 +1207,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.Func4Context,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunc4Exp" ):
-                listener.enterFunc4Exp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunc4Exp" ):
-                listener.exitFunc4Exp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFunc4Exp" ):
                 return visitor.visitFunc4Exp(self)
@@ -1388,14 +1224,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.Func2Context,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunc2Exp" ):
-                listener.enterFunc2Exp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunc2Exp" ):
-                listener.exitFunc2Exp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFunc2Exp" ):
                 return visitor.visitFunc2Exp(self)
@@ -1411,14 +1239,6 @@ class MathExprParser ( Parser ):
 
         def VARIABLE(self):
             return self.getToken(MathExprParser.VARIABLE, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterVariableExp" ):
-                listener.enterVariableExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitVariableExp" ):
-                listener.exitVariableExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitVariableExp" ):
@@ -1437,14 +1257,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.Func3Context,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunc3Exp" ):
-                listener.enterFunc3Exp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunc3Exp" ):
-                listener.exitFunc3Exp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFunc3Exp" ):
                 return visitor.visitFunc3Exp(self)
@@ -1462,14 +1274,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParenExp" ):
-                listener.enterParenExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParenExp" ):
-                listener.exitParenExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitParenExp" ):
                 return visitor.visitParenExp(self)
@@ -1485,14 +1289,6 @@ class MathExprParser ( Parser ):
 
         def CONSTANT(self):
             return self.getToken(MathExprParser.CONSTANT, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstantExp" ):
-                listener.enterConstantExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstantExp" ):
-                listener.exitConstantExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitConstantExp" ):
@@ -1511,14 +1307,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.Func1Context,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFunc1Exp" ):
-                listener.enterFunc1Exp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFunc1Exp" ):
-                listener.exitFunc1Exp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFunc1Exp" ):
                 return visitor.visitFunc1Exp(self)
@@ -1536,14 +1324,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.FuncNContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFuncNExp" ):
-                listener.enterFuncNExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFuncNExp" ):
-                listener.exitFuncNExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFuncNExp" ):
                 return visitor.visitFuncNExp(self)
@@ -1559,14 +1339,6 @@ class MathExprParser ( Parser ):
 
         def NUMBER(self):
             return self.getToken(MathExprParser.NUMBER, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNumberExp" ):
-                listener.enterNumberExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNumberExp" ):
-                listener.exitNumberExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitNumberExp" ):
@@ -1590,14 +1362,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAbsExp" ):
-                listener.enterAbsExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAbsExp" ):
-                listener.exitAbsExp(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAbsExp" ):
                 return visitor.visitAbsExp(self)
@@ -1617,14 +1381,6 @@ class MathExprParser ( Parser ):
             else:
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterListExp" ):
-                listener.enterListExp(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitListExp" ):
-                listener.exitListExp(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitListExp" ):
@@ -1667,25 +1423,25 @@ class MathExprParser ( Parser ):
                 self.state = 102
                 self.func4()
                 pass
-            elif token in [24, 25, 51, 52, 54]:
+            elif token in [24, 25, 51, 52, 54, 55]:
                 localctx = MathExprParser.FuncNExpContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 103
                 self.funcN()
                 pass
-            elif token in [70]:
+            elif token in [71]:
                 localctx = MathExprParser.VariableExpContext(self, localctx)
                 self.enterOuterAlt(localctx, 6)
                 self.state = 104
                 self.match(MathExprParser.VARIABLE)
                 pass
-            elif token in [69]:
+            elif token in [70]:
                 localctx = MathExprParser.NumberExpContext(self, localctx)
                 self.enterOuterAlt(localctx, 7)
                 self.state = 105
                 self.match(MathExprParser.NUMBER)
                 pass
-            elif token in [68]:
+            elif token in [69]:
                 localctx = MathExprParser.ConstantExpContext(self, localctx)
                 self.enterOuterAlt(localctx, 8)
                 self.state = 106
@@ -1701,7 +1457,7 @@ class MathExprParser ( Parser ):
                 self.state = 109
                 self.match(MathExprParser.T__1)
                 pass
-            elif token in [67]:
+            elif token in [68]:
                 localctx = MathExprParser.AbsExpContext(self, localctx)
                 self.enterOuterAlt(localctx, 10)
                 self.state = 111
@@ -1774,14 +1530,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSoftplusFunc" ):
-                listener.enterSoftplusFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSoftplusFunc" ):
-                listener.exitSoftplusFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSoftplusFunc" ):
                 return visitor.visitSoftplusFunc(self)
@@ -1800,14 +1548,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTanhFunc" ):
-                listener.enterTanhFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTanhFunc" ):
-                listener.exitTanhFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitTanhFunc" ):
@@ -1828,14 +1568,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAcoshFunc" ):
-                listener.enterAcoshFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAcoshFunc" ):
-                listener.exitAcoshFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAcoshFunc" ):
                 return visitor.visitAcoshFunc(self)
@@ -1854,14 +1586,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSqrtFunc" ):
-                listener.enterSqrtFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSqrtFunc" ):
-                listener.exitSqrtFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSqrtFunc" ):
@@ -1882,14 +1606,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFloorFunc" ):
-                listener.enterFloorFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFloorFunc" ):
-                listener.exitFloorFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFloorFunc" ):
                 return visitor.visitFloorFunc(self)
@@ -1908,14 +1624,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRoundFunc" ):
-                listener.enterRoundFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRoundFunc" ):
-                listener.exitRoundFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitRoundFunc" ):
@@ -1936,14 +1644,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCeilFunc" ):
-                listener.enterCeilFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCeilFunc" ):
-                listener.exitCeilFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitCeilFunc" ):
                 return visitor.visitCeilFunc(self)
@@ -1962,14 +1662,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGeluFunc" ):
-                listener.enterGeluFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGeluFunc" ):
-                listener.exitGeluFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitGeluFunc" ):
@@ -1990,14 +1682,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPrintFunc" ):
-                listener.enterPrintFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPrintFunc" ):
-                listener.exitPrintFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitPrintFunc" ):
                 return visitor.visitPrintFunc(self)
@@ -2016,14 +1700,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAbsFunc" ):
-                listener.enterAbsFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAbsFunc" ):
-                listener.exitAbsFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAbsFunc" ):
@@ -2044,14 +1720,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAtanFunc" ):
-                listener.enterAtanFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAtanFunc" ):
-                listener.exitAtanFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAtanFunc" ):
                 return visitor.visitAtanFunc(self)
@@ -2070,14 +1738,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterReluFunc" ):
-                listener.enterReluFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitReluFunc" ):
-                listener.exitReluFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitReluFunc" ):
@@ -2098,14 +1758,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSinhFunc" ):
-                listener.enterSinhFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSinhFunc" ):
-                listener.exitSinhFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSinhFunc" ):
                 return visitor.visitSinhFunc(self)
@@ -2124,14 +1776,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSigmoidFunc" ):
-                listener.enterSigmoidFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSigmoidFunc" ):
-                listener.exitSigmoidFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSigmoidFunc" ):
@@ -2152,14 +1796,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLogFunc" ):
-                listener.enterLogFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLogFunc" ):
-                listener.exitLogFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitLogFunc" ):
                 return visitor.visitLogFunc(self)
@@ -2178,14 +1814,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLnFunc" ):
-                listener.enterLnFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLnFunc" ):
-                listener.exitLnFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitLnFunc" ):
@@ -2206,14 +1834,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTNormFunc" ):
-                listener.enterTNormFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTNormFunc" ):
-                listener.exitTNormFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitTNormFunc" ):
                 return visitor.visitTNormFunc(self)
@@ -2232,14 +1852,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSNormFunc" ):
-                listener.enterSNormFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSNormFunc" ):
-                listener.exitSNormFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSNormFunc" ):
@@ -2260,14 +1872,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSinFunc" ):
-                listener.enterSinFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSinFunc" ):
-                listener.exitSinFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSinFunc" ):
                 return visitor.visitSinFunc(self)
@@ -2286,14 +1890,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAcosFunc" ):
-                listener.enterAcosFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAcosFunc" ):
-                listener.exitAcosFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAcosFunc" ):
@@ -2314,14 +1910,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCoshFunc" ):
-                listener.enterCoshFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCoshFunc" ):
-                listener.exitCoshFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitCoshFunc" ):
                 return visitor.visitCoshFunc(self)
@@ -2340,14 +1928,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnglFunc" ):
-                listener.enterAnglFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnglFunc" ):
-                listener.exitAnglFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAnglFunc" ):
@@ -2368,14 +1948,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSignFunc" ):
-                listener.enterSignFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSignFunc" ):
-                listener.exitSignFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSignFunc" ):
                 return visitor.visitSignFunc(self)
@@ -2394,14 +1966,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTanFunc" ):
-                listener.enterTanFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTanFunc" ):
-                listener.exitTanFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitTanFunc" ):
@@ -2422,14 +1986,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSifftFunc" ):
-                listener.enterSifftFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSifftFunc" ):
-                listener.exitSifftFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSifftFunc" ):
                 return visitor.visitSifftFunc(self)
@@ -2448,14 +2004,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFractFunc" ):
-                listener.enterFractFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFractFunc" ):
-                listener.exitFractFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitFractFunc" ):
@@ -2476,14 +2024,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGammaFunc" ):
-                listener.enterGammaFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGammaFunc" ):
-                listener.exitGammaFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitGammaFunc" ):
                 return visitor.visitGammaFunc(self)
@@ -2502,14 +2042,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCosFunc" ):
-                listener.enterCosFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCosFunc" ):
-                listener.exitCosFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitCosFunc" ):
@@ -2530,14 +2062,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAsinFunc" ):
-                listener.enterAsinFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAsinFunc" ):
-                listener.exitAsinFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAsinFunc" ):
                 return visitor.visitAsinFunc(self)
@@ -2556,14 +2080,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAsinhFunc" ):
-                listener.enterAsinhFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAsinhFunc" ):
-                listener.exitAsinhFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAsinhFunc" ):
@@ -2584,14 +2100,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSfftFunc" ):
-                listener.enterSfftFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSfftFunc" ):
-                listener.exitSfftFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSfftFunc" ):
                 return visitor.visitSfftFunc(self)
@@ -2611,14 +2119,6 @@ class MathExprParser ( Parser ):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAtanhFunc" ):
-                listener.enterAtanhFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAtanhFunc" ):
-                listener.exitAtanhFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAtanhFunc" ):
                 return visitor.visitAtanhFunc(self)
@@ -2637,14 +2137,6 @@ class MathExprParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(MathExprParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpFunc" ):
-                listener.enterExpFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpFunc" ):
-                listener.exitExpFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitExpFunc" ):
@@ -2666,14 +2158,6 @@ class MathExprParser ( Parser ):
 
         def PRINT_SHAPE(self):
             return self.getToken(MathExprParser.PRINT_SHAPE, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPrintShapeFunc" ):
-                listener.enterPrintShapeFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPrintShapeFunc" ):
-                listener.exitPrintShapeFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitPrintShapeFunc" ):
@@ -3155,14 +2639,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTMaxFunc" ):
-                listener.enterTMaxFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTMaxFunc" ):
-                listener.exitTMaxFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitTMaxFunc" ):
                 return visitor.visitTMaxFunc(self)
@@ -3184,14 +2660,6 @@ class MathExprParser ( Parser ):
             else:
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPowFunc" ):
-                listener.enterPowFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPowFunc" ):
-                listener.exitPowFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitPowFunc" ):
@@ -3215,14 +2683,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStepFunc" ):
-                listener.enterStepFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStepFunc" ):
-                listener.exitStepFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitStepFunc" ):
                 return visitor.visitStepFunc(self)
@@ -3245,14 +2705,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAtan2Func" ):
-                listener.enterAtan2Func(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAtan2Func" ):
-                listener.exitAtan2Func(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitAtan2Func" ):
                 return visitor.visitAtan2Func(self)
@@ -3274,14 +2726,6 @@ class MathExprParser ( Parser ):
             else:
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTMinFunc" ):
-                listener.enterTMinFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTMinFunc" ):
-                listener.exitTMinFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitTMinFunc" ):
@@ -3423,14 +2867,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLerpFunc" ):
-                listener.enterLerpFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLerpFunc" ):
-                listener.exitLerpFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitLerpFunc" ):
                 return visitor.visitLerpFunc(self)
@@ -3453,14 +2889,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSmoothstepFunc" ):
-                listener.enterSmoothstepFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSmoothstepFunc" ):
-                listener.exitSmoothstepFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSmoothstepFunc" ):
                 return visitor.visitSmoothstepFunc(self)
@@ -3482,14 +2910,6 @@ class MathExprParser ( Parser ):
             else:
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClampFunc" ):
-                listener.enterClampFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClampFunc" ):
-                listener.exitClampFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitClampFunc" ):
@@ -3611,14 +3031,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSwapFunc" ):
-                listener.enterSwapFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSwapFunc" ):
-                listener.exitSwapFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSwapFunc" ):
                 return visitor.visitSwapFunc(self)
@@ -3695,14 +3107,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSMaxFunc" ):
-                listener.enterSMaxFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSMaxFunc" ):
-                listener.exitSMaxFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSMaxFunc" ):
                 return visitor.visitSMaxFunc(self)
@@ -3724,14 +3128,6 @@ class MathExprParser ( Parser ):
             else:
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMapFunc" ):
-                listener.enterMapFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMapFunc" ):
-                listener.exitMapFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitMapFunc" ):
@@ -3755,17 +3151,31 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPermuteFunc" ):
-                listener.enterPermuteFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPermuteFunc" ):
-                listener.exitPermuteFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitPermuteFunc" ):
                 return visitor.visitPermuteFunc(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class ReshapeFuncContext(FuncNContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.FuncNContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def RESHAPE(self):
+            return self.getToken(MathExprParser.RESHAPE, 0)
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(MathExprParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(MathExprParser.ExprContext,i)
+
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitReshapeFunc" ):
+                return visitor.visitReshapeFunc(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -3784,14 +3194,6 @@ class MathExprParser ( Parser ):
             else:
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSMinFunc" ):
-                listener.enterSMinFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSMinFunc" ):
-                listener.exitSMinFunc(self)
 
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSMinFunc" ):
@@ -3815,14 +3217,6 @@ class MathExprParser ( Parser ):
                 return self.getTypedRuleContext(MathExprParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConvFunc" ):
-                listener.enterConvFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConvFunc" ):
-                listener.exitConvFunc(self)
-
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitConvFunc" ):
                 return visitor.visitConvFunc(self)
@@ -3837,7 +3231,7 @@ class MathExprParser ( Parser ):
         self.enterRule(localctx, 22, self.RULE_funcN)
         self._la = 0 # Token type
         try:
-            self.state = 435
+            self.state = 442
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [24]:
@@ -3954,6 +3348,22 @@ class MathExprParser ( Parser ):
                 self.state = 432
                 self.expr()
                 self.state = 433
+                self.match(MathExprParser.T__1)
+                pass
+            elif token in [55]:
+                localctx = MathExprParser.ReshapeFuncContext(self, localctx)
+                self.enterOuterAlt(localctx, 6)
+                self.state = 435
+                self.match(MathExprParser.RESHAPE)
+                self.state = 436
+                self.match(MathExprParser.T__0)
+                self.state = 437
+                self.expr()
+                self.state = 438
+                self.match(MathExprParser.T__3)
+                self.state = 439
+                self.expr()
+                self.state = 440
                 self.match(MathExprParser.T__1)
                 pass
             else:

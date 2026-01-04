@@ -8,9 +8,9 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
 
 1. Install [ComfyUI](https://docs.comfy.org/get_started).
 1. Clone this repository into `ComfyUI/custom_nodes`.
-2. open command prompt/terminal/bash in your comfy folder
-3. activate environment `./venv/Scripts/activate`
-4. install antlr `pip install -U antlr4-python3-runtime==4.13.2`
+1. open command prompt/terminal/bash in your comfy folder
+1. activate environment `./venv/Scripts/activate`
+1. install antlr `pip install -U antlr4-python3-runtime==4.13.2`
 1. Restart ComfyUI.
 
 You can also get the node from comfy manager under the name of More math.
@@ -25,7 +25,7 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Operators
 
-- Math: `+`, `-`, `*`, `/`, `%`, `^`, `||`
+- Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
 - Lists: `[v1, v2, ...]` (Vector math supported, only usefull in `conv` and `permute`)
@@ -90,6 +90,7 @@ You can also get the node from comfy manager under the name of More math.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 
 - `permute(tensor, dims)`: Rearranges the dimensions of the tensor. (e.g., `permute(a, [2, 3, 0, 1])`)
+- `reshape(tensor, shape)`: Reshapes the tensor to a new shape. (e.g., `reshape(a, [S0*S1, S2, S3])`)
 
 ### FFT (Tensor Only)
 

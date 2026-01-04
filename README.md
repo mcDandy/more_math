@@ -46,6 +46,7 @@ You can also get the node from comfy manager under the name of More math.
 - `fract(x)`: Returns the fractional part of x (x - floor(x)).
 - `sign(x)`: Returns -1 for negative, 1 for positive, 0 for zero.
 - `gamma(x)`: Gamma function.
+- `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
 
 ### Trigonometric
 

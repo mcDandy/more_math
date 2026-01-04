@@ -27,23 +27,23 @@ class UnifiedMathVisitor(MathExprVisitor):
         Generic binary operation handler.
         """
         # one of them is a list and one is tensor
-        if self._is_tensor(a) and self._is_list(b): return torch.stack([self._bin_op(a, x, torch_op, scalar_op) for x in b], dim=0)
-        if self._is_list(a) and self._is_tensor(b): return torch.stack([self._bin_op(x, b, torch_op, scalar_op) for x in a], dim=0)
-        
+        if self._is_tensor(a) and self._is_list(b): return torch.cat([self._bin_op(a, x, torch_op, scalar_op) for x in b], dim=0)
+        if self._is_list(a) and self._is_tensor(b): return torch.cat([self._bin_op(x, b, torch_op, scalar_op) for x in a], dim=0)
+
         if self._is_list(a) and not self._is_tensor(b):
             if self._is_list(b):
                 if len(a) != len(b): raise ValueError("List length mismatch")
                 return [self._bin_op(x, y, torch_op, scalar_op) for x, y in zip(a, b)]
             return [self._bin_op(x, b, torch_op, scalar_op) for x in a]
-            
+
         if not self._is_tensor(a) and self._is_list(b):
              return [self._bin_op(a, x, torch_op, scalar_op) for x in b]
-             
+
         if self._is_tensor(a) or self._is_tensor(b):
             if torch_op:
                 return torch_op(a, b)
             return scalar_op(a, b)
-            
+
         return scalar_op(a, b)
 
     def _unary_op(self, a, torch_op, scalar_op):
@@ -244,6 +244,9 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         t = max(0.0, min(1.0, (x - edge0) / (edge1 - edge0)))
         return t * t * (3.0 - 2.0 * t)
+
+    def visitRangeFunc(self, ctx):
+        return list(torch.arange(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))))
 
     # Helpers for visiting generic exprs
     def visitFunc1Exp(self, ctx): return self.visitChildren(ctx)
@@ -465,29 +468,29 @@ class UnifiedMathVisitor(MathExprVisitor):
         kernel_sizes: [W, H, D]
         """
         in_channels = conv_input.size(1)
-        
+
         pads = []
         for k in kernel_sizes:
             p_total = k - 1
             p_low = k // 2
             p_high = p_total - p_low
             pads.extend([p_low, p_high])
-            
+
         padded_input = torch.nn.functional.pad(conv_input, tuple(pads), mode='constant', value=0)
-        
+
         actual_kernel_sizes = kernel_sizes[::-1]
-        
+
         if kernel_val.numel() == 1:
             kernel_val = kernel_val.expand(tuple(actual_kernel_sizes))
         elif kernel_val.ndim != spatial_dims_count:
              kernel_val = kernel_val.reshape(tuple(actual_kernel_sizes))
-             
+
         final_kernel = kernel_val.unsqueeze(0).unsqueeze(0)
         final_kernel = final_kernel.to(conv_input.dtype)
         final_kernel = final_kernel.repeat(in_channels, 1, *([1]*spatial_dims_count))
-        
+
         conv_fn = F.conv1d if spatial_dims_count == 1 else (F.conv2d if spatial_dims_count == 2 else F.conv3d)
-        
+
         result = conv_fn(padded_input, final_kernel, padding=0, groups=in_channels)
         return result
 
@@ -571,15 +574,15 @@ class UnifiedMathVisitor(MathExprVisitor):
         total_batch = 1
         for s in batch_shape: total_batch *= s
         flat_input = tensor.reshape(total_batch, *spatial_shape, in_channels)
-        
+
         permute_order = [0, spatial_dims_count + 1] + list(range(1, spatial_dims_count + 1))
         conv_input = flat_input.permute(*permute_order)
 
         result = self._apply_conv_internal(conv_input, kernel_val, kernel_sizes, spatial_dims_count)
 
         result_permute = [0] + list(range(2, 2+spatial_dims_count)) + [1]
-        out_flat = result.permute(*result_permute) 
-        
+        out_flat = result.permute(*result_permute)
+
         final_shape = batch_shape + spatial_shape + channels_shape
         out = out_flat.reshape(final_shape)
 
@@ -590,7 +593,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                   out = out.permute(0, 3, 1, 2)
              elif spatial_dims_count == 3:
                   if out.ndim == 5 and out.shape[-1] == 1 and input_ndim == 4:
-                      out = out.squeeze(-1) 
+                      out = out.squeeze(-1)
                   elif out.ndim == 5:
                       out = out.permute(0, 4, 1, 2, 3)
 

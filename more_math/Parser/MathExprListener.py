@@ -665,6 +665,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#RangeFunc.
+    def enterRangeFunc(self, ctx:MathExprParser.RangeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RangeFunc.
+    def exitRangeFunc(self, ctx:MathExprParser.RangeFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SwapFunc.
     def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         pass
@@ -716,6 +725,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#PermuteFunc.
     def exitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ReshapeFunc.
+    def enterReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ReshapeFunc.
+    def exitReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
         pass
 
 

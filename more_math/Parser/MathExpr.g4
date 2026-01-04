@@ -106,6 +106,7 @@ func3
     : CLAMP      '(' expr ',' expr ',' expr ')'   # ClampFunc
     | LERP       '(' expr ',' expr ',' expr ')'   # LerpFunc
     | SMOOTHSTEP '(' expr ',' expr ',' expr ')'   # SmoothstepFunc
+    | RANGE      '(' expr ',' expr ',' expr ')'   # RangeFunc
     ;
 
 func4
@@ -174,6 +175,7 @@ CONV : 'conv';
 SWAP : 'swap';
 PERM : 'permute';
 RESHAPE : 'reshape';
+RANGE : 'range';
 
 PLUS        : '+';
 MINUS       : '-';

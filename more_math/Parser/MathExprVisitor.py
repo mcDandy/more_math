@@ -1,4 +1,4 @@
-# Generated from MathExpr.g4 by ANTLR 4.13.2
+# Generated from ./MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -371,6 +371,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#SmoothstepFunc.
     def visitSmoothstepFunc(self, ctx:MathExprParser.SmoothstepFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RangeFunc.
+    def visitRangeFunc(self, ctx:MathExprParser.RangeFuncContext):
         return self.visitChildren(ctx)
 
 

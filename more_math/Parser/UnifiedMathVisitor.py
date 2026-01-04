@@ -145,7 +145,11 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAtanhFunc(self, ctx): return self._func_dispatch(self.visit(ctx.expr()), torch.atanh, math.atanh)
 
     def visitAbsFunc(self, ctx): return self._func_dispatch(self.visit(ctx.expr()), torch.abs, abs)
-    def visitAbsExp(self, ctx): return self._func_dispatch(self.visit(ctx.expr()), torch.abs, abs)
+    def visitAbsExp(self, ctx):
+        val = self.visit(ctx.expr())
+        if self._is_list(val): return torch.linalg.norm(self._promote_to_tensor(val))
+        if self._is_tensor(val): return torch.linalg.norm(val)
+        return abs(val)
 
     def visitSqrtFunc(self, ctx): return self._func_dispatch(self.visit(ctx.expr()), torch.sqrt, math.sqrt)
     def visitLnFunc(self, ctx): return self._func_dispatch(self.visit(ctx.expr()), torch.log, math.log)

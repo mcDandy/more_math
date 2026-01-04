@@ -252,14 +252,6 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAtomExp(self, ctx): return self.visitChildren(ctx)
     def visitExpr(self, ctx): return self.visitChildren(ctx)
 
-    # Original TensorEvalVisitor complex methods (Conv, Map)
-    # Map, Conv, etc need to handle lists specially now (convert to tensor if expected?)
-    # or leverage list broadcasting if it makes sense (Conv on a list of images?)
-
-    # For MVP of unification, let's include basic ops and structure,
-    # and port the complex ones (Conv) carefully.
-
-    # Let's port specific requested functions to verify test suite first.
     def visitSMinFunc(self, ctx):
         vals = [self.visit(e) for e in ctx.expr()]
 
@@ -285,10 +277,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         promoted = [self._promote_to_tensor(x) for x in args]
         if len(promoted) == 1: return torch.max(promoted[0])
         return torch.max(torch.stack(torch.broadcast_tensors(*promoted)))
-
-    # ==========================================
-    # Complex Tensor Operations
-    # ==========================================
 
     def _fold_nd(self, tsr, spatial_dims):
         original_shape = tsr.shape
@@ -454,11 +442,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if num_coords == 1:
             input_final = input_view.reshape(batch_size, 1, 1, -1)
-            # grid_view is [batch_size, (spatial), 1]
-            # for 1D it might be just [batch_size, 1] if input was scalar
-            # we need [batch_size, H_out, W_out, 2] for 2D grid_sample
             gv = grid_view
-            while gv.ndim < 3: gv = gv.unsqueeze(1) # [B, 1, 1]
+            while gv.ndim < 3: gv = gv.unsqueeze(1)
             y_zeros = torch.zeros_like(gv[..., :1])
             grid_final = torch.cat([gv, y_zeros], dim=-1).unsqueeze(1) # [B, 1, 1, 2]
             output = F.grid_sample(input_final, grid_final, align_corners=True)
@@ -477,6 +462,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         Executes the convolution with asymmetric padding support for even kernels.
         Input: [Batch, Channel, Spatial...]
         Kernel: [Spatial...] (to be promoted/repeated)
+        kernel_sizes: [W, H, D]
         """
         in_channels = conv_input.size(1)
         
@@ -613,16 +599,3 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return out
 
-    # Copied from TensorEvalVisitor but using unified logic where applicable
-    # Note: For Conv/Map, we stick to Tensor logic mostly, but if args are lists we might error or auto-stack.
-    # The user mentioned: "easy ability to use it [list] in conv after reshaping".
-    # This implies conv(list, ...) might be useful.
-    # But usually conv input is a tensor.
-    # If list is passed to conv(A ...), A must be tensor?
-    # Or conv([img1, img2], ...) -> [conv(img1), conv(img2)]?
-    # Broadcasting logic handles list inputs naturally if we map `visit` over list.
-    # But `conv` is a custom Visitor method, not routed via `_bin_op`.
-    # We would need to implement list handling inside `visitConvFunc`.
-
-    # Implementing generic fallback for missing methods to avoid crashes during dev?
-    # No, better fail.

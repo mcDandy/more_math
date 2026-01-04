@@ -21,14 +21,16 @@ You can also get the node from comfy manager under the name of More math.
 - Conversion between INT and FLOAT; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
 - Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, NOISE, AUDIO, VIDEO, MODEL, CLIP and VAE
 
-- Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars
+- Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 
 ## Operators
 
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
-- Lists: `[v1, v2, ...]` (Vector math supported, only usefull in `conv` and `permute`)
+- Lists: `[v1, v2, ...]` (Vector math supported, mostly usefull in `conv` and `permute`)
+  - You can also use lists to do math with input tensor (image, noise, conditioing, latent, audio) which results in batched output.
+  - print_sbape(a) = torch.Shape[1,1024,1024,3]; b = a*[0,0.2,-0.3]; print_shape(b) = torch.Shape[3,1024,1024,3] 
 
 ## Functions
 

@@ -107,11 +107,21 @@ def test_all_functions():
     check("smax(1, 5, 2)", 5.0)
     
     print("--- Testing Tensor Specifics (Norm, Map, Conv, FFT) ---")
+    # Verify abs(x) vs |x|
+    res_abs_func = eval_tensor_expr("abs(ta)", variables, (3,))
+    assert torch.equal(res_abs_func, torch.abs(tensor_a))
+    
+    res_abs_exp = eval_tensor_expr("|ta|", variables, (3,))
+    assert torch.is_tensor(res_abs_exp) and res_abs_exp.numel() == 1
+    assert torch.allclose(res_abs_exp, torch.linalg.norm(tensor_a))
+
     check("tnorm(ta)")
     check("snorm(ta)")
     check("map(ta, x)") # 1D map
-    check("conv(ta, 3, 1)") # 1D conv, size 3, value 1
+    # Verify conv with kernel variables kW
+    check("conv(ta, 3, kW)") # 1D conv, size 3, value is kW (which is 3.0)
     check("permute(ta, [0])")
+    check("reshape(ta, [3, 1])")
     
     # FFT/IFFT
     # We need a shape for FFT usually

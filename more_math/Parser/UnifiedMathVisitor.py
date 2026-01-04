@@ -466,39 +466,35 @@ class UnifiedMathVisitor(MathExprVisitor):
         """
         in_channels = conv_input.size(1)
         
-        # Calculate Asymmetric Padding for "Same" padding
-        # Total padding needed = kernel_size - 1
-        # Left/Top/Front = (K-1)//2, Right/Bottom/Back = (K-1) - Left
         pads = []
-        for k in kernel_sizes[::-1]: # F.pad uses reverse order (W, H, D)
+        for k in kernel_sizes:
             p_total = k - 1
-            p_low = p_total // 2
+            p_low = k // 2
             p_high = p_total - p_low
             pads.extend([p_low, p_high])
             
-        # Apply padding
         padded_input = torch.nn.functional.pad(conv_input, tuple(pads), mode='constant', value=0)
         
-        # Prepare Kernel
+        actual_kernel_sizes = kernel_sizes[::-1]
+        
         if kernel_val.numel() == 1:
-            kernel_val = kernel_val.expand(tuple(kernel_sizes))
+            kernel_val = kernel_val.expand(tuple(actual_kernel_sizes))
         elif kernel_val.ndim != spatial_dims_count:
-             kernel_val = kernel_val.reshape(tuple(kernel_sizes))
+             kernel_val = kernel_val.reshape(tuple(actual_kernel_sizes))
              
         final_kernel = kernel_val.unsqueeze(0).unsqueeze(0)
         final_kernel = final_kernel.to(conv_input.dtype)
-        # Repeat for Depthwise-like behavior: Weight [OutC, InC/Groups, K...]
-        # result = conv(Groups=InC, InC=InC) -> Weight [InC, 1, K...]
         final_kernel = final_kernel.repeat(in_channels, 1, *([1]*spatial_dims_count))
         
         conv_fn = F.conv1d if spatial_dims_count == 1 else (F.conv2d if spatial_dims_count == 2 else F.conv3d)
         
-        # padding=0 because we padded explicitly via F.pad
         result = conv_fn(padded_input, final_kernel, padding=0, groups=in_channels)
         return result
 
     def visitConvFunc(self, ctx):
-        tensor = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        input_raw = self.visit(ctx.expr(0))
+        tensor = self._promote_to_tensor(input_raw)
+        input_ndim = tensor.ndim
         num_args = len(ctx.expr())
         if num_args < 3: raise ValueError("conv() requires at least 3 arguments")
 
@@ -525,6 +521,13 @@ class UnifiedMathVisitor(MathExprVisitor):
             self.variables[f'k{dim_names[i].lower()}'] = grid[i]
             self.variables[f'k{dim_names[i].upper()}'] = grid[i]
 
+        kernel_var_names = ['kW', 'kH', 'kD']
+        kernel_var_full = ['kernel_width', 'kernel_height', 'kernel_depth']
+        for i in range(spatial_dims_count):
+            size_val = float(kernel_sizes[i])
+            self.variables[kernel_var_names[i]] = size_val
+            self.variables[kernel_var_full[i]] = size_val
+
         original_shape = self.shape
         self.shape = tuple(kernel_sizes)
 
@@ -534,39 +537,37 @@ class UnifiedMathVisitor(MathExprVisitor):
             self.shape = original_shape
             self.variables = old_vars
 
-        # --- Dimension Management (Standardizing to BHWC internally) ---
-        
-        # 1. Detect Layout (Channels-First vs Channels-Last)
         is_channels_first = False
-        if tensor.ndim >= 3 and tensor.shape[-1] > 4:
-             is_channels_first = True
+        if tensor.ndim == spatial_dims_count + 2:
+            c_front = tensor.shape[1]
+            c_back  = tensor.shape[-1]
+            if c_front <= 4 and c_front < c_back:
+                is_channels_first = True
+            elif c_back <= 4 and c_back < c_front:
+                is_channels_first = False
+            else:
+                is_channels_first = (c_back > 4)
 
-        # 2. Convert Channels-First [B, C, S...] to Channels-Last [B, S..., C]
         if is_channels_first:
             if spatial_dims_count == 1 and tensor.ndim == 3:
                  tensor = tensor.permute(0, 2, 1)
             elif spatial_dims_count == 2 and tensor.ndim == 4:
                  tensor = tensor.permute(0, 2, 3, 1)
             elif spatial_dims_count == 3:
-                 if tensor.ndim == 4: tensor = tensor.unsqueeze(-1) # [B, C, H, W] -> [B, C, H, W, 1] (C is Depth)
+                 if tensor.ndim == 4: tensor = tensor.unsqueeze(-1)
                  elif tensor.ndim == 5: tensor = tensor.permute(0, 2, 3, 4, 1)
 
-        # 3. Handle user rule: "last 4 dimensions as d,v,h,c" for ndim=4
-        # At this point, for 3D conv on Latents [B, D, H, W, 1], we have 5 dims.
-        # Ensure we have N+2 dimensions for conv logic
         if tensor.ndim == spatial_dims_count + 1:
              tensor = tensor.unsqueeze(-1) # Add C=1
         elif tensor.ndim == spatial_dims_count:
              tensor = tensor.unsqueeze(0).unsqueeze(-1) # Add B=1, C=1
 
-        # 4. Partition Dimensions
         in_channels = tensor.size(-1)
         batch_end_idx = tensor.ndim - 1 - spatial_dims_count
         batch_shape = tensor.shape[:batch_end_idx]
         spatial_shape = tensor.shape[batch_end_idx:-1]
         channels_shape = (tensor.shape[-1],)
 
-        # 5. Flatten / Permute to [N, C, S...] for helper
         total_batch = 1
         for s in batch_shape: total_batch *= s
         flat_input = tensor.reshape(total_batch, *spatial_shape, in_channels)
@@ -574,25 +575,21 @@ class UnifiedMathVisitor(MathExprVisitor):
         permute_order = [0, spatial_dims_count + 1] + list(range(1, spatial_dims_count + 1))
         conv_input = flat_input.permute(*permute_order)
 
-        # 6. Call pure kernel runner (with padding fix)
         result = self._apply_conv_internal(conv_input, kernel_val, kernel_sizes, spatial_dims_count)
 
-        # 7. Reverse Permute / Un-flatten / Un-pad
-        # Helper returned [N, C, S...]
         result_permute = [0] + list(range(2, 2+spatial_dims_count)) + [1]
         out_flat = result.permute(*result_permute) 
         
         final_shape = batch_shape + spatial_shape + channels_shape
         out = out_flat.reshape(final_shape)
 
-        # 8. Restore Channels-First if needed
         if is_channels_first:
              if spatial_dims_count == 1 and out.ndim == 3:
                   out = out.permute(0, 2, 1)
              elif spatial_dims_count == 2 and out.ndim == 4:
                   out = out.permute(0, 3, 1, 2)
              elif spatial_dims_count == 3:
-                  if out.ndim == 5 and out.shape[-1] == 1:
+                  if out.ndim == 5 and out.shape[-1] == 1 and input_ndim == 4:
                       out = out.squeeze(-1) 
                   elif out.ndim == 5:
                       out = out.permute(0, 4, 1, 2, 3)

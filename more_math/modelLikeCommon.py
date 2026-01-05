@@ -1,7 +1,7 @@
 import torch
 import comfy.utils
 
-from .helper_functions import getIndexTensorAlongDim, parse_expr, eval_tensor_expr_with_tree
+from .helper_functions import getIndexTensorAlongDim, parse_expr, eval_tensor_expr_with_tree,as_tensor
 
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
@@ -43,7 +43,7 @@ def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0
             variables[f'D{dim_idx}'] = idx_tensor
             variables[f'dim_{dim_idx}'] = idx_tensor
 
-        result_tensor = eval_tensor_expr_with_tree(tree, variables, tens_a.shape)
+        result_tensor = as_tensor(eval_tensor_expr_with_tree(tree, variables, tens_a.shape),tens_a.shape)
 
         # Calculate patch (diff from original)
         diff = result_tensor - tens_a

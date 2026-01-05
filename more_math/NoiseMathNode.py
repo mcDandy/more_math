@@ -2,7 +2,7 @@ from inspect import cleandoc
 
 import torch
 
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like,as_tensor
 
 from comfy_api.latest import io
 
@@ -188,7 +188,7 @@ class NoiseExecutor():
             F = getIndexTensorAlongDim(merged_samples, time_dim)
             variables.update({'frame': F, 'frame_count': frame_count})
 
-        merged_result = eval_tensor_expr_with_tree(self.tree, variables, variables['a'].shape)
+        merged_result = as_tensor(eval_tensor_expr_with_tree(self.tree, variables, variables['a'].shape),variables['a'].shape)
 
         if hasattr(samples, 'is_nested') and getattr(samples, 'is_nested'):
             split_results = list(merged_result.split(sizes, dim=0))

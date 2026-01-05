@@ -1,7 +1,8 @@
 from inspect import cleandoc
 import torch
 
-from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, make_zero_like
+from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, make_zero_like,as_tensor
+
 from comfy_api.latest import io
 
 
@@ -63,7 +64,7 @@ class ConditioningMathNode(MathNodeBase):
 
         # Evaluate tensor expression
         variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z} | generate_dim_variables(ta)
-        result_tensor = eval_tensor_expr(Tensor, variables, ta.shape)
+        result_tensor = as_tensor(eval_tensor_expr(Tensor, variables, ta.shape),ta.shape)
 
         # Evaluate pooled_output expression if available
         pa = a[0][1].get("pooled_output")
@@ -72,7 +73,7 @@ class ConditioningMathNode(MathNodeBase):
             pc = c[0][1].get("pooled_output")
             pd = d[0][1].get("pooled_output")
             variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z} | generate_dim_variables(pa)
-            result_pooled = eval_tensor_expr(pooled_output, variables, pa.shape)
+            result_pooled = as_tensor(eval_tensor_expr(pooled_output, variables, pa.shape),pa.shape)
         else:
             result_pooled = None
 

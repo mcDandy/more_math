@@ -13,6 +13,12 @@ class ThrowingErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise ValueError(f"Syntax error in expression at line {line}, col {column}: {msg}")
 
+def as_tensor(value,shape):
+    if isinstance(value,torch.Tensor):
+        return value
+    if isinstance(value,(float,int)):
+        value = (value,)
+    return torch.broadcast_to(torch.Tensor(value),shape)
 
 def parse_expr(expr: str):
     """Parse a math expression and return the parse tree."""

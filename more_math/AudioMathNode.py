@@ -1,5 +1,5 @@
 import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, eval_tensor_expr, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, eval_tensor_expr, make_zero_like,as_tensor
 
 from comfy_api.latest import io
 
@@ -70,4 +70,4 @@ class AudioMathNode(MathNodeBase):
 
         result_tensor = eval_tensor_expr(AudioExpr, variables, av.shape)
 
-        return ({'waveform': result_tensor, 'sample_rate': sample_rate},)
+        return ({'waveform': as_tensor(result_tensor,a.shape), 'sample_rate': sample_rate},)

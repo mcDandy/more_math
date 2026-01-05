@@ -2,7 +2,7 @@ from inspect import cleandoc
 import comfy.nested_tensor
 from comfy_api.latest import io
 import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like,as_tensor
 from .MathNodeBase import MathNodeBase
 
 
@@ -103,7 +103,7 @@ class LatentMathNode(MathNodeBase):
                 F = getIndexTensorAlongDim(a_t, time_dim)
                 variables.update({'frame_idx': F, 'frame': F, 'frame_count': frame_count})
 
-            return eval_tensor_expr_with_tree(tree, variables, a_t.shape)
+            return as_tensor(eval_tensor_expr_with_tree(tree, variables, a_t.shape),a_t.shape)
 
         if hasattr(a_in, 'is_nested') and getattr(a_in, 'is_nested'):
             a_list = a_in.unbind()

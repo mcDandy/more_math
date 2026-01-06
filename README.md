@@ -153,8 +153,7 @@ You can also get the node from comfy manager under the name of More math.
   - `I` or `input_latent` – latent used as input to generate noise before noise is generated into it
 - **CONDITIONING and FLOAT**
   - no additional variables
-  - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
-  - `K` or `frequency` – isotropic frequency (Euclidean norm of indices, iFFT only)
-  - `Kx`, `Ky`, `Kz`, `Kw`,`Kv`, `Ku`, `K_dimN` - frequency index for specific dimension
-  - `Fx`, `Fy`, `Fz`, `Fw`,`Fv`,`Fu`, `F_dimN` - frequency count for specific dimension
+- **MODEL, CLIP and VAE**
+- `L` or `layer` - a position of layer from beginning of object
+- `LC` or `layer_count` - a count of layers
 - Constants: `e`, `pi`

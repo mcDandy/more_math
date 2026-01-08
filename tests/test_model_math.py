@@ -22,7 +22,7 @@ from more_math.ModelMathNode import ModelMathNode
 class MockModelPatcher:
     def __init__(self, state_dict):
         self.model = comfy_api.Model()
-        self.model.state_dict = state_dict
+        self.model.state_dict = lambda: state_dict
         self.patches = {}
 
     def clone(self):
@@ -163,7 +163,7 @@ class MockPatcherContainer:
 
 
 def test_clip_math():
-    from more_math.ModelMathNode import CLIPMathNode
+    from more_math.ClipMathNode import CLIPMathNode
 
     sd_a = {"text_model.encoder.layers.0.mlp.fc1.weight": torch.tensor([1.0])}
     clip_a = MockPatcherContainer(sd_a)
@@ -178,7 +178,7 @@ def test_clip_math():
 
 
 def test_vae_math():
-    from more_math.ModelMathNode import VAEMathNode
+    from more_math.VaeMathNode import VAEMathNode
 
     sd_a = {"decoder.conv_in.weight": torch.tensor([1.0])}
     # VAE acts like PatcherContainer but no clone() on the VAE itself usually.

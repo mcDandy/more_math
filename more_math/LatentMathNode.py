@@ -154,7 +154,7 @@ class LatentMathNode(MathNodeBase):
             merged_result = eval_single_tensor(merged_a, merged_b, merged_c, merged_d)
 
             split_results = list(merged_result.split(sizes, dim=0))
-            out_samples = comfy.nested_tensor.nested_tensor.NestedTensor(split_results)
+            out_samples = comfy.nested_tensor.NestedTensor(split_results)
 
             return ({"samples": out_samples},)
 

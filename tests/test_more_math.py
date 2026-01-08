@@ -260,7 +260,7 @@ def test_image_swap():
     node = ImageMathNode()
     img_red = torch.tensor([1.0, 0.0, 0.0]).view(1, 1, 1, 3)
     img_blue = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 1, 3)
-    res_swap = node.execute("swap(a, 1, 0, 2)", a=img_red)[0]
+    res_swap = node.execute("swap(a, 3, 0, 2)", a=img_red)[0]
     assert torch.allclose(res_swap, img_blue)
 
 

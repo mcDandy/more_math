@@ -112,7 +112,6 @@ def test_model_math_device_mismatch():
     # Since we might only have CPU, we can't fully reproduce 'cpu vs cuda' crash without cuda.
     # But we can verify that the scalar created by visitor.visitNumberExp has the same device as 'a'.
 
-    from more_math.Parser.TensorEvalVisitor import TensorEvalVisitor
     from antlr4 import InputStream, CommonTokenStream
     from more_math.Parser.MathExprLexer import MathExprLexer
     from more_math.Parser.MathExprParser import MathExprParser
@@ -125,7 +124,7 @@ def test_model_math_device_mismatch():
     # Let's try to pass a dummy device string if create_tensor allows, or just check the code path.
     # Better: Inspect the created tensor from visitor.
 
-    tsr = torch.zeros((1,))
+    torch.zeros((1,))
     # We interpret "device mismatch" as: created scalars didn't pick up the device of 'tsr'.
     # We can force 'tsr' to be on a specific device if available, but likely only 'cpu' is available.
     # Use a mock object for 'a' that claims to be on 'cuda:0', even if it isn't real tensor?
@@ -139,9 +138,9 @@ def test_model_math_device_mismatch():
     lexer = MathExprLexer(input_stream)
     stream = CommonTokenStream(lexer)
     parser = MathExprParser(stream)
-    tree = parser.expr()
+    parser.expr()
 
-    variables = {"a": torch.zeros(1)}
+    {"a": torch.zeros(1)}
     # We want to ensure that if we had a non-cpu device, it would use it.
     # Since we can't really test this without a GPU, we will write the fix and verify it analytically
     # or use a mock that wraps a tensor but intercepts .device?

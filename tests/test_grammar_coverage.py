@@ -122,7 +122,7 @@ def test_all_functions():
 
     # FFT/IFFT
     # We need a shape for FFT usually
-    res_fft = eval_tensor_expr("fft(ta)", variables, (3,))
+    eval_tensor_expr("fft(ta)", variables, (3,))
     res_ifft = eval_tensor_expr("ifft(fft(ta))", variables, (3,))
     assert torch.allclose(res_ifft, tensor_a, atol=1e-4)
 

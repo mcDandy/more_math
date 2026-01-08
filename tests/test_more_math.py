@@ -405,7 +405,6 @@ def test_pow_log_functions():
 
 
 def test_min_max_functions():
-    import sys
 
     node = FloatMathNode()
     print("Testing tmin...", flush=True)
@@ -466,7 +465,7 @@ if __name__ == "__main__":
         test_basic_utilities()
         test_advanced_activations()
         print("All tests passed!")
-    except Exception as e:
+    except Exception:
         import traceback
 
         traceback.print_exc()

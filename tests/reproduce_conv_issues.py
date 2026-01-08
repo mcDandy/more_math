@@ -11,8 +11,6 @@ if _comfy_root not in sys.path:
     sys.path.insert(0, _comfy_root)
 
 import torch
-import pytest
-from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
 from more_math.LatentMathNode import LatentMathNode
 
@@ -139,7 +137,7 @@ def test_conv_audio():
         print(f"Audio Result Shape: {res_tensor.shape}")
 
         if res_tensor.shape != shape:
-            print(f"Likely interpreted as Channels Last [B, L, C] where C is small? No.")
+            print("Likely interpreted as Channels Last [B, L, C] where C is small? No.")
             # If interpreted as Channels last [..., C].
             # [1, 2, 100]. Spatial=[2]. Channel=100.
             # Output [1, 2, 100] (but confusing channels).
@@ -262,7 +260,7 @@ if __name__ == "__main__":
         test_conv_complex_padding()
         test_conv_3d_asymmetric()
         print("All Conv tests passed!")
-    except Exception as e:
+    except Exception:
         import traceback
 
         traceback.print_exc()

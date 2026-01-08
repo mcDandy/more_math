@@ -2,7 +2,6 @@ import sys
 import os
 import torch
 import math
-import pytest
 
 # Ensure we can import the module
 _here = os.path.abspath(os.path.dirname(__file__))
@@ -187,7 +186,7 @@ if __name__ == "__main__":
         test_kernel_coords()
         test_bool_ops()
         print("All UnifiedMathVisitor tests passed!")
-    except Exception as e:
+    except Exception:
         import traceback
 
         traceback.print_exc()

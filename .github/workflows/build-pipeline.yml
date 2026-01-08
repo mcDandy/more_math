@@ -66,7 +66,7 @@ jobs:
       - name: Clone ComfyUI dependency
         run: |
           git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git ../ComfyUI-repo
-          cp -r ../ComfyUI-repo/ ../
+          cp -r ../ComfyUI-repo/* ../
           python -m pip install -r ../ComfyUI-repo/requirements.txt
 
       - name: Run Linting

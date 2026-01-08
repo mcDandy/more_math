@@ -215,7 +215,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._func_dispatch(self.visit(ctx.expr()), torch.round, round)
 
     def visitSignFunc(self, ctx):
-        return self._func_dispatch(self.visit(ctx.expr()), torch.sign, lambda x: math.copysign(1.0, x))
+        return self._func_dispatch(self.visit(ctx.expr()), torch.sign, lambda x: (1.0 if x > 0 else (-1.0 if x < 0 else 0.0)))
 
     def visitFractFunc(self, ctx):
         val = self.visit(ctx.expr())

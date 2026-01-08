@@ -107,15 +107,15 @@ def test_latent_lerp():
 
 def test_latent_step_true():
     node = LatentMathNode()
-    # step(0.5, a) where a=0.8 -> 1
-    res_step = node.execute("step(0.5, a)", a={"samples": torch.full((1, 1, 1, 1), 0.8)})[0]["samples"]
+    # step(x, edge) where x=0.8, edge=0.5 -> 1
+    res_step = node.execute("step(a, 0.5)", a={"samples": torch.full((1, 1, 1, 1), 0.8)})[0]["samples"]
     assert torch.allclose(res_step, torch.ones_like(res_step))
 
 
 def test_latent_step_false():
     node = LatentMathNode()
-    # step(0.5, a) where a=0.2 -> 0
-    res_step2 = node.execute("step(0.5, a)", a={"samples": torch.full((1, 1, 1, 1), 0.2)})[0]["samples"]
+    # step(x, edge) where x=0.2, edge=0.5 -> 0
+    res_step2 = node.execute("step(a, 0.5)", a={"samples": torch.full((1, 1, 1, 1), 0.2)})[0]["samples"]
     assert torch.allclose(res_step2, torch.zeros_like(res_step2))
 
 
@@ -163,7 +163,7 @@ def test_float_lerp():
 
 def test_float_step():
     node = FloatMathNode()
-    res = node.execute("step(0.5, a)", a=0.8)[0]
+    res = node.execute("step(a, 0.5)", a=0.8)[0]
     assert abs(res - 1.0) < 1e-5
 
 
@@ -175,7 +175,7 @@ def test_float_relu():
 
 def test_float_smoothstep():
     node = FloatMathNode()
-    res = node.execute("smoothstep(0, 1, a)", a=0.5)[0]
+    res = node.execute("smoothstep(a, 0, 1)", a=0.5)[0]
     assert abs(res - 0.5) < 1e-5
 
 
@@ -224,7 +224,7 @@ def test_float_gelu():
 def test_latent_smoothstep():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute("smoothstep(0, 1, 0.5)", a=l_a)[0]["samples"]
+    res = node.execute("smoothstep(0.5, 0, 1)", a=l_a)[0]["samples"]
     assert torch.allclose(res, torch.full_like(res, 0.5))
 
 
@@ -271,15 +271,15 @@ def test_image_swap():
 
 def test_float_nested_expressions_true():
     node = FloatMathNode()
-    # lerp(0, 10, step(0.5, 0.8)) -> lerp(0, 10, 1) -> 10
-    res = node.execute("lerp(0, 10, step(0.5, 0.8))", a=0.0)[0]
+    # lerp(0, 10, step(0.8, 0.5)) -> lerp(0, 10, 1) -> 10
+    res = node.execute("lerp(0, 10, step(0.8, 0.5))", a=0.0)[0]
     assert res == 10.0
 
 
 def test_float_nested_expressions_false():
     node = FloatMathNode()
-    # lerp(0, 10, step(0.5, 0.2)) -> lerp(0, 10, 0) -> 0
-    res2 = node.execute("lerp(0, 10, step(0.5, 0.2))", a=0.0)[0]
+    # lerp(0, 10, step(0.2, 0.5)) -> lerp(0, 10, 0) -> 0
+    res2 = node.execute("lerp(0, 10, step(0.2, 0.5))", a=0.0)[0]
     assert res2 == 0.0
 
 

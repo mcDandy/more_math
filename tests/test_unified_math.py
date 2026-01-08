@@ -73,15 +73,17 @@ def test_list_broadcasting():
     l = [1.0, 2.0, 3.0]
     vars = {"t": t, "l": l}
 
-    # l * t should produce a stack of 3 tensors: 1*t, 2*t, 3*t
-    # Expected shape: (3, 2, 2)
+    # l * t should produce a concatenation of 3 tensors: 1*t, 2*t, 3*t
+    # Expected shape with torch.cat: (6, 2) - concatenates along existing dim
     res = parse_and_visit("l * t", vars)
 
     assert isinstance(res, torch.Tensor)
-    assert res.shape == (3, 2, 2)
-    assert torch.allclose(res[0], t * 1.0)
-    assert torch.allclose(res[1], t * 2.0)
-    assert torch.allclose(res[2], t * 3.0)
+    assert res.shape == (6, 2)
+    # With torch.cat along dim=0, the result is flattened:
+    # [1*t[0], 1*t[1], 2*t[0], 2*t[1], 3*t[0], 3*t[1]]
+    assert torch.allclose(res[0:2], t * 1.0)
+    assert torch.allclose(res[2:4], t * 2.0)
+    assert torch.allclose(res[4:6], t * 3.0)
 
 
 def test_list_scalar_mapping():

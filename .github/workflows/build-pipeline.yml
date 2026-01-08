@@ -63,11 +63,19 @@ jobs:
           pip install .[dev]
           pip install -r requirements.txt
 
+      - name: Clone ComfyUI dependency
+        run: |
+          git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git ../ComfyUI-repo
+          cp -r ../ComfyUI-repo/comfy ../
+          cp -r ../ComfyUI-repo/comfy_api ../
+
       - name: Run Linting
         run: |
           ruff check .
 
       - name: Run Tests
+        env:
+          PYTHONPATH: .
         run: |
           pytest tests/
 

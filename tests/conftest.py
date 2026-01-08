@@ -15,10 +15,21 @@ for p in [_project_root, _comfy_root]:
 
 # Special case: 'more_math' root folder has an __init__.py which conflicts with the 'more_math' subfolder.
 # We want 'import more_math' to resolve to the subfolder package.
-if "more_math" not in sys.modules or "custom_nodes" in (getattr(sys.modules["more_math"], "__file__", "") or ""):
+_subfolder = os.path.join(_project_root, "more_math")
+_sub_init = os.path.join(_subfolder, "__init__.py")
+
+# Check if we are accidentally importing the root folder as the package
+def _is_root_package():
+    if "more_math" not in sys.modules:
+        return False
+    m = sys.modules["more_math"]
+    m_file = getattr(m, "__file__", "") or ""
+    # If the module file is NOT in the subfolder, it's likely the root folder's __init__.py
+    return os.path.abspath(m_file) != os.path.abspath(_sub_init)
+
+if _is_root_package() or "more_math" not in sys.modules:
     import importlib.util
-    _subfolder = os.path.join(_project_root, "more_math")
-    _spec = importlib.util.spec_from_file_location("more_math", os.path.join(_subfolder, "__init__.py"))
+    _spec = importlib.util.spec_from_file_location("more_math", _sub_init)
     if _spec:
         _m = importlib.util.module_from_spec(_spec)
         sys.modules["more_math"] = _m

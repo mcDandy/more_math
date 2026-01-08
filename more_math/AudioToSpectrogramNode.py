@@ -14,7 +14,7 @@ class AudioToSpectrogram(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_AudioToImageSpectrogram",
             category="More math",
-            display_name="Audio to Image Spectrogram",
+            display_name="Audio -> Spectrogram",
             inputs=[
                 io.Audio.Input(id="audio", tooltip="Input audio"),
                 io.Int.Input(id="window_length", default=1024, min=16, max=4096, tooltip="Window length in samples"),

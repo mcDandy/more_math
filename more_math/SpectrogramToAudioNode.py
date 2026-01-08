@@ -13,7 +13,7 @@ class SpectrogramToAudio(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ImageSpectrogramToAudio",
             category="More math",
-            display_name="Image Spectrogram to Audio",
+            display_name="Spectrogram -> Audio",
             inputs=[
                 io.Image.Input(id="image", tooltip="Input spectrogram image (R=Real, G=Magnitude, B=Imaginary)"),
                 io.Int.Input(id="channel_count", default=1, min=1, tooltip="Number of audio channels"),

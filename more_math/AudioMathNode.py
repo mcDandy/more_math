@@ -76,4 +76,4 @@ class AudioMathNode(MathNodeBase):
 
         result_tensor = eval_tensor_expr(AudioExpr, variables, av.shape)
 
-        return ({"waveform": as_tensor(result_tensor, a.shape), "sample_rate": sample_rate},)
+        return ({"waveform": as_tensor(result_tensor, av.shape), "sample_rate": sample_rate},)

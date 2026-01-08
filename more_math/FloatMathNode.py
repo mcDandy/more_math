@@ -3,21 +3,23 @@ from inspect import cleandoc
 from .helper_functions import comonLazy, eval_float_expr
 from comfy_api.latest import io
 
+
 class FloatMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on Floats.
-    
+
     Inputs:
         a, b, c, d: Floats, bound to variables with the same name.
         w, x, y, z: Floats, bound to variables of the expression.
-        FloatFunc: String, describing math expression. 
+        FloatFunc: String, describing math expression.
                    Valid functions: sin, cos, tan, abs, sqrt, min, max, norm, etc.
-                   Operators: +, -, *, /, ^, %. 
+                   Operators: +, -, *, /, ^, %.
                    Constants: e, pi.
-    
+
     Outputs:
         FLOAT: The result of evaluating the math expression.
     """
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -48,6 +50,6 @@ class FloatMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, FloatFunc, a, b=0.0, c=0.0, d=0.0, w=0.0, x=0.0, y=0.0, z=0.0):
-        variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
+        variables = {"a": a, "b": b, "c": c, "d": d, "w": w, "x": x, "y": y, "z": z}
         result = eval_float_expr(FloatFunc, variables)
         return (result,)

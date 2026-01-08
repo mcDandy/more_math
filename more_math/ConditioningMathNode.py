@@ -1,13 +1,13 @@
 from inspect import cleandoc
 import torch
 
-from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, make_zero_like,as_tensor
+from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, make_zero_like, as_tensor
 
 from comfy_api.latest import io
 
 
-
 from .MathNodeBase import MathNodeBase
+
 
 class ConditioningMathNode(MathNodeBase):
     """
@@ -39,7 +39,9 @@ class ConditioningMathNode(MathNodeBase):
                 io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
                 io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
                 io.String.Input(id="Tensor", default="a*(1-w)+b*w", tooltip="Expression for tensor part (image composition)"),
-                io.String.Input(id="pooled_output", default="a*(1-w)+b*w", tooltip="Expression for pooled output (condensed representation)"),
+                io.String.Input(
+                    id="pooled_output", default="a*(1-w)+b*w", tooltip="Expression for pooled output (condensed representation)"
+                ),
             ],
             outputs=[
                 io.Conditioning.Output(),
@@ -63,8 +65,8 @@ class ConditioningMathNode(MathNodeBase):
         ta, tb, tc, td = a[0][0], b[0][0], c[0][0], d[0][0]
 
         # Evaluate tensor expression
-        variables = {'a': ta, 'b': tb, 'c': tc, 'd': td, 'w': w, 'x': x, 'y': y, 'z': z} | generate_dim_variables(ta)
-        result_tensor = as_tensor(eval_tensor_expr(Tensor, variables, ta.shape),ta.shape)
+        variables = {"a": ta, "b": tb, "c": tc, "d": td, "w": w, "x": x, "y": y, "z": z} | generate_dim_variables(ta)
+        result_tensor = as_tensor(eval_tensor_expr(Tensor, variables, ta.shape), ta.shape)
 
         # Evaluate pooled_output expression if available
         pa = a[0][1].get("pooled_output")
@@ -72,8 +74,8 @@ class ConditioningMathNode(MathNodeBase):
             pb = b[0][1].get("pooled_output")
             pc = c[0][1].get("pooled_output")
             pd = d[0][1].get("pooled_output")
-            variables = {'a': pa, 'b': pb, 'c': pc, 'd': pd, 'w': w, 'x': x, 'y': y, 'z': z} | generate_dim_variables(pa)
-            result_pooled = as_tensor(eval_tensor_expr(pooled_output, variables, pa.shape),pa.shape)
+            variables = {"a": pa, "b": pb, "c": pc, "d": pd, "w": w, "x": x, "y": y, "z": z} | generate_dim_variables(pa)
+            result_pooled = as_tensor(eval_tensor_expr(pooled_output, variables, pa.shape), pa.shape)
         else:
             result_pooled = None
 

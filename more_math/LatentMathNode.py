@@ -2,9 +2,16 @@ from inspect import cleandoc
 import comfy.nested_tensor
 from comfy_api.latest import io
 import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, parse_expr, eval_tensor_expr_with_tree, make_zero_like,as_tensor
+from .helper_functions import (
+    generate_dim_variables,
+    getIndexTensorAlongDim,
+    comonLazy,
+    parse_expr,
+    eval_tensor_expr_with_tree,
+    make_zero_like,
+    as_tensor,
+)
 from .MathNodeBase import MathNodeBase
-
 
 
 class LatentMathNode(MathNodeBase):
@@ -22,13 +29,13 @@ class LatentMathNode(MathNodeBase):
         LATENT:
             Returns a LATENT object that contains the result of the math expression applied to the input conditionings.
     """
+
     def __init__(self):
         pass
 
     @classmethod
     def define_schema(cls) -> io.Schema:
-        """
-        """
+        """ """
         return io.Schema(
             node_id="mrmth_LatentMathNode",
             display_name="Latent math",
@@ -38,10 +45,10 @@ class LatentMathNode(MathNodeBase):
                 io.Latent.Input(id="b", optional=True, lazy=True),
                 io.Latent.Input(id="c", optional=True, lazy=True),
                 io.Latent.Input(id="d", optional=True, lazy=True),
-                io.Float.Input(id="w", default=0.0,optional=True,lazy=True, force_input=True),
-                io.Float.Input(id="x", default=0.0,optional=True,lazy=True, force_input=True),
-                io.Float.Input(id="y", default=0.0,optional=True,lazy=True, force_input=True),
-                io.Float.Input(id="z", default=0.0,optional=True,lazy=True, force_input=True),
+                io.Float.Input(id="w", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
                 io.String.Input(id="Latent", default="a*(1-w)+b*w", tooltip="Expression to apply on input latents"),
             ],
             outputs=[
@@ -49,11 +56,11 @@ class LatentMathNode(MathNodeBase):
             ],
         )
 
-    #RETURN_NAMES = ("image_output_name",)
+    # RETURN_NAMES = ("image_output_name",)
     tooltip = cleandoc(__doc__)
 
-    #OUTPUT_NODE = False
-    #OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
+    # OUTPUT_NODE = False
+    # OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
     @classmethod
     def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
         # Extract raw sample tensors (may be Tensor or NestedTensor)
@@ -87,25 +94,37 @@ class LatentMathNode(MathNodeBase):
             frame_count = a_t.shape[time_dim] if time_dim is not None else a_t.shape[batch_dim]
 
             variables = {
-                'a': a_t, 'b': b_t, 'c': c_t, 'd': d_t,
-                'w': w, 'x': x, 'y': y, 'z': z,
-
-                 'X': W, 'Y': H,
-                'B': B, 'batch': B,
-                'C': C, 'channel': C,
-                'W': width_val, 'width': width_val,
-                'H': height_val, 'height': height_val,
-                'T': frame_count, 'batch_count': batch_count,
-                'N': channel_count, 'channel_count': channel_count,
+                "a": a_t,
+                "b": b_t,
+                "c": c_t,
+                "d": d_t,
+                "w": w,
+                "x": x,
+                "y": y,
+                "z": z,
+                "X": W,
+                "Y": H,
+                "B": B,
+                "batch": B,
+                "C": C,
+                "channel": C,
+                "W": width_val,
+                "width": width_val,
+                "H": height_val,
+                "height": height_val,
+                "T": frame_count,
+                "batch_count": batch_count,
+                "N": channel_count,
+                "channel_count": channel_count,
             } | generate_dim_variables(a_t)
 
             if time_dim is not None:
                 F = getIndexTensorAlongDim(a_t, time_dim)
-                variables.update({'frame_idx': F, 'frame': F, 'frame_count': frame_count})
+                variables.update({"frame_idx": F, "frame": F, "frame_count": frame_count})
 
-            return as_tensor(eval_tensor_expr_with_tree(tree, variables, a_t.shape),a_t.shape)
+            return as_tensor(eval_tensor_expr_with_tree(tree, variables, a_t.shape), a_t.shape)
 
-        if hasattr(a_in, 'is_nested') and getattr(a_in, 'is_nested'):
+        if hasattr(a_in, "is_nested") and getattr(a_in, "is_nested"):
             a_list = a_in.unbind()
             sizes = [t.shape[0] for t in a_list]
             merged_a = torch.cat(a_list, dim=0)
@@ -113,7 +132,7 @@ class LatentMathNode(MathNodeBase):
             def merge_to_tensor(val, ref):
                 if val is None:
                     return make_zero_like(ref)
-                if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
+                if hasattr(val, "is_nested") and getattr(val, "is_nested"):
                     lst = val.unbind()
                     return torch.cat(lst, dim=0)
                 if isinstance(val, (list, tuple)):
@@ -143,7 +162,7 @@ class LatentMathNode(MathNodeBase):
         def to_tensor(val, ref):
             if val is None:
                 return make_zero_like(ref)
-            if hasattr(val, 'is_nested') and getattr(val, 'is_nested'):
+            if hasattr(val, "is_nested") and getattr(val, "is_nested"):
                 lst = val.unbind()
             elif isinstance(val, (list, tuple)):
                 lst = list(val)
@@ -184,6 +203,6 @@ class LatentMathNode(MathNodeBase):
         This method is used in the core repo for the LoadImage node where they return the image hash as a string, if the image hash
         changes between executions the LoadImage node is executed again.
     """
-    #@classmethod
-    #def IS_CHANGED(s, image, string_field, int_field, float_field, print_to_screen):
+    # @classmethod
+    # def IS_CHANGED(s, image, string_field, int_field, float_field, print_to_screen):
     #    return ""

@@ -1,10 +1,11 @@
 import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, eval_tensor_expr, make_zero_like,as_tensor
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, eval_tensor_expr, make_zero_like, as_tensor
 
 from comfy_api.latest import io
 
 
 from .MathNodeBase import MathNodeBase
+
 
 class ImageMathNode(MathNodeBase):
     """
@@ -45,20 +46,31 @@ class ImageMathNode(MathNodeBase):
     def execute(cls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         a, b, c, d = cls.prepare_inputs(a, b, c, d)
 
-
         variables = {
-            'a': a, 'b': b, 'c': c, 'd': d,
-            'w': w, 'x': x, 'y': y, 'z': z,
-            'X': getIndexTensorAlongDim(a, 3),
-            'Y': getIndexTensorAlongDim(a, 2),
-            'B': getIndexTensorAlongDim(a, 0), 'batch': getIndexTensorAlongDim(a, 0),
-            'C': getIndexTensorAlongDim(a, 1), 'channel': getIndexTensorAlongDim(a, 1),
-            'W': a.shape[3], 'width': a.shape[3],
-            'H': a.shape[2], 'height': a.shape[2],
-            'T': a.shape[0], 'batch_count': a.shape[0],
-            'N': a.shape[1], 'channel_count': a.shape[1],
+            "a": a,
+            "b": b,
+            "c": c,
+            "d": d,
+            "w": w,
+            "x": x,
+            "y": y,
+            "z": z,
+            "X": getIndexTensorAlongDim(a, 3),
+            "Y": getIndexTensorAlongDim(a, 2),
+            "B": getIndexTensorAlongDim(a, 0),
+            "batch": getIndexTensorAlongDim(a, 0),
+            "C": getIndexTensorAlongDim(a, 1),
+            "channel": getIndexTensorAlongDim(a, 1),
+            "W": a.shape[3],
+            "width": a.shape[3],
+            "H": a.shape[2],
+            "height": a.shape[2],
+            "T": a.shape[0],
+            "batch_count": a.shape[0],
+            "N": a.shape[1],
+            "channel_count": a.shape[1],
         } | generate_dim_variables(a)
 
         result = eval_tensor_expr(Image, variables, a.shape)
 
-        return (as_tensor(result,a.shape),)
+        return (as_tensor(result, a.shape),)

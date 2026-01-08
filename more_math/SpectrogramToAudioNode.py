@@ -1,13 +1,15 @@
 import torch
 from comfy_api.latest import io
 
-windows = {'bartlet':torch.bartlett_window, 'blackman':torch.blackman_window, 'hamming':torch.hamming_window,'hann':torch.hann_window}
+windows = {"bartlet": torch.bartlett_window, "blackman": torch.blackman_window, "hamming": torch.hamming_window, "hann": torch.hann_window}
+
 
 class SpectrogramToAudio(io.ComfyNode):
     """
     Converts an Image spectrogram back to Audio.
     Red is real part and blue is imaginary. Green is ignored.
     """
+
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
@@ -21,7 +23,6 @@ class SpectrogramToAudio(io.ComfyNode):
                 io.Int.Input(id="window_length", default=1024, min=16, tooltip="Window length in samples"),
                 io.Int.Input(id="hop_length", default=256, min=1, tooltip="Stride of the window (hop length) in samples"),
                 io.Combo.Input(id="window_type", default="hann", options=list(windows.keys()), tooltip="Type of window function to apply"),
-
             ],
             outputs=[
                 io.Audio.Output(id="audio", tooltip="Output audio"),
@@ -29,19 +30,24 @@ class SpectrogramToAudio(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, image, channel_count, sample_rate, window_length, hop_length,window_type):
+    def execute(cls, image, channel_count, sample_rate, window_length, hop_length, window_type):
         B, H, W, _ = image.shape
         bucket_count = H // channel_count
         n_fft = (bucket_count - 1) * 2
         real = image[..., 0].reshape(B * channel_count, bucket_count, W)
         imag = image[..., 2].reshape(B * channel_count, bucket_count, W)
         stft_complex = torch.complex(real, imag)
-        window = windows[window_type](window_length,device = image.device)
+        window = windows[window_type](window_length, device=image.device)
         waveform = torch.istft(
-            stft_complex, n_fft=n_fft, hop_length=hop_length, win_length=window_length,
-            window=window, center=True, normalized=False, onesided=True
+            stft_complex,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            win_length=window_length,
+            window=window,
+            center=True,
+            normalized=False,
+            onesided=True,
         )
 
         waveform = waveform.reshape(B, channel_count, -1)
         return ({"waveform": waveform, "sample_rate": sample_rate},)
-

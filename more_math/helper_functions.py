@@ -7,18 +7,20 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 
 
-
 class ThrowingErrorListener(ErrorListener):
     """Error listener that raises ValueError on syntax errors."""
+
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise ValueError(f"Syntax error in expression at line {line}, col {column}: {msg}")
 
-def as_tensor(value,shape):
-    if isinstance(value,torch.Tensor):
+
+def as_tensor(value, shape):
+    if isinstance(value, torch.Tensor):
         return value
-    if isinstance(value,(float,int)):
+    if isinstance(value, (float, int)):
         value = (value,)
-    return torch.broadcast_to(torch.Tensor(value),shape)
+    return torch.broadcast_to(torch.Tensor(value), shape)
+
 
 def parse_expr(expr: str):
     """Parse a math expression and return the parse tree."""
@@ -33,6 +35,7 @@ def parse_expr(expr: str):
 def eval_tensor_expr(expr: str, variables: dict, shape: tuple, device=None):
     """Parse and evaluate a tensor math expression."""
     from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor(variables, shape, device=device)
     return visitor.visit(tree)
@@ -41,6 +44,7 @@ def eval_tensor_expr(expr: str, variables: dict, shape: tuple, device=None):
 def eval_tensor_expr_with_tree(tree, variables: dict, shape: tuple, device=None):
     """Evaluate a pre-parsed expression tree with UnifiedMathVisitor."""
     from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+
     visitor = UnifiedMathVisitor(variables, shape, device=device)
     return visitor.visit(tree)
 
@@ -48,14 +52,17 @@ def eval_tensor_expr_with_tree(tree, variables: dict, shape: tuple, device=None)
 def eval_float_expr(expr: str, variables: dict):
     """Parse and evaluate a float math expression."""
     from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+
     tree = parse_expr(expr)
     # Float eval context often has no shape. Pass None/Empty.
     visitor = UnifiedMathVisitor(variables, shape=None)
     return visitor.visit(tree)
 
+
 def eval_float_expr_with_tree(tree, variables: dict):
     """Evaluate a pre-parsed expression tree with UnifiedMathVisitor."""
     from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+
     visitor = UnifiedMathVisitor(variables, shape=None)
     return visitor.visit(tree)
 
@@ -72,7 +79,7 @@ def getIndexTensorAlongDim(tensor, dim):
 
 def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Determine which lazy inputs are needed based on expression variables."""
-    variables = {'a': a, 'b': b, 'c': c, 'd': d, 'w': w, 'x': x, 'y': y, 'z': z}
+    variables = {"a": a, "b": b, "c": c, "d": d, "w": w, "x": x, "y": y, "z": z}
     need_eval = []
     input_stream = InputStream(expr)
     lexer = MathExprLexer(input_stream)
@@ -83,13 +90,15 @@ def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
             need_eval.append(token.text)
     return need_eval
 
+
 def generate_dim_variables(tensor: torch.Tensor):
     """Generate index and size tensors for each dimension of the input tensor."""
     variables = {}
     for dim, size in enumerate(tensor.shape):
-        variables[f'D{dim}'] = getIndexTensorAlongDim(tensor, dim)
-        variables[f'S{dim}'] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
+        variables[f"D{dim}"] = getIndexTensorAlongDim(tensor, dim)
+        variables[f"S{dim}"] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
     return variables
+
 
 def make_zero_like(ref):
     """
@@ -109,31 +118,23 @@ def make_zero_like(ref):
         # Ensure it's a tensor-like structure
         if torch.is_tensor(ref_tensor):
             ref_pooled = ref[0][1].get("pooled_output")
-            return [[
-                torch.zeros_like(ref_tensor),
-                {"pooled_output": torch.zeros_like(ref_pooled) if ref_pooled is not None else None}
-            ]]
+            return [[torch.zeros_like(ref_tensor), {"pooled_output": torch.zeros_like(ref_pooled) if ref_pooled is not None else None}]]
 
     # Audio or Latent: dict
     if isinstance(ref, dict):
-        if 'waveform' in ref:  # Audio
-            return {
-                'waveform': torch.zeros_like(ref['waveform']),
-                'sample_rate': ref['sample_rate']
-            }
-        if 'samples' in ref:  # Latent
-            return {
-                'samples': torch.zeros_like(ref['samples'])
-            }
+        if "waveform" in ref:  # Audio
+            return {"waveform": torch.zeros_like(ref["waveform"]), "sample_rate": ref["sample_rate"]}
+        if "samples" in ref:  # Latent
+            return {"samples": torch.zeros_like(ref["samples"])}
 
     # VideoComponents or other objects with images/audio attributes
-    if hasattr(ref, 'images') and hasattr(ref, 'audio'):
+    if hasattr(ref, "images") and hasattr(ref, "audio"):
         # Dynamically create same type (e.g. VideoComponents)
         return type(ref)(
             images=torch.zeros_like(ref.images),
-            audio={'waveform': torch.zeros_like(ref.audio['waveform']), 'sample_rate': ref.audio['sample_rate']},
+            audio={"waveform": torch.zeros_like(ref.audio["waveform"]), "sample_rate": ref.audio["sample_rate"]},
             frame_rate=ref.frame_rate,
-            metadata=None
+            metadata=None,
         )
 
     return None

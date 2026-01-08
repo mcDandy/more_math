@@ -1,7 +1,7 @@
 import torch
 import comfy.utils
 
-from .helper_functions import getIndexTensorAlongDim, parse_expr, eval_tensor_expr_with_tree,as_tensor
+from .helper_functions import getIndexTensorAlongDim, parse_expr, eval_tensor_expr_with_tree, as_tensor
 
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
@@ -31,19 +31,27 @@ def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0
 
         # Build variables
         variables = {
-            'a': tens_a, 'b': tens_b, 'c': tens_c, 'd': tens_d,
-            'w': w, 'x': x, 'y': y, 'z': z,
-            'L': i, 'layer': i,
-            'LC': layer_count, 'layer_count': layer_count,
+            "a": tens_a,
+            "b": tens_b,
+            "c": tens_c,
+            "d": tens_d,
+            "w": w,
+            "x": x,
+            "y": y,
+            "z": z,
+            "L": i,
+            "layer": i,
+            "LC": layer_count,
+            "layer_count": layer_count,
         }
 
         # Add dimension index tensors
         for dim_idx in range(tens_a.ndim):
             idx_tensor = getIndexTensorAlongDim(tens_a, dim_idx)
-            variables[f'D{dim_idx}'] = idx_tensor
-            variables[f'dim_{dim_idx}'] = idx_tensor
+            variables[f"D{dim_idx}"] = idx_tensor
+            variables[f"dim_{dim_idx}"] = idx_tensor
 
-        result_tensor = as_tensor(eval_tensor_expr_with_tree(tree, variables, tens_a.shape),tens_a.shape)
+        result_tensor = as_tensor(eval_tensor_expr_with_tree(tree, variables, tens_a.shape), tens_a.shape)
 
         # Calculate patch (diff from original)
         diff = result_tensor - tens_a

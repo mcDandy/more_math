@@ -32,6 +32,7 @@ from more_math.FloatMathNode import FloatMathNode
 # Node Initialization and Metadata Tests
 # ==========================================
 
+
 def test_conditioning_math_node_initialization():
     node = ConditioningMathNode()
     assert isinstance(node, ConditioningMathNode)
@@ -69,36 +70,32 @@ def test_image_math_node_metadata():
 # FFT Tests
 # ==========================================
 
+
 def test_fft_invertibility():
     # Create random input latent (Batch, Channel, Height, Width)
     input_tensor = torch.randn(1, 4, 32, 32, dtype=torch.float32)
     input_dict = {"samples": input_tensor}
     # Execute ifft(fft(a))
-    result = LatentMathNode.execute(
-        Latent="ifft(fft(a))",
-        a=input_dict
-    )
+    result = LatentMathNode.execute(Latent="ifft(fft(a))", a=input_dict)
     output_tensor = result[0]["samples"]
-    assert torch.allclose(input_tensor, output_tensor, atol=1e-5), \
-        f"Max difference: {(input_tensor - output_tensor).abs().max()}"
+    assert torch.allclose(input_tensor, output_tensor, atol=1e-5), f"Max difference: {(input_tensor - output_tensor).abs().max()}"
 
 
 def test_image_fft_dims():
     # Image input is (Batch, Height, Width, Channel)
     input_tensor = torch.randn(1, 32, 32, 3, dtype=torch.float32)
-    result = ImageMathNode.execute(
-        Image="ifft(fft(a))",
-        a=input_tensor
-    )
+    result = ImageMathNode.execute(Image="ifft(fft(a))", a=input_tensor)
     output_tensor = result[0]
     assert input_tensor.shape == output_tensor.shape
-    assert torch.allclose(input_tensor, output_tensor, atol=1e-5), \
+    assert torch.allclose(input_tensor, output_tensor, atol=1e-5), (
         f"Image FFT round trip failed. Max diff: {(input_tensor - output_tensor).abs().max()}"
+    )
 
 
 # ==========================================
 # Latent Math Basic Functions (Evaluated on Tensors)
 # ==========================================
+
 
 def test_latent_lerp():
     node = LatentMathNode()
@@ -111,24 +108,24 @@ def test_latent_lerp():
 def test_latent_step_true():
     node = LatentMathNode()
     # step(0.5, a) where a=0.8 -> 1
-    res_step = node.execute("step(0.5, a)", a={"samples": torch.full((1,1,1,1), 0.8)})[0]["samples"]
+    res_step = node.execute("step(0.5, a)", a={"samples": torch.full((1, 1, 1, 1), 0.8)})[0]["samples"]
     assert torch.allclose(res_step, torch.ones_like(res_step))
 
 
 def test_latent_step_false():
     node = LatentMathNode()
     # step(0.5, a) where a=0.2 -> 0
-    res_step2 = node.execute("step(0.5, a)", a={"samples": torch.full((1,1,1,1), 0.2)})[0]["samples"]
+    res_step2 = node.execute("step(0.5, a)", a={"samples": torch.full((1, 1, 1, 1), 0.2)})[0]["samples"]
     assert torch.allclose(res_step2, torch.zeros_like(res_step2))
 
 
 def test_latent_swap():
     node = LatentMathNode()
-    t_lat = torch.tensor([0.0, 10.0, 20.0, 30.0]).view(1,4,1,1)
+    t_lat = torch.tensor([0.0, 10.0, 20.0, 30.0]).view(1, 4, 1, 1)
     # Swap channels 0 and 3 -> 30, 10, 20, 0
     l_swap = {"samples": t_lat}
     res_swap = node.execute("swap(a, 1, 0, 3)", a=l_swap)[0]["samples"]
-    expected = torch.tensor([30.0, 10.0, 20.0, 0.0]).view(1,4,1,1)
+    expected = torch.tensor([30.0, 10.0, 20.0, 0.0]).view(1, 4, 1, 1)
     assert torch.allclose(res_swap, expected)
 
 
@@ -157,6 +154,7 @@ def test_latent_fract():
 # Float Math Basic Functions (Evaluated on Scalars)
 # ==========================================
 
+
 def test_float_lerp():
     node = FloatMathNode()
     res = node.execute("lerp(a, b, 0.5)", a=0.0, b=10.0)[0]
@@ -184,6 +182,7 @@ def test_float_smoothstep():
 # ==========================================
 # Float Math Extended Functions
 # ==========================================
+
 
 def test_float_fract():
     node = FloatMathNode()
@@ -221,6 +220,7 @@ def test_float_gelu():
 # Latent Math Extended Functions
 # ==========================================
 
+
 def test_latent_smoothstep():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
@@ -246,6 +246,7 @@ def test_latent_gelu():
 # Image Math Operations
 # ==========================================
 
+
 def test_image_lerp():
     node = ImageMathNode()
     img_red = torch.tensor([1.0, 0.0, 0.0]).view(1, 1, 1, 3)
@@ -267,6 +268,7 @@ def test_image_swap():
 # Nested Expressions
 # ==========================================
 
+
 def test_float_nested_expressions_true():
     node = FloatMathNode()
     # lerp(0, 10, step(0.5, 0.8)) -> lerp(0, 10, 1) -> 10
@@ -284,6 +286,7 @@ def test_float_nested_expressions_false():
 # ==========================================
 # 5D Tensor Support
 # ==========================================
+
 
 def test_5d_tensors_identity():
     node = LatentMathNode()
@@ -315,12 +318,14 @@ def test_5d_tensors_fft():
 # Noise Math Node 5D Support
 # ==========================================
 
+
 def test_noise_math_5d():
     from more_math.NoiseMathNode import NoiseMathNode
 
     class MockNoise:
         def __init__(self, tensor):
             self.tensor = tensor
+
         def generate_noise(self, input_latent):
             return self.tensor
 
@@ -340,6 +345,7 @@ def test_noise_math_5d():
 # NestedTensor Support
 # ==========================================
 
+
 def test_nested_tensor_support():
     try:
         from comfy.nested_tensor import NestedTensor
@@ -354,15 +360,17 @@ def test_nested_tensor_support():
 
     res_lat = node.execute("a + 1.0", a=l_in)[0]["samples"]
 
-    assert getattr(res_lat, 'is_nested', False)
+    assert getattr(res_lat, "is_nested", False)
     res_list = res_lat.unbind()
     assert len(res_list) == 2
     assert torch.allclose(res_list[0], torch.full_like(t1, 2.0))
     assert torch.allclose(res_list[1], torch.full_like(t2, 3.0))
 
+
 # ==========================================
 # Comprehensive Math Function Tests
 # ==========================================
+
 
 def test_trig_functions():
     node = FloatMathNode()
@@ -373,12 +381,14 @@ def test_trig_functions():
     # tan(0) = 0
     assert abs(node.execute("tan(0)", a=0.0)[0] - 0.0) < 1e-5
 
+
 def test_inverse_trig_functions():
     node = FloatMathNode()
     # asin(0) = 0, acos(1) = 0, atan(0) = 0
     assert abs(node.execute("asin(0)", a=0.0)[0] - 0.0) < 1e-5
     assert abs(node.execute("acos(1)", a=0.0)[0] - 0.0) < 1e-5
     assert abs(node.execute("atan(0)", a=0.0)[0] - 0.0) < 1e-5
+
 
 def test_pow_log_functions():
     node = FloatMathNode()
@@ -393,15 +403,17 @@ def test_pow_log_functions():
     # ln(e) = 1. Using 'e' constant logic check or approx 2.718
     assert abs(node.execute("ln(2.7182818)", a=0.0)[0] - 1.0) < 1e-4
 
+
 def test_min_max_functions():
     import sys
+
     node = FloatMathNode()
     print("Testing tmin...", flush=True)
     # tmin(2, 5) = 2, tmax(2, 5) = 5
     assert abs(node.execute("tmin(2, 5)", a=0.0)[0] - 2.0) < 1e-5
     print("Testing tmax...", flush=True)
     assert abs(node.execute("tmax(2, 5)", a=0.0)[0] - 5.0) < 1e-5
-    
+
     # smin/smax (Smooth min/max? Or just multi-arg min/max? TensorEvalVisitor uses stack.min/max)
     # smin(1, 2, 3) = 1
     print("Testing smin...", flush=True)
@@ -413,6 +425,7 @@ def test_min_max_functions():
     res_smax = node.execute("smax(1, 2, 3)", a=0.0)[0]
     print(f"smax result: {res_smax} type: {type(res_smax)}", flush=True)
     assert abs(res_smax - 3.0) < 1e-5
+
 
 def test_basic_utilities():
     node = FloatMathNode()
@@ -429,14 +442,17 @@ def test_basic_utilities():
     assert abs(node.execute("clamp(10, 0, 5)", a=0.0)[0] - 5.0) < 1e-5
     assert abs(node.execute("clamp(-5, 0, 5)", a=0.0)[0] - 0.0) < 1e-5
 
+
 def test_advanced_activations():
     node = FloatMathNode()
     # sigm(0) = 0.5
     assert abs(node.execute("sigm(0)", a=0.0)[0] - 0.5) < 1e-5
 
+
 if __name__ == "__main__":
     import sys
-    try: 
+
+    try:
         test_conditioning_math_node_initialization()
         test_conditioning_math_node_metadata()
         test_latent_math_node_initialization()
@@ -452,8 +468,7 @@ if __name__ == "__main__":
         print("All tests passed!")
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     print("All tests in test_more_math.py passed!")
-
-

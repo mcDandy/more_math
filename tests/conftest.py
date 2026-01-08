@@ -15,6 +15,7 @@ for p in [_project_root, _comfy_root]:
 
 import pytest
 
+
 @pytest.fixture(scope="session", autouse=True)
 def session_setup():
     """
@@ -23,4 +24,3 @@ def session_setup():
     ensures any further session setup can be added without changing tests.
     """
     yield
-

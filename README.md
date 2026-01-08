@@ -154,6 +154,6 @@ You can also get the node from comfy manager under the name of More math.
 - **CONDITIONING and FLOAT**
   - no additional variables
 - **MODEL, CLIP and VAE**
-- `L` or `layer` - a position of layer from beginning of object
-- `LC` or `layer_count` - a count of layers
+  - `L` or `layer` - a position of layer from beginning of object
+  - `LC` or `layer_count` - a count of layers
 - Constants: `e`, `pi`

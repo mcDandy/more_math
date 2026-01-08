@@ -1,7 +1,6 @@
 from inspect import cleandoc
-import torch
 
-from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, make_zero_like, as_tensor
+from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, as_tensor
 
 from comfy_api.latest import io
 

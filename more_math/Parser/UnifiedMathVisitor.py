@@ -2,7 +2,7 @@ import torch
 import math
 import torch.nn.functional as F
 from .MathExprVisitor import MathExprVisitor
-from ..helper_functions import generate_dim_variables, getIndexTensorAlongDim
+from ..helper_functions import generate_dim_variables
 
 
 class UnifiedMathVisitor(MathExprVisitor):

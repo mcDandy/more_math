@@ -4,7 +4,6 @@ from comfy_api.latest import io
 from comfy_api.input_impl import VideoFromComponents
 from comfy_api.util import VideoComponents
 
-import torch
 
 from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, make_zero_like
 

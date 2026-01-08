@@ -1,5 +1,4 @@
-import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, comonLazy, eval_tensor_expr, make_zero_like, as_tensor
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, as_tensor
 
 from comfy_api.latest import io
 

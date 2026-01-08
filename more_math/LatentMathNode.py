@@ -5,7 +5,6 @@ import torch
 from .helper_functions import (
     generate_dim_variables,
     getIndexTensorAlongDim,
-    comonLazy,
     parse_expr,
     eval_tensor_expr_with_tree,
     make_zero_like,

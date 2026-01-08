@@ -31,7 +31,7 @@ You can also get the node from comfy manager under the name of More math.
 - Lists: `[v1, v2, ...]` (Vector math supported, mostly usefull in `conv` and `permute`)
   - You can also use lists to do math with input tensor (image, noise, conditioing, latent, audio) which results in batched output.
   - print_shape(a) = torch.Shape[1,1024,1024,3]; b = a*[0,0.2,-0.3]; print_shape(b) = torch.Shape[3,1024,1024,3]
-  - You can <operator> batched tensor with another tensor which is not batched (dim[0] = 1) - the non batched tensor will be duplicated along batch dimension
+  - You can &lt;operator&gt; batched tensor with another tensor which is not batched (dim[0] = 1) - the non batched tensor will be duplicated along batch dimension
   - In imageMath node you can use 3 element list to specify a color of image. You cannot use any imput tensor, doing so will result in behaviour in subpoint 1 in list
 
 ## Functions

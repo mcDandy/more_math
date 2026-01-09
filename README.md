@@ -92,11 +92,13 @@ You can also get the node from comfy manager under the name of More math.
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
   - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor. Rest uses identity mapping.
-- `conv(tensor, kw, [kh], [kd], k_expr)`: Applies a convolution to `tensor`.
+- `ezconvolution(tensor, kw, [kh], [kd], k_expr)` or `ezconv`: Applies a convolution to `tensor`. Automatically permutes tensor to try to make it work with various inputs without the need to permute manually.
+  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
+- `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects standard PyTorch layout `(Batch, Channel, Spatial...)`.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 
-- `permute(tensor, dims)`: Rearranges the dimensions of the tensor. (e.g., `permute(a, [2, 3, 0, 1])`)
-- `reshape(tensor, shape)`: Reshapes the tensor to a new shape. (e.g., `reshape(a, [S0*S1, S2, S3])`)
+- `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
+- `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
 
 ### FFT (Tensor Only)
 

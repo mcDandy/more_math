@@ -89,7 +89,6 @@ func1
     | SOFTPLUS '(' expr ')'  # SoftplusFunc
     | GELU  '(' expr ')'     # GeluFunc
     | SIGN  '(' expr ')'     # SignFunc
-    | PRINT_SHAPE_L '(' expr ')'  # PrintShapeFunc
     | PRINT_SHAPE    '(' expr ')' # PrintShapeFunc
     | PINV    '(' expr ')'        # PinvFunc
     ;
@@ -121,6 +120,7 @@ funcN
     : SMIN   '(' expr (',' expr)* ')'   # SMinFunc
     | SMAX   '(' expr (',' expr)* ')'   # SMaxFunc
     | MAP    '(' expr (',' expr)+ ')'   # MapFunc
+    | EZCONV '(' expr (',' expr)+ ')'   # EzConvFunc
     | CONV   '(' expr (',' expr)+ ')'   # ConvFunc
     | PERM   '(' expr ',' expr ')'      # PermuteFunc
     | RESHAPE '(' expr ',' expr ')'     # ReshapeFunc
@@ -163,8 +163,7 @@ SFFT : 'fft';
 SIFFT : 'ifft';
 ANGL : 'angle';
 PRNT : 'print';
-PRINT_SHAPE_L : 'print_shape';
-PRINT_SHAPE : 'pshp';
+PRINT_SHAPE : 'print_shape' | 'pshp';
 LERP : 'lerp';
 STEP : 'step';
 SMOOTHSTEP : 'smoothstep';
@@ -174,10 +173,11 @@ SOFTPLUS : 'softplus';
 GELU : 'gelu';
 SIGN : 'sign';
 MAP : 'map';
-CONV : 'conv';
+EZCONV : 'ezconvolution' | 'ezconv';
+CONV : 'convolution' | 'conv';
 SWAP : 'swap';
-PERM : 'permute';
-RESHAPE : 'reshape';
+PERM : 'permute' | 'perm';
+RESHAPE : 'reshape' | 'rshp';
 RANGE : 'range';
 TOPK : 'topk';
 BOTK : 'botk';

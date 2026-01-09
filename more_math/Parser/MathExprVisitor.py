@@ -1,4 +1,4 @@
-# Generated from ./MathExpr.g4 by ANTLR 4.13.2
+# Generated from MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -411,6 +411,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#MapFunc.
     def visitMapFunc(self, ctx:MathExprParser.MapFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#EzConvFunc.
+    def visitEzConvFunc(self, ctx:MathExprParser.EzConvFuncContext):
         return self.visitChildren(ctx)
 
 

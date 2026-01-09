@@ -648,44 +648,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         final_shape = list(leading_shape) + list(actual_spatial)
         return output.reshape(final_shape)
 
-    def _apply_conv_internal(self, conv_input, kernel_val, kernel_sizes, spatial_dims_count):
-        """
-        Executes the convolution with asymmetric padding support for even kernels.
-        Input: [Batch, Channel, Spatial...]
-        Kernel: [Spatial...] (to be promoted/repeated)
-        kernel_sizes: [W, H, D]
-        """
-        in_channels = conv_input.size(1)
-
-        pads = []
-        for k in kernel_sizes:
-            p_total = k - 1
-            p_low = k // 2
-            p_high = p_total - p_low
-            pads.extend([p_low, p_high])
-
-        padded_input = torch.nn.functional.pad(conv_input, tuple(pads), mode="constant", value=0)
-
-        actual_kernel_sizes = kernel_sizes[::-1]
-
-        if kernel_val.numel() == 1:
-            kernel_val = kernel_val.expand(tuple(actual_kernel_sizes))
-        elif kernel_val.ndim != spatial_dims_count:
-            kernel_val = kernel_val.reshape(tuple(actual_kernel_sizes))
-
-        final_kernel = kernel_val.unsqueeze(0).unsqueeze(0)
-        final_kernel = final_kernel.to(conv_input.dtype)
-        final_kernel = final_kernel.repeat(in_channels, 1, *([1] * spatial_dims_count))
-
-        conv_fn = F.conv1d if spatial_dims_count == 1 else (F.conv2d if spatial_dims_count == 2 else F.conv3d)
-
-        result = conv_fn(padded_input, final_kernel, padding=0, groups=in_channels)
-        return result
-
-    def visitConvFunc(self, ctx):
+    def _parse_conv_args(self, ctx):
         input_raw = self.visit(ctx.expr(0))
         tensor = self._promote_to_tensor(input_raw)
-        input_ndim = tensor.ndim
         num_args = len(ctx.expr())
         if num_args < 3:
             raise ValueError("conv() requires at least 3 arguments")
@@ -729,6 +694,46 @@ class UnifiedMathVisitor(MathExprVisitor):
         finally:
             self.shape = original_shape
             self.variables = old_vars
+
+        return tensor, kernel_val, kernel_sizes, spatial_dims_count
+
+    def _apply_conv_internal(self, conv_input, kernel_val, kernel_sizes, spatial_dims_count):
+        """
+        Executes the convolution with asymmetric padding support for even kernels.
+        Input: [Batch, Channel, Spatial...]
+        Kernel: [Spatial...] (to be promoted/repeated)
+        kernel_sizes: [W, H, D]
+        """
+        in_channels = conv_input.size(1)
+
+        pads = []
+        for k in kernel_sizes:
+            p_total = k - 1
+            p_low = k // 2
+            p_high = p_total - p_low
+            pads.extend([p_low, p_high])
+
+        padded_input = torch.nn.functional.pad(conv_input, tuple(pads), mode="constant", value=0)
+
+        actual_kernel_sizes = kernel_sizes[::-1]
+
+        if kernel_val.numel() == 1:
+            kernel_val = kernel_val.expand(tuple(actual_kernel_sizes))
+        elif kernel_val.ndim != spatial_dims_count:
+            kernel_val = kernel_val.reshape(tuple(actual_kernel_sizes))
+
+        final_kernel = kernel_val.unsqueeze(0).unsqueeze(0)
+        final_kernel = final_kernel.to(conv_input.dtype)
+        final_kernel = final_kernel.repeat(in_channels, 1, *([1] * spatial_dims_count))
+
+        conv_fn = F.conv1d if spatial_dims_count == 1 else (F.conv2d if spatial_dims_count == 2 else F.conv3d)
+
+        result = conv_fn(padded_input, final_kernel, padding=0, groups=in_channels)
+        return result
+
+    def visitEzConvFunc(self, ctx):
+        tensor, kernel_val, kernel_sizes, spatial_dims_count = self._parse_conv_args(ctx)
+        input_ndim = tensor.ndim
 
         is_channels_first = False
         if tensor.ndim == spatial_dims_count + 2:
@@ -791,3 +796,27 @@ class UnifiedMathVisitor(MathExprVisitor):
                     out = out.permute(0, 4, 1, 2, 3)
 
         return out
+
+    def visitConvFunc(self, ctx):
+        tensor, kernel_val, kernel_sizes, spatial_dims_count = self._parse_conv_args(ctx)
+        
+        # Expect (Batch..., Channel, Spatial...)
+        # spatial_dims_count = 1, 2, or 3
+        # Must have at least Channel + Spatial dims
+        min_dims = spatial_dims_count + 1
+        if tensor.ndim < min_dims:
+             raise ValueError(f"convolution() input requires at least Channels + Spatial dimensions. Got shape {tensor.shape} for {spatial_dims_count}D conv.")
+
+        spatial_shape = tensor.shape[-spatial_dims_count:]
+        in_channels = tensor.shape[-(spatial_dims_count + 1)]
+        batch_shape = tensor.shape[:-(spatial_dims_count + 1)]
+        
+        total_batch = 1
+        for s in batch_shape:
+            total_batch *= s
+        
+        conv_input = tensor.reshape(total_batch, in_channels, *spatial_shape)
+        
+        result = self._apply_conv_internal(conv_input, kernel_val, kernel_sizes, spatial_dims_count)
+        
+        return result.reshape(*batch_shape, in_channels, *spatial_shape)

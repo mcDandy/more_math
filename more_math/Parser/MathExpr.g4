@@ -73,15 +73,15 @@ func1
     | LN    '(' expr ')'     # LnFunc
     | LOG   '(' expr ')'     # LogFunc
     | EXP   '(' expr ')'     # ExpFunc
-    | TNORM  '(' expr ')'     # TNormFunc
-    | SNORM  '(' expr ')'     # SNormFunc
+    | TNORM  '(' expr ')'    # TNormFunc
+    | SNORM  '(' expr ')'    # SNormFunc
     | FLOOR '(' expr ')'     # FloorFunc
     | CEIL  '(' expr ')'     # CeilFunc
     | ROUND '(' expr ')'     # RoundFunc
     | GAMMA '(' expr ')'     # GammaFunc
-    | SIGM  '(' expr ')'   # sigmoidFunc
-    | SFFT  '(' expr ')'   # sfftFunc
-    | SIFFT  '(' expr ')'   # sifftFunc
+    | SIGM  '(' expr ')'     # sigmoidFunc
+    | SFFT  '(' expr ')'     # sfftFunc
+    | SIFFT  '(' expr ')'    # sifftFunc
     | ANGL  '(' expr ')'     # anglFunc
     | PRNT  '(' expr ')'     # printFunc
     | FRACT '(' expr ')'     # FractFunc
@@ -89,8 +89,8 @@ func1
     | SOFTPLUS '(' expr ')'  # SoftplusFunc
     | GELU  '(' expr ')'     # GeluFunc
     | SIGN  '(' expr ')'     # SignFunc
-    | PRINT_SHAPE_L '(' expr ')' # PrintShapeFunc
-    | PRINT_SHAPE   '(' expr ')' # PrintShapeFunc
+    | PRINT_SHAPE_L '(' expr ')'  # PrintShapeFunc
+    | PRINT_SHAPE    '(' expr ')' # PrintShapeFunc
     | PINV    '(' expr ')'        # PinvFunc
     ;
 
@@ -198,7 +198,7 @@ EQ          : '==';
 NE          : '!=';
 PIPE        : '|';
 
-CONSTANT : ('pi'|'PI'|'e'|'E');
-NUMBER   : [0-9]+ ('.' [0-9]+)?;
-VARIABLE : [a-zA-Z_] [a-zA-Z_0-9]*;
-WS       : [ \t\r\n]+ -> skip;
+CONSTANT    : ('pi'|'PI'|'e'|'E');
+NUMBER      : [0-9]+ ('.' [0-9]+)?;
+VARIABLE    : [a-zA-Z_] [a-zA-Z_0-9]*;
+WS          : [ \t\r\n]+ -> skip;

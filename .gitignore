@@ -116,5 +116,6 @@ node.zip
 /.vs
 *.editorconfig
 *.yaml
+!.pre-commit-config.yaml
 /more_math.pyproj
 /more_math.slnx

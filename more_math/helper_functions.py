@@ -139,17 +139,3 @@ def make_zero_like(ref):
 
     return None
 
-
-# Legacy FFT functions (kept for backward compatibility, but now unused)
-def time_to_freq(element: torch.Tensor) -> torch.Tensor:
-    if element.ndim < 2:
-        raise ValueError("FFT requires at least 2 dimensions (Batch, Channel)")
-    dims = tuple(range(2, element.ndim))
-    return torch.fft.fftn(element, dim=dims)
-
-
-def freq_to_time(element: torch.Tensor) -> torch.Tensor:
-    if element.ndim < 2:
-        raise ValueError("IFFT requires at least 2 dimensions (Batch, Channel)")
-    dims = tuple(range(2, element.ndim))
-    return torch.fft.ifftn(element, dim=dims).real

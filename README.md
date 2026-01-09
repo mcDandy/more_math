@@ -50,7 +50,6 @@ You can also get the node from comfy manager under the name of More math.
 - `fract(x)`: Returns the fractional part of x (x - floor(x)).
 - `sign(x)`: Returns -1 for negative, 1 for positive, 0 for zero.
 - `gamma(x)`: Gamma function.
-- `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
 
 ### Trigonometric
 
@@ -83,6 +82,8 @@ You can also get the node from comfy manager under the name of More math.
 - `tmax(x, y)`: Element-wise maximum of x and y.
 - `smin(x, ...)`: **Scalar** minimum. Returns the single smallest value across all input tensors/values.
 - `smax(x, ...)`: **Scalar** maximum. Returns the single largest value across all input tensors/values.
+- `topk(x, k)`: Returns a **masked tensor** with only the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. Supports complex tensors (uses magnitude for selection).
+- `botk(x, k)`: Returns a **masked tensor** with only the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending.
 - `tnorm(x)`: **Tensor** Normalizes x (L2 norm along last dimension).
 - `snorm(x)`: **Scalar** L2 norm of the entire tensor.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension. (Tensor only)
@@ -107,6 +108,9 @@ You can also get the node from comfy manager under the name of More math.
 
 - `print(x)`: Prints the value of x to the console and returns x.
 - `print_shape(x)` or `pshp`: Prints the shape of x to the console and returns x.
+- `pinv(x)`: Computes the permutation inverse of list or tensor (>1D tensor can have interesting results). If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`. 
+- `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
+
 
 ## Variables
 

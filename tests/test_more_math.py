@@ -26,6 +26,7 @@ from more_math.ConditioningMathNode import ConditioningMathNode
 from more_math.LatentMathNode import LatentMathNode
 from more_math.ImageMathNode import ImageMathNode
 from more_math.FloatMathNode import FloatMathNode
+from more_math.AudioMathNode import AudioMathNode
 
 
 # ==========================================
@@ -262,6 +263,23 @@ def test_image_swap():
     img_blue = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 1, 3)
     res_swap = node.execute("swap(a, 3, 0, 2)", a=img_red)[0]
     assert torch.allclose(res_swap, img_blue)
+
+
+# ==========================================
+# Audio Math Operations
+# ==========================================
+
+
+def test_audio_math_basic():
+    node = AudioMathNode()
+    waveform = torch.randn(1, 1, 1024)
+    audio = {"waveform": waveform, "sample_rate": 44100}
+    # result = a * 2.0
+    res = node.execute("a * 2.0", a=audio)[0]
+    assert isinstance(res, dict)
+    assert "waveform" in res
+    assert res["sample_rate"] == 44100
+    assert torch.allclose(res["waveform"], waveform * 2.0)
 
 
 # ==========================================

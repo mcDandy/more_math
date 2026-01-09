@@ -40,6 +40,12 @@ def test_scalar_ops():
     assert parse_and_visit("a * b", vars) == 6.0
     assert parse_and_visit("sin(0)", vars) == 0.0
     assert parse_and_visit("smax(a, b)", vars) == 3.0
+    assert parse_and_visit("step(2, 1)", vars) == 1.0
+    assert parse_and_visit("step(0, 1)", vars) == 0.0
+    assert parse_and_visit("clamp(5, 0, 10)", vars) == 5.0
+    assert parse_and_visit("clamp(-5, 0, 10)", vars) == 0.0
+    assert parse_and_visit("lerp(0, 10, 0.5)", vars) == 5.0
+    assert parse_and_visit("fract(1.25)", vars) == 0.25
 
     # Type check - ensure they are python float/int, not tensor
     res = parse_and_visit("a + b", vars)
@@ -176,6 +182,77 @@ def test_bool_ops():
     assert torch.all(res == torch.tensor([1.0, 0.0]))
 
 
+def test_topk():
+    # Tensor topk
+    t = torch.tensor([1.0, 5.0, 2.0, 8.0, 3.0])
+    vars = {"t": t}
+    # Tensor topk masking
+    t = torch.tensor([1.0, 5.0, 2.0, 8.0, 3.0])
+    vars = {"t": t}
+    res = parse_and_visit("topk(t, 3)", vars)
+    assert isinstance(res, torch.Tensor)
+    assert res.shape == t.shape
+    # Top 3 are 8, 5, 3. Masked result should be [0, 5, 0, 8, 3]
+    expected = torch.tensor([0.0, 5.0, 0.0, 8.0, 3.0])
+    assert torch.allclose(res, expected)
+    assert res.is_contiguous()
+
+    # Complex topk masking
+    tc = torch.tensor([1.0+1j, 5.0+5j, 2.0+2j])
+    vars["tc"] = tc
+    res_c = parse_and_visit("topk(tc, 1)", vars)
+    assert res_c.shape == tc.shape
+    # Top 1 is 5+5j. Masked should be [0, 5+5j, 0]
+    expected_c = torch.tensor([0.0+0j, 5.0+5j, 0.0+0j])
+    assert torch.allclose(res_c, expected_c)
+
+
+def test_botk():
+    # Tensor botk masking (bottom k smallest values)
+    t = torch.tensor([1.0, 5.0, 2.0, 8.0, 3.0])
+    vars = {"t": t}
+    res = parse_and_visit("botk(t, 3)", vars)
+    assert isinstance(res, torch.Tensor)
+    assert res.shape == t.shape
+    # Bottom 3 are 1, 2, 3. Masked result should be [1, 0, 2, 0, 3]
+    expected = torch.tensor([1.0, 0.0, 2.0, 0.0, 3.0])
+    assert torch.allclose(res, expected)
+    assert res.is_contiguous()
+
+    # List botk
+    l = [1.0, 5.0, 2.0, 8.0, 3.0]
+    vars = {"l": l}
+    res_l = parse_and_visit("botk(l, 2)", vars)
+    assert isinstance(res_l, list)
+    assert res_l == [1.0, 2.0]
+
+
+def test_pinv():
+    # List permutation inverse
+    perm = [2, 0, 1]  # 0->2, 1->0, 2->1
+    vars = {"perm": perm}
+    res = parse_and_visit("pinv(perm)", vars)
+    assert isinstance(res, list)
+    # Inverse: if perm[i]=j, then inv[j]=i
+    # perm[0]=2 -> inv[2]=0
+    # perm[1]=0 -> inv[0]=1
+    # perm[2]=1 -> inv[1]=2
+    assert res == [1, 2, 0]
+
+    # Tensor permutation inverse
+    perm_t = torch.tensor([2, 0, 1])
+    vars["perm_t"] = perm_t
+    res_t = parse_and_visit("pinv(perm_t)", vars)
+    assert isinstance(res_t, torch.Tensor)
+    assert torch.equal(res_t, torch.tensor([1, 2, 0]))
+
+def test_pinv_identity():
+    perm = [2,0,1,6,4,3,5]
+    tensor = torch.rand([11,14,32,21,4,3,1])
+    varbl = {'c':tensor,'a':perm}
+    res = parse_and_visit("permute(permute(c,a),pinv(a))",varbl)
+    assert torch.equal(tensor,res)
+
 if __name__ == "__main__":
     try:
         test_scalar_ops()
@@ -187,6 +264,9 @@ if __name__ == "__main__":
         test_hyperbolic_trig()
         test_kernel_coords()
         test_bool_ops()
+        test_topk()
+        test_botk()
+        test_pinv()
         print("All UnifiedMathVisitor tests passed!")
     except Exception:
         import traceback

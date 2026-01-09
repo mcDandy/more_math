@@ -91,6 +91,7 @@ func1
     | SIGN  '(' expr ')'     # SignFunc
     | PRINT_SHAPE_L '(' expr ')' # PrintShapeFunc
     | PRINT_SHAPE   '(' expr ')' # PrintShapeFunc
+    | PINV    '(' expr ')'        # PinvFunc
     ;
 
 // Two-argument functions
@@ -100,6 +101,8 @@ func2
     | TMIN   '(' expr ',' expr ')'   # TMinFunc
     | TMAX   '(' expr ',' expr ')'   # TMaxFunc
     | STEP   '(' expr ',' expr ')'   # StepFunc
+    | TOPK   '(' expr ',' expr ')'   # TopkFunc
+    | BOTK   '(' expr ',' expr ')'   # BotkFunc
     ;
 
 func3
@@ -176,6 +179,9 @@ SWAP : 'swap';
 PERM : 'permute';
 RESHAPE : 'reshape';
 RANGE : 'range';
+TOPK : 'topk';
+BOTK : 'botk';
+PINV : 'pinv';
 
 PLUS        : '+';
 MINUS       : '-';

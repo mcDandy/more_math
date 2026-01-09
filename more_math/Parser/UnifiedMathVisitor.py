@@ -23,7 +23,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def _promote_to_tensor(self, val):
         if self._is_tensor(val):
-            return val
+            return val.contiguous()
         if self._is_list(val):
             return torch.tensor(val, device=self.device)
         return torch.tensor(val, device=self.device)
@@ -50,7 +50,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if self._is_tensor(a) or self._is_tensor(b):
             if torch_op:
-                return torch_op(a, b)
+                return torch_op(a, b).contiguous()
             return scalar_op(a, b)
 
         return scalar_op(a, b)
@@ -59,7 +59,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(a):
             return [self._unary_op(x, torch_op, scalar_op) for x in a]
         if self._is_tensor(a):
-            return torch_op(a) if torch_op else scalar_op(a)
+            return torch_op(a).contiguous() if torch_op else scalar_op(a)
         return scalar_op(a)
 
     # ========================
@@ -143,7 +143,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(arg):
             return [self._func_dispatch(x, torch_fn, scalar_fn) for x in arg]
         if self._is_tensor(arg):
-            return torch_fn(arg)
+            return torch_fn(arg).contiguous()
         return scalar_fn(arg)
 
     def visitSinFunc(self, ctx):
@@ -287,12 +287,98 @@ class UnifiedMathVisitor(MathExprVisitor):
             lambda x, edge: 1.0 if x >= edge else 0.0,
         )
 
+    def visitTopkFunc(self, ctx):
+        val = self.visit(ctx.expr(0))
+        k = self.visit(ctx.expr(1))
+
+        if self._is_tensor(k):
+            k_val = int(k.flatten()[0].item())
+        else:
+            k_val = int(k)
+
+        if self._is_tensor(val):
+            size = val.shape[-1]
+            k_val = max(1, min(k_val, size))
+            score_val = val.abs() if torch.is_complex(val) else val
+
+            _, indices = torch.topk(score_val, k=k_val, dim=-1)
+            indices = indices.contiguous()
+            mask = torch.zeros_like(score_val, dtype=torch.bool)
+            mask.scatter_(dim=-1, index=indices, value=True)
+
+            result = torch.where(mask, val, torch.zeros_like(val))
+            return result.contiguous()
+
+        if self._is_list(val):
+            k_val = max(0, min(k_val, len(val)))
+            try:
+                return sorted(val, reverse=True)[:k_val]
+            except:
+                return val[:k_val]
+
+        return val
+
+    def visitBotkFunc(self, ctx):
+        val = self.visit(ctx.expr(0))
+        k = self.visit(ctx.expr(1))
+
+        if self._is_tensor(k):
+            k_val = int(k.flatten()[0].item())
+        else:
+            k_val = int(k)
+
+        if self._is_tensor(val):
+            size = val.shape[-1]
+            k_val = max(1, min(k_val, size))
+            score_val = val.abs() if torch.is_complex(val) else val
+
+            _, indices = torch.topk(score_val, k=k_val, dim=-1, largest=False)
+            indices = indices.contiguous()
+            mask = torch.zeros_like(score_val, dtype=torch.bool)
+            mask.scatter_(dim=-1, index=indices, value=True)
+
+            result = torch.where(mask, val, torch.zeros_like(val))
+            return result.contiguous()
+
+        if self._is_list(val):
+            k_val = max(0, min(k_val, len(val)))
+            try:
+                return sorted(val)[:k_val]
+            except:
+                return val[:k_val]
+
+        return val
+
+    def visitPinvFunc(self, ctx):
+        """Permutation inverse: if input[i] = j, output[j] = i."""
+        val = self.visit(ctx.expr())
+
+        if self._is_list(val):
+            n = len(val)
+            result = [0] * n
+            for i, v in enumerate(val):
+                idx = int(v)
+                if 0 <= idx < n:
+                    result[idx] = i
+            return result
+
+        if self._is_tensor(val):
+            val_list = val.flatten().tolist()
+            n = len(val_list)
+            result = [0] * n
+            for i, v in enumerate(val_list):
+                idx = int(v)
+                if 0 <= idx < n:
+                    result[idx] = i
+            return torch.tensor(result, device=val.device, dtype=val.dtype).reshape(val.shape)
+
+        return val
+
     # Three-argument functions
     def visitClampFunc(self, ctx):
         val = self.visit(ctx.expr(0))
         min_v = self.visit(ctx.expr(1))
         max_v = self.visit(ctx.expr(2))
-        # Handle mixed types manually or promote?
         if any(self._is_tensor(x) for x in [val, min_v, max_v]):
             return torch.clamp(self._promote_to_tensor(val), self._promote_to_tensor(min_v), self._promote_to_tensor(max_v))
         if self._is_list(val):

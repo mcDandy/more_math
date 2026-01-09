@@ -108,9 +108,8 @@ You can also get the node from comfy manager under the name of More math.
 
 - `print(x)`: Prints the value of x to the console and returns x.
 - `print_shape(x)` or `pshp`: Prints the shape of x to the console and returns x.
-- `pinv(x)`: Computes the permutation inverse of list. If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`. 
+- `pinv(x)`: Computes the permutation inverse of list. If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`.
 - `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
-
 
 ## Variables
 

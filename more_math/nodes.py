@@ -3,6 +3,7 @@ from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
+from .MaskMathNode import MaskMathNode
 from .AudioMathNode import AudioMathNode
 from .VideoMathNode import VideoMathNode
 from .ModelMathNode import ModelMathNode
@@ -77,6 +78,7 @@ class MoreMathExtension(ComfyExtension):
             VAEMathNode,
             LatentMathNode,
             ImageMathNode,
+            MaskMathNode,
             FloatMathNode,
             NoiseMathNode,
             IntToFloatNode,

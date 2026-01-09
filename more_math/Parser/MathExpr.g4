@@ -118,7 +118,7 @@ func3
     ;
 
 func4
-    : SWAP   '(' expr ',' expr ',' expr ',' expr ')'   # SwapFunc
+    : SWAP   LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN   # SwapFunc
     ;
 
 // N-argument functions

@@ -53,14 +53,14 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Trigonometric
 
-- `sin(x)`, `cos(x)`, `tan(x)`
-- `asin(x)`, `acos(x)`, `atan(x)`
+- `sin(x)`, `cos(x)`, `tan(x)`: Trigonometric functions.
+- `asin(x)`, `acos(x)`, `atan(x)`: Inverse trigonometric functions.
 - `atan2(y, x)`: Arctangent of y/x, handling quadrants.
 
 ### Hyperbolic
 
-- `sinh(x)`, `cosh(x)`, `tanh(x)`
-- `asinh(x)`, `acosh(x)`, `atanh(x)`
+- `sinh(x)`, `cosh(x)`, `tanh(x)`: Hyperbolic functions.
+- `asinh(x)`, `acosh(x)`, `atanh(x)`: Inverse hyperbolic functions.
 
 ### Machine Learning / Activation
 
@@ -80,13 +80,13 @@ You can also get the node from comfy manager under the name of More math.
 
 - `tmin(x, y)`: Element-wise minimum of x and y.
 - `tmax(x, y)`: Element-wise maximum of x and y.
-- `smin(x, ...)`: **Scalar** minimum. Returns the single smallest value across all input tensors/values.
-- `smax(x, ...)`: **Scalar** maximum. Returns the single largest value across all input tensors/values.
-- `topk(x, k)`: Returns a **masked tensor** with only the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. Supports complex tensors (uses magnitude for selection).
-- `botk(x, k)`: Returns a **masked tensor** with only the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending.
-- `tnorm(x)`: **Tensor** Normalizes x (L2 norm along last dimension).
-- `snorm(x)`: **Scalar** L2 norm of the entire tensor.
-- `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension. (Tensor only)
+- `smin(x, ...)`: Scalar minimum. Returns the single smallest value across all input tensors/values.
+- `smax(x, ...)`: Scalar maximum. Returns the single largest value across all input tensors/values.
+- `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for for complex numbers).
+- `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for for complex numbers)
+- `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
+- `snorm(x)`: The same as |x| for tensors.
+- `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
 
 ### Advanced Tensor Operations (Tensor Only)
 

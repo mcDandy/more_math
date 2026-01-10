@@ -82,6 +82,11 @@ You can also get the node from comfy manager under the name of More math.
 - `tmax(x, y)`: Element-wise maximum of x and y.
 - `smin(x, ...)`: Scalar minimum. Returns the single smallest value across all input tensors/values.
 - `smax(x, ...)`: Scalar maximum. Returns the single largest value across all input tensors/values.
+- `sum(x)`: Sum of all elements.
+- `mean(x)`: Mean value of all elements.
+- `std(x)`: Standard deviation of all elements.
+- `var(x)`: Variance of all elements.
+- `dot(a, b)`: Dot product of two tensors (flattens inputs to 1D) or lists.
 - `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for for complex numbers).
 - `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for for complex numbers)
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).

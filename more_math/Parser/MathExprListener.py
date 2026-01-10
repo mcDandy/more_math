@@ -602,6 +602,42 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#SumFunc.
+    def enterSumFunc(self, ctx:MathExprParser.SumFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SumFunc.
+    def exitSumFunc(self, ctx:MathExprParser.SumFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MeanFunc.
+    def enterMeanFunc(self, ctx:MathExprParser.MeanFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MeanFunc.
+    def exitMeanFunc(self, ctx:MathExprParser.MeanFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StdFunc.
+    def enterStdFunc(self, ctx:MathExprParser.StdFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StdFunc.
+    def exitStdFunc(self, ctx:MathExprParser.StdFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#VarFunc.
+    def enterVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#VarFunc.
+    def exitVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -662,6 +698,33 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#BotkFunc.
     def exitBotkFunc(self, ctx:MathExprParser.BotkFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#QuartileFunc.
+    def enterQuartileFunc(self, ctx:MathExprParser.QuartileFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#QuartileFunc.
+    def exitQuartileFunc(self, ctx:MathExprParser.QuartileFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PercentileFunc.
+    def enterPercentileFunc(self, ctx:MathExprParser.PercentileFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PercentileFunc.
+    def exitPercentileFunc(self, ctx:MathExprParser.PercentileFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DotFunc.
+    def enterDotFunc(self, ctx:MathExprParser.DotFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DotFunc.
+    def exitDotFunc(self, ctx:MathExprParser.DotFuncContext):
         pass
 
 
@@ -734,6 +797,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#MapFunc.
     def exitMapFunc(self, ctx:MathExprParser.MapFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EzConvFunc.
+    def enterEzConvFunc(self, ctx:MathExprParser.EzConvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EzConvFunc.
+    def exitEzConvFunc(self, ctx:MathExprParser.EzConvFuncContext):
         pass
 
 

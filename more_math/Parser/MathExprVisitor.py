@@ -1,4 +1,4 @@
-# Generated from MathExpr.g4 by ANTLR 4.13.2
+# Generated from ./MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -339,6 +339,26 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#SumFunc.
+    def visitSumFunc(self, ctx:MathExprParser.SumFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MeanFunc.
+    def visitMeanFunc(self, ctx:MathExprParser.MeanFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#StdFunc.
+    def visitStdFunc(self, ctx:MathExprParser.StdFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#VarFunc.
+    def visitVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -371,6 +391,21 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#BotkFunc.
     def visitBotkFunc(self, ctx:MathExprParser.BotkFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#QuartileFunc.
+    def visitQuartileFunc(self, ctx:MathExprParser.QuartileFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PercentileFunc.
+    def visitPercentileFunc(self, ctx:MathExprParser.PercentileFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DotFunc.
+    def visitDotFunc(self, ctx:MathExprParser.DotFuncContext):
         return self.visitChildren(ctx)
 
 

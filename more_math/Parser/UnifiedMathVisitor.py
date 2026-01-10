@@ -62,6 +62,13 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch_op(a).contiguous() if torch_op else scalar_op(a)
         return scalar_op(a)
 
+    def _reduction_op(self, val, torch_op, list_op):
+        if self._is_tensor(val):
+            return torch_op(val)
+        if self._is_list(val):
+            return list_op(val)
+        return val
+
     # ========================
     # Visitors
     # ========================
@@ -586,6 +593,92 @@ class UnifiedMathVisitor(MathExprVisitor):
         if size > 1:
             return (coord / (size - 1)) * 2.0 - 1.0
         return torch.zeros_like(coord)
+
+    def visitSumFunc(self, ctx):
+        return self._reduction_op(self.visit(ctx.expr()), torch.sum, sum)
+
+    def visitMeanFunc(self, ctx):
+        return self._reduction_op(
+            self.visit(ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0
+        )
+
+    def visitStdFunc(self, ctx):
+        def list_std(val):
+            if len(val) < 2:
+                return 0.0
+            mean = sum(val) / len(val)
+            variance = sum((x - mean) ** 2 for x in val) / (len(val) - 1)
+            return math.sqrt(variance)
+
+        return self._reduction_op(self.visit(ctx.expr()), lambda x: torch.std(x.float()), list_std)
+
+    def visitVarFunc(self, ctx):
+        def list_var(val):
+            if len(val) < 2:
+                return 0.0
+            mean = sum(val) / len(val)
+            return sum((x - mean) ** 2 for x in val) / (len(val) - 1)
+
+        return self._reduction_op(self.visit(ctx.expr()), lambda x: torch.var(x.float()), list_var)
+
+    def _quartile_helper(self, val, q):
+
+        if self._is_tensor(val):
+            return torch.quantile(val.float(), q)
+        if self._is_list(val):
+            if not val:
+                return 0.0
+            sorted_data = sorted(val)
+            n = len(val)
+            pos = (n - 1) * q
+            whole = int(pos)
+            frac = pos - whole
+            if whole + 1 < n:
+                return sorted_data[whole] + (sorted_data[whole + 1] - sorted_data[whole]) * frac
+            else:
+                return sorted_data[whole]
+        return val
+
+    def visitQuartileFunc(self, ctx):
+        val = self.visit(ctx.expr(0))
+        k = self.visit(ctx.expr(1))
+
+        if self._is_tensor(k):
+            k_val = torch.tensor([self._quartile_helper(val,int(k.flatten()[x].item())/4.0) for x in range(0,k.flatten().shape[0])])
+            return k_val.reshape(k.shape)
+        if self._is_list(k):
+            return [self._quartile_helper(val,int(k[x])/4.0) for x in range(0,k.size)]
+        else:
+            k_val = int(k)
+
+        q = 0.5
+        if 0 <= k_val <= 4:
+            q = k_val * 0.25
+        else:
+            if k_val < 0: q = 0.0
+            if k_val > 4: q = 1.0
+
+        return self._quartile_helper(val, q)
+
+    def visitPercentileFunc(self, ctx):
+        val = self.visit(ctx.expr(0))
+        p_raw = self.visit(ctx.expr(1))
+
+        if self._is_tensor(p_raw):
+            k_val = torch.tensor([self._quartile_helper(val,p_raw.flatten()[x].item()) for x in range(0,p_raw.flatten().shape[0])])
+            return k_val.reshape(p_raw.shape)
+        if self._is_list(p_raw):
+            return [self._quartile_helper(val,p_raw[x]) for x in range(0,p_raw.size)]
+        else:
+            p = float(p_raw)
+
+        q = max(0.0, min(1.0, p))
+        return self._quartile_helper(val, q)
+
+    def visitDotFunc(self, ctx):
+        a = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        b = self._promote_to_tensor(self.visit(ctx.expr(1)))
+        return torch.dot(a.flatten(), b.flatten())
 
     def visitMapFunc(self, ctx):
         tensor = self._promote_to_tensor(self.visit(ctx.expr(0)))

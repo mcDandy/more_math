@@ -9,7 +9,8 @@ _project_root = os.path.abspath(os.path.join(_here, os.pardir))
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-# Placeholder import - we will create this file next
+
+# Import visitor
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from more_math.Parser.MathExprLexer import MathExprLexer
 from more_math.Parser.MathExprParser import MathExprParser
@@ -183,9 +184,6 @@ def test_bool_ops():
 
 
 def test_topk():
-    # Tensor topk
-    t = torch.tensor([1.0, 5.0, 2.0, 8.0, 3.0])
-    vars = {"t": t}
     # Tensor topk masking
     t = torch.tensor([1.0, 5.0, 2.0, 8.0, 3.0])
     vars = {"t": t}
@@ -229,9 +227,9 @@ def test_botk():
 
 def test_pinv():
     # List permutation inverse
-    perm = [2, 0, 1]  # 0->2, 1->0, 2->1
-    vars = {"perm": perm}
-    res = parse_and_visit("pinv(perm)", vars)
+    p = [2, 0, 1]  # 0->2, 1->0, 2->1
+    vars = {"p": p}
+    res = parse_and_visit("pinv(p)", vars)
     assert isinstance(res, list)
     # Inverse: if perm[i]=j, then inv[j]=i
     # perm[0]=2 -> inv[2]=0
@@ -240,9 +238,9 @@ def test_pinv():
     assert res == [1, 2, 0]
 
     # Tensor permutation inverse
-    perm_t = torch.tensor([2, 0, 1])
-    vars["perm_t"] = perm_t
-    res_t = parse_and_visit("pinv(perm_t)", vars)
+    pt = torch.tensor([2, 0, 1])
+    vars["pt"] = pt
+    res_t = parse_and_visit("pinv(pt)", vars)
     assert isinstance(res_t, torch.Tensor)
     assert torch.equal(res_t, torch.tensor([1, 2, 0]))
 
@@ -252,6 +250,46 @@ def test_pinv_identity():
     varbl = {'c':tensor,'a':perm}
     res = parse_and_visit("permute(permute(c,a),pinv(a))",varbl)
     assert torch.equal(tensor,res)
+
+
+def test_quartil():
+    # Test Quartiles (Strict Integer Indices)
+    # List: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] (11 elements)
+    l = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    vars = {"l": l}
+
+    assert parse_and_visit("quartile(l, 0)", vars) == 0.0
+    assert parse_and_visit("quartile(l, 1)", vars) == 2.5
+    assert parse_and_visit("quartile(l, 2)", vars) == 5.0
+    assert parse_and_visit("quartile(l, 3)", vars) == 7.5
+    assert parse_and_visit("quartile(l, 4)", vars) == 10.0
+
+    # Tensor
+    t = torch.tensor(l, dtype=torch.float32)
+    vars["t"] = t
+
+    assert torch.allclose(parse_and_visit("quartile(t, 2)", vars), torch.tensor(5.0))
+    assert torch.allclose(parse_and_visit("quartile(t, 1)", vars), torch.tensor(2.5))
+
+    # Float inputs for quartil should be cast to int, so 0.5 -> 0 -> Min
+    # verifying strict behavior or fallback
+    assert parse_and_visit("quartile(l, 0.9)", vars) == 0.0
+
+
+def test_percentile():
+    l = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    vars = {"l": l}
+    t = torch.tensor(l, dtype=torch.float32)
+    vars["t"] = t
+
+    # Percentile (0 - 100)
+    assert parse_and_visit("percentile(l, 50)", vars) == 5.0 # Median
+    assert parse_and_visit("percentile(l, 25)", vars) == 2.5 # Q1
+    assert torch.allclose(parse_and_visit("percentile(t, 75)", vars), torch.tensor(7.5))
+
+    # Aliases
+    assert parse_and_visit("prcnt(l, 50)", vars) == 5.0
+
 
 if __name__ == "__main__":
     try:
@@ -267,6 +305,7 @@ if __name__ == "__main__":
         test_topk()
         test_botk()
         test_pinv()
+        test_quartil()
         print("All UnifiedMathVisitor tests passed!")
     except Exception:
         import traceback

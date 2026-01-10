@@ -116,7 +116,7 @@ def test_all_functions():
     check("snorm(ta)")
     check("map(ta, x)")  # 1D map
     # Verify conv with kernel variables kW
-    check("conv(ta, 3, kW)")  # 1D conv, size 3, value is kW (which is 3.0)
+    check("conv(reshape(ta, [1, 3]), 3, kW)")  # 1D conv, Input [1, 3] (Channels=1, Width=3)
     check("permute(ta, [0])")
     check("reshape(ta, [3, 1])")
 

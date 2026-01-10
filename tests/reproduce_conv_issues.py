@@ -26,12 +26,12 @@ def test_conv_1d():
     shape = (1, 10, 4)
     a_val = torch.randn(*shape)
 
-    # conv(a, 3, 1.0) -> implies kernel of ones, size 3
+    # ezconvolution(a, 3, 1.0) -> implies kernel of ones, size 3
     # Result should correspond to 1D conv
     try:
         # LatentMathNode expects latent dicts usually
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 1.0)", a=input_dict)
 
         # LatentMathNode returns list of dicts
         res_tensor = res[0]["samples"]
@@ -57,7 +57,7 @@ def test_conv_3d():
 
     try:
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 3, 3, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 3, 3, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"3D Conv Result Shape: {res_tensor.shape}")
         assert res_tensor.shape == shape
@@ -77,9 +77,9 @@ def test_conv_arbitrary_batch():
     a_val = torch.randn(*shape)
 
     try:
-        # conv(a, 3, 3, 1.0) -> 2D conv on (16,16)
+        # ezconvolution(a, 3, 3, 1.0) -> 2D conv on (16,16)
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 3, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 3, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"Arbitrary Batch Result Shape: {res_tensor.shape}")
         assert res_tensor.shape == shape
@@ -102,7 +102,7 @@ def test_conv_list_kernel():
     # Using the user's example kernel
     kernel_list = [1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1]
     kernel_str = str(kernel_list)
-    expr = f"conv(a, 3, 3, 3, {kernel_str})/8"
+    expr = f"ezconvolution(a, 3, 3, 3, {kernel_str})/8"
 
     try:
         input_dict = {"samples": a_val}
@@ -128,11 +128,11 @@ def test_conv_audio():
     shape = (1, 2, 100)  # [B, C, L] (L >> C)
     a_val = torch.randn(*shape).float()
 
-    # conv(a, 3, 1.0) on last dim (L)
+    # ezconvolution(a, 3, 1.0) on last dim (L)
     # Expected: result shape same as input
     try:
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"Audio Result Shape: {res_tensor.shape}")
 
@@ -161,12 +161,12 @@ def test_conv_deep_latent():
     shape = (1, 32, 16, 16)
     a_val = torch.randn(*shape).float()
 
-    # conv(a, 3, 3, 3, 1.0)
+    # ezconvolution(a, 3, 3, 3, 1.0)
     # 3D kernels need D,H,W.
     # D=32 (Channel). H=16. W=16.
     try:
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 3, 3, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 3, 3, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"Deep Latent Result Shape: {res_tensor.shape}")
         assert res_tensor.shape == shape
@@ -190,13 +190,13 @@ def test_conv_padding():
     shape = (1, 10, 10, 1)
     a_val = torch.randn(*shape).float()
 
-    # conv(a, 4, 4, 1.0)
+    # ezconvolution(a, 4, 4, 1.0)
     # If padding is symmetric 2, result is 11x11.
     # If padding is symmetric 1, result is 9x9.
     # We need asymmetric pad (1, 2) to get 10x10.
     try:
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 4, 4, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 4, 4, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"Padding Test Result Shape: {res_tensor.shape}")
         assert res_tensor.shape == shape
@@ -218,7 +218,7 @@ def test_conv_complex_padding():
 
     try:
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 4, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 4, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"Complex Padding Result Shape: {res_tensor.shape}")
         assert res_tensor.shape == shape
@@ -239,7 +239,7 @@ def test_conv_3d_asymmetric():
 
     try:
         input_dict = {"samples": a_val}
-        res = node.execute("conv(a, 3, 3, 3, 1.0)", a=input_dict)
+        res = node.execute("ezconvolution(a, 3, 3, 3, 1.0)", a=input_dict)
         res_tensor = res[0]["samples"]
         print(f"3D Asymmetric Result Shape: {res_tensor.shape}")
         assert res_tensor.shape == shape

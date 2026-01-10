@@ -97,6 +97,7 @@ func2:
 	| BOTK LPAREN expr COMMA expr RPAREN		# BotkFunc
 	| QUARTILE LPAREN expr COMMA expr RPAREN	# QuartileFunc
 	| PERCENTILE LPAREN expr COMMA expr RPAREN	# PercentileFunc
+	| QUANTILE LPAREN expr COMMA expr RPAREN	# QuantileFunc
 	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc;
 
 func3:
@@ -178,8 +179,9 @@ SUM: 'sum';
 MEAN: 'mean';
 STD: 'std';
 VAR: 'var';
-QUARTILE: 'quartile';
+QUARTILE: 'quartile' | 'quartil';
 PERCENTILE: 'percentile' | 'prcnt';
+QUANTILE: 'quantile';
 DOT: 'dot';
 
 PLUS: '+';

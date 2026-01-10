@@ -621,10 +621,53 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return self._reduction_op(self.visit(ctx.expr()), lambda x: torch.var(x.float()), list_var)
 
+    def _manual_quantile(self, val, q):
+        """Fallback implementation using sort for when torch.quantile fails on large tensors."""
+        val_flat = val.flatten().float()
+        sorted_val, _ = torch.sort(val_flat)
+        n = len(sorted_val)
+        if n == 0:
+            return torch.zeros_like(q) if self._is_tensor(q) else 0.0
+
+        # indices = q * (n - 1)
+        indices = q * (n - 1)
+        low = torch.floor(indices).long()
+        high = torch.ceil(indices).long()
+        frac = (indices - low).float()
+
+        # Ensure bounds
+        low = torch.clamp(low, 0, n - 1)
+        high = torch.clamp(high, 0, n - 1)
+
+        res = sorted_val[low] + (sorted_val[high] - sorted_val[low]) * frac
+        return res
+
     def _quartile_helper(self, val, q):
 
+        if self._is_tensor(q) and not self._is_tensor(val):
+            val = self._promote_to_tensor(val)
+
         if self._is_tensor(val):
-            return torch.quantile(val.float(), q)
+            if not self._is_tensor(q):
+                q = torch.tensor(q, device=self.device).float()
+
+            try:
+                if q.ndim > 1:
+                    q_flat = q.flatten()
+                    res = torch.quantile(val.float(), q_flat)
+                    return res.reshape(q.shape)
+
+                return torch.quantile(val.float(), q)
+            except RuntimeError as e:
+                # Fallback for "input tensor is too large" or other quantile-specific issues
+                if "quantile" in str(e).lower() or "too large" in str(e).lower():
+                    if q.ndim > 1:
+                        q_flat = q.flatten()
+                        res = self._manual_quantile(val, q_flat)
+                        return res.reshape(q.shape)
+                    return self._manual_quantile(val, q)
+                raise e
+
         if self._is_list(val):
             if not val:
                 return 0.0
@@ -644,20 +687,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         k = self.visit(ctx.expr(1))
 
         if self._is_tensor(k):
-            k_val = torch.tensor([self._quartile_helper(val,int(k.flatten()[x].item())/4.0) for x in range(0,k.flatten().shape[0])])
-            return k_val.reshape(k.shape)
+             # q = k * 0.25. Ensure k is treated as int-like (1,2,3)?
+             # Old code did int().
+             return self._quartile_helper(val, (k.int().float() * 0.25))
         if self._is_list(k):
-            return [self._quartile_helper(val,int(k[x])/4.0) for x in range(0,k.size)]
-        else:
-            k_val = int(k)
+            return [self._quartile_helper(val, int(x) * 0.25) for x in k]
 
-        q = 0.5
-        if 0 <= k_val <= 4:
-            q = k_val * 0.25
-        else:
-            if k_val < 0: q = 0.0
-            if k_val > 4: q = 1.0
-
+        k_val = int(k)
+        q = min(1.0, max(0.0, k_val * 0.25))
         return self._quartile_helper(val, q)
 
     def visitPercentileFunc(self, ctx):
@@ -665,14 +702,26 @@ class UnifiedMathVisitor(MathExprVisitor):
         p_raw = self.visit(ctx.expr(1))
 
         if self._is_tensor(p_raw):
-            k_val = torch.tensor([self._quartile_helper(val,p_raw.flatten()[x].item()) for x in range(0,p_raw.flatten().shape[0])])
-            return k_val.reshape(p_raw.shape)
+            # p is 0-100. q = p / 100
+            return self._quartile_helper(val, p_raw.float() / 100.0)
         if self._is_list(p_raw):
-            return [self._quartile_helper(val,p_raw[x]) for x in range(0,p_raw.size)]
-        else:
-            p = float(p_raw)
+            return [self._quartile_helper(val, float(x) / 100.0) for x in p_raw]
 
-        q = max(0.0, min(1.0, p))
+        p = float(p_raw)
+        q = max(0.0, min(1.0, p / 100.0))
+        return self._quartile_helper(val, q)
+
+    def visitQuantileFunc(self, ctx):
+        val = self.visit(ctx.expr(0))
+        q_raw = self.visit(ctx.expr(1))
+
+        if self._is_tensor(q_raw):
+            return self._quartile_helper(val, q_raw.float())
+        if self._is_list(q_raw):
+            return [self._quartile_helper(val, float(x)) for x in q_raw]
+
+        q = float(q_raw)
+        q = max(0.0, min(1.0, q))
         return self._quartile_helper(val, q)
 
     def visitDotFunc(self, ctx):

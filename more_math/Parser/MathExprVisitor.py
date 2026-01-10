@@ -404,6 +404,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#QuantileFunc.
+    def visitQuantileFunc(self, ctx:MathExprParser.QuantileFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#DotFunc.
     def visitDotFunc(self, ctx:MathExprParser.DotFuncContext):
         return self.visitChildren(ctx)

@@ -719,6 +719,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#QuantileFunc.
+    def enterQuantileFunc(self, ctx:MathExprParser.QuantileFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#QuantileFunc.
+    def exitQuantileFunc(self, ctx:MathExprParser.QuantileFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#DotFunc.
     def enterDotFunc(self, ctx:MathExprParser.DotFuncContext):
         pass

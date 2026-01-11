@@ -34,7 +34,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         """
         # one of them is a list and one is tensor
         if self._is_tensor(a) and self._is_list(b):
-            return torch.cat([self._bin_op(a, x, torch_op, scalar_op) for x in b], dim=0)
+             if(a.shape[0]==len(b)):
+                c = torch.split(a,1)
+                return torch.cat([self._bin_op(x, y, torch_op, scalar_op) for x,y in zip(a,c)],dim=0)
+             return torch.cat([self._bin_op(a, x, torch_op, scalar_op) for x in b], dim=0)
         if self._is_list(a) and self._is_tensor(b):
             if(b.shape[0]==len(a)):
                 c = torch.split(a,1)

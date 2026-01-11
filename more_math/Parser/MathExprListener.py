@@ -773,6 +773,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#MomentFunc.
+    def enterMomentFunc(self, ctx:MathExprParser.MomentFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MomentFunc.
+    def exitMomentFunc(self, ctx:MathExprParser.MomentFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SwapFunc.
     def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         pass

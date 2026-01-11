@@ -36,6 +36,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(a) and self._is_list(b):
             return torch.cat([self._bin_op(a, x, torch_op, scalar_op) for x in b], dim=0)
         if self._is_list(a) and self._is_tensor(b):
+            if(b.shape[0]==len(a)):
+                c = torch.split(a,1)
+                return torch.cat([self._bin_op(x, y, torch_op, scalar_op) for x,y in zip(c,b)],dim=0)
             return torch.cat([self._bin_op(x, b, torch_op, scalar_op) for x in a], dim=0)
 
         if self._is_list(a) and not self._is_tensor(b):
@@ -728,6 +731,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         a = self._promote_to_tensor(self.visit(ctx.expr(0)))
         b = self._promote_to_tensor(self.visit(ctx.expr(1)))
         return torch.dot(a.flatten(), b.flatten())
+
+    def visitMomentFunc(self,ctx):
+        x = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        a = self.visit(ctx.expr(1))
+        k = self.visit(ctx.expr(2))
+
+        return torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a),k,torch.pow,pow)).item()/x.numel()
 
     def visitMapFunc(self, ctx):
         tensor = self._promote_to_tensor(self.visit(ctx.expr(0)))

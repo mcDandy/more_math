@@ -104,7 +104,8 @@ func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
 	| LERP LPAREN expr COMMA expr COMMA expr RPAREN			# LerpFunc
 	| SMOOTHSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmoothstepFunc
-	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN		# RangeFunc;
+	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN		# RangeFunc
+	| MOMENT LPAREN expr COMMA expr COMMA expr RPAREN		# MomentFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # SwapFunc;
@@ -183,6 +184,7 @@ QUARTILE: 'quartile' | 'quartil';
 PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
+MOMENT: 'moment';
 
 PLUS: '+';
 MINUS: '-';

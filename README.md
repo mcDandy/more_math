@@ -90,8 +90,9 @@ You can also get the node from comfy manager under the name of More math.
 - `percentile(x, p)`: Returns the p-th percentile (p is 0-100).
 - `quantile(x, q)`: Returns the q-th quantile (q is 0-1).
 - `dot(a, b)`: Dot product of two tensors (flattens inputs to 1D) or lists.
-- `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for for complex numbers).
-- `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for for complex numbers)
+- `moment(x, a, k)`: Returns the k-th moment of x centered around a.
+- `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for complex numbers).
+- `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for complex numbers)
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
 - `snorm(x)`: The same as |x| for tensors.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.

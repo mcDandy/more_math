@@ -1,14 +1,12 @@
 from inspect import cleandoc
 
-from .helper_functions import comonLazy, eval_tensor_expr, generate_dim_variables, as_tensor
+from .helper_functions import commonLazy, eval_tensor_expr, generate_dim_variables, as_tensor, prepare_inputs
 
 from comfy_api.latest import io
 
 
-from .MathNodeBase import MathNodeBase
 
-
-class ConditioningMathNode(MathNodeBase):
+class ConditioningMathNode(io.ComfyNode):
     """
     Enables math operations on conditionings.
 
@@ -51,14 +49,14 @@ class ConditioningMathNode(MathNodeBase):
 
     @classmethod
     def check_lazy_status(cls, Tensor, pooled_output, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
-        tensor_needs = set(comonLazy(Tensor, a, b, c, d))
-        pooled_needs = set(comonLazy(pooled_output, a, b, c, d))
+        tensor_needs = set(commonLazy(Tensor, a, b, c, d, w, x, y, z))
+        pooled_needs = set(commonLazy(pooled_output, a, b, c, d, w, x, y, z))
         return list(tensor_needs.union(pooled_needs))
 
     @classmethod
     def execute(cls, Tensor, pooled_output, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         # Default missing conditionings to zero
-        a, b, c, d = cls.prepare_inputs(a, b, c, d)
+        a, b, c, d = prepare_inputs(a, b, c, d)
 
         # Extract tensors
         ta, tb, tc, td = a[0][0], b[0][0], c[0][0], d[0][0]

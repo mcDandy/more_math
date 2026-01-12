@@ -5,13 +5,9 @@ from comfy_api.input_impl import VideoFromComponents
 from comfy_api.util import VideoComponents
 
 
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, make_zero_like
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, make_zero_like, commonLazy
 
-
-from .MathNodeBase import MathNodeBase
-
-
-class VideoMathNode(MathNodeBase):
+class VideoMathNode(io.ComfyNode):
     """
     Enables math expressions on Video (images + audio).
 
@@ -49,6 +45,12 @@ class VideoMathNode(MathNodeBase):
         )
 
     tooltip = cleandoc(__doc__)
+
+    @classmethod
+    def check_lazy_status(cls, Audio, Images, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+        tensor_needs = set(commonLazy(Audio, a, b, c, d, w, x, y, z))
+        pooled_needs = set(commonLazy(Images, a, b, c, d, w, x, y, z))
+        return list(tensor_needs.union(pooled_needs))
 
     @classmethod
     def execute(cls, Audio, Images, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:

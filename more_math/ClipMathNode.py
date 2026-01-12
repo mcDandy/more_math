@@ -1,7 +1,7 @@
 from comfy_api.latest import io
 from .modelLikeCommon import calculate_patches
 from inspect import cleandoc
-from .helper_functions import comonLazy
+from .helper_functions import commonLazy
 
 
 class CLIPMathNode(io.ComfyNode):
@@ -35,7 +35,7 @@ class CLIPMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, Model, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
-        return comonLazy(Model, a, b, c, d, w, x, y, z)
+        return commonLazy(Model, a, b, c, d, w, x, y, z)
 
     @classmethod
     def execute(cls, Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:

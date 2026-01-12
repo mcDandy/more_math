@@ -1,13 +1,10 @@
 import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, as_tensor
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, as_tensor, prepare_inputs, commonLazy
 
 from comfy_api.latest import io
 
 
-from .MathNodeBase import MathNodeBase
-
-
-class AudioMathNode(MathNodeBase):
+class AudioMathNode(io.ComfyNode):
     """
     Enables math expressions on Audio tensors.
 
@@ -41,13 +38,16 @@ class AudioMathNode(MathNodeBase):
                 io.Audio.Output(),
             ],
         )
+    @classmethod
+    def check_lazy_status(cls, AudioExpr, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+        return commonLazy(AudioExpr, a, b, c, d, w, x, y, z)
 
     @classmethod
     def execute(cls, AudioExpr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
         av = a["waveform"]
         sample_rate = a["sample_rate"]
 
-        a, b, c, d = cls.prepare_inputs(a, b, c, d)
+        a, b, c, d = prepare_inputs(a, b, c, d)
 
         bv, cv, dv = b["waveform"], c["waveform"], d["waveform"]
 

@@ -1,12 +1,9 @@
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, as_tensor
+from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, as_tensor,prepare_inputs,commonLazy
 
 from comfy_api.latest import io
 
 
-from .MathNodeBase import MathNodeBase
-
-
-class ImageMathNode(MathNodeBase):
+class ImageMathNode(io.ComfyNode):
     """
     Enables math expressions on Images.
 
@@ -40,10 +37,12 @@ class ImageMathNode(MathNodeBase):
                 io.Image.Output(),
             ],
         )
-
+    @classmethod
+    def check_lazy_status(cls, Image, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+        return commonLazy(Image, a, b, c, d, w, x, y, z)
     @classmethod
     def execute(cls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
-        a, b, c, d = cls.prepare_inputs(a, b, c, d)
+        a, b, c, d = prepare_inputs(a, b, c, d)
 
         variables = {
             "a": a,

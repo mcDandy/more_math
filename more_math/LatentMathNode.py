@@ -10,10 +10,10 @@ from .helper_functions import (
     make_zero_like,
     as_tensor,
 )
-from .MathNodeBase import MathNodeBase
+from .helper_functions import commonLazy
 
 
-class LatentMathNode(MathNodeBase):
+class LatentMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on Latents.
     inputs:
@@ -57,6 +57,10 @@ class LatentMathNode(MathNodeBase):
 
     # RETURN_NAMES = ("image_output_name",)
     tooltip = cleandoc(__doc__)
+
+    @classmethod
+    def check_lazy_status(cls, Latent, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+        return commonLazy(Latent, a, b, c, d, w, x, y, z)
 
     # OUTPUT_NODE = False
     # OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node

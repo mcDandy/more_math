@@ -77,7 +77,7 @@ def getIndexTensorAlongDim(tensor, dim):
     return values.expand(*shape)
 
 
-def comonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+def commonLazy(expr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Determine which lazy inputs are needed based on expression variables."""
     variables = {"a": a, "b": b, "c": c, "d": d, "w": w, "x": x, "y": y, "z": z}
     need_eval = []
@@ -99,6 +99,16 @@ def generate_dim_variables(tensor: torch.Tensor):
         variables[f"S{dim}"] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
     return variables
 
+@staticmethod
+def prepare_inputs(a, b, c, d):
+    """
+    Ensures optional inputs b, c, d are zero-initialized like a if None.
+    Returns the prepared (a, b, c, d).
+    """
+    b = b if b is not None else make_zero_like(a)
+    c = c if c is not None else make_zero_like(a)
+    d = d if d is not None else make_zero_like(a)
+    return a, b, c, d
 
 def make_zero_like(ref):
     """

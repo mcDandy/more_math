@@ -118,6 +118,20 @@ def test_list_query():
     assert res[1] == 20.0
     assert res[2] == 40.0
 
+def test_moment():
+    # moment(x, a, k) = 1/n * sum((x-a)^k)
+    t = torch.tensor([1.0, 2.0, 3.0])
+    vars = {"t": t, "l": [1, 2, 3]}
+
+    # First moment about 0 (mean)
+    assert parse_and_visit("moment(t, 0, 1)", vars) == 2.0
+    assert parse_and_visit("moment(l, 0, 1)", vars) == 2.0
+
+    # Second moment about mean (variance)
+    # (1-2)^2 + (2-2)^2 + (3-2)^2 = 1 + 0 + 1 = 2. 2/3 = 0.666...
+    res = parse_and_visit("moment(t, 2, 2)", vars)
+    assert math.isclose(res, 2.0/3.0, rel_tol=1e-5)
+
 if __name__ == "__main__":
     # If run as script
     try:
@@ -129,6 +143,7 @@ if __name__ == "__main__":
         test_nd_tensor_query()
         test_large_tensor_fallback()
         test_list_query()
+        test_moment()
         print("All quantile_ops tests passed!")
     except Exception:
         import traceback

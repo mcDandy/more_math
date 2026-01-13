@@ -28,6 +28,7 @@ You can also get the node from comfy manager under the name of More math.
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
+- Indexing: `x[i]` or `x[i, j, ...]` - Selects items along the batch dimension (dim 0) or with that position in list. Supports multiple indices (e.g. `a[0, 2]`) and negative indexing (python style).
 - Lists: `[v1, v2, ...]` (Vector math supported, mostly usefull in `conv` and `permute`)
   - You can also use lists to do math with input tensor (image, noise, conditioing, latent, audio) which results in batched output as long as batch size is different to list size.
   - print_shape(a) = torch.Shape[1,1024,1024,3]; b = a*[0,0.2,-0.3]; print_shape(b) = torch.Shape[3,1024,1024,3]

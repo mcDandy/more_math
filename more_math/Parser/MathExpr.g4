@@ -28,7 +28,11 @@ powExpr: unaryExpr POW powExpr # PowExp | unaryExpr # ToUnary;
 unaryExpr:
 	PLUS unaryExpr		# UnaryPlus
 	| MINUS unaryExpr	# UnaryMinus
-	| atom				# ToAtom;
+	| indexExpr			# ToIndex;
+
+indexExpr:
+	indexExpr LBRACKET expr (COMMA expr)* RBRACKET	# IndexExp
+	| atom											# ToAtom;
 
 // Atoms: function calls, variable, number, constant, or parenthesized expression
 atom:

@@ -111,6 +111,43 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitUnaryMinus(self, ctx):
         return self._unary_op(self.visit(ctx.unaryExpr()), torch.neg, lambda x: -x)
 
+    def visitToIndex(self, ctx):
+        return self.visit(ctx.indexExpr())
+
+    def visitIndexExp(self, ctx):
+        val = self.visit(ctx.indexExpr())
+        index_args = [self.visit(e) for e in ctx.expr()]
+
+        flat_indices = []
+        for idx in index_args:
+            if self._is_list(idx):
+                flat_indices.extend(idx)
+            elif self._is_tensor(idx):
+                flat_indices.extend(idx.flatten().tolist())
+            else:
+                flat_indices.append(idx)
+
+        if self._is_tensor(val):
+            if not flat_indices:
+                return val
+            idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
+            return torch.index_select(val, 0, idx_tensor)
+
+        elif self._is_list(val):
+            if not flat_indices:
+                return val
+            l_size = len(val)
+            res = [val[int(i) % l_size] for i in flat_indices]
+            # If it was a single scalar index, return the single item
+            if len(index_args) == 1 and not (self._is_list(index_args[0]) or self._is_tensor(index_args[0])):
+                return res[0]
+            return res
+        else:
+            raise ValueError("Indexing only supported on tensors and lists.")
+
+    def visitToAtom(self, ctx):
+        return self.visit(ctx.atom())
+
     # Binary Ops
     def visitAddExp(self, ctx):
         return self._bin_op(self.visit(ctx.addExpr()), self.visit(ctx.mulExpr()), torch.add, lambda a, b: a + b)

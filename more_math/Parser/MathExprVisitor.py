@@ -1,4 +1,4 @@
-# Generated from ./MathExpr.g4 by ANTLR 4.13.2
+# Generated from MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -101,6 +101,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#UnaryMinus.
     def visitUnaryMinus(self, ctx:MathExprParser.UnaryMinusContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ToIndex.
+    def visitToIndex(self, ctx:MathExprParser.ToIndexContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#IndexExp.
+    def visitIndexExp(self, ctx:MathExprParser.IndexExpContext):
         return self.visitChildren(ctx)
 
 

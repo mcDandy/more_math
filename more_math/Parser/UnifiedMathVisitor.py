@@ -128,17 +128,13 @@ class UnifiedMathVisitor(MathExprVisitor):
                 flat_indices.append(idx)
 
         if self._is_tensor(val):
-            if not flat_indices:
-                return val
+            flat_indices = [i + val.shape[0] if i < 0 else i for i in flat_indices]
             idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
             return torch.index_select(val, 0, idx_tensor)
 
         elif self._is_list(val):
-            if not flat_indices:
-                return val
-            l_size = len(val)
-            res = [val[int(i) % l_size] for i in flat_indices]
-            # If it was a single scalar index, return the single item
+            flat_indices = [i + len(val) if i < 0 else i for i in flat_indices]
+            res = [val[int(i)] for i in flat_indices]
             if len(index_args) == 1 and not (self._is_list(index_args[0]) or self._is_tensor(index_args[0])):
                 return res[0]
             return res

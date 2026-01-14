@@ -35,7 +35,7 @@ You can also get the node from comfy manager under the name of More math.
   - You can &lt;operator&gt; batched tensor with another tensor which is not batched (dim[0] = 1) - the non batched tensor will be duplicated along batch dimension
   - In imageMath node you can use 3 element list to specify a color of image. You cannot use any imput tensor, doing so will result in behaviour in subpoint 1 in list
 - **Length Mismatch Handling**: All math nodes (except Model, Clip, Vae which default to broadcast) include a `length_mismatch` option to handle inputs with different batch sizes, sample counts, or list lengths. The target length is determined by the **maximum length** among all provided inputs (`a`, `b`, `c`, `d`).
-  - `broadcast` (Default): Repeats shorter inputs (e.g., using modulo) to match the maximum length.
+  - `tile` (Default): Repeats shorter inputs (e.g., using modulo) to match the maximum length.
   - `error`: Raises a `ValueError` if any input lengths differ. This helps identify unintentional mismatches that should be handled explicitly.
   - `pad`: Shorter inputs are padded with zeros to match the maximum length.
 

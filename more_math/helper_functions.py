@@ -15,7 +15,7 @@ class ThrowingErrorListener(ErrorListener):
 
 
 def as_tensor(value, shape):
-    if isinstance(value, torch.Tensor):
+    if isinstance(value, torch.Tensor) or getattr(value, "is_nested", False):
         return value
     if isinstance(value, (float, int)):
         value = (value,)
@@ -30,41 +30,6 @@ def parse_expr(expr: str):
     parser = MathExprParser(stream)
     parser.addErrorListener(ThrowingErrorListener())
     return parser.expr()
-
-
-def eval_tensor_expr(expr: str, variables: dict, shape: tuple, device=None):
-    """Parse and evaluate a tensor math expression."""
-    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-
-    tree = parse_expr(expr)
-    visitor = UnifiedMathVisitor(variables, shape, device=device)
-    return visitor.visit(tree)
-
-
-def eval_tensor_expr_with_tree(tree, variables: dict, shape: tuple, device=None):
-    """Evaluate a pre-parsed expression tree with UnifiedMathVisitor."""
-    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-
-    visitor = UnifiedMathVisitor(variables, shape, device=device)
-    return visitor.visit(tree)
-
-
-def eval_float_expr(expr: str, variables: dict):
-    """Parse and evaluate a float math expression."""
-    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-
-    tree = parse_expr(expr)
-    # Float eval context often has no shape. Pass None/Empty.
-    visitor = UnifiedMathVisitor(variables, shape=None)
-    return visitor.visit(tree)
-
-
-def eval_float_expr_with_tree(tree, variables: dict):
-    """Evaluate a pre-parsed expression tree with UnifiedMathVisitor."""
-    from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-
-    visitor = UnifiedMathVisitor(variables, shape=None)
-    return visitor.visit(tree)
 
 
 def getIndexTensorAlongDim(tensor, dim):
@@ -99,7 +64,7 @@ def generate_dim_variables(tensor: torch.Tensor):
         variables[f"S{dim}"] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
     return variables
 
-@staticmethod
+
 def prepare_inputs(a, b, c, d):
     """
     Ensures optional inputs b, c, d are zero-initialized like a if None.
@@ -109,6 +74,7 @@ def prepare_inputs(a, b, c, d):
     c = c if c is not None else make_zero_like(a)
     d = d if d is not None else make_zero_like(a)
     return a, b, c, d
+
 
 def make_zero_like(ref):
     """
@@ -122,13 +88,18 @@ def make_zero_like(ref):
     if torch.is_tensor(ref):
         return torch.zeros_like(ref)
 
-    # Conditioning: list of lists [[tensor, dict]]
-    if isinstance(ref, list) and len(ref) > 0 and isinstance(ref[0], list) and len(ref[0]) >= 2:
-        ref_tensor = ref[0][0]
-        # Ensure it's a tensor-like structure
-        if torch.is_tensor(ref_tensor):
-            ref_pooled = ref[0][1].get("pooled_output")
-            return [[torch.zeros_like(ref_tensor), {"pooled_output": torch.zeros_like(ref_pooled) if ref_pooled is not None else None}]]
+    # Conditioning: list of tuples [(tensor, dict)]
+    if isinstance(ref, list) and len(ref) > 0 and isinstance(ref[0], (list, tuple)) and len(ref[0]) >= 2:
+        zeroed_cond = []
+        for entry in ref:
+            ref_tensor = entry[0]
+            ref_dict = entry[1]
+            if torch.is_tensor(ref_tensor):
+                new_dict = ref_dict.copy()
+                if "pooled_output" in new_dict and torch.is_tensor(new_dict["pooled_output"]):
+                    new_dict["pooled_output"] = torch.zeros_like(new_dict["pooled_output"])
+                zeroed_cond.append((torch.zeros_like(ref_tensor), new_dict))
+        return zeroed_cond
 
     # Audio or Latent: dict
     if isinstance(ref, dict):
@@ -149,3 +120,66 @@ def make_zero_like(ref):
 
     return None
 
+
+def normalize_to_common_shape(*tensors, mode="pad"):
+    """
+    Normalize multiple tensors to a common shape.
+    - mode="pad": Pad with zeros to the max shape.
+    - mode="tile": Tile to match (or exceed) dimensions, then truncate excess.
+    """
+    valid_tensors = [t for t in tensors if torch.is_tensor(t)]
+    if len(valid_tensors) <= 1:
+        return tensors
+
+    # Check if all shapes are already the same
+    if all(t.shape == valid_tensors[0].shape for t in valid_tensors[1:]):
+        return tensors
+
+    # Determine common shape
+    target_ndim = max(t.ndim for t in valid_tensors)
+    max_shape = [0] * target_ndim
+
+    for t in valid_tensors:
+        for i in range(t.ndim):
+            # Align from trailing dimensions
+            max_shape[-(i + 1)] = max(max_shape[-(i + 1)], t.shape[-(i + 1)])
+
+    target_shape = tuple(max_shape)
+
+    def normalize_one(t, shape):
+        if t.shape == shape:
+            return t
+
+        # Match ndim first
+        curr_t = t
+        while curr_t.ndim < len(shape):
+            curr_t = curr_t.unsqueeze(0)
+
+        if mode == "tile":
+            # Calculate required repeats for each dimension
+            repeats = []
+            for s1, s2 in zip(curr_t.shape, shape):
+                if s1 == 0:  # Handle zero-sized tensors
+                    return curr_t
+                # Ceiling division to ensure coverage
+                repeat_times = (s2 + s1 - 1) // s1
+                repeats.append(repeat_times)
+
+            # Repeat and truncate
+            curr_t = curr_t.repeat(repeats)
+            slices = tuple(slice(0, s2) for s2 in shape)
+            return curr_t[slices].contiguous()
+
+        # Fallback to padding if not tile mode
+        out = torch.zeros(shape, dtype=curr_t.dtype, device=curr_t.device)
+        slices = tuple(slice(0, d) for d in curr_t.shape)
+        out[slices] = curr_t
+        return out
+
+    result = []
+    for t in tensors:
+        if torch.is_tensor(t):
+            result.append(normalize_one(t, target_shape))
+        else:
+            result.append(t)
+    return tuple(result)

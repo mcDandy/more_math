@@ -1,17 +1,17 @@
 import torch
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, as_tensor, prepare_inputs, commonLazy
-
+from .helper_functions import generate_dim_variables,parse_expr, getIndexTensorAlongDim, as_tensor, commonLazy, normalize_to_common_shape,prepare_inputs
+from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 
 
 class AudioMathNode(io.ComfyNode):
     """
-    Enables math expressions on Audio tensors.
+    Enables math expressions on Audio.
 
     Inputs:
         a, b, c, d: Audio inputs (b, c, d default to zero if not provided)
         w, x, y, z: Float variables for expressions
-        AudioExpr: Expression to apply on audio tensors
+        Audio: Expression to apply on input audio
 
     Outputs:
         AUDIO: Result of applying expression to input audio
@@ -24,56 +24,66 @@ class AudioMathNode(io.ComfyNode):
             category="More math",
             display_name="Audio math",
             inputs=[
-                io.Audio.Input(id="a", tooltip="Input audio tensor"),
-                io.Audio.Input(id="b", optional=True, lazy=True, tooltip="Second input audio tensor"),
-                io.Audio.Input(id="c", optional=True, lazy=True, tooltip="Third input audio tensor"),
-                io.Audio.Input(id="d", optional=True, lazy=True, tooltip="Fourth input audio tensor"),
+                io.Audio.Input(id="a"),
+                io.Audio.Input(id="b", optional=True, lazy=True),
+                io.Audio.Input(id="c", optional=True, lazy=True),
+                io.Audio.Input(id="d", optional=True, lazy=True),
                 io.Float.Input(id="w", default=0.0, optional=True, lazy=True, force_input=True),
                 io.Float.Input(id="x", default=0.0, optional=True, lazy=True, force_input=True),
                 io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
                 io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
-                io.String.Input(id="AudioExpr", default="a*(1-w)+b*w", tooltip="Expression to apply on input audio tensors"),
+                io.String.Input(id="Audio", default="a*(1-w)+b*w", tooltip="Expression to apply on input audio waveforms"),
+                io.Combo.Input(
+                    id="length_mismatch",
+                    options=["tile", "error", "pad"],
+                    default="tile",
+                    tooltip="How to handle mismatched audio sample counts. broadcast: repeat shorter inputs; error: raise error on mismatch; pad: treat missing samples as zero."
+                )
             ],
             outputs=[
                 io.Audio.Output(),
             ],
         )
-    @classmethod
-    def check_lazy_status(cls, AudioExpr, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
-        return commonLazy(AudioExpr, a, b, c, d, w, x, y, z)
 
     @classmethod
-    def execute(cls, AudioExpr, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+    def check_lazy_status(cls, Audio, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0, length_mismatch="tile"):
+        return commonLazy(Audio, a, b, c, d, w, x, y, z)
+
+    @classmethod
+    def execute(cls, Audio, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile") -> io.NodeOutput:
+        a, b, c, d = prepare_inputs(a, b, c, d)
+
         av = a["waveform"]
         sample_rate = a["sample_rate"]
 
-        a, b, c, d = prepare_inputs(a, b, c, d)
+        bv = None if b is None else b["waveform"]
+        cv = None if c is None else c["waveform"]
+        dv = None if d is None else d["waveform"]
 
-        bv, cv, dv = b["waveform"], c["waveform"], d["waveform"]
+        if(length_mismatch == "error"):
+            max_length = max(av.shape, bv.shape, cv.shape, dv.shape)
+            for tensor, name in zip([av, bv, cv, dv], ["a", "b", "c", "d"]):
+                print(tensor.shape)
+                if tensor.shape not in (1, max_length):
+                    raise ValueError(f"Input '{name}' has length {tensor.shape[0]}, expected {max_length} to match largest input.")
+        ae, be, ce, de = normalize_to_common_shape(av, bv, cv, dv, mode=length_mismatch)
 
         variables = {
-            "a": av,
-            "b": bv,
-            "c": cv,
-            "d": dv,
-            "w": w,
-            "x": x,
-            "y": y,
-            "z": z,
-            "B": getIndexTensorAlongDim(av, 0),
-            "C": getIndexTensorAlongDim(av, 1),
-            "S": getIndexTensorAlongDim(av, 2),
-            "R": torch.full_like(av, sample_rate, dtype=torch.float32),
-            "T": torch.full_like(av, av.shape[2], dtype=torch.float32),
-            "N": av.shape[1],
-            "batch": getIndexTensorAlongDim(av, 0),
-            "channel": getIndexTensorAlongDim(av, 1),
-            "sample": getIndexTensorAlongDim(av, 2),
-            "sample_rate": torch.full_like(av, sample_rate, dtype=torch.float32),
-            "sample_count": torch.full_like(av, av.shape[2], dtype=torch.float32),
-            "channel_count": av.shape[1],
-        } | generate_dim_variables(av)
-
-        result_tensor = eval_tensor_expr(AudioExpr, variables, av.shape)
-
-        return ({"waveform": as_tensor(result_tensor, av.shape), "sample_rate": sample_rate},)
+            "a": ae, "b": be, "c": ce, "d": de,
+            "w": w, "x": x, "y": y, "z": z,
+            "C": getIndexTensorAlongDim(ae, 1),
+            "channel": getIndexTensorAlongDim(ae, 1),
+            "S": getIndexTensorAlongDim(ae, 2),
+            "sample": getIndexTensorAlongDim(ae, 2),
+            "R": torch.full_like(ae, sample_rate, dtype=torch.float32),
+            "sample_rate": torch.full_like(ae, sample_rate, dtype=torch.float32),
+            "T": torch.full_like(ae, ae.shape[2], dtype=torch.float32),
+            "sample_count": torch.full_like(ae, ae.shape[2], dtype=torch.float32),
+            "N": ae.shape[1],
+            "channel_count": ae.shape[1],
+        } | generate_dim_variables(ae)
+        tree = parse_expr(Audio);
+        visitor = UnifiedMathVisitor(variables, ae.shape)
+        result = visitor.visit(tree)
+        final_res = as_tensor(result, ae.shape)
+        return ({"waveform": final_res, "sample_rate": sample_rate},)

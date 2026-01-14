@@ -1,138 +1,158 @@
-from inspect import cleandoc
+import torch
+import math
+from .helper_functions import (
+    generate_dim_variables,
+    getIndexTensorAlongDim,
+    parse_expr,
+    commonLazy,
+    normalize_to_common_shape,
+    as_tensor,
+    prepare_inputs
+)
 
+from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
-from comfy_api.input_impl import VideoFromComponents
-from comfy_api.util import VideoComponents
+from comfy_api.latest import VideoComponents, VideoFromComponents
 
-
-from .helper_functions import generate_dim_variables, getIndexTensorAlongDim, eval_tensor_expr, make_zero_like, commonLazy
 
 class VideoMathNode(io.ComfyNode):
     """
-    Enables math expressions on Video (images + audio).
-
-    Inputs:
-        a, b, c, d: Video inputs (b, c, d default to zero if not provided)
-        w, x, y, z: Float variables for expressions
-        Audio: Expression for audio component
-        Images: Expression for image component
-
-    Outputs:
-        VIDEO: Result of applying expressions to input videos
+    Enables math expressions on Videos (Images + Audio).
+    Video object is expected to have 'images' and 'audio' components.
+    Expressions for 'Images' and 'Audio' are handled separately.
     """
 
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_VideoMathNode",
-            display_name="Video math",
             category="More math",
+            display_name="Video math",
             inputs=[
                 io.Video.Input(id="a"),
-                io.Video.Input(id="b", optional=True),
-                io.Video.Input(id="c", optional=True),
-                io.Video.Input(id="d", optional=True),
-                io.Float.Input(id="w", default=0.0, optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, optional=True, force_input=True),
+                io.Video.Input(id="b", optional=True, lazy=True),
+                io.Video.Input(id="c", optional=True, lazy=True),
+                io.Video.Input(id="d", optional=True, lazy=True),
+                io.Float.Input(id="w", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Float.Input(id="x", default=0.0, optional=True, lazy=True, force_input=True),
                 io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, optional=True, force_input=True),
-                io.String.Input(id="Audio", default="a*(1-w)+b*w", tooltip="Expression to apply on audio part of video"),
-                io.String.Input(id="Images", default="a*(1-w)+b*w", tooltip="Expression to apply on image part of video"),
+                io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
+                io.String.Input(id="Images", default="a*(1-w)+b*w", tooltip="Expression for the image frames"),
+                io.String.Input(id="Audio", default="a*(1-w)+b*w", tooltip="Expression for the audio component"),
+                io.Combo.Input(
+                    id="length_mismatch",
+                    options=["tile", "error", "pad"],
+                    default="tile",
+                    tooltip="How to handle mismatched frame/sample counts. broadcast: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
+                )
             ],
             outputs=[
                 io.Video.Output(),
             ],
         )
 
-    tooltip = cleandoc(__doc__)
+    @classmethod
+    def check_lazy_status(cls, Images, Audio, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0, length_mismatch="tile"):
+        return commonLazy(Images, a, b, c, d, w, x, y, z) + commonLazy(Audio, a, b, c, d, w, x, y, z)
 
     @classmethod
-    def check_lazy_status(cls, Audio, Images, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
-        tensor_needs = set(commonLazy(Audio, a, b, c, d, w, x, y, z))
-        pooled_needs = set(commonLazy(Images, a, b, c, d, w, x, y, z))
-        return list(tensor_needs.union(pooled_needs))
+    def execute(cls, Images, Audio, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile") -> io.NodeOutput:
 
-    @classmethod
-    def execute(cls, Audio, Images, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
-        ac = a.get_components()
-
-        bc = b.get_components() if b is not None else make_zero_like(ac)
-        cc = c.get_components() if c is not None else make_zero_like(ac)
-        dc = d.get_components() if d is not None else make_zero_like(ac)
-
-        # Process images (permute to B, C, H, W)
-        imgs_a = ac.images.permute(0, 3, 1, 2)
-        imgs_b = bc.images.permute(0, 3, 1, 2)
-        imgs_c = cc.images.permute(0, 3, 1, 2)
-        imgs_d = dc.images.permute(0, 3, 1, 2)
+        ac, bc, cc, dc = prepare_inputs(a,b,c,d)
+        imgs_ae = ac.images
+        imgs_be = bc.images
+        imgs_ce = cc.images
+        imgs_de = dc.images
+        imgs_ae, imgs_be, imgs_ce, imgs_de = normalize_to_common_shape(imgs_ae, imgs_be, imgs_ce, imgs_de, mode=length_mismatch)
 
         img_vars = {
-            "a": imgs_a,
-            "b": imgs_b,
-            "c": imgs_c,
-            "d": imgs_d,
-            "w": w,
-            "x": x,
-            "y": y,
-            "z": z,
-            "X": getIndexTensorAlongDim(imgs_a, 3),
-            "Y": getIndexTensorAlongDim(imgs_a, 2),
-            "B": getIndexTensorAlongDim(imgs_a, 0),
-            "frame": getIndexTensorAlongDim(imgs_a, 0),
-            "C": getIndexTensorAlongDim(imgs_a, 1),
-            "channel": getIndexTensorAlongDim(imgs_a, 1),
-            "W": imgs_a.shape[3],
-            "width": imgs_a.shape[3],
-            "H": imgs_a.shape[2],
-            "height": imgs_a.shape[2],
+            "a": imgs_ae, "b": imgs_be, "c": imgs_ce, "d": imgs_de,
+            "w": w, "x": x, "y": y, "z": z,
+            "B": getIndexTensorAlongDim(imgs_ae, 0),
+            "frame": getIndexTensorAlongDim(imgs_ae, 0),
+            "C": getIndexTensorAlongDim(imgs_ae, 1),
+            "channel": getIndexTensorAlongDim(imgs_ae, 1),
+            "H": imgs_ae.shape[2],
+            "height": imgs_ae.shape[2],
+            "W": imgs_ae.shape[3],
+            "width": imgs_ae.shape[3],
+            "T": imgs_ae.shape[0],
+            "frame_count": imgs_ae.shape[0],
             "R": float(ac.frame_rate),
             "frame_rate": float(ac.frame_rate),
-            "T": imgs_a.shape[0],
-            "frame_count": imgs_a.shape[0],
-            "N": imgs_a.shape[1],
-            "channel_count": imgs_a.shape[1],
-        } | generate_dim_variables(imgs_a)
+            "N": imgs_ae.shape[1],
+            "channel_count": imgs_ae.shape[1],
+        } | generate_dim_variables(imgs_ae)
 
-        result_imgs = eval_tensor_expr(Images, img_vars, imgs_a.shape)
-        result_imgs = result_imgs.permute(0, 2, 3, 1)  # Back to B, H, W, C
+        tree = parse_expr(Images);
+        visitor = UnifiedMathVisitor(img_vars, imgs_ae.shape)
+        result_tensor = visitor.visit(tree)
+        result_imgs = as_tensor(result_tensor, imgs_ae.shape)
 
-        # Process audio
-        audio_a = ac.audio["waveform"]
-        audio_b = bc.audio["waveform"]
-        audio_c = cc.audio["waveform"]
-        audio_d = dc.audio["waveform"]
+        # --- Process Audio ---
+        wav_a = ac.audio["waveform"]
+        sample_rate = ac.audio["sample_rate"]
+        wav_b = bc.audio["waveform"] if bc is not None else None
+        wav_c = cc.audio["waveform"] if cc is not None else None
+        wav_d = dc.audio["waveform"] if dc is not None else None
 
-        audio_vars = {
-            "a": audio_a,
-            "b": audio_b,
-            "c": audio_c,
-            "d": audio_d,
-            "w": w,
-            "x": x,
-            "y": y,
-            "z": z,
-            "B": getIndexTensorAlongDim(audio_a, 0),
-            "batch": getIndexTensorAlongDim(audio_a, 0),
-            "C": getIndexTensorAlongDim(audio_a, 1),
-            "channel": getIndexTensorAlongDim(audio_a, 1),
-            "S": getIndexTensorAlongDim(audio_a, 2),
-            "sample": getIndexTensorAlongDim(audio_a, 2),
-            "R": ac.audio["sample_rate"],
-            "sample_rate": ac.audio["sample_rate"],
-            "T": audio_a.shape[2],
-            "sample_count": audio_a.shape[2],
-            "N": audio_a.shape[1],
-            "channel_count": audio_a.shape[1],
-        } | generate_dim_variables(audio_a)
+        # Determine target_wav_len as max of all provided audio
+        wav_lengths = [wav_a.shape[2]]
+        if bc is not None: wav_lengths.append(wav_b.shape[2])
+        if cc is not None: wav_lengths.append(wav_c.shape[2])
+        if dc is not None: wav_lengths.append(wav_d.shape[2])
+        target_wav_len = max(wav_lengths)
 
-        result_audio = eval_tensor_expr(Audio, audio_vars, audio_a.shape)
+        def resolve_wav(tensor, comp, name):
+            if comp is None:
+                return 0.0
+
+            curr_len = tensor.shape[2]
+            if curr_len == target_wav_len:
+                return tensor
+
+            if length_mismatch == "tile":
+                return tensor.repeat(1, 1, math.ceil(target_wav_len / curr_len))[:, :, :target_wav_len]
+            elif length_mismatch == "pad":
+                out = torch.zeros((tensor.shape[0], tensor.shape[1], target_wav_len), device=tensor.device, dtype=tensor.dtype)
+                out[:, :, :curr_len] = tensor
+                return out
+            else: # error
+                raise ValueError(f"Audio samples mismatch in {name}: expected {target_wav_len} to match longest input, got {curr_len}. Set length_mismatch to 'broadcast' or 'pad' to handle this.")
+
+        wav_ae = resolve_wav(wav_a, True, "input a")
+        wav_be = resolve_wav(wav_b, bc, "input b")
+        wav_ce = resolve_wav(wav_c, cc, "input c")
+        wav_de = resolve_wav(wav_d, dc, "input d")
+
+        wav_ae, wav_be, wav_ce, wav_de = normalize_to_common_shape(wav_ae, wav_be, wav_ce, wav_de, mode=length_mismatch)
+
+        wav_vars = {
+            "a": wav_ae, "b": wav_be, "c": wav_ce, "d": wav_de,
+            "w": w, "x": x, "y": y, "z": z,
+            "B": getIndexTensorAlongDim(wav_ae, 0),
+            "batch": getIndexTensorAlongDim(wav_ae, 0),
+            "C": getIndexTensorAlongDim(wav_ae, 1),
+            "channel": getIndexTensorAlongDim(wav_ae, 1),
+            "S": getIndexTensorAlongDim(wav_ae, 2),
+            "sample": getIndexTensorAlongDim(wav_ae, 2),
+            "R": sample_rate,
+            "sample_rate": sample_rate,
+            "T": wav_ae.shape[2],
+            "sample_count": wav_ae.shape[2],
+            "N": wav_ae.shape[1],
+            "channel_count": wav_ae.shape[1],
+        } | generate_dim_variables(wav_ae)
+
+        tree = parse_expr(Audio);
+        visitor = UnifiedMathVisitor(wav_vars, wav_ae.shape)
+        result_tensor = visitor.visit(tree)
+        result_audio_wav = as_tensor(result_tensor, wav_ae.shape)
 
         output = VideoFromComponents(
             VideoComponents(
-                images=result_imgs,
-                audio={"waveform": result_audio, "sample_rate": ac.audio["sample_rate"]},
-                frame_rate=ac.frame_rate,
-                metadata=ac.metadata,
+                images=result_imgs, audio={"waveform": result_audio_wav, "sample_rate": sample_rate}, frame_rate=ac.frame_rate
             )
         )
+
         return (output,)

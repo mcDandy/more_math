@@ -1,16 +1,16 @@
 from inspect import cleandoc
-import comfy.nested_tensor
 from comfy_api.latest import io
-import torch
 from .helper_functions import (
     generate_dim_variables,
     getIndexTensorAlongDim,
     parse_expr,
-    eval_tensor_expr_with_tree,
-    make_zero_like,
     as_tensor,
+    normalize_to_common_shape,
+    prepare_inputs
 )
 from .helper_functions import commonLazy
+from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+import torch
 
 
 class LatentMathNode(io.ComfyNode):
@@ -49,163 +49,98 @@ class LatentMathNode(io.ComfyNode):
                 io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
                 io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
                 io.String.Input(id="Latent", default="a*(1-w)+b*w", tooltip="Expression to apply on input latents"),
+                io.Combo.Input(
+                    id="length_mismatch",
+                    options=["tile", "error", "pad"],
+                    default="tile",
+                    tooltip="How to handle mismatched latent batch sizes. broadcast: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
+                )
             ],
             outputs=[
                 io.Latent.Output(),
             ],
         )
 
-    # RETURN_NAMES = ("image_output_name",)
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Latent, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+    def check_lazy_status(cls, Latent, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0, length_mismatch="tile"):
         return commonLazy(Latent, a, b, c, d, w, x, y, z)
 
-    # OUTPUT_NODE = False
-    # OUTPUT_TOOLTIPS = ("",) # Tooltips for the output node
     @classmethod
-    def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
-        # Extract raw sample tensors (may be Tensor or NestedTensor)
-        a_in = a["samples"]
-        b_in = None if b is None else b["samples"]
-        c_in = None if c is None else c["samples"]
-        d_in = None if d is None else d["samples"]
+    def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile") -> io.NodeOutput:
+        # TODO: NestedTensor
+        stacked = (
+            (a or {}).get("is_nested") or
+            (b or {}).get("is_nested") or
+            (c or {}).get("is_nested") or
+            (d or {}).get("is_nested")
+        )
+        if stacked:
+            if a is not None and a["is_nested"]:
+                a = [torch.stack(i) for i in a]
+            if b is not None and b["is_nested"]:
+                b = [torch.stack(i) for i in b]
+            if c is not None and c["is_nested"]:
+                c = [torch.stack(i) for i in c]
+            if d is not None and d["is_nested"]:
+                d = [torch.stack(i) for i in d]
+
+
+        a, b, c, d = prepare_inputs(a, b, c, d)
+        at,bt,ct,dt = a["samples"],b["samples"],c["samples"],d["samples"]
+        if(length_mismatch == "error"):
+            max_length = max(at.shape, bt.shape, ct.shape, dt.shape)
+            for tensor, name in zip([at, bt, ct, dt], ["a", "b", "c", "d"]):
+                print(tensor.shape)
+                if tensor.shape not in (1, max_length):
+                    raise ValueError(f"Input '{name}' has length {tensor.shape[0]}, expected {max_length} to match largest input.")
+        ae, be, ce, de = normalize_to_common_shape(at, bt, ct, dt, mode=length_mismatch)
 
         # parse expression once
         tree = parse_expr(Latent)
 
-        def eval_single_tensor(a_t, b_t, c_t, d_t):
-            ndim = a_t.ndim
-            batch_dim = 0
-            channel_dim = -3
-            height_dim = -2
-            width_dim = -1
-            time_dim = None
-            if ndim >= 5:
-                time_dim = -4
+        ndim = ae.ndim
+        batch_dim = 0
+        channel_dim = -3
+        height_dim = -2
+        width_dim = -1
+        time_dim = None
+        if ndim >= 5:
+            time_dim = -4
 
-            B = getIndexTensorAlongDim(a_t, batch_dim)
-            C = getIndexTensorAlongDim(a_t, channel_dim)
-            H = getIndexTensorAlongDim(a_t, height_dim)
-            W = getIndexTensorAlongDim(a_t, width_dim)
+        frame_count = ae.shape[time_dim] if time_dim is not None else ae.shape[batch_dim]
 
-            width_val = a_t.shape[width_dim]
-            height_val = a_t.shape[height_dim]
-            channel_count = a_t.shape[channel_dim]
-            batch_count = a_t.shape[batch_dim]
-            frame_count = a_t.shape[time_dim] if time_dim is not None else a_t.shape[batch_dim]
+        variables = {
+            "a": ae, "b": be, "c": ce, "d": de,
+            "w": w, "x": x, "y": y, "z": z,
+            "X": getIndexTensorAlongDim(ae, width_dim),
+            "Y": getIndexTensorAlongDim(ae, height_dim),
+            "B": getIndexTensorAlongDim(ae, batch_dim),
+            "batch": getIndexTensorAlongDim(ae, batch_dim),
+            "C": getIndexTensorAlongDim(ae, channel_dim),
+            "channel": getIndexTensorAlongDim(ae, channel_dim),
+            "W": ae.shape[width_dim],
+            "width": ae.shape[width_dim],
+            "H": ae.shape[height_dim],
+            "height": ae.shape[height_dim],
+            "T": frame_count,
+            "batch_count": ae.shape[batch_dim],
+            "N": ae.shape[channel_dim],
+            "channel_count": ae.shape[channel_dim],
+        } | generate_dim_variables(ae)
 
-            variables = {
-                "a": a_t,
-                "b": b_t,
-                "c": c_t,
-                "d": d_t,
-                "w": w,
-                "x": x,
-                "y": y,
-                "z": z,
-                "X": W,
-                "Y": H,
-                "B": B,
-                "batch": B,
-                "C": C,
-                "channel": C,
-                "W": width_val,
-                "width": width_val,
-                "H": height_val,
-                "height": height_val,
-                "T": frame_count,
-                "batch_count": batch_count,
-                "N": channel_count,
-                "channel_count": channel_count,
-            } | generate_dim_variables(a_t)
+        if time_dim is not None:
+            F = getIndexTensorAlongDim(ae, time_dim)
+            variables.update({"frame_idx": F, "frame": F, "frame_count": frame_count})
 
-            if time_dim is not None:
-                F = getIndexTensorAlongDim(a_t, time_dim)
-                variables.update({"frame_idx": F, "frame": F, "frame_count": frame_count})
-
-            return as_tensor(eval_tensor_expr_with_tree(tree, variables, a_t.shape), a_t.shape)
-
-        if hasattr(a_in, "is_nested") and getattr(a_in, "is_nested"):
-            a_list = a_in.unbind()
-            sizes = [t.shape[0] for t in a_list]
-            merged_a = torch.cat(a_list, dim=0)
-
-            def merge_to_tensor(val, ref):
-                if val is None:
-                    return make_zero_like(ref)
-                if hasattr(val, "is_nested") and getattr(val, "is_nested"):
-                    lst = val.unbind()
-                    return torch.cat(lst, dim=0)
-                if isinstance(val, (list, tuple)):
-                    return torch.cat(list(val), dim=0)
-                if torch.is_tensor(val):
-                    if val.shape == ref.shape:
-                        return val
-                    try:
-                        if val.shape[0] in sizes and val.shape[1:] == a_list[0].shape[1:]:
-                            return torch.cat([val for _ in a_list], dim=0)
-                    except Exception:
-                        pass
-                    if val.shape[0] == sum(sizes):
-                        return val
-                return make_zero_like(ref)
-
-            merged_b = merge_to_tensor(b_in, merged_a)
-            merged_c = merge_to_tensor(c_in, merged_a)
-            merged_d = merge_to_tensor(d_in, merged_a)
-            merged_result = eval_single_tensor(merged_a, merged_b, merged_c, merged_d)
-
-            split_results = list(merged_result.split(sizes, dim=0))
-            out_samples = comfy.nested_tensor.NestedTensor(split_results)
-
-            return ({"samples": out_samples},)
-
-        def to_tensor(val, ref):
-            if val is None:
-                return make_zero_like(ref)
-            if hasattr(val, "is_nested") and getattr(val, "is_nested"):
-                lst = val.unbind()
-            elif isinstance(val, (list, tuple)):
-                lst = list(val)
-            else:
-                return val
-
-            if len(lst) == 0:
-                return make_zero_like(ref)
-            if len(lst) == 1:
-                return lst[0]
-            try:
-                cat = torch.cat(lst, dim=0)
-                if cat.shape == ref.shape or (cat.shape[0] == ref.shape[0] and cat.shape[1:] == ref.shape[1:]):
-                    return cat
-            except Exception:
-                pass
-            try:
-                stk = torch.stack(lst, dim=0)
-                if stk.shape == ref.shape or (stk.shape[0] == ref.shape[0] and stk.shape[1:] == ref.shape[1:]):
-                    return stk
-            except Exception:
-                pass
-            return lst[0]
-
-        b_single = to_tensor(b_in, a_in)
-        c_single = to_tensor(c_in, a_in)
-        d_single = to_tensor(d_in, a_in)
-
-        result1 = eval_single_tensor(a_in, b_single, c_single, d_single)
-        result = {"samples": result1}
+        visitor = UnifiedMathVisitor(variables, ae.shape)
+        result = visitor.visit(tree)
+        result_t = as_tensor(result, ae.shape)
+        result = a
+        result["samples"]=result_t
+        if stacked:
+            v = torch.split(result,1)
+            result["is_nested"]=True
+            result["samples"]=v
         return (result,)
-
-    """
-        The node will always be re executed if any of the inputs change but
-        this method can be used to force the node to execute again even when the inputs don't change.
-        You can make this node return a number or a string. This value will be compared to the one returned the last time the node was
-        executed, if it is different the node will be executed again.
-        This method is used in the core repo for the LoadImage node where they return the image hash as a string, if the image hash
-        changes between executions the LoadImage node is executed again.
-    """
-    # @classmethod
-    # def IS_CHANGED(s, image, string_field, int_field, float_field, print_to_screen):
-    #    return ""

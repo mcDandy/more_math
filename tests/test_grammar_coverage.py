@@ -6,7 +6,8 @@ import os
 # Add parent dir to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from more_math.helper_functions import eval_tensor_expr, eval_float_expr
+from more_math.helper_functions import parse_expr
+from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
 
 def test_all_functions():
@@ -19,16 +20,24 @@ def test_all_functions():
     variables = {"a": a_val, "b": b_val, "ta": tensor_a, "tb": tensor_b, "x": 0.5, "y": 1.0, "z": 2.0}
 
     # helper for assertions
+    def eval_tensor_expr(expr,var,shape):
+        tree = parse_expr(expr);
+        visitor = UnifiedMathVisitor(var, shape)
+        return visitor.visit(tree)
+
     def check(expr, expected_scalar=None, vars=variables):
         # Test scalar
-        res_s = eval_float_expr(expr, vars)
+
+        tree = parse_expr(expr);
+        visitor = UnifiedMathVisitor(vars, (3,))
+        res_s = visitor.visit(tree)
         if expected_scalar is not None:
             if isinstance(res_s, (int, float)):
                 assert abs(res_s - expected_scalar) < 1e-4, f"Scalar {expr} failed: {res_s} != {expected_scalar}"
             # if expected is tensor we check differently
 
         # Test tensor
-        res_t = eval_tensor_expr(expr, vars, (3,))
+        res_t = visitor.visit(tree)
         assert torch.is_tensor(res_t) or isinstance(res_t, (list, int, float))
         return res_s, res_t
 

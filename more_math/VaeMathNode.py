@@ -26,6 +26,12 @@ class VAEMathNode(io.ComfyNode):
                 io.Float.Input(id="y", default=0.0, lazy=True, optional=True, force_input=True),
                 io.Float.Input(id="z", default=0.0, lazy=True, optional=True, force_input=True),
                 io.String.Input(id="Model", default="a*(1-w)+b*w", tooltip="Expression to apply on weights"),
+                io.Combo.Input(
+                    id="length_mismatch",
+                    options=["broadcast", "passthrough", "pad"],
+                    default="broadcast",
+                    tooltip="How to handle mismatched layer counts. For models, this usually defaults to broadcast (zero for missing layers)."
+                )
             ],
             outputs=[
                 io.Vae.Output(),
@@ -35,11 +41,11 @@ class VAEMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Model, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+    def check_lazy_status(cls, Model, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0, length_mismatch="broadcast"):
         return commonLazy(Model, a, b, c, d, w, x, y, z)
 
     @classmethod
-    def execute(cls, Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0) -> io.NodeOutput:
+    def execute(cls, Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="broadcast") -> io.NodeOutput:
         patcher_a = a.patcher
         patcher_b = b.patcher if b else None
         patcher_c = c.patcher if c else None

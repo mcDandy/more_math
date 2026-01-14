@@ -1,6 +1,9 @@
 from inspect import cleandoc
 
-from .helper_functions import commonLazy, eval_float_expr
+from .LatentMathNode import parse_expr
+from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+
+from .helper_functions import commonLazy
 from comfy_api.latest import io
 
 
@@ -45,11 +48,20 @@ class FloatMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, FloatFunc, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0):
+    def check_lazy_status(cls, FloatFunc, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0,):
         return commonLazy(FloatFunc, a, b, c, d, w, x, y, z)
 
     @classmethod
     def execute(cls, FloatFunc, a, b=0.0, c=0.0, d=0.0, w=0.0, x=0.0, y=0.0, z=0.0):
-        variables = {"a": a, "b": b, "c": c, "d": d, "w": w, "x": x, "y": y, "z": z}
-        result = eval_float_expr(FloatFunc, variables)
+
+        variables = {
+            "a": a,
+            "b": b,
+            "c": c,
+            "d": d,
+            "w": w, "x": x, "y": y, "z": z
+        }
+        tree = parse_expr(FloatFunc);
+        visitor = UnifiedMathVisitor(variables, [1])
+        result = visitor.visit(tree)
         return (result,)

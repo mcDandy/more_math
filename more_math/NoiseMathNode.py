@@ -7,11 +7,11 @@ from .helper_functions import (
     getIndexTensorAlongDim,
     commonLazy,
     parse_expr,
-    eval_tensor_expr_with_tree,
     make_zero_like,
     as_tensor,
 )
 
+from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 
 import comfy.nested_tensor as _nested_tensor_module
@@ -104,32 +104,11 @@ class NoiseExecutor:
 
     def generate_noise(self, input_latent: torch.Tensor) -> torch.Tensor:
         samples = input_latent["samples"]
-
+        merged_result=None
         a_val = self.a.generate_noise(input_latent) if self.a is not None else make_zero_like(samples)
         b_val = self.b.generate_noise(input_latent) if self.b is not None else make_zero_like(samples)
         c_val = self.c.generate_noise(input_latent) if self.c is not None else make_zero_like(samples)
         d_val = self.d.generate_noise(input_latent) if self.d is not None else make_zero_like(samples)
-
-        # helper to convert a returned value into a list matching ref_list
-        def to_list(val, ref_list):
-            if val is None:
-                return [make_zero_like(r) for r in ref_list]
-            # If val is a NestedTensor-like, return underlying list
-            if hasattr(val, "is_nested") and getattr(val, "is_nested"):
-                return val.unbind()
-            if isinstance(val, list) or isinstance(val, tuple):
-                return list(val)
-            # If val is a single tensor that encodes multiple subtensors along batch dim,
-            # try to split it into pieces that match ref_list batch sizes.
-            if torch.is_tensor(val):
-                try:
-                    sizes = [r.shape[0] for r in ref_list]
-                    if val.shape[0] == sum(sizes):
-                        return list(val.split(sizes, dim=0))
-                except Exception:
-                    pass
-            # single tensor broadcast
-            return [val for _ in ref_list]
 
         # nested case: merge subtensors, evaluate once, split back
         if hasattr(samples, "is_nested") and getattr(samples, "is_nested"):
@@ -218,8 +197,10 @@ class NoiseExecutor:
         if time_dim is not None:
             F = getIndexTensorAlongDim(merged_samples, time_dim)
             variables.update({"frame": F, "frame_count": frame_count})
-
-        merged_result = as_tensor(eval_tensor_expr_with_tree(self.tree, variables, variables["a"].shape), variables["a"].shape)
+        tree = parse_expr(self.expr);
+        visitor = UnifiedMathVisitor(variables, merged_samples.shape)
+        result_tensor = visitor.visit(tree)
+        merged_result = as_tensor(result_tensor, variables["a"].shape)
 
         if hasattr(samples, "is_nested") and getattr(samples, "is_nested"):
             split_results = list(merged_result.split(sizes, dim=0))

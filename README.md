@@ -104,7 +104,7 @@ You can also get the node from comfy manager under the name of More math.
 - `cossim(a, b)`: Computes cosine similarity between a and b along last dimension.
 - `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
 - `cov(x, y)`: Compute covariance between x and y.
-- `sort(x)`: Sorts elements in ascending order.
+- `sort(x)`: Sorts elements in ascending order along the last dimension.
 
 ### Advanced Tensor Operations (Tensor Only)
 

@@ -35,7 +35,7 @@ You can also get the node from comfy manager under the name of More math.
   - You can &lt;operator&gt; batched tensor with another tensor which is not batched (dim[0] = 1) - the non batched tensor will be duplicated along batch dimension
   - In imageMath node you can use 3 element list to specify a color of image. You cannot use any imput tensor, doing so will result in behaviour in subpoint 1 in list
 - **Length Mismatch Handling**: All math nodes (except Model, Clip, Vae which default to broadcast) include a `length_mismatch` option to handle inputs with different batch sizes, sample counts, or list lengths. The target length is determined by the **maximum length** among all provided inputs (`a`, `b`, `c`, `d`).
-  - `tile` (Default): Repeats shorter inputs (e.g., using modulo) to match the maximum length.
+  - `tile` (Default): Repeats shorter inputs to match the maximum length.
   - `error`: Raises a `ValueError` if any input lengths differ. This helps identify unintentional mismatches that should be handled explicitly.
   - `pad`: Shorter inputs are padded with zeros to match the maximum length.
 
@@ -101,6 +101,10 @@ You can also get the node from comfy manager under the name of More math.
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
 - `snorm(x)`: The same as |x| for tensors.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
+- `cossim(a, b)`: Computes cosine similarity between a and b along last dimension.
+- `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
+- `cov(x, y)`: Compute covariance between x and y.
+- `sort(x)`: Sorts elements in ascending order.
 
 ### Advanced Tensor Operations (Tensor Only)
 

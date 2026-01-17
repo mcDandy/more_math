@@ -88,7 +88,8 @@ func1:
 	| SUM LPAREN expr RPAREN			# SumFunc
 	| MEAN LPAREN expr RPAREN			# MeanFunc
 	| STD LPAREN expr RPAREN			# StdFunc
-	| VAR LPAREN expr RPAREN			# VarFunc;
+	| VAR LPAREN expr RPAREN			# VarFunc
+	| SORT LPAREN expr RPAREN			# SortFunc;
 
 // Two-argument functions Two-argument functions
 func2:
@@ -102,7 +103,11 @@ func2:
 	| QUARTILE LPAREN expr COMMA expr RPAREN	# QuartileFunc
 	| PERCENTILE LPAREN expr COMMA expr RPAREN	# PercentileFunc
 	| QUANTILE LPAREN expr COMMA expr RPAREN	# QuantileFunc
-	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc;
+	| QUANTILE LPAREN expr COMMA expr RPAREN	# QuantileFunc
+	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
+	| COSSIM LPAREN expr COMMA expr RPAREN		# CossimFunc
+	| FLIP LPAREN expr COMMA expr RPAREN		# FlipFunc
+	| COV LPAREN expr COMMA expr RPAREN			# CovFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -189,6 +194,11 @@ PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
+
+COSSIM: 'cossim';
+FLIP: 'flip';
+COV: 'cov';
+SORT: 'sort';
 
 PLUS: '+';
 MINUS: '-';

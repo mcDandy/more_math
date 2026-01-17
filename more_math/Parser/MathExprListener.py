@@ -656,6 +656,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#SortFunc.
+    def enterSortFunc(self, ctx:MathExprParser.SortFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SortFunc.
+    def exitSortFunc(self, ctx:MathExprParser.SortFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -752,6 +761,33 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#DotFunc.
     def exitDotFunc(self, ctx:MathExprParser.DotFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CossimFunc.
+    def enterCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CossimFunc.
+    def exitCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlipFunc.
+    def enterFlipFunc(self, ctx:MathExprParser.FlipFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlipFunc.
+    def exitFlipFunc(self, ctx:MathExprParser.FlipFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CovFunc.
+    def enterCovFunc(self, ctx:MathExprParser.CovFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CovFunc.
+    def exitCovFunc(self, ctx:MathExprParser.CovFuncContext):
         pass
 
 

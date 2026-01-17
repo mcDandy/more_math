@@ -775,6 +775,49 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a),k,torch.pow,pow)).item()/x.numel()
 
+    def visitSortFunc(self, ctx):
+        val = self._promote_to_tensor(self.visit(ctx.expr()))
+        sorted_val, _ = torch.sort(val)
+        return sorted_val
+
+    def visitCossimFunc(self, ctx):
+        a = self._promote_to_tensor(self.visit(ctx.expr(0))).float()
+        b = self._promote_to_tensor(self.visit(ctx.expr(1))).float()
+        return F.cosine_similarity(a, b, dim=-1)
+
+    def visitFlipFunc(self, ctx):
+        val = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        dims = self.visit(ctx.expr(1))
+        
+        if self._is_list(dims):
+            dims_tuple = tuple(int(x) for x in dims)
+        elif self._is_tensor(dims):
+            dims_tuple = tuple(dims.long().flatten().tolist())
+        else:
+            dims_tuple = (int(dims),)
+            
+        return torch.flip(val, dims_tuple)
+
+    def visitCovFunc(self, ctx):
+        x = self._promote_to_tensor(self.visit(ctx.expr(0))).float()
+        y = self._promote_to_tensor(self.visit(ctx.expr(1))).float()
+        
+        x_flat = x.flatten()
+        y_flat = y.flatten()
+        
+        if x_flat.numel() != y_flat.numel():
+            raise ValueError("x and y must have the same number of elements")
+
+        n = x_flat.numel()
+        if n < 2:
+            return torch.tensor(0.0, device=self.device)
+            
+        x_mean = torch.mean(x_flat)
+        y_mean = torch.mean(y_flat)
+        
+        sum_sq_diff = torch.sum((x_flat - x_mean) * (y_flat - y_mean)).item()
+        return sum_sq_diff / (n - 1)
+
     def visitMapFunc(self, ctx):
         tensor = self._promote_to_tensor(self.visit(ctx.expr(0)))
         coords = [self._promote_to_tensor(self.visit(ctx.expr(i))) for i in range(1, len(ctx.expr()))]

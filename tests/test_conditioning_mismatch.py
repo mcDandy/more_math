@@ -15,10 +15,10 @@ def test_conditioning_token_mismatch_padding():
     # a + b -> result should have 154 tokens
     # tokens 0-76: 1 + 0.5 = 1.5
     # tokens 77-153: 0 + 0.5 = 0.5
-    result = ConditioningMathNode.execute("a + b", "a + b", ca, b=cb, length_mismatch="pad")
+    result, = ConditioningMathNode.execute("a + b", "a + b", ca, b=cb, length_mismatch="pad")
 
-    res_tensor = result[0]
-    res_dict = result[1]["pooled_output"]
+    res_tensor = result[0][0]
+    res_dict = result[0][1]["pooled_output"]
     assert res_tensor.shape == (1, 154, 1024)
     assert torch.allclose(res_tensor[0, :77, :], torch.full((77, 1024), 1.5))
     assert torch.allclose(res_tensor[0, 77:, :], torch.full((77, 1024), 0.5))

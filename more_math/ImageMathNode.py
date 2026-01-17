@@ -51,13 +51,13 @@ class ImageMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, Image, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile"):
         ae, be, ce, de = prepare_inputs(a, b, c, d)
+        print(f"DEBUG: shapes {ae.shape[0]}, {be.shape[0]}, {ce.shape[0]}, {de.shape[0]}")
 
         if(length_mismatch == "error"):
-            max_length = max(ae.shape, be.shape, ce.shape, de.shape)
+            max_length = max(ae.shape[0], be.shape[0], ce.shape[0], de.shape[0])
             for tensor, name in zip([ae, be, ce, de], ["a", "b", "c", "d"]):
-                print(tensor.shape)
-                if tensor.shape not in (1, max_length):
-                    raise ValueError(f"Input '{name}' has length {tensor.shape[0]}, expected {max_length} to match largest input.")
+                if tensor.shape[0] != max_length:
+                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
         ae, be, ce, de = normalize_to_common_shape(ae, be, ce, de, mode=length_mismatch)
 
         variables = {

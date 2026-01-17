@@ -58,40 +58,50 @@ class ConditioningMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, Tensor, pooled_output, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile"):
         # Default missing conditionings to zero
-        ta, tb, tc, td = prepare_inputs(a, b, c, d)
-        da=db=dc=dd=None
-        output_cond = a
-        if len(a)>1: da,db,dc,dd = a[1]["pooled_output"], b[1]["pooled_output"] if b else None, c[1]["pooled_output"] if c else None, d[1]["pooled_output"] if d else None
-        ta, tb, tc, td = normalize_to_common_shape(ta[0][0], tb[0][0], tc[0][0], td[0][0], mode=length_mismatch)
-        B_val = getIndexTensorAlongDim(ta[0][0], 0)
+        a_c, b_c, c_c, d_c = prepare_inputs(a, b, c, d)
+
+        # We process the first segment of each conditioning
+        ta_full, da = a_c[0]
+        tb_full, db = b_c[0]
+        tc_full, dc = c_c[0]
+        td_full, dd = d_c[0]
+
+        ta, tb, tc, td = normalize_to_common_shape(ta_full, tb_full, tc_full, td_full, mode=length_mismatch)
+
+        B_val = getIndexTensorAlongDim(ta, 0)
         variables = {
             "a": ta, "b": tb, "c": tc, "d": td, "w": w, "x": x, "y": y, "z": z,
             "B": B_val, "batch": B_val,
             "T": ta.shape[0], "batch_count": ta.shape[0],
             "N": ta.shape[1], "channel_count": ta.shape[1],
         } | generate_dim_variables(ta)
-        tree = parse_expr(Tensor);
+
+        tree = parse_expr(Tensor)
         visitor = UnifiedMathVisitor(variables, ta.shape)
-        result = visitor.visit(tree)
-        result_tensor = as_tensor(result, ta.shape)
-        if(da is not None):
-            new_dict = da.copy()
-            pa = da.get("pooled_output")
-            if pa is not None:
-                pb = db.get("pooled_output")
-                pc = dc.get("pooled_output")
-                pd = dd.get("pooled_output")
-                pb = pb if pb is not None else torch.zeros_like(pa)
-                pc = pc if pc is not None else torch.zeros_like(pa)
-                pd = pd if pd is not None else torch.zeros_like(pa)
+        result_tensor = as_tensor(visitor.visit(tree), ta.shape)
 
-                pa, pb, pc, pd = normalize_to_common_shape(pa, pb, pc, pd, mode=length_mismatch)
+        new_dict = da.copy()
+        pa = da.get("pooled_output")
+        if pa is not None:
+            pb = db.get("pooled_output")
+            pc = dc.get("pooled_output")
+            pd = dd.get("pooled_output")
 
-                variables_pooled = {"a": pa, "b": pb, "c": pc, "d": pd, "w": w, "x": x, "y": y, "z": z} | generate_dim_variables(pa)
-                tree = parse_expr(pooled_output);
-                visitor = UnifiedMathVisitor(variables_pooled, pa.shape)
-                result_pooled = visitor.visit(tree)
-                new_dict["pooled_output"] = result_pooled
-                output_cond[1]["pooled_output"] = new_dict
-        output_cond[0][0] = result_tensor
+            pb = pb if pb is not None else torch.zeros_like(pa)
+            pc = pc if pc is not None else torch.zeros_like(pa)
+            pd = pd if pd is not None else torch.zeros_like(pa)
+
+            pa, pb, pc, pd = normalize_to_common_shape(pa, pb, pc, pd, mode=length_mismatch)
+
+            variables_pooled = {"a": pa, "b": pb, "c": pc, "d": pd, "w": w, "x": x, "y": y, "z": z} | generate_dim_variables(pa)
+            tree_p = parse_expr(pooled_output)
+            visitor_p = UnifiedMathVisitor(variables_pooled, pa.shape)
+            result_pooled = as_tensor(visitor_p.visit(tree_p), pa.shape)
+            new_dict["pooled_output"] = result_pooled
+
+        # Create new conditioning list
+        output_cond = [(result_tensor, new_dict)]
+        if len(a) > 1:
+            output_cond.extend(a[1:])
+
         return (output_cond,)

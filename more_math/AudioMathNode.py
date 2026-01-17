@@ -60,12 +60,17 @@ class AudioMathNode(io.ComfyNode):
         cv = None if c is None else c["waveform"]
         dv = None if d is None else d["waveform"]
 
+        print(f"DEBUG: EXECUTE mismatch='{length_mismatch}' shapes av={av.shape[2]} bv={bv.shape[2] if bv is not None else 'N'} cv={cv.shape[2] if cv is not None else 'N'} dv={dv.shape[2] if dv is not None else 'N'}", flush=True)
+
         if(length_mismatch == "error"):
-            max_length = max(av.shape, bv.shape, cv.shape, dv.shape)
+            # For audio, we check the length dimension (last one) as well as batch
+            tensors_to_check = [t for t in [av, bv, cv, dv] if t is not None]
+            max_batch = max(t.shape[0] for t in tensors_to_check)
+            max_len = max(t.shape[-1] for t in tensors_to_check)
             for tensor, name in zip([av, bv, cv, dv], ["a", "b", "c", "d"]):
-                print(tensor.shape)
-                if tensor.shape not in (1, max_length):
-                    raise ValueError(f"Input '{name}' has length {tensor.shape[0]}, expected {max_length} to match largest input.")
+                if tensor is not None:
+                    if tensor.shape[0] != max_batch or tensor.shape[-1] != max_len:
+                        raise ValueError(f"Input '{name}' has shape ({tensor.shape[0]}, {tensor.shape[-1]}), expected ({max_batch}, {max_len}) to match largest input.")
         ae, be, ce, de = normalize_to_common_shape(av, bv, cv, dv, mode=length_mismatch)
 
         variables = {

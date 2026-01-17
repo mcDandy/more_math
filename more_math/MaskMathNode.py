@@ -55,11 +55,10 @@ class MaskMathNode(io.ComfyNode):
         a, b, c, d = prepare_inputs(a, b, c, d)
 
         if(length_mismatch == "error"):
-            max_length = max(a.shape, b.shape, c.shape, d.shape)
+            max_length = max(a.shape[0], b.shape[0], c.shape[0], d.shape[0])
             for tensor, name in zip([a, b, c, d], ["a", "b", "c", "d"]):
-                print(tensor.shape)
-                if tensor.shape not in (1, max_length):
-                    raise ValueError(f"Input '{name}' has length {tensor.shape[0]}, expected {max_length} to match largest input.")
+                if tensor.shape[0] != max_length:
+                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
         ae, be, ce, de = normalize_to_common_shape(a, b, c, d, mode=length_mismatch)
 
         variables = {

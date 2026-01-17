@@ -104,9 +104,14 @@ def make_zero_like(ref):
     # Audio or Latent: dict
     if isinstance(ref, dict):
         if "waveform" in ref:  # Audio
-            return {"waveform": torch.zeros_like(ref["waveform"]), "sample_rate": ref["sample_rate"]}
+            return {"waveform": make_zero_like(ref["waveform"]), "sample_rate": ref["sample_rate"]}
         if "samples" in ref:  # Latent
-            return {"samples": torch.zeros_like(ref["samples"])}
+            return {"samples": make_zero_like(ref["samples"])}
+
+    # NestedTensor
+    if getattr(ref, "is_nested", False):
+        from comfy.nested_tensor import NestedTensor
+        return NestedTensor([torch.zeros_like(t) for t in ref.tensors])
 
     # VideoComponents or other objects with images/audio attributes
     if hasattr(ref, "images") and hasattr(ref, "audio"):

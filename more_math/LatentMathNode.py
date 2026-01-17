@@ -69,32 +69,43 @@ class LatentMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, Latent, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile") -> io.NodeOutput:
-        # TODO: NestedTensor
-        stacked = (
-            (a or {}).get("is_nested") or
-            (b or {}).get("is_nested") or
-            (c or {}).get("is_nested") or
-            (d or {}).get("is_nested")
-        )
+        # Identify if any input is a NestedTensor and track original sizes for restoration
+        stacked = False
+        orig_split_sizes = None
+
+        for item in [a, b, c, d]:
+            if item is not None:
+                samples = item.get("samples")
+                if getattr(samples, "is_nested", False):
+                    stacked = True
+                    # Store original split sizes (batch dimension)
+                    orig_split_sizes = [t.shape[0] for t in samples.tensors]
+                    break
+
         if stacked:
-            if a is not None and a["is_nested"]:
-                a = [torch.stack(i) for i in a]
-            if b is not None and b["is_nested"]:
-                b = [torch.stack(i) for i in b]
-            if c is not None and c["is_nested"]:
-                c = [torch.stack(i) for i in c]
-            if d is not None and d["is_nested"]:
-                d = [torch.stack(i) for i in d]
+            if a is not None and getattr(a.get("samples"), "is_nested", False):
+                a = a.copy()
+                a["samples"] = torch.cat(a["samples"].tensors, dim=0)
+            if b is not None and getattr(b.get("samples"), "is_nested", False):
+                b = b.copy()
+                b["samples"] = torch.cat(b["samples"].tensors, dim=0)
+            if c is not None and getattr(c.get("samples"), "is_nested", False):
+                c = c.copy()
+                c["samples"] = torch.cat(c["samples"].tensors, dim=0)
+            if d is not None and getattr(d.get("samples"), "is_nested", False):
+                d = d.copy()
+                d["samples"] = torch.cat(d["samples"].tensors, dim=0)
 
-
-        a, b, c, d = prepare_inputs(a, b, c, d)
-        at,bt,ct,dt = a["samples"],b["samples"],c["samples"],d["samples"]
+        a_c, b_c, c_c, d_c = prepare_inputs(a, b, c, d)
+        at,bt,ct,dt = a_c["samples"],b_c["samples"],c_c["samples"],d_c["samples"]
         if(length_mismatch == "error"):
-            max_length = max(at.shape, bt.shape, ct.shape, dt.shape)
+            # Check only available tensors
+            tensors_to_check = [t for t in [at, bt, ct, dt] if t is not None]
+            max_length = max(t.shape[0] for t in tensors_to_check)
             for tensor, name in zip([at, bt, ct, dt], ["a", "b", "c", "d"]):
-                print(tensor.shape)
-                if tensor.shape not in (1, max_length):
-                    raise ValueError(f"Input '{name}' has length {tensor.shape[0]}, expected {max_length} to match largest input.")
+                if tensor is not None:
+                    if tensor.shape[0] != max_length:
+                        raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
         ae, be, ce, de = normalize_to_common_shape(at, bt, ct, dt, mode=length_mismatch)
 
         # parse expression once
@@ -135,12 +146,14 @@ class LatentMathNode(io.ComfyNode):
             variables.update({"frame_idx": F, "frame": F, "frame_count": frame_count})
 
         visitor = UnifiedMathVisitor(variables, ae.shape)
-        result = visitor.visit(tree)
-        result_t = as_tensor(result, ae.shape)
-        result = a
-        result["samples"]=result_t
-        if stacked:
-            v = torch.split(result,1)
-            result["is_nested"]=True
-            result["samples"]=v
-        return (result,)
+        result_t = as_tensor(visitor.visit(tree), ae.shape)
+
+        result_latent = a_c.copy()
+        if stacked and orig_split_sizes is not None:
+            from comfy.nested_tensor import NestedTensor
+            # Restore original split sizes
+            result_latent["samples"] = NestedTensor(torch.split(result_t, orig_split_sizes, dim=0))
+        else:
+            result_latent["samples"] = result_t
+
+        return (result_latent,)

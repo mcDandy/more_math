@@ -788,33 +788,33 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitFlipFunc(self, ctx):
         val = self._promote_to_tensor(self.visit(ctx.expr(0)))
         dims = self.visit(ctx.expr(1))
-        
+
         if self._is_list(dims):
             dims_tuple = tuple(int(x) for x in dims)
         elif self._is_tensor(dims):
             dims_tuple = tuple(dims.long().flatten().tolist())
         else:
             dims_tuple = (int(dims),)
-            
+
         return torch.flip(val, dims_tuple)
 
     def visitCovFunc(self, ctx):
         x = self._promote_to_tensor(self.visit(ctx.expr(0))).float()
         y = self._promote_to_tensor(self.visit(ctx.expr(1))).float()
-        
+
         x_flat = x.flatten()
         y_flat = y.flatten()
-        
+
         if x_flat.numel() != y_flat.numel():
             raise ValueError("x and y must have the same number of elements")
 
         n = x_flat.numel()
         if n < 2:
             return torch.tensor(0.0, device=self.device)
-            
+
         x_mean = torch.mean(x_flat)
         y_mean = torch.mean(y_flat)
-        
+
         sum_sq_diff = torch.sum((x_flat - x_mean) * (y_flat - y_mean)).item()
         return sum_sq_diff / (n - 1)
 

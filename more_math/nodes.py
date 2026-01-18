@@ -1,3 +1,4 @@
+from .SigmasMathNode import SigmasMathNode
 from .NoiseMathNode import NoiseMathNode
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
@@ -87,6 +88,7 @@ class MoreMathExtension(ComfyExtension):
             VideoMathNode,
             AudioToSpectrogram,
             SpectrogramToAudio,
+            SigmasMathNode
         ]
 
 

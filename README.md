@@ -105,6 +105,7 @@ You can also get the node from comfy manager under the name of More math.
 - `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
 - `cov(x, y)`: Compute covariance between x and y.
 - `sort(x)`: Sorts elements in ascending order along the last dimension.
+- `append(a, b)`: Appends `b` to `a`. If inputs are lists, it concatenates them. If inputs are tensors, it concatenates them along dim 0.
 
 ### Advanced Tensor Operations (Tensor Only)
 

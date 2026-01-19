@@ -1043,6 +1043,18 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return result.reshape(*batch_shape, in_channels, *spatial_shape)
 
+    def visitAppendFunc(self, ctx):
+        a = self.visit(ctx.expr(0))
+        b = self.visit(ctx.expr(1))
+
+        if self._is_tensor(a) or self._is_tensor(b):
+            a = self._promote_to_tensor(a)
+            b = self._promote_to_tensor(b)
+            return torch.cat((a, b), dim=0)
+        if not self._is_list(a): a = [a]
+        if not self._is_list(b): b = [b]
+        return a + b
+
     def visitStart(self, ctx):
         # Visit all statements (function definitions)
         if ctx.funcDef():

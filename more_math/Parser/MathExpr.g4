@@ -117,7 +117,8 @@ func2:
 	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
 	| COSSIM LPAREN expr COMMA expr RPAREN		# CossimFunc
 	| FLIP LPAREN expr COMMA expr RPAREN		# FlipFunc
-	| COV LPAREN expr COMMA expr RPAREN			# CovFunc;
+	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
+	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -209,6 +210,7 @@ COSSIM: 'cossim';
 FLIP: 'flip';
 COV: 'cov';
 SORT: 'sort';
+APPEND: 'append';
 
 PLUS: '+';
 MINUS: '-';

@@ -469,6 +469,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#AppendFunc.
+    def visitAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)

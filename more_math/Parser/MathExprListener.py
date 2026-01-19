@@ -8,6 +8,33 @@ else:
 # This class defines a complete listener for a parse tree produced by MathExprParser.
 class MathExprListener(ParseTreeListener):
 
+    # Enter a parse tree produced by MathExprParser#start.
+    def enterStart(self, ctx:MathExprParser.StartContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#start.
+    def exitStart(self, ctx:MathExprParser.StartContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FunctionDef.
+    def enterFunctionDef(self, ctx:MathExprParser.FunctionDefContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FunctionDef.
+    def exitFunctionDef(self, ctx:MathExprParser.FunctionDefContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#paramList.
+    def enterParamList(self, ctx:MathExprParser.ParamListContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#paramList.
+    def exitParamList(self, ctx:MathExprParser.ParamListContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#expr.
     def enterExpr(self, ctx:MathExprParser.ExprContext):
         pass
@@ -302,6 +329,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ListExp.
     def exitListExp(self, ctx:MathExprParser.ListExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CallExp.
+    def enterCallExp(self, ctx:MathExprParser.CallExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CallExp.
+    def exitCallExp(self, ctx:MathExprParser.CallExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#exprList.
+    def enterExprList(self, ctx:MathExprParser.ExprListContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#exprList.
+    def exitExprList(self, ctx:MathExprParser.ExprListContext):
         pass
 
 

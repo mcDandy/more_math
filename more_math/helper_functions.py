@@ -29,7 +29,7 @@ def parse_expr(expr: str):
     stream = CommonTokenStream(lexer)
     parser = MathExprParser(stream)
     parser.addErrorListener(ThrowingErrorListener())
-    return parser.expr()
+    return parser.start()
 
 
 def getIndexTensorAlongDim(tensor, dim):

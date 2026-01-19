@@ -21,7 +21,7 @@ def parse_and_visit(expr_str, variables):
     lexer = MathExprLexer(InputStream(expr_str))
     stream = CommonTokenStream(lexer)
     parser = MathExprParser(stream)
-    tree = parser.expr()
+    tree = parser.start()
 
     # We might need to pass shape/device if UnifiedMathVisitor requires it for tensor creation
     # For now assuming it can infer or defaults.
@@ -291,6 +291,36 @@ def test_percentile():
     assert parse_and_visit("prcnt(l, 50)", vars) == 5.0
 
 
+def test_custom_functions():
+    vars = {}
+
+    # 1. Simple function definition and call
+    # f(x) -> x + 1; f(10)
+    expr1 = "f(x) -> x + 1; f(10)"
+    assert parse_and_visit(expr1, vars) == 11.0
+
+    # 2. Multi-arg function
+    # add(a, b) -> a + b; add(3, 4)
+    expr2 = "add(a, b) -> a + b; add(3, 4)"
+    assert parse_and_visit(expr2, vars) == 7.0
+
+    # 3. Function reusing other functions (simulated by defining in same block)
+    # sq(x) -> x * x; sumsq(a, b) -> sq(a) + sq(b); sumsq(3, 4)
+    expr3 = "sq(x) -> x * x; sumsq(a, b) -> sq(a) + sq(b); sumsq(3, 4)"
+    assert parse_and_visit(expr3, vars) == 25.0
+
+    # 4. Global variable access & Shadowing
+    # x = 10 (global)
+    # f(x) -> x * 2; f(5) -> should be 10, not 20
+    vars = {"x": 10.0}
+    expr4 = "f(x) -> x * 2; f(5)"
+    assert parse_and_visit(expr4, vars) == 10.0
+
+    # f(y) -> x + y; f(5) -> global x(10) + param y(5) = 15
+    expr5 = "f(y) -> x + y; f(5)"
+    assert parse_and_visit(expr5, vars) == 15.0
+
+
 if __name__ == "__main__":
     try:
         test_scalar_ops()
@@ -305,7 +335,9 @@ if __name__ == "__main__":
         test_topk()
         test_botk()
         test_pinv()
+        test_pinv()
         test_quartil()
+        test_custom_functions()
         print("All UnifiedMathVisitor tests passed!")
     except Exception:
         import traceback

@@ -21,6 +21,7 @@ You can also get the node from comfy manager under the name of More math.
 - Conversion between INT and FLOAT; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
 - Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE and SIGMAS
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
+- Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work.
 
 ## Operators
 

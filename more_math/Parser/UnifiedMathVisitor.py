@@ -6,7 +6,7 @@ from ..helper_functions import generate_dim_variables
 
 
 class UnifiedMathVisitor(MathExprVisitor):
-    def __init__(self, variables, shape=None, device=None):
+    def __init__(self, variables, shape=None, device=None, functions=None):
         self.variables = variables
         self.spatial_variables = variables.copy()
         self.shape = shape if shape is not None else ()
@@ -14,6 +14,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             self.device = next((v.device for v in variables.values() if isinstance(v, torch.Tensor)), torch.device("cpu"))
         else:
             self.device = device
+        self.functions = functions if functions is not None else {}
 
     def _is_tensor(self, val):
         return isinstance(val, torch.Tensor)
@@ -1041,3 +1042,51 @@ class UnifiedMathVisitor(MathExprVisitor):
         result = self._apply_conv_internal(conv_input, kernel_val, kernel_sizes, spatial_dims_count)
 
         return result.reshape(*batch_shape, in_channels, *spatial_shape)
+
+    def visitStart(self, ctx):
+        # Visit all statements (function definitions)
+        if ctx.funcDef():
+            for i in range(len(ctx.funcDef())):
+                self.visit(ctx.funcDef(i))
+
+        return self.visit(ctx.expr())
+
+
+    def visitFunctionDef(self, ctx):
+        func_name = ctx.VARIABLE().getText()
+        params = []
+        if ctx.paramList():
+            params = [node.getText() for node in ctx.paramList().VARIABLE()]
+
+        self.functions[func_name] = {
+            "params": params,
+            "body": ctx.expr()
+        }
+        return None
+
+    def visitCallExp(self, ctx):
+        func_name = ctx.VARIABLE().getText()
+
+        # Check if it is a user-defined function
+        if func_name in self.functions:
+            func_def = self.functions[func_name]
+            params = func_def["params"]
+
+            # Evaluate arguments
+            args = []
+            if ctx.exprList():
+                args = [self.visit(e) for e in ctx.exprList().expr()]
+
+            if len(args) != len(params):
+                raise ValueError(f"Function '{func_name}' expects {len(params)} arguments, got {len(args)}")
+
+            # Create a new scope for function execution
+            new_vars = self.variables.copy()
+            for param, arg in zip(params, args):
+                new_vars[param] = arg
+
+            # Create a new visitor to execute the function body in the new scope - easier than managing stack of variables and call stack
+            visitor = UnifiedMathVisitor(new_vars, self.shape, self.device, self.functions)
+            return visitor.visit(func_def["body"])
+
+        raise ValueError(f"Unknown function: {func_name}")

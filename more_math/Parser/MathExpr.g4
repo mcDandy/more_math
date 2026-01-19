@@ -1,6 +1,13 @@
 grammar MathExpr;
 
-// Top-level expression, with operator precedence (lowest to highest)
+// Top-level entry point
+start: funcDef* expr EOF;
+
+funcDef:
+	VARIABLE LPAREN paramList? RPAREN ARROW expr SEMICOLON # FunctionDef;
+
+paramList: VARIABLE (COMMA VARIABLE)*;
+
 expr: atom | compExpr;
 
 compExpr:
@@ -46,7 +53,10 @@ atom:
 	| CONSTANT								# ConstantExp
 	| LPAREN expr RPAREN					# ParenExp
 	| PIPE expr PIPE						# AbsExp
-	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp;
+	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
+	| VARIABLE LPAREN exprList? RPAREN		# CallExp;
+
+exprList: expr (COMMA expr)*;
 
 // Single-argument functions
 func1:
@@ -217,6 +227,8 @@ PIPE: '|';
 LPAREN: '(';
 RPAREN: ')';
 COMMA: ',';
+SEMICOLON: ';';
+ARROW: '->';
 LBRACKET: '[';
 RBRACKET: ']';
 

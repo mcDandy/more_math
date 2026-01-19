@@ -1,7 +1,7 @@
 import torch
 from comfy_api.latest import io
 
-windows = {"bartlet": torch.bartlett_window, "blackman": torch.blackman_window, "hamming": torch.hamming_window, "hann": torch.hann_window}
+windows = {"bartlett": torch.bartlett_window, "blackman": torch.blackman_window, "hamming": torch.hamming_window, "hann": torch.hann_window, "kaiser": torch.kaiser_window}
 
 
 class SpectrogramToAudio(io.ComfyNode):

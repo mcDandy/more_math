@@ -429,7 +429,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if any(self._is_tensor(x) for x in [a, b, w]):
             # Lerp: a + w*(b-a)
             return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), self._promote_to_tensor(w))
-        return a + w * (b - a)
+        return a*(1-w)+b*w
 
     def visitSmoothstepFunc(self, ctx):
         x = self.visit(ctx.expr(0))

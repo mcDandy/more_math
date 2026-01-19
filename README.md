@@ -19,8 +19,7 @@ You can also get the node from comfy manager under the name of More math.
 
 - functions and variables in math expressions
 - Conversion between INT and FLOAT; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
-- Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP and VAE
-
+- Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE and SIGMAS
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 
 ## Operators
@@ -36,7 +35,7 @@ You can also get the node from comfy manager under the name of More math.
   - In imageMath node you can use 3 element list to specify a color of image. You cannot use any imput tensor, doing so will result in behaviour in subpoint 1 in list
 - **Length Mismatch Handling**: All math nodes (except Model, Clip, Vae which default to broadcast) include a `length_mismatch` option to handle inputs with different batch sizes, sample counts, or list lengths. The target length is determined by the **maximum length** among all provided inputs (`a`, `b`, `c`, `d`).
   - `tile` (Default): Repeats shorter inputs to match the maximum length.
-  - `error`: Raises a `ValueError` if any input lengths differ. This helps identify unintentional mismatches that should be handled explicitly.
+  - `error`: Raises a `ValueError` if any input lengths differ.
   - `pad`: Shorter inputs are padded with zeros to match the maximum length.
 
 ## Functions

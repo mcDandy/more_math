@@ -47,7 +47,7 @@ class SigmasMathNode(io.ComfyNode):
         stream.fill()
 
         # Support aliases
-        aliases_img = {"a": "I0", "b": "I1", "c": "I2", "d": "I3"}
+        aliases_img = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
         aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 
         needed = []
@@ -55,17 +55,19 @@ class SigmasMathNode(io.ComfyNode):
         for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
             var_name = token.text
 
-            if re.match(r"[IF][0-9]+", var_name):
+            if re.match(r"[VF][0-9]+", var_name):
                 needed.append(var_name)
             elif var_name in aliases_img:
                 needed.append(aliases_img[var_name])
             elif var_name in aliases_flt:
                 needed.append(aliases_flt[var_name])
         for v in needed:
-            if v.begins_with("I") and not V[v]:
-                needed1.append[v]
-            elif not F[v]:
-                needed1.append[v]
+            if v.startswith("V"):
+                if v not in V or V[v] is None:
+                    needed1.append(v)
+            elif v.startswith("F"):
+                if v not in F or F[v] is None:
+                    needed1.append(v)
         return needed1
 
     @classmethod
@@ -106,9 +108,10 @@ class SigmasMathNode(io.ComfyNode):
             "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
             "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
-            "X": getIndexTensorAlongDim(ae, 3),
-            "W": ae.shape[2],
-            "width": ae.shape[2],
+            "B": getIndexTensorAlongDim(ae, 0),
+            "batch": getIndexTensorAlongDim(ae, 0),
+            "T": ae.shape[0],
+            "batch_count": ae.shape[0],
         } | generate_dim_variables(ae)
 
         # Add all dynamic inputs

@@ -28,7 +28,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             return val.contiguous()
         if self._is_list(val):
             return torch.tensor(val, device=self.device)
-        return torch.brodcast(torch.tensor(val, device=self.device), self.shape).contiguous()
+        return torch.broadcast_to(torch.tensor(val, device=self.device), self.shape).contiguous()
 
     def _bin_op(self, a, b, torch_op, scalar_op):
         """

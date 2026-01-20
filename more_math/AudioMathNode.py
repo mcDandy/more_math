@@ -36,7 +36,7 @@ class AudioMathNode(io.ComfyNode):
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
-                    default="tile",
+                    default="error",
                     tooltip="How to handle mismatched audio sample counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing samples as zero."
                 )
             ],

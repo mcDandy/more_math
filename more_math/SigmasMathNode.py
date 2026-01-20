@@ -29,7 +29,7 @@ class SigmasMathNode(io.ComfyNode):
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
-                    default="tile",
+                    default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 )
             ],

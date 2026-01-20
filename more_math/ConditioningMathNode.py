@@ -40,7 +40,7 @@ class ConditioningMathNode(io.ComfyNode):
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
-                    default="tile",
+                    default="error",
                     tooltip="How to handle mismatched conditioning segment counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
                 )
             ],

@@ -42,7 +42,7 @@ class VideoMathNode(io.ComfyNode):
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
-                    default="tile",
+                    default="error",
                     tooltip="How to handle mismatched frame/sample counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
                 )
             ],

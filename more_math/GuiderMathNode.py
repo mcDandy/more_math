@@ -14,6 +14,9 @@ from .helper_functions import (
 from comfy_api.latest import io
 import comfy.sampler_helpers
 import comfy.model_patcher
+import comfy.utils
+import comfy.hooks
+import comfy.samplers
 
 
 class GuiderMathNode(io.ComfyNode):
@@ -30,7 +33,7 @@ class GuiderMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="G", template=io.Autogrow.TemplatePrefix(io.Guider.Input("guider"), prefix="G", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Guider", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3"),
+                io.String.Input(id="Guider", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
             ],
             outputs=[
                 io.Guider.Output(),
@@ -80,7 +83,10 @@ class MathGuider:
         self.expression = expression
         self.tree = parse_expr(expression)
         self.inner_model = None  # Will be set during sample
-    
+        self.sigmas = None
+        self.current_step = 0
+        self.steps = 0
+
     @property
     def model_patcher(self):
         # Return the model patcher of the first valid guider
@@ -89,12 +95,11 @@ class MathGuider:
             if g is not None and hasattr(g, "model_patcher"):
                 return g.model_patcher
         # If no guider has it (e.g. all None or bare wrappers), try to return shared inner model's patcher if available?
-        # But usually we need it before inner_model is set. 
+        # But usually we need it before inner_model is set.
         # So we just return None which might fail later if caller doesn't check.
         return None
 
     def __call__(self, x, sigma, model_options={}, seed=None):
-        print("__call__")
         # Collect predictions from all guiders
         g_results = {}
         for k, guider in self.G.items():
@@ -151,9 +156,10 @@ class MathGuider:
             "batch_count": eval_samples.shape[0],
             "N": eval_samples.shape[channel_dim] if channel_dim < ndim else 0,
             "channel_count": eval_samples.shape[channel_dim] if channel_dim < ndim else 0,
-            "sigma": sigma, # sigma is scalar or tensor? usually tensor broadcastable
-            "test_sigma": sigma,
+            "sigma": sigma.item(), # sigma is scalar or tensor? usually tensor broadcastable
             "seed": seed if seed is not None else 0,
+            "steps": self.steps,
+            "current_step": self.current_step,
         }
 
         # Add dynamic inputs and aliases
@@ -173,11 +179,13 @@ class MathGuider:
 
         visitor = UnifiedMathVisitor(variables, eval_samples.shape)
         result_tensor = visitor.visit(self.tree)
+        self.current_step = self.current_step + 1;
         # Result should be noise prediction, matching x shape
-        return as_tensor(result_tensor, eval_samples.shape)
+        return as_tensor(result_tensor, eval_samples.shape).to(x.device)
 
     def sample(self, noise, latent_image, sampler, sigmas, denoise_mask=None, callback=None, disable_pbar=False, seed=None):
-        print("sample")
+        self.sigmas = sigmas
+        self.steps = len(sigmas)
         if sigmas.shape[-1] == 0:
             return latent_image
 

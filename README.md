@@ -19,7 +19,7 @@ You can also get the node from comfy manager under the name of More math.
 
 - functions and variables in math expressions
 - Conversion between INT and FLOAT; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
-- Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE and SIGMAS
+- Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS and GUIDER
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 - Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work.
 
@@ -185,7 +185,14 @@ You can also get the node from comfy manager under the name of More math.
 - **NOISE**
   - refer to `IMAGE and LATENT` for most variables
   - `I` or `input_latent` – latent used as input to generate noise before noise is generated into it
-- **CONDITIONING and FLOAT**
+- **GUIDER**
+  - refer to `IMAGE and LATENT` for visual part (positions, sizes, etc.)
+  - `sigma` - current sigma value
+  - `seed` - seed used for noise generation
+  - `steps` - total number of sampling steps
+  - `current_step` - current step index (0 to steps)
+
+- **CONDITIONING, SIGMAS and FLOAT**
   - no additional variables
 - **MODEL, CLIP and VAE**
   - `L` or `layer` - a position of layer from beginning of object

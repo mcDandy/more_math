@@ -10,7 +10,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def __init__(self, variables, shape=None, device=None, functions=None):
         self.variables = variables
         self.spatial_variables = variables.copy()
-        self.shape = shape if shape is not None else ()
+        self.shape = shape if shape is not None else (1,)
         if device is None:
             self.device = next((v.device for v in variables.values() if isinstance(v, torch.Tensor)), torch.device("cpu"))
         else:
@@ -23,12 +23,16 @@ class UnifiedMathVisitor(MathExprVisitor):
     def _is_list(self, val):
         return isinstance(val, (list, tuple))
 
-    def _promote_to_tensor(self, val):
+    def _promote_to_tensor(self, val,brodcast=False):
         if self._is_tensor(val):
             return val.contiguous()
         if self._is_list(val):
             return torch.tensor(val, device=self.device)
-        return torch.broadcast_to(torch.tensor(val, device=self.device), self.shape).contiguous()
+        if brodcast:
+            t = list(self.shape)
+            t[0]=1
+            return torch.full(t,val,device=self.device)
+        return torch.tensor(val, device=self.device)
 
     def _bin_op(self, a, b, torch_op, scalar_op):
         """
@@ -476,7 +480,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         promoted = [self._promote_to_tensor(x) for x in vals]
         if len(promoted) == 1:
             return torch.min(promoted[0])
-        return torch.min(torch.stack(torch.broadcast_tensors(*promoted)))
+        return torch.min(torch.stack(torch.broadcast_tensors(*promoted))).item()
 
     def visitSMaxFunc(self, ctx):
         args = [self.visit(e) for e in ctx.expr()]
@@ -486,7 +490,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return args[0]
             if self._is_list(args[0]):
                 return max(args[0])  # max of list
-            return torch.max(args[0])  # Global max of single tensor
+            return torch.max(args[0]).item()  # Global max of single tensor
 
         # Multiple args
         if all(not self._is_tensor(x) and not self._is_list(x) for x in args):
@@ -1047,10 +1051,13 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAppendFunc(self, ctx):
         a = self.visit(ctx.expr(0))
         b = self.visit(ctx.expr(1))
-
+        if(self._is_tensor(a) and a.numel()==1):
+            a = a.Item()
+        if(self._is_tensor(b) and b.numel()==1):
+            b = b.Item()
         if self._is_tensor(a) or self._is_tensor(b):
-            a = self._promote_to_tensor(a)
-            b = self._promote_to_tensor(b)
+            a = self._promote_to_tensor(a,True)
+            b = self._promote_to_tensor(b,True)
             if a.ndim == 0: a = a.unsqueeze(0)
             if b.ndim == 0: b = b.unsqueeze(0)
             return torch.cat((a, b), dim=0)

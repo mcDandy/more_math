@@ -320,6 +320,80 @@ def test_custom_functions():
     expr5 = "f(y) -> x + y; f(5)"
     assert parse_and_visit(expr5, vars) == 15.0
 
+def test_append():
+    vars = {}
+
+    # 1. Append scalar to list
+    assert parse_and_visit("append([1, 2], 3)", vars) == [1.0, 2.0, 3.0]
+
+    # 2. Append list to list (concat)
+    assert parse_and_visit("append([1], [2, 3])", vars) == [1.0, 2.0, 3.0]
+
+    # 3. Scalar a, list b
+    assert parse_and_visit("append(0, [1, 2])", vars) == [0.0, 1.0, 2.0]
+
+    # 4. Tensors
+    t1 = torch.tensor([1.0, 2.0])
+    t2 = torch.tensor([3.0])
+    vars = {"t1": t1, "t2": t2}
+    res = parse_and_visit("append(t1, t2)", vars)
+    assert torch.equal(res, torch.tensor([1.0, 2.0, 3.0]))
+
+    # 5. Tensor and scalar (promoted)
+    res2 = parse_and_visit("append(t1, 4)", vars)
+    assert torch.equal(res2, torch.tensor([1.0, 2.0, 4.0]))
+
+def test_random_generators():
+    # We pass a shape to have non-scalar results
+    vars = {}
+
+    # Use parse_and_visit to test full stack
+
+    # 1. randn / noise (Normal distribution)
+    res_n = parse_and_visit("randn(123)", vars)
+    assert isinstance(res_n, torch.Tensor)
+    assert res_n.shape == (1, 1, 1, 1) # Default shape from parse_and_visit
+
+    res_noise = parse_and_visit("noise(123)", vars)
+    assert torch.equal(res_n, res_noise) # Same seed should give same results
+
+    # 2. rand (Uniform distribution [0, 1))
+    res_u = parse_and_visit("rand(123)", vars)
+    assert res_u.shape == (1, 1, 1, 1)
+    assert torch.all(res_u >= 0) and torch.all(res_u < 1)
+
+    # 3. rande / exponential
+    res_e = parse_and_visit("rande(123, 1.0)", vars)
+    assert res_e.shape == (1, 1, 1, 1)
+    assert torch.all(res_e >= 0)
+
+    res_exp = parse_and_visit("random_exponential(123, 1.0)", vars)
+    assert torch.equal(res_e, res_exp)
+
+    # 4. randc / cauchy
+    res_c = parse_and_visit("randc(123, 0.0, 1.0)", vars)
+    assert res_c.shape == (1, 1, 1, 1)
+
+    res_cauchy = parse_and_visit("random_cauchy(123, 0.0, 1.0)", vars)
+    assert torch.equal(res_c, res_cauchy)
+
+    # 5. randln / log_normal
+    res_ln = parse_and_visit("randln(123, 0.0, 1.0)", vars)
+    assert res_ln.shape == (1, 1, 1, 1)
+    assert torch.all(res_ln > 0)
+
+    res_lognorm = parse_and_visit("random_log_normal(123, 0.0, 1.0)", vars)
+    assert torch.equal(res_ln, res_lognorm)
+
+    # 6. randb / bernoulli
+    res_b = parse_and_visit("randb(123, 0.5)", vars)
+    assert res_b.shape == (1, 1, 1, 1)
+    assert torch.all((res_b == 0) | (res_b == 1))
+
+    # 7. randp / poisson
+    res_p = parse_and_visit("randp(123, 5.0)", vars)
+    assert res_p.shape == (1, 1, 1, 1)
+    assert torch.all(res_p >= 0)
 
 if __name__ == "__main__":
     try:
@@ -338,6 +412,8 @@ if __name__ == "__main__":
         test_pinv()
         test_quartil()
         test_custom_functions()
+        test_append()
+        test_random_generators()
         print("All UnifiedMathVisitor tests passed!")
     except Exception:
         import traceback

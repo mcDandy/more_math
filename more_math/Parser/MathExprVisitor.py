@@ -399,6 +399,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#NoiseFunc.
+    def visitNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RandFunc.
+    def visitRandFunc(self, ctx:MathExprParser.RandFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -474,6 +484,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ExponentialFunc.
+    def visitExponentialFunc(self, ctx:MathExprParser.ExponentialFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BernoulliFunc.
+    def visitBernoulliFunc(self, ctx:MathExprParser.BernoulliFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PoissonFunc.
+    def visitPoissonFunc(self, ctx:MathExprParser.PoissonFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
@@ -496,6 +521,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#MomentFunc.
     def visitMomentFunc(self, ctx:MathExprParser.MomentFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CauchyFunc.
+    def visitCauchyFunc(self, ctx:MathExprParser.CauchyFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LogNormalFunc.
+    def visitLogNormalFunc(self, ctx:MathExprParser.LogNormalFuncContext):
         return self.visitChildren(ctx)
 
 

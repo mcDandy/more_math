@@ -1,3 +1,4 @@
+from ast import If
 import torch
 import math
 import torch.nn.functional as F
@@ -1050,6 +1051,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(a) or self._is_tensor(b):
             a = self._promote_to_tensor(a)
             b = self._promote_to_tensor(b)
+            if a.ndim == 0: a = a.unsqueeze(0)
+            if b.ndim == 0: b = b.unsqueeze(0)
             return torch.cat((a, b), dim=0)
         if not self._is_list(a): a = [a]
         if not self._is_list(b): b = [b]
@@ -1102,3 +1105,49 @@ class UnifiedMathVisitor(MathExprVisitor):
             return visitor.visit(func_def["body"])
 
         raise ValueError(f"Unknown function: {func_name}")
+
+    def visitNoiseFunc(self,ctx):
+        seed = int(self.visit(ctx.expr()))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        return torch.randn(self.shape, generator=generator, device=self.device)
+
+    def visitRandFunc(self, ctx):
+        seed = int(self.visit(ctx.expr()))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        return torch.rand(self.shape, generator=generator, device=self.device)
+
+    def visitExponentialFunc(self, ctx):
+        seed = int(self.visit(ctx.expr(0)))
+        lambd = float(self.visit(ctx.expr(1)))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        return torch.empty(self.shape, device=self.device).exponential_(lambd, generator=generator)
+
+    def visitCauchyFunc(self, ctx):
+        seed = int(self.visit(ctx.expr(0)))
+        median = float(self.visit(ctx.expr(1)))
+        sigma = float(self.visit(ctx.expr(2)))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        return torch.empty(self.shape).couchy_(self.shape, median, sigma, generator=generator, device=self.device)
+
+    def visitLogNormalFunc(self, ctx):
+        seed = int(self.visit(ctx.expr(0)))
+        mean = float(self.visit(ctx.expr(1)))
+        std = float(self.visit(ctx.expr(2)))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        return torch.empty(self.shape).log_normal_(mean, std, generator=generator, device=self.device)
+
+    def visitBernoulliFunc(self, ctx):
+        seed = int(self.visit(ctx.expr(0)))
+        p = self.visit(ctx.expr(1))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        if self._is_tensor(p):
+            return torch.bernoulli(p, generator=generator).to(device=self.device)
+        return torch.bernoulli(torch.full(self.shape, p, device=self.device), generator=generator)
+
+    def visitPossionFunc(self, ctx):
+        seed = int(self.visit(ctx.expr(0)))
+        lam = self.visit(ctx.expr(1))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        if self._is_tensor(lam):
+            return torch.poisson(lam, generator=generator).to(device=self.device)
+        return torch.poisson(torch.full(self.shape, lam, device=self.device), generator=generator)

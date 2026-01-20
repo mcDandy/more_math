@@ -99,7 +99,9 @@ func1:
 	| MEAN LPAREN expr RPAREN			# MeanFunc
 	| STD LPAREN expr RPAREN			# StdFunc
 	| VAR LPAREN expr RPAREN			# VarFunc
-	| SORT LPAREN expr RPAREN			# SortFunc;
+	| SORT LPAREN expr RPAREN			# SortFunc
+	| NOISE LPAREN expr RPAREN			# NoiseFunc
+	| RAND LPAREN expr RPAREN			# RandFunc;
 
 // Two-argument functions Two-argument functions
 func2:
@@ -118,14 +120,19 @@ func2:
 	| COSSIM LPAREN expr COMMA expr RPAREN		# CossimFunc
 	| FLIP LPAREN expr COMMA expr RPAREN		# FlipFunc
 	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
-	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc;
+	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc
+	| EXPONENTIAL LPAREN expr COMMA expr RPAREN	# ExponentialFunc
+	| BERNOULLI LPAREN expr COMMA expr RPAREN	# BernoulliFunc
+	| POSSION LPAREN expr COMMA expr RPAREN		# PoissonFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
 	| LERP LPAREN expr COMMA expr COMMA expr RPAREN			# LerpFunc
 	| SMOOTHSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmoothstepFunc
 	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN		# RangeFunc
-	| MOMENT LPAREN expr COMMA expr COMMA expr RPAREN		# MomentFunc;
+	| MOMENT LPAREN expr COMMA expr COMMA expr RPAREN		# MomentFunc
+	| CAUCHY LPAREN expr COMMA expr COMMA expr RPAREN		# CauchyFunc
+	| LOGNORMAL LPAREN expr COMMA expr COMMA expr RPAREN	# LogNormalFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # SwapFunc;
@@ -205,6 +212,13 @@ PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
+NOISE: 'noise' | 'randn' | 'random_normal';
+RAND: 'rand' | 'randu' | 'random_uniform';
+CAUCHY: 'randc'|'random_cauchy';
+EXPONENTIAL: 'rande' | 'random_exponential';
+LOGNORMAL: 'randln'| 'random_log_normal';
+BERNOULLI: 'randb' | 'random_bernouli';
+POSSION: 'randp'| 'random_poisson';
 
 COSSIM: 'cossim';
 FLIP: 'flip';

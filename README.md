@@ -107,7 +107,7 @@ You can also get the node from comfy manager under the name of More math.
 - `sort(x)`: Sorts elements in ascending order along the last dimension.
 - `append(a, b)`: Appends `b` to `a`. If inputs are lists, it concatenates them. If inputs are tensors, it concatenates them along dim 0.
 
-### Advanced Tensor Operations (Tensor Only)
+### Advanced Tensor Operations
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
   - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor. Rest uses identity mapping.
@@ -131,6 +131,16 @@ You can also get the node from comfy manager under the name of More math.
 - `print_shape(x)` or `pshp`: Prints the shape of x to the console and returns x.
 - `pinv(x)`: Computes the permutation inverse of list. If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`.
 - `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
+
+### Random Distributions
+
+- `random_normal(seed)` or `randn(seed)` or `noise(seed)`: generates a random tensor with normal distribution (var=1, mean=0).
+- `random_uniform(seed)` or `rand(seed)`: generates a random tensor with uniform distribution [0, 1).
+- `random_exponential(seed, lambda)` or `rande`: generates a random tensor with exponential distribution.
+- `random_cauchy(seed, median, sigma)` or `randc`: generates a random tensor with Cauchy distribution.
+- `random_log_normal(seed, mean, std)` or `randln`: generates a random tensor with log-normal distribution.
+- `random_bernoulli(seed, p)` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor.
+- `random_poisson(seed, lambda)` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
 
 ## Variables
 

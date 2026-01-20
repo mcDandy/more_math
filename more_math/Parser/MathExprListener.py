@@ -710,6 +710,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#NoiseFunc.
+    def enterNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NoiseFunc.
+    def exitNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RandFunc.
+    def enterRandFunc(self, ctx:MathExprParser.RandFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RandFunc.
+    def exitRandFunc(self, ctx:MathExprParser.RandFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -836,6 +854,42 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#AppendFunc.
+    def enterAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AppendFunc.
+    def exitAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ExponentialFunc.
+    def enterExponentialFunc(self, ctx:MathExprParser.ExponentialFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ExponentialFunc.
+    def exitExponentialFunc(self, ctx:MathExprParser.ExponentialFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BernoulliFunc.
+    def enterBernoulliFunc(self, ctx:MathExprParser.BernoulliFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BernoulliFunc.
+    def exitBernoulliFunc(self, ctx:MathExprParser.BernoulliFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PoissonFunc.
+    def enterPoissonFunc(self, ctx:MathExprParser.PoissonFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PoissonFunc.
+    def exitPoissonFunc(self, ctx:MathExprParser.PoissonFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ClampFunc.
     def enterClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         pass
@@ -878,6 +932,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#MomentFunc.
     def exitMomentFunc(self, ctx:MathExprParser.MomentFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CauchyFunc.
+    def enterCauchyFunc(self, ctx:MathExprParser.CauchyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CauchyFunc.
+    def exitCauchyFunc(self, ctx:MathExprParser.CauchyFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogNormalFunc.
+    def enterLogNormalFunc(self, ctx:MathExprParser.LogNormalFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogNormalFunc.
+    def exitLogNormalFunc(self, ctx:MathExprParser.LogNormalFuncContext):
         pass
 
 

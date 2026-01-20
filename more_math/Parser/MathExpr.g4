@@ -122,7 +122,7 @@ func2:
 	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc
 	| EXPONENTIAL LPAREN expr COMMA expr RPAREN	# ExponentialFunc
 	| BERNOULLI LPAREN expr COMMA expr RPAREN	# BernoulliFunc
-	| POSSION LPAREN expr COMMA expr RPAREN		# PoissonFunc;
+	| POISSON LPAREN expr COMMA expr RPAREN		# PoissonFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -217,7 +217,7 @@ CAUCHY: 'randc' | 'random_cauchy';
 EXPONENTIAL: 'rande' | 'random_exponential';
 LOGNORMAL: 'randln' | 'random_log_normal';
 BERNOULLI: 'randb' | 'random_bernoulli';
-POSSION: 'randp' | 'random_poisson';
+POISSON: 'randp' | 'random_poisson';
 
 COSSIM: 'cossim';
 FLIP: 'flip';

@@ -400,7 +400,7 @@ class MathExprLexer(Lexer):
     EXPONENTIAL = 67
     LOGNORMAL = 68
     BERNOULLI = 69
-    POSSION = 70
+    POISSON = 70
     COSSIM = 71
     FLIP = 72
     COV = 73
@@ -460,7 +460,7 @@ class MathExprLexer(Lexer):
             "EZCONV", "CONV", "SWAP", "PERM", "RESHAPE", "RANGE", "TOPK", 
             "BOTK", "PINV", "SUM", "MEAN", "STD", "VAR", "QUARTILE", "PERCENTILE", 
             "QUANTILE", "DOT", "MOMENT", "NOISE", "RAND", "CAUCHY", "EXPONENTIAL", 
-            "LOGNORMAL", "BERNOULLI", "POSSION", "COSSIM", "FLIP", "COV", 
+            "LOGNORMAL", "BERNOULLI", "POISSON", "COSSIM", "FLIP", "COV", 
             "SORT", "APPEND", "PLUS", "MINUS", "MULT", "DIV", "MOD", "POW", 
             "GE", "GT", "LE", "LT", "EQ", "NE", "PIPE", "LPAREN", "RPAREN", 
             "COMMA", "SEMICOLON", "ARROW", "LBRACKET", "RBRACKET", "CONSTANT", 
@@ -476,7 +476,7 @@ class MathExprLexer(Lexer):
                   "RESHAPE", "RANGE", "TOPK", "BOTK", "PINV", "SUM", "MEAN", 
                   "STD", "VAR", "QUARTILE", "PERCENTILE", "QUANTILE", "DOT", 
                   "MOMENT", "NOISE", "RAND", "CAUCHY", "EXPONENTIAL", "LOGNORMAL", 
-                  "BERNOULLI", "POSSION", "COSSIM", "FLIP", "COV", "SORT", 
+                  "BERNOULLI", "POISSON", "COSSIM", "FLIP", "COV", "SORT", 
                   "APPEND", "PLUS", "MINUS", "MULT", "DIV", "MOD", "POW", 
                   "GE", "GT", "LE", "LT", "EQ", "NE", "PIPE", "LPAREN", 
                   "RPAREN", "COMMA", "SEMICOLON", "ARROW", "LBRACKET", "RBRACKET", 

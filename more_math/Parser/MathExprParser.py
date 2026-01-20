@@ -302,7 +302,7 @@ class MathExprParser ( Parser ):
                       "RESHAPE", "RANGE", "TOPK", "BOTK", "PINV", "SUM", 
                       "MEAN", "STD", "VAR", "QUARTILE", "PERCENTILE", "QUANTILE", 
                       "DOT", "MOMENT", "NOISE", "RAND", "CAUCHY", "EXPONENTIAL", 
-                      "LOGNORMAL", "BERNOULLI", "POSSION", "COSSIM", "FLIP", 
+                      "LOGNORMAL", "BERNOULLI", "POISSON", "COSSIM", "FLIP", 
                       "COV", "SORT", "APPEND", "PLUS", "MINUS", "MULT", 
                       "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", "EQ", 
                       "NE", "PIPE", "LPAREN", "RPAREN", "COMMA", "SEMICOLON", 
@@ -402,7 +402,7 @@ class MathExprParser ( Parser ):
     EXPONENTIAL=67
     LOGNORMAL=68
     BERNOULLI=69
-    POSSION=70
+    POISSON=70
     COSSIM=71
     FLIP=72
     COV=73
@@ -4380,8 +4380,8 @@ class MathExprParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def POSSION(self):
-            return self.getToken(MathExprParser.POSSION, 0)
+        def POISSON(self):
+            return self.getToken(MathExprParser.POISSON, 0)
         def LPAREN(self):
             return self.getToken(MathExprParser.LPAREN, 0)
         def expr(self, i:int=None):
@@ -5199,7 +5199,7 @@ class MathExprParser ( Parser ):
                 localctx = MathExprParser.PoissonFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 18)
                 self.state = 530
-                self.match(MathExprParser.POSSION)
+                self.match(MathExprParser.POISSON)
                 self.state = 531
                 self.match(MathExprParser.LPAREN)
                 self.state = 532

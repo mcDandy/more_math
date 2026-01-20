@@ -23,7 +23,7 @@ class SigmasMathNode(io.ComfyNode):
             category="More math",
             display_name="Sigmas math",
             inputs=[
-                io.Autogrow.Input(id="I",template=io.Autogrow.TemplatePrefix(io.Sigmas.Input("input"), prefix="I", min=1, max=50)),
+                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Sigmas.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.String.Input(id="Image", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input images"),
                 io.Combo.Input(
@@ -39,7 +39,7 @@ class SigmasMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Image, I, F, length_mismatch="tile"):
+    def check_lazy_status(cls, Image, V, F, length_mismatch="tile"):
 
         input_stream = InputStream(Image)
         lexer = MathExprLexer(input_stream)
@@ -62,31 +62,30 @@ class SigmasMathNode(io.ComfyNode):
             elif var_name in aliases_flt:
                 needed.append(aliases_flt[var_name])
         for v in needed:
-            if v.begins_with("I") and not I[v]:
+            if v.begins_with("I") and not V[v]:
                 needed1.append[v]
             elif not F[v]:
                 needed1.append[v]
         return needed1
 
     @classmethod
-    def execute(cls, I, F, Image, length_mismatch="tile"):
+    def execute(cls, V, F, Image, length_mismatch="tile"):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Determine reference image for zero-initialization (fallback for a,b,c,d)
         ref_image = None
-        for img in I.values():
+        for img in V.values():
             if img is not None:
                 ref_image = img
                 break
 
         if ref_image is None:
-             raise ValueError("At least one image input is required.")
+             raise ValueError("At least one input is required.")
 
-        # Extract base images for a,b,c,d
-        a = I.get("I0")
-        b = I.get("I1")
-        c = I.get("I2")
-        d = I.get("I3")
+        a = V.get("V0")
+        b = V.get("V1")
+        c = V.get("V2")
+        d = V.get("V3")
 
         if a is None:
             a = make_zero_like(ref_image)
@@ -97,7 +96,7 @@ class SigmasMathNode(io.ComfyNode):
 
         if(length_mismatch == "error"):
             max_length = ae.shape[0]
-            for name, tensor in I.items():
+            for name, tensor in V.items():
                 if tensor is not None and tensor.shape[0] != max_length:
                     raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
 
@@ -113,7 +112,7 @@ class SigmasMathNode(io.ComfyNode):
         } | generate_dim_variables(ae)
 
         # Add all dynamic inputs
-        for k, v in I.items():
+        for k, v in V.items():
             if v is not None:
                 # Normalize all images in I to match ae.shape
                 norm_v = normalize_to_common_shape(ae, v, mode=length_mismatch)[1]

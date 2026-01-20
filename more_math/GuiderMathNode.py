@@ -31,7 +31,7 @@ class GuiderMathNode(io.ComfyNode):
             category="More math",
             display_name="Guider math",
             inputs=[
-                io.Autogrow.Input(id="G", template=io.Autogrow.TemplatePrefix(io.Guider.Input("guider"), prefix="G", min=1, max=50)),
+                io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Guider.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.String.Input(id="Guider", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
             ],
@@ -41,21 +41,21 @@ class GuiderMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Guider, G, F):
+    def check_lazy_status(cls, Guider, V, F):
         input_stream = InputStream(Guider)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
         stream.fill()
 
         # Support aliases
-        aliases_smp = {"a": "G0", "b": "G1", "c": "G2", "d": "G3"}
+        aliases_smp = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
         aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 
         needed = []
         needed1 = []
         for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
             var_name = token.text
-            if re.match(r"[GF][0-9]+", var_name):
+            if re.match(r"[VF][0-9]+", var_name):
                 needed.append(var_name)
             elif var_name in aliases_smp:
                 needed.append(aliases_smp[var_name])
@@ -63,8 +63,8 @@ class GuiderMathNode(io.ComfyNode):
                 needed.append(aliases_flt[var_name])
 
         for v in needed:
-            if v.startswith("G"):
-                if v not in G or G[v] is None:
+            if v.startswith("V"):
+                if v not in V or V[v] is None:
                     needed1.append(v)
             elif v.startswith("F"):
                 if v not in F or F[v] is None:
@@ -72,13 +72,13 @@ class GuiderMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, G, F, Guider):
-        return (MathGuider(G, F, Guider),)
+    def execute(cls, V, F, Guider):
+        return (MathGuider(V, F, Guider),)
 
 
 class MathGuider:
-    def __init__(self, G, F, expression):
-        self.G = G
+    def __init__(self, V, F, expression):
+        self.V = V
         self.F = F
         self.expression = expression
         self.tree = parse_expr(expression)
@@ -91,9 +91,9 @@ class MathGuider:
     def model_patcher(self):
         # Return the model patcher of the first valid guider
         # This is needed because some nodes (like SamplerCustomAdvanced) inspect the model via the guider
-        for g in self.G.values():
-            if g is not None and hasattr(g, "model_patcher"):
-                return g.model_patcher
+        for v in self.V.values():
+            if v is not None and hasattr(v, "model_patcher"):
+                return v.model_patcher
         # If no guider has it (e.g. all None or bare wrappers), try to return shared inner model's patcher if available?
         # But usually we need it before inner_model is set.
         # So we just return None which might fail later if caller doesn't check.
@@ -102,7 +102,7 @@ class MathGuider:
     def __call__(self, x, sigma, model_options={}, seed=None):
         # Collect predictions from all guiders
         g_results = {}
-        for k, guider in self.G.items():
+        for k, guider in self.V.items():
             if guider is not None:
                 g_results[k] = guider(x, sigma, model_options=model_options, seed=seed)
             else:
@@ -165,10 +165,10 @@ class MathGuider:
         # Add dynamic inputs and aliases
         variables.update(g_results)
         variables.update({
-            "a": g_results.get("G0", make_zero_like(eval_samples)),
-            "b": g_results.get("G1", make_zero_like(eval_samples)),
-            "c": g_results.get("G2", make_zero_like(eval_samples)),
-            "d": g_results.get("G3", make_zero_like(eval_samples)),
+            "a": g_results.get("V0", make_zero_like(eval_samples)),
+            "b": g_results.get("V1", make_zero_like(eval_samples)),
+            "c": g_results.get("V2", make_zero_like(eval_samples)),
+            "d": g_results.get("V3", make_zero_like(eval_samples)),
         })
 
         # Add F inputs
@@ -198,7 +198,7 @@ class MathGuider:
         # CFGGuider.sample sets self.inner_model.
 
         # We will iterate and setup each.
-        active_guiders = [g for g in self.G.values() if g is not None]
+        active_guiders = [g for g in self.V.values() if g is not None]
         if not active_guiders:
             return latent_image # Or zero noise? But without model we can't do anything really.
 

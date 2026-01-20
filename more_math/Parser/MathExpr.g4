@@ -115,7 +115,6 @@ func2:
 	| QUARTILE LPAREN expr COMMA expr RPAREN	# QuartileFunc
 	| PERCENTILE LPAREN expr COMMA expr RPAREN	# PercentileFunc
 	| QUANTILE LPAREN expr COMMA expr RPAREN	# QuantileFunc
-	| QUANTILE LPAREN expr COMMA expr RPAREN	# QuantileFunc
 	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
 	| COSSIM LPAREN expr COMMA expr RPAREN		# CossimFunc
 	| FLIP LPAREN expr COMMA expr RPAREN		# FlipFunc
@@ -214,11 +213,11 @@ DOT: 'dot';
 MOMENT: 'moment';
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';
-CAUCHY: 'randc'|'random_cauchy';
+CAUCHY: 'randc' | 'random_cauchy';
 EXPONENTIAL: 'rande' | 'random_exponential';
-LOGNORMAL: 'randln'| 'random_log_normal';
-BERNOULLI: 'randb' | 'random_bernouli';
-POSSION: 'randp'| 'random_poisson';
+LOGNORMAL: 'randln' | 'random_log_normal';
+BERNOULLI: 'randb' | 'random_bernoulli';
+POSSION: 'randp' | 'random_poisson';
 
 COSSIM: 'cossim';
 FLIP: 'flip';

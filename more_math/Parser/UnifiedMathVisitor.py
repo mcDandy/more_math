@@ -1127,14 +1127,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         median = float(self.visit(ctx.expr(1)))
         sigma = float(self.visit(ctx.expr(2)))
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.empty(self.shape).couchy_(self.shape, median, sigma, generator=generator, device=self.device)
+        return torch.empty(self.shape, device=self.device).cauchy_(median, sigma, generator=generator)
 
     def visitLogNormalFunc(self, ctx):
         seed = int(self.visit(ctx.expr(0)))
         mean = float(self.visit(ctx.expr(1)))
         std = float(self.visit(ctx.expr(2)))
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.empty(self.shape).log_normal_(mean, std, generator=generator, device=self.device)
+        return torch.empty(self.shape, device=self.device).log_normal_(mean, std, generator=generator)
 
     def visitBernoulliFunc(self, ctx):
         seed = int(self.visit(ctx.expr(0)))
@@ -1144,7 +1144,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.bernoulli(p, generator=generator).to(device=self.device)
         return torch.bernoulli(torch.full(self.shape, p, device=self.device), generator=generator)
 
-    def visitPossionFunc(self, ctx):
+    def visitPoissonFunc(self, ctx):
         seed = int(self.visit(ctx.expr(0)))
         lam = self.visit(ctx.expr(1))
         generator = torch.Generator(device=self.device).manual_seed(seed)

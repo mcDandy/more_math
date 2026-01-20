@@ -38,7 +38,7 @@ class MaskMathNode(io.ComfyNode):
                     id="length_mismatch",
                     options=["broadcast", "error", "pad"],
                     default="broadcast",
-                    tooltip="How to handle mismatched mask batch sizes. broadcast: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
+                    tooltip="How to handle mismatched mask batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 )
             ],
             outputs=[

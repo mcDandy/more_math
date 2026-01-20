@@ -41,7 +41,7 @@ class ConditioningMathNode(io.ComfyNode):
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
                     default="tile",
-                    tooltip="How to handle mismatched conditioning segment counts. broadcast: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
+                    tooltip="How to handle mismatched conditioning segment counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
                 )
             ],
             outputs=[

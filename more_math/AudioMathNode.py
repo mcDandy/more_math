@@ -37,7 +37,7 @@ class AudioMathNode(io.ComfyNode):
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
                     default="tile",
-                    tooltip="How to handle mismatched audio sample counts. broadcast: repeat shorter inputs; error: raise error on mismatch; pad: treat missing samples as zero."
+                    tooltip="How to handle mismatched audio sample counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing samples as zero."
                 )
             ],
             outputs=[

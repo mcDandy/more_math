@@ -27,7 +27,7 @@ class GuiderMathNode(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_GuiderMathNode",
+            node_id="mrmth_ag_GuiderMathNode",
             category="More math",
             display_name="Guider math",
             inputs=[

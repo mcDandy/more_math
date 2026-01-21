@@ -19,7 +19,7 @@ class SigmasMathNode(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_SigmasMathNode",
+            node_id="mrmth_ag_SigmasMathNode",
             category="More math",
             display_name="Sigmas math",
             inputs=[

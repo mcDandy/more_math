@@ -351,12 +351,37 @@ def test_noise_math_5d():
     samples = torch.randn(1, 5, 4, 32, 32)
     noise_a = MockNoise(samples)
 
-    result_executor = node.execute("a + T", a=noise_a)[0]
+    result_executor = node.execute("a + T", V={"V0": noise_a}, F={})[0]
     dummy_latent = {"samples": samples}
     res = result_executor.generate_noise(dummy_latent)
 
-    assert res.shape == (1, 5, 4, 32, 32)
-    assert torch.allclose(res, samples + 5.0)
+    assert res["samples"].shape == (1, 5, 4, 32, 32)
+    assert torch.allclose(res["samples"], samples + 5.0)
+
+
+def test_noise_math_autogrow():
+    from more_math.NoiseMathNode import NoiseMathNode
+
+    class MockNoise:
+        def __init__(self, tensor):
+            self.tensor = tensor
+
+        def generate_noise(self, input_latent):
+            return self.tensor
+
+    node = NoiseMathNode()
+    samples = torch.randn(1, 4, 32, 32)
+    noise_a = MockNoise(samples * 1.0)
+    noise_b = MockNoise(samples * 2.0)
+
+    # Expression uses 'a', 'b' (aliases for V0, V1) and 'w' (alias for F0)
+    result_executor = node.execute("a + b * w", V={"V0": noise_a, "V1": noise_b}, F={"F0": 0.5})[0]
+    dummy_latent = {"samples": samples}
+    res = result_executor.generate_noise(dummy_latent)
+
+    assert res["samples"].shape == (1, 4, 32, 32)
+    # 1.0 + 2.0 * 0.5 = 2.0
+    assert torch.allclose(res["samples"], samples * 2.0)
 
 
 # ==========================================

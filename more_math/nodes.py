@@ -1,6 +1,6 @@
 from .SigmasMathNode import SigmasMathNode
 from .GuiderMathNode import GuiderMathNode
-from .NoiseMathNode import NoiseMathNode
+from .deprecated.NoiseMathNode import NoiseMathNodeOLD
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
@@ -13,6 +13,8 @@ from .VaeMathNode import VAEMathNode
 from .ClipMathNode import CLIPMathNode
 from .SpectrogramToAudioNode import SpectrogramToAudio
 from .AudioToSpectrogramNode import AudioToSpectrogram
+
+from .NoiseMathNode import NoiseMathNode
 
 from comfy_api.latest import ComfyExtension, io
 
@@ -82,7 +84,7 @@ class MoreMathExtension(ComfyExtension):
             ImageMathNode,
             MaskMathNode,
             FloatMathNode,
-            NoiseMathNode,
+            NoiseMathNodeOLD,
             IntToFloatNode,
             FloatToIntNode,
             AudioMathNode,
@@ -90,7 +92,8 @@ class MoreMathExtension(ComfyExtension):
             AudioToSpectrogram,
             SpectrogramToAudio,
             SigmasMathNode,
-            GuiderMathNode
+            GuiderMathNode,
+            NoiseMathNode
         ]
 
 

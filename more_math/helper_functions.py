@@ -15,7 +15,11 @@ class ThrowingErrorListener(ErrorListener):
 
 
 def as_tensor(value, shape):
-    if isinstance(value, torch.Tensor) or getattr(value, "is_nested", False):
+    if getattr(value, "is_nested", False):
+        return value
+    if isinstance(value, torch.Tensor):
+        if value.shape != shape:
+            return value.broadcast_to(shape).contiguous()
         return value.contiguous()
     if isinstance(value, (float, int)):
         value = (value,)

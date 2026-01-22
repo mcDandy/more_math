@@ -1,5 +1,5 @@
 import torch
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, make_zero_like, normalize_to_common_shape
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, normalize_to_common_shape
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 from antlr4 import InputStream, CommonTokenStream
@@ -78,7 +78,7 @@ class AudioMathNode(io.ComfyNode):
             max_lengths = V.get("V0")["waveform"].shape
             for name, tensor in V.items():
                 if tensor["waveform"] is not None and max_lengths!=tensor["waveform"].shape:
-                    raise ValueError(f"Input '{name}' has shape {tensor["waveform"].shape}, expected {max_lengths} to match input.")
+                    raise ValueError(f"Input '{name}' has shape {tensor['waveform'].shape}, expected {max_lengths} to match input.")
 
         waveforms={}
         sample_rates={}

@@ -1,12 +1,12 @@
 from .SigmasMathNode import SigmasMathNode
 from .GuiderMathNode import GuiderMathNode
 from .deprecated.NoiseMathNode import NoiseMathNodeOLD
+from .deprecated.AudioMathNode import AudioMathNodeOLD
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
 from .ImageMathNode import ImageMathNode
 from .MaskMathNode import MaskMathNode
-from .AudioMathNode import AudioMathNode
 from .VideoMathNode import VideoMathNode
 from .ModelMathNode import ModelMathNode
 from .VaeMathNode import VAEMathNode
@@ -87,7 +87,7 @@ class MoreMathExtension(ComfyExtension):
             NoiseMathNodeOLD,
             IntToFloatNode,
             FloatToIntNode,
-            AudioMathNode,
+            AudioMathNodeOLD,
             VideoMathNode,
             AudioToSpectrogram,
             SpectrogramToAudio,

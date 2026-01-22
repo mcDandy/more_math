@@ -1,47 +1,38 @@
-from .helper_functions import commonLazy,parse_expr, generate_dim_variables, as_tensor, prepare_inputs, getIndexTensorAlongDim, normalize_to_common_shape
-from comfy_api.latest import io
 import torch
-
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, make_zero_like, normalize_to_common_shape
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from comfy_api.latest import io
+from antlr4 import InputStream, CommonTokenStream
+from .Parser.MathExprLexer import MathExprLexer
+from .Parser.MathExprParser import MathExprParser
+import re
 
 class ConditioningMathNode(io.ComfyNode):
     """
-    Enables math operations on conditionings.
+    Enables math expressions on Audio.
 
     Inputs:
-        a, b, c, d: Conditioning inputs (b, c, d default to zero if not provided)
-        w, x, y, z: Float variables for expressions
-        Tensor: Expression for the tensor part (describes image composition)
-        pooled_output: Expression for the pooled output (condensed representation)
-
-    Outputs:
-        CONDITIONING: Result of applying expressions to input conditionings
+        I: Autogrow image inputs (I0, I1, ...)
+        F: Autogrow float inputs (F0, F1, ...)
+        Image: Expression
     """
 
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_ConditioningMathNode",
-            display_name="Conditioning math",
+            node_id="mrmth_ag_ConditioningMathNode",
             category="More math",
+            display_name="Conditioning math",
             inputs=[
-                io.Conditioning.Input(id="a"),
-                io.Conditioning.Input(id="b", optional=True, lazy=True),
-                io.Conditioning.Input(id="c", optional=True, lazy=True),
-                io.Conditioning.Input(id="d", optional=True, lazy=True),
-                io.Float.Input(id="w", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
-                io.String.Input(id="Tensor", default="a*(1-w)+b*w", tooltip="Expression for tensor part (image composition)"),
-                io.String.Input(
-                    id="pooled_output", default="a*(1-w)+b*w", tooltip="Expression for pooled output (condensed representation)"
-                ),
+                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Conditioning.Input("values"), prefix="V", min=1, max=50)),
+                io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
+                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on tensor part of conditioning"),
+                io.String.Input(id="Expression_pi", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on pooled_input part of conditioning"),
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
                     default="error",
-                    tooltip="How to handle mismatched conditioning segment counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
+                    tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 )
             ],
             outputs=[
@@ -50,58 +41,114 @@ class ConditioningMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Tensor, pooled_output, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0, length_mismatch="tile"):
-        tensor_needs = set(commonLazy(Tensor, a, b, c, d, w, x, y, z))
-        pooled_needs = set(commonLazy(pooled_output, a, b, c, d, w, x, y, z))
-        return list(tensor_needs.union(pooled_needs))
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile"):
+
+        input_stream = InputStream(Expression)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        stream.fill()
+
+        input_stream = InputStream(Expression)
+        lexer = MathExprLexer(input_stream)
+        stream1 = CommonTokenStream(lexer)
+        stream1.fill()
+
+        # Support aliases
+        aliases_img = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
+        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
+
+        needed = set()
+        needed1 = set()
+        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens + stream1.tokens):
+            var_name = token.text
+
+            if re.match(r"[VF][0-9]+", var_name):
+                needed.add(var_name)
+            elif var_name in aliases_img:
+                needed.add(aliases_img[var_name])
+            elif var_name in aliases_flt:
+                needed.add(aliases_flt[var_name])
+        for v in needed:
+            if v.startswith("V"):
+                if v not in V or V[v] is None:
+                    needed1.add(v)
+            elif v.startswith("F"):
+                if v not in F or F[v] is None:
+                    needed1.add(v)
+        return needed1
 
     @classmethod
-    def execute(cls, Tensor, pooled_output, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="tile"):
-        # Default missing conditionings to zero
-        a_c, b_c, c_c, d_c = prepare_inputs(a, b, c, d)
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile"):
+        dir(V["V0"])
+        print(V["V0"])
+        if(length_mismatch == "error"):
+            max_lengths = V.get("V0")[0][0].shape
+            for name, tensor in V.items():
+                if tensor[0][0] is not None and max_lengths!=tensor[0][0].shape:
+                    raise ValueError(f"Input '{name}' has shape {tensor[0][0].shape}, expected {max_lengths} to match input.")
+            max_lengths = V.get("V0")[0][1]["pooled_output"].shape
+            for name, tensor in V.items():
+                if tensor[0][1]["pooled_output"] is not None and max_lengths!=tensor[0][1]["pooled_output"].shape:
+                    raise ValueError(f"Input '{name}' has shape {tensor[0][1]["pooled_output"].shape}, expected {max_lengths} to match input.")
 
-        # We process the first segment of each conditioning
-        ta_full, da = a_c[0]
-        tb_full, db = b_c[0]
-        tc_full, dc = c_c[0]
-        td_full, dd = d_c[0]
+        tensor={}
+        pooled_output={}
+        for key, conditioning in V.items():
+            if conditioning is not None and isinstance(conditioning, dict) and "waveform" in conditioning:
+                tensor[key] = conditioning[0][0]
+                pooled_output[key] = conditioning[0][1]["pooled_output"]
+            else:
+                tensor[key] = torch.zeros_like(V.get("V0")[0][0])
+                pooled_output[key] = torch.zeros_like(V.get("V0")[0][1]["pooled_output"])
+        new_values = normalize_to_common_shape(*tensor.values(), mode=length_mismatch)
+        tensor.update(zip(tensor.keys(), new_values))
+        new_values = normalize_to_common_shape(*pooled_output.values(), mode=length_mismatch)
+        tensor.update(zip(pooled_output.keys(), new_values))
+        ac,bc,cc,dc = prepare_inputs(V.get("V0"),V.get("V1"),V.get("V2"),V.get("V3"))
 
-        ta, tb, tc, td = normalize_to_common_shape(ta_full, tb_full, tc_full, td_full, mode=length_mismatch)
-
-        B_val = getIndexTensorAlongDim(ta, 0)
+        a = ac[0][0]
+        b = bc[0][0]
+        c = cc[0][0]
+        d = dc[0][0]
         variables = {
-            "a": ta, "b": tb, "c": tc, "d": td, "w": w, "x": x, "y": y, "z": z,
-            "B": B_val, "batch": B_val,
-            "T": ta.shape[0], "batch_count": ta.shape[0],
-            "N": ta.shape[1], "channel_count": ta.shape[1],
-        } | generate_dim_variables(ta)
+            "a": a, "b": b, "c": c, "d": d,
+            "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
+            "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
+            "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
+            "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
+            "B": getIndexTensorAlongDim(a, 0),
+            "batch": getIndexTensorAlongDim(a, 0),
+            "T": a.shape[0],
+            "batch_count": a.shape[0],
+        } | generate_dim_variables(a) | tensor
 
-        tree = parse_expr(Tensor)
-        visitor = UnifiedMathVisitor(variables, ta.shape)
-        result_tensor = as_tensor(visitor.visit(tree), ta.shape)
+        tree = parse_expr(Expression);
+        visitor = UnifiedMathVisitor(variables, a.shape)
+        rtensor = visitor.visit(tree)
+        rtensor = as_tensor(rtensor, a.shape)
 
-        new_dict = da.copy()
-        pa = da.get("pooled_output")
-        if pa is not None:
-            pb = db.get("pooled_output")
-            pc = dc.get("pooled_output")
-            pd = dd.get("pooled_output")
 
-            pb = pb if pb is not None else torch.zeros_like(pa)
-            pc = pc if pc is not None else torch.zeros_like(pa)
-            pd = pd if pd is not None else torch.zeros_like(pa)
+        a = ac[0][1]["pooled_output"]
+        b = bc[0][1]["pooled_output"]
+        c = cc[0][1]["pooled_output"]
+        d = dc[0][1]["pooled_output"]
+        variables = {
+            "a": a, "b": b, "c": c, "d": d,
+            "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
+            "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
+            "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
+            "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
+            "B": getIndexTensorAlongDim(a, 0),
+            "batch": getIndexTensorAlongDim(a, 0),
+            "T": a.shape[0],
+            "batch_count": a.shape[0],
+        } | generate_dim_variables(a) | pooled_output
 
-            pa, pb, pc, pd = normalize_to_common_shape(pa, pb, pc, pd, mode=length_mismatch)
-
-            variables_pooled = {"a": pa, "b": pb, "c": pc, "d": pd, "w": w, "x": x, "y": y, "z": z} | generate_dim_variables(pa)
-            tree_p = parse_expr(pooled_output)
-            visitor_p = UnifiedMathVisitor(variables_pooled, pa.shape)
-            result_pooled = as_tensor(visitor_p.visit(tree_p), pa.shape)
-            new_dict["pooled_output"] = result_pooled
-
-        # Create new conditioning list
-        output_cond = [(result_tensor, new_dict)]
-        if len(a) > 1:
-            output_cond.extend(a[1:])
-
-        return (output_cond,)
+        tree = parse_expr(Expression);
+        visitor = UnifiedMathVisitor(variables, a.shape)
+        rpooled = visitor.visit(tree)
+        rpooled = as_tensor(rpooled, a.shape)
+        vl = V["V0"]
+        vl[0][0] = rtensor
+        vl[0][1]["pooled_output"] = rpooled
+        return (vl,)

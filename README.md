@@ -186,7 +186,7 @@ You can also get the node from comfy manager under the name of More math.
   - refer to `IMAGE and LATENT` for most variables
   - `I` or `input_latent` – latent used as input to generate noise before noise is generated into it
 - **GUIDER**
-  - refer to `IMAGE and LATENT` for visual part (positions, sizes, etc.)
+  - refer to `IMAGE and LATENT`
   - `sigma` - current sigma value
   - `seed` - seed used for noise generation
   - `steps` - total number of sampling steps

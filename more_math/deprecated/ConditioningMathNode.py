@@ -1,10 +1,10 @@
-from .helper_functions import commonLazy,parse_expr, generate_dim_variables, as_tensor, prepare_inputs, getIndexTensorAlongDim, normalize_to_common_shape
+from ..helper_functions import commonLazy,parse_expr, generate_dim_variables, as_tensor, prepare_inputs, getIndexTensorAlongDim, normalize_to_common_shape
 from comfy_api.latest import io
 import torch
 
-from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from ..Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
-class ConditioningMathNode(io.ComfyNode):
+class ConditioningMathNodeOLD(io.ComfyNode):
     """
     Enables math operations on conditionings.
 

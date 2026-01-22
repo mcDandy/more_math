@@ -2,6 +2,7 @@ from .SigmasMathNode import SigmasMathNode
 from .GuiderMathNode import GuiderMathNode
 from .deprecated.NoiseMathNode import NoiseMathNodeOLD
 from .deprecated.AudioMathNode import AudioMathNodeOLD
+from .deprecated.ConditioningMathNode import ConditioningMathNodeOLD
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
@@ -78,6 +79,7 @@ class MoreMathExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
             ConditioningMathNode,
+            ConditioningMathNodeOLD,
             ModelMathNode,
             CLIPMathNode,
             VAEMathNode,

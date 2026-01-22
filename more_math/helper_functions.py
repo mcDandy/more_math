@@ -132,6 +132,8 @@ def normalize_to_common_shape(*tensors, mode="pad"):
     - mode="pad": Pad with zeros to the max shape.
     - mode="tile": Tile to match (or exceed) dimensions, then truncate excess.
     """
+    if mode not in ("pad", "tile"):
+        return tensors
     valid_tensors = [t for t in tensors if torch.is_tensor(t)]
     if len(valid_tensors) <= 1:
         return tensors

@@ -100,7 +100,6 @@ class MathGuider:
         return None
 
     def __call__(self, x, sigma, model_options={}, seed=None):
-        # Collect predictions from all guiders
         g_results = {}
         for k, guider in self.V.items():
             if guider is not None:
@@ -108,36 +107,20 @@ class MathGuider:
             else:
                 g_results[k] = torch.zeros_like(x)
 
-        # Handle NestedTensor logic similar to SamplerMathNode but for noise predictions
-        # Usually noise predictions match x shape directly
-
-        # Context variables
         eval_samples = x
         ndim = eval_samples.ndim
-
-        # Depending on if it's batched or not, dimensions might vary
-        # Expected shape [B, C, H, W]
-        # x comes from KSamplerX0Inpaint call which passes x (latent)
 
         batch_dim = 0
         channel_dim = 1
         height_dim = 2
         width_dim = 3
-        time_dim = None # standard 4D latent
+        time_dim = None
 
-        # Heuristic for dimensions based on SamplerMathNode
-        if ndim == 3: # Flattened? or 1D?
-            pass
-        if ndim == 4:
-            pass
         if ndim >= 5:
-            time_dim = 2 # [B, C, T, H, W]? or [B, F, C, H, W]
+            time_dim = 2
             channel_dim = 1
             height_dim = 3
             width_dim = 4
-
-        # SamplerMathNode used negative indices. Let's stick to safe assumptions or reuse helper
-        # generate_dim_variables uses shape
 
         frame_count = eval_samples.shape[time_dim] if time_dim is not None else 1
 
@@ -156,13 +139,12 @@ class MathGuider:
             "batch_count": eval_samples.shape[0],
             "N": eval_samples.shape[channel_dim] if channel_dim < ndim else 0,
             "channel_count": eval_samples.shape[channel_dim] if channel_dim < ndim else 0,
-            "sigma": sigma.item(), # sigma is scalar or tensor? usually tensor broadcastable
+            "sigma": sigma.item(),
             "seed": seed if seed is not None else 0,
             "steps": self.steps,
             "current_step": self.current_step,
         }
 
-        # Add dynamic inputs and aliases
         variables.update(g_results)
         variables.update({
             "a": g_results.get("V0", make_zero_like(eval_samples)),
@@ -171,7 +153,6 @@ class MathGuider:
             "d": g_results.get("V3", make_zero_like(eval_samples)),
         })
 
-        # Add F inputs
         for k, v in self.F.items():
             variables[k] = v if v is not None else 0.0
 
@@ -180,7 +161,6 @@ class MathGuider:
         visitor = UnifiedMathVisitor(variables, eval_samples.shape)
         result_tensor = visitor.visit(self.tree)
         self.current_step = self.current_step + 1;
-        # Result should be noise prediction, matching x shape
         return as_tensor(result_tensor, eval_samples.shape).to(x.device)
 
     def sample(self, noise, latent_image, sampler, sigmas, denoise_mask=None, callback=None, disable_pbar=False, seed=None):
@@ -189,101 +169,60 @@ class MathGuider:
         if sigmas.shape[-1] == 0:
             return latent_image
 
-        # 1. Setup all guiders
-        # We need to replicate what CFGGuider.sample does for each sub-guider to prepare them
-        # (conds processing, model patching)
-
-        # Group guiders by model_patcher to avoid double patching if possible,
-        # but prepare_sampling creates a NEW inner_model wrapper, so safe to call multiple times?
-        # CFGGuider.sample sets self.inner_model.
-
-        # We will iterate and setup each.
         active_guiders = [g for g in self.V.values() if g is not None]
         if not active_guiders:
-            return latent_image # Or zero noise? But without model we can't do anything really.
+            return latent_image
 
-        # Assume G0 is the primary one for model properties (like noise scaling)
         primary_guider = active_guiders[0]
-
-        # We hold a list of cleanup functions or objects
         cleanup_items = []
 
         try:
-            # Setup phase
             for guider in active_guiders:
-                # Assuming guider is CFGGuider-like
                 if hasattr(guider, "original_conds"):
                     guider.conds = {}
                     for k in guider.original_conds:
                         guider.conds[k] = list(map(lambda a: a.copy(), guider.original_conds[k]))
 
-                # Run standard hooks/preprocessing if available
                 if hasattr(comfy.samplers, "preprocess_conds_hooks") and hasattr(guider, "conds"):
                      comfy.samplers.preprocess_conds_hooks(guider.conds)
 
-                # Prepare model patcher
                 if hasattr(guider, "model_patcher"):
-                    # Backup options
                     guider._orig_model_options = guider.model_options
                     guider.model_options = comfy.model_patcher.create_model_options_clone(guider.model_options)
-
-                    # Hint: Hook mode handling?
-                    # For now simplified:
                     comfy.sampler_helpers.prepare_model_patcher(guider.model_patcher, guider.conds, guider.model_options)
-
                     if hasattr(comfy.samplers, "filter_registered_hooks_on_conds"):
                         comfy.samplers.filter_registered_hooks_on_conds(guider.conds, guider.model_options)
 
-                    # Prepare sampling (loads model)
                     guider.inner_model, guider.conds, guider.loaded_models = comfy.sampler_helpers.prepare_sampling(
                         guider.model_patcher, noise.shape, guider.conds, guider.model_options
                     )
 
                     cleanup_items.append(guider)
 
-            # Load devices and cast options
-            # Again, assuming primary guider dictates the device
             device = primary_guider.model_patcher.load_device
             noise = noise.to(device)
             latent_image = latent_image.to(device)
             sigmas = sigmas.to(device)
 
-            # Cast load options for all
             for guider in active_guiders:
                 if hasattr(guider, "model_options"):
                      comfy.samplers.cast_to_load_options(guider.model_options, device=device, dtype=guider.model_patcher.model_dtype())
-
-            # Pre-run models
-            # Just run pre_run on all patchers. Unique them?
-            # If they share the patcher, pre_run might be idempotent or ref-counted?
-            # ModelPatcher.pre_run is NOT ref counted usually.
-            # But usually we shouldn't mix different models.
-            # If they are same patcher, we should only call once.
 
             patchers = set(g.model_patcher for g in active_guiders if hasattr(g, "model_patcher"))
             for p in patchers:
                 p.pre_run()
 
             try:
-                # Helper to process latent in/out
-                # Using primary guider logic
                 if latent_image is not None and torch.count_nonzero(latent_image) > 0:
                     latent_image = primary_guider.inner_model.process_latent_in(latent_image)
 
-                # Process conds for all guiders (area masks etc)
                 for guider in active_guiders:
                      if hasattr(guider, "inner_model") and hasattr(guider, "conds"):
                          guider.conds = comfy.samplers.process_conds(
                              guider.inner_model, noise, guider.conds, device, latent_image, denoise_mask, seed
                          )
 
-                # Set inner_model of self to primary's inner_model so KSampler can access it
                 self.inner_model = primary_guider.inner_model
-
-                # Execute Sampler
-                # We need a wrapper executor like CFGGuider does?
-                # "executor.execute(self, sigmas, ...)"
-                # But here 'self' is the 'model' passed to sampler.
 
                 extra_model_options = comfy.model_patcher.create_model_options_clone(primary_guider.model_options)
                 extra_model_options.setdefault("transformer_options", {})["sample_sigmas"] = sigmas
@@ -301,15 +240,12 @@ class MathGuider:
                     p.cleanup()
 
         finally:
-            # Cleanup guiders
             for guider in cleanup_items:
                 if hasattr(guider, "model_patcher") and hasattr(guider, "loaded_models"):
                      comfy.sampler_helpers.cleanup_models(guider.conds, guider.loaded_models)
                      if hasattr(guider, "_orig_model_options"):
-                         # restore options? CFGGuider does logic with load_options casting back to offload
                          comfy.samplers.cast_to_load_options(guider.model_options, device=guider.model_patcher.offload_device)
                          guider.model_options = guider._orig_model_options
-                         # restore hook patches
                          guider.model_patcher.restore_hook_patches()
 
                      del guider.inner_model

@@ -33,7 +33,7 @@ class GuiderMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Guider.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Guider", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
+                io.String.Input(id="Expression", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
             ],
             outputs=[
                 io.Guider.Output(),
@@ -41,8 +41,8 @@ class GuiderMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Guider, V, F):
-        input_stream = InputStream(Guider)
+    def check_lazy_status(cls, Expression, V, F):
+        input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
         stream.fill()
@@ -72,8 +72,8 @@ class GuiderMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Guider):
-        return (MathGuider(V, F, Guider),)
+    def execute(cls, V, F, Expression):
+        return (MathGuider(V, F, Expression),)
 
 
 class MathGuider:
@@ -89,14 +89,10 @@ class MathGuider:
 
     @property
     def model_patcher(self):
-        # Return the model patcher of the first valid guider
-        # This is needed because some nodes (like SamplerCustomAdvanced) inspect the model via the guider
         for v in self.V.values():
             if v is not None and hasattr(v, "model_patcher"):
                 return v.model_patcher
-        # If no guider has it (e.g. all None or bare wrappers), try to return shared inner model's patcher if available?
-        # But usually we need it before inner_model is set.
-        # So we just return None which might fail later if caller doesn't check.
+
         return None
 
     def __call__(self, x, sigma, model_options={}, seed=None):

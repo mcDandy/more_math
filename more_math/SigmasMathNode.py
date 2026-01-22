@@ -25,7 +25,7 @@ class SigmasMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Sigmas.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Image", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input images"),
+                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input images"),
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
@@ -39,9 +39,9 @@ class SigmasMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Image, V, F, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile"):
 
-        input_stream = InputStream(Image)
+        input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
         stream.fill()
@@ -71,7 +71,7 @@ class SigmasMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Image, length_mismatch="tile"):
+    def execute(cls, V, F, Expression, length_mismatch="tile"):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Determine reference image for zero-initialization (fallback for a,b,c,d)
@@ -124,7 +124,7 @@ class SigmasMathNode(io.ComfyNode):
         for k, v in F.items():
             variables[k] = v if v is not None else 0.0
 
-        tree = parse_expr(Image);
+        tree = parse_expr(Expression);
         visitor = UnifiedMathVisitor(variables, ae.shape)
         result = visitor.visit(tree)
         result = as_tensor(result, ae.shape)

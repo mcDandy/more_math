@@ -15,6 +15,7 @@ from .SpectrogramToAudioNode import SpectrogramToAudio
 from .AudioToSpectrogramNode import AudioToSpectrogram
 
 from .NoiseMathNode import NoiseMathNode
+from .AudioMathNode import AudioMathNode
 
 from comfy_api.latest import ComfyExtension, io
 
@@ -93,7 +94,8 @@ class MoreMathExtension(ComfyExtension):
             SpectrogramToAudio,
             SigmasMathNode,
             GuiderMathNode,
-            NoiseMathNode
+            NoiseMathNode,
+            AudioMathNode
         ]
 
 

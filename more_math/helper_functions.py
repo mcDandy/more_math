@@ -16,7 +16,7 @@ class ThrowingErrorListener(ErrorListener):
 
 def as_tensor(value, shape):
     if isinstance(value, torch.Tensor) or getattr(value, "is_nested", False):
-        return value
+        return value.contiguous()
     if isinstance(value, (float, int)):
         value = (value,)
     return torch.broadcast_to(torch.Tensor(value), shape)
@@ -155,7 +155,7 @@ def normalize_to_common_shape(*tensors, mode="pad"):
 
     def normalize_one(t, shape):
         if t.shape == shape:
-            return t
+            return t.contiguous()
 
         # Match ndim first
         curr_t = t
@@ -181,12 +181,12 @@ def normalize_to_common_shape(*tensors, mode="pad"):
         out = torch.zeros(shape, dtype=curr_t.dtype, device=curr_t.device)
         slices = tuple(slice(0, d) for d in curr_t.shape)
         out[slices] = curr_t
-        return out
+        return out.contiguous()
 
     result = []
     for t in tensors:
         if torch.is_tensor(t):
             result.append(normalize_one(t, target_shape))
         else:
-            result.append(t)
+            result.append(t.contiguous())
     return tuple(result)

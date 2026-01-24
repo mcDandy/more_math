@@ -41,7 +41,7 @@ class VideoMathNode(io.ComfyNode):
                 io.String.Input(id="Audio", default="a*(1-w)+b*w", tooltip="Expression for the audio component"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["tile", "error", "pad"],
+                    options=["error", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched frame/sample counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
                 )

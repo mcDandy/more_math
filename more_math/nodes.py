@@ -3,6 +3,13 @@ from .GuiderMathNode import GuiderMathNode
 from .deprecated.NoiseMathNode import NoiseMathNodeOLD
 from .deprecated.AudioMathNode import AudioMathNodeOLD
 from .deprecated.ConditioningMathNode import ConditioningMathNodeOLD
+from .deprecated.ImageMathNode import ImageMathNodeOLD
+from .deprecated.LatentMathNode import LatentMathNodeOLD
+from .deprecated.MaskMathNode import MaskMathNodeOLD
+from .deprecated.ModelMathNode import ModelMathNodeOLD
+from .deprecated.VaeMathNode import VAEMathNodeOLD
+from .deprecated.ClipMathNode import CLIPMathNodeOLD
+
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
 from .LatentMathNode import LatentMathNode
@@ -81,11 +88,17 @@ class MoreMathExtension(ComfyExtension):
             ConditioningMathNode,
             ConditioningMathNodeOLD,
             ModelMathNode,
+            ModelMathNodeOLD,
             CLIPMathNode,
+            CLIPMathNodeOLD,
             VAEMathNode,
+            VAEMathNodeOLD,
             LatentMathNode,
+            LatentMathNodeOLD,
             ImageMathNode,
+            ImageMathNodeOLD,
             MaskMathNode,
+            MaskMathNodeOLD,
             FloatMathNode,
             NoiseMathNodeOLD,
             IntToFloatNode,

@@ -1,10 +1,14 @@
 from inspect import cleandoc
+import torch
 
-from .LatentMathNode import parse_expr
+from .helper_functions import parse_expr, as_tensor
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
-from .helper_functions import commonLazy
 from comfy_api.latest import io
+from antlr4 import InputStream, CommonTokenStream
+from .Parser.MathExprLexer import MathExprLexer
+from .Parser.MathExprParser import MathExprParser
+import re
 
 
 class FloatMathNode(io.ComfyNode):
@@ -12,15 +16,8 @@ class FloatMathNode(io.ComfyNode):
     This node enables the use of math expressions on Floats.
 
     Inputs:
-        a, b, c, d: Floats, bound to variables with the same name.
-        w, x, y, z: Floats, bound to variables of the expression.
+        V: Autogrow float inputs (V0, V1, ...)
         FloatFunc: String, describing math expression.
-                   Valid functions: sin, cos, tan, abs, sqrt, min, max, norm, etc.
-                   Operators: +, -, *, /, ^, %.
-                   Constants: e, pi.
-
-    Outputs:
-        FLOAT: The result of evaluating the math expression.
     """
 
     @classmethod
@@ -30,14 +27,7 @@ class FloatMathNode(io.ComfyNode):
             category="More math",
             display_name="Float math",
             inputs=[
-                io.Float.Input(id="a", force_input=True),
-                io.Float.Input(id="b", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="c", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="d", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="w", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="y", default=0.0, optional=True, lazy=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, optional=True, lazy=True, force_input=True),
+                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Float.Input("values"), prefix="V", min=1, max=50)),
                 io.String.Input(id="FloatFunc", default="a*(1-w)+b*w", tooltip="Expression to use on inputs"),
             ],
             outputs=[
@@ -48,20 +38,60 @@ class FloatMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, FloatFunc, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0,):
-        return commonLazy(FloatFunc, a, b, c, d, w, x, y, z)
+    def check_lazy_status(cls, FloatFunc, V):
+        input_stream = InputStream(FloatFunc)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        stream.fill()
+
+        # Support aliases
+        # Legacy FloatMathNode mapped a,b,c,d,w,x,y,z to V0-V7 roughly?
+        # Actually Step 37 showed explicit mapping:
+        # a->V0, b->V1, c->V2, d->V3, w->V4, x->V5, y->V6, z->V7
+        aliases = {
+            "a": "V0", "b": "V1", "c": "V2", "d": "V3",
+            "w": "V4", "x": "V5", "y": "V6", "z": "V7"
+        }
+
+        needed = []
+        needed1 = []
+        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
+            var_name = token.text
+
+            if re.match(r"V[0-9]+", var_name):
+                needed.append(var_name)
+            elif var_name in aliases:
+                needed.append(aliases[var_name])
+
+        for v in needed:
+            if v not in V or V[v] is None:
+                needed1.append(v)
+        return needed1
 
     @classmethod
-    def execute(cls, FloatFunc, a, b=0.0, c=0.0, d=0.0, w=0.0, x=0.0, y=0.0, z=0.0):
+    def execute(cls, FloatFunc, V):
 
-        variables = {
-            "a": a,
-            "b": b,
-            "c": c,
-            "d": d,
-            "w": w, "x": x, "y": y, "z": z
-        }
+        variables = {}
+        # Populate aliases
+        variables["a"] = V.get("V0", 0.0)
+        variables["b"] = V.get("V1", 0.0)
+        variables["c"] = V.get("V2", 0.0)
+        variables["d"] = V.get("V3", 0.0)
+        variables["w"] = V.get("V4", 0.0)
+        variables["x"] = V.get("V5", 0.0)
+        variables["y"] = V.get("V6", 0.0)
+        variables["z"] = V.get("V7", 0.0)
+        
+        # Populate all V inputs
+        for k, val in V.items():
+            variables[k] = val if val is not None else 0.0
+
         tree = parse_expr(FloatFunc);
+        # scalar execution
+        # UnifiedMathVisitor expects variables and a shape. Shape [1] for scalar?
         visitor = UnifiedMathVisitor(variables, [1])
         result = visitor.visit(tree)
-        return (result,)
+        # Result might be float or tensor(scalar)
+        if torch.is_tensor(result):
+             result = result[0].item()
+        return (float(result),)

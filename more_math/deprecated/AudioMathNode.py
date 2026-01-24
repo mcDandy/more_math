@@ -34,7 +34,7 @@ class AudioMathNodeOLD(io.ComfyNode):
                 io.String.Input(id="Audio", default="a*(1-w)+b*w", tooltip="Expression to apply on input audio waveforms"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["tile", "error", "pad"],
+                    options=["error", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched audio sample counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing samples as zero."
                 )

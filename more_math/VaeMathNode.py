@@ -2,34 +2,31 @@ from inspect import cleandoc
 from comfy_api.latest import io
 import copy
 from .modelLikeCommon import calculate_patches
-from .helper_functions import commonLazy
+from antlr4 import InputStream, CommonTokenStream
+from .Parser.MathExprLexer import MathExprLexer
+from .Parser.MathExprParser import MathExprParser
+import re
 
 
 class VAEMathNode(io.ComfyNode):
     """
-    This node enables the use of math expressions on VAE weights.
+    This node enables the use of math expressions on VAE weights using Autogrow inputs.
     """
 
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_VAEMathNode",
+            node_id="mrmth_ag_VAEMathNode",
             display_name="VAE Math",
             category="More math",
             inputs=[
-                io.Vae.Input(id="a", tooltip="Main VAE (base)"),
-                io.Vae.Input(id="b", optional=True, lazy=True, tooltip="Optional 2nd VAE"),
-                io.Vae.Input(id="c", optional=True, lazy=True, tooltip="Optional 3rd VAE"),
-                io.Vae.Input(id="d", optional=True, lazy=True, tooltip="Optional 4th VAE"),
-                io.Float.Input(id="w", default=0.0, lazy=True, optional=True, force_input=True),
-                io.Float.Input(id="x", default=0.0, lazy=True, optional=True, force_input=True),
-                io.Float.Input(id="y", default=0.0, lazy=True, optional=True, force_input=True),
-                io.Float.Input(id="z", default=0.0, lazy=True, optional=True, force_input=True),
-                io.String.Input(id="Model", default="a*(1-w)+b*w", tooltip="Expression to apply on weights"),
+                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Vae.Input("values"), prefix="V", min=1, max=50)),
+                io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
+                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on weights"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["broadcast", "passthrough", "pad"],
-                    default="broadcast",
+                    options=["error", "error", "pad"],
+                    default="error",
                     tooltip="How to handle mismatched layer counts. For models, this usually defaults to broadcast (zero for missing layers)."
                 )
             ],
@@ -41,17 +38,61 @@ class VAEMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Model, a, b=[], c=[], d=[], w=0, x=0, y=0, z=0, length_mismatch="broadcast"):
-        return commonLazy(Model, a, b, c, d, w, x, y, z)
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile"):
+
+        input_stream = InputStream(Expression)
+        lexer = MathExprLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        stream.fill()
+
+        # Support aliases
+        aliases_img = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
+        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
+
+        needed = []
+        needed1 = []
+        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
+            var_name = token.text
+
+            if re.match(r"[VF][0-9]+", var_name):
+                needed.append(var_name)
+            elif var_name in aliases_img:
+                needed.append(aliases_img[var_name])
+            elif var_name in aliases_flt:
+                needed.append(aliases_flt[var_name])
+        for v in needed:
+            if v.startswith("V"):
+                if v not in V or V[v] is None:
+                    needed1.append(v)
+            elif v.startswith("F"):
+                if v not in F or F[v] is None:
+                    needed1.append(v)
+        return needed1
 
     @classmethod
-    def execute(cls, Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, length_mismatch="broadcast") -> io.NodeOutput:
-        patcher_a = a.patcher
-        patcher_b = b.patcher if b else None
-        patcher_c = c.patcher if c else None
-        patcher_d = d.patcher if d else None
+    def execute(cls, V, F, Expression, length_mismatch="tile") -> io.NodeOutput:
+        # Determine reference VAE
+        a = V.get("V0")
+        if a is None:
+             for m in V.values():
+                 if m is not None:
+                      a = m
+                      break
+        if a is None:
+             raise ValueError("At least one input VAE is required.")
 
-        patches = calculate_patches(Model, patcher_a, patcher_b, patcher_c, patcher_d, w, x, y, z)
+        patcher_a = a.patcher
+        
+        # Prepare VAE patchers for calculation
+        # We need to map VAE wrappers to their patchers for `calculate_patches`
+        
+        patchers_V = {}
+        for k, v in V.items():
+            if v is not None:
+                patchers_V[k] = v.patcher
+                
+        # Calculate patches using the patchers (weights are in patcher.model.state_dict)
+        patches = calculate_patches(Expression, patcher_a, None, None, None, 0,0,0,0, V=patchers_V, F=F)
 
         # VAE does not have a clone method, so we shallow copy and clone the patcher
         out_vae = copy.copy(a)

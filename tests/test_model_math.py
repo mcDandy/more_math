@@ -49,7 +49,7 @@ def test_model_math_simple_add():
     expr = "a + b"
 
     # Execute
-    result_tuple = ModelMathNode.execute(expr, a, b=b)
+    result_tuple = ModelMathNode.execute(Expression=expr, V={"V0": a, "V1": b}, F={})
     result_model = result_tuple[0]
 
     # Verify patches
@@ -81,7 +81,7 @@ def test_model_math_zero_default():
     # diff = 10 - 10 = 0.
     # Should skip patch.
 
-    result_tuple = ModelMathNode.execute("a + b", a, b=None)
+    result_tuple = ModelMathNode.execute(Expression="a + b", V={"V0": a}, F={})
     result_model = result_tuple[0]
 
     assert len(result_model.patches) == 0
@@ -94,7 +94,7 @@ def test_model_math_custom_formula():
     # expr: a * w
     # w input = 0.5
 
-    result_tuple = ModelMathNode.execute("a * w", a, w=0.5)
+    result_tuple = ModelMathNode.execute(Expression="a * w", V={"V0": a}, F={"F0": 0.5})
     result_model = result_tuple[0]
 
     # res = 2.0 * 0.5 = 1.0
@@ -168,7 +168,7 @@ def test_clip_math():
     sd_a = {"text_model.encoder.layers.0.mlp.fc1.weight": torch.tensor([1.0])}
     clip_a = MockPatcherContainer(sd_a)
 
-    result_tuple = CLIPMathNode.execute("a * 2", clip_a)
+    result_tuple = CLIPMathNode.execute(Expression="a * 2", V={"V0": clip_a}, F={})
     result_clip = result_tuple[0]
 
     # 1.0 * 2 = 2.0. diff = 1.0.
@@ -193,7 +193,7 @@ def test_vae_math():
 
     vae_a = MockVAE(sd_a)
 
-    result_tuple = VAEMathNode.execute("a + 1", vae_a)
+    result_tuple = VAEMathNode.execute(Expression="a + 1", V={"V0": vae_a}, F={})
     result_vae = result_tuple[0]
 
     # Check if result is a copy (not same object)
@@ -224,7 +224,7 @@ def test_model_math_disjoint_keys():
     # common: 1 + 2 = 3. diff = 2.
     # extra_b: should NOT be in patches because loop is over 'a'
 
-    result_tuple = ModelMathNode.execute("a + b", a.patcher, b=b.patcher)
+    result_tuple = ModelMathNode.execute(Expression="a + b", V={"V0": a.patcher, "V1": b.patcher}, F={})
     patches = result_tuple[0].patches
 
     assert "common" in patches
@@ -243,7 +243,7 @@ def test_model_math_weighted_merge():
     # expr: lerp(a, b, w) with w=0.5 -> 15.0
     # diff = 15 - 10 = 5.
 
-    result_tuple = ModelMathNode.execute("lerp(a, b, w)", a.patcher, b=b.patcher, w=0.5)
+    result_tuple = ModelMathNode.execute(Expression="lerp(a, b, w)", V={"V0": a.patcher, "V1": b.patcher}, F={"F0": 0.5})
     patches = result_tuple[0].patches
 
     assert "w" in patches

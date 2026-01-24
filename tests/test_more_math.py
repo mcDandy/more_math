@@ -77,7 +77,10 @@ def test_fft_invertibility():
     input_tensor = torch.randn(1, 4, 32, 32, dtype=torch.float32)
     input_dict = {"samples": input_tensor}
     # Execute ifft(fft(a))
-    result = LatentMathNode.execute(Latent="ifft(fft(a))", a=input_dict)
+    # Execute ifft(fft(a))
+    # Execute ifft(fft(a))
+    input_V = {"V0": input_dict}
+    result = LatentMathNode.execute(Expression="ifft(fft(a))", V=input_V, F={})
     output_tensor = result[0]["samples"]
     assert torch.allclose(input_tensor, output_tensor, atol=1e-5), f"Max difference: {(input_tensor - output_tensor).abs().max()}"
 
@@ -85,7 +88,7 @@ def test_fft_invertibility():
 def test_image_fft_dims():
     # Image input is (Batch, Height, Width, Channel)
     input_tensor = torch.randn(1, 32, 32, 3, dtype=torch.float32)
-    result = ImageMathNode.execute(Image="ifft(fft(a))", a=input_tensor)
+    result = ImageMathNode.execute(Expression="ifft(fft(a))", V={"V0": input_tensor}, F={})
     output_tensor = result[0]
     assert input_tensor.shape == output_tensor.shape
     assert torch.allclose(input_tensor, output_tensor, atol=1e-5), (
@@ -102,21 +105,21 @@ def test_latent_lerp():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
     l_b = {"samples": torch.full((1, 4, 32, 32), 10.0)}
-    res_lerp = node.execute("lerp(a, b, 0.5)", a=l_a, b=l_b)[0]["samples"]
+    res_lerp = node.execute(Expression="lerp(a, b, 0.5)", V={"V0": l_a, "V1": l_b}, F={})[0]["samples"]
     assert torch.allclose(res_lerp, torch.full_like(res_lerp, 5.0))
 
 
 def test_latent_step_true():
     node = LatentMathNode()
     # step(x, edge) where x=0.8, edge=0.5 -> 1
-    res_step = node.execute("step(a, 0.5)", a={"samples": torch.full((1, 1, 1, 1), 0.8)})[0]["samples"]
+    res_step = node.execute(Expression="step(a, 0.5)", V={"V0": {"samples": torch.full((1, 1, 1, 1), 0.8)}}, F={})[0]["samples"]
     assert torch.allclose(res_step, torch.ones_like(res_step))
 
 
 def test_latent_step_false():
     node = LatentMathNode()
     # step(x, edge) where x=0.2, edge=0.5 -> 0
-    res_step2 = node.execute("step(a, 0.5)", a={"samples": torch.full((1, 1, 1, 1), 0.2)})[0]["samples"]
+    res_step2 = node.execute(Expression="step(a, 0.5)", V={"V0": {"samples": torch.full((1, 1, 1, 1), 0.2)}}, F={})[0]["samples"]
     assert torch.allclose(res_step2, torch.zeros_like(res_step2))
 
 
@@ -125,7 +128,7 @@ def test_latent_swap():
     t_lat = torch.tensor([0.0, 10.0, 20.0, 30.0]).view(1, 4, 1, 1)
     # Swap channels 0 and 3 -> 30, 10, 20, 0
     l_swap = {"samples": t_lat}
-    res_swap = node.execute("swap(a, 1, 0, 3)", a=l_swap)[0]["samples"]
+    res_swap = node.execute(Expression="swap(a, 1, 0, 3)", V={"V0": l_swap}, F={})[0]["samples"]
     expected = torch.tensor([30.0, 10.0, 20.0, 0.0]).view(1, 4, 1, 1)
     assert torch.allclose(res_swap, expected)
 
@@ -133,21 +136,21 @@ def test_latent_swap():
 def test_latent_relu():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res_relu = node.execute("relu(-5.0)", a=l_a)[0]["samples"]
+    res_relu = node.execute(Expression="relu(-5.0)", V={"V0": l_a}, F={})[0]["samples"]
     assert torch.allclose(res_relu, torch.zeros_like(res_relu))
 
 
 def test_latent_sign():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res_sign = node.execute("sign(-5.0)", a=l_a)[0]["samples"]
+    res_sign = node.execute(Expression="sign(-5.0)", V={"V0": l_a}, F={})[0]["samples"]
     assert torch.allclose(res_sign, torch.full_like(res_sign, -1.0))
 
 
 def test_latent_fract():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res_fract = node.execute("fract(1.5)", a=l_a)[0]["samples"]
+    res_fract = node.execute(Expression="fract(1.5)", V={"V0": l_a}, F={})[0]["samples"]
     assert torch.allclose(res_fract, torch.full_like(res_fract, 0.5))
 
 
@@ -158,25 +161,25 @@ def test_latent_fract():
 
 def test_float_lerp():
     node = FloatMathNode()
-    res = node.execute("lerp(a, b, 0.5)", a=0.0, b=10.0)[0]
+    res = node.execute(FloatFunc="lerp(a, b, 0.5)", V={"V0": 0.0, "V1": 10.0})[0]
     assert abs(res - 5.0) < 1e-5
 
 
 def test_float_step():
     node = FloatMathNode()
-    res = node.execute("step(a, 0.5)", a=0.8)[0]
+    res = node.execute(FloatFunc="step(a, 0.5)", V={"V0": 0.8})[0]
     assert abs(res - 1.0) < 1e-5
 
 
 def test_float_relu():
     node = FloatMathNode()
-    res = node.execute("relu(a)", a=-5.0)[0]
+    res = node.execute(FloatFunc="relu(a)", V={"V0": -5.0})[0]
     assert abs(res - 0.0) < 1e-5
 
 
 def test_float_smoothstep():
     node = FloatMathNode()
-    res = node.execute("smoothstep(a, 0, 1)", a=0.5)[0]
+    res = node.execute(FloatFunc="smoothstep(a, 0, 1)", V={"V0": 0.5})[0]
     assert abs(res - 0.5) < 1e-5
 
 
@@ -187,34 +190,34 @@ def test_float_smoothstep():
 
 def test_float_fract():
     node = FloatMathNode()
-    res = node.execute("fract(a)", a=1.5)[0]
+    res = node.execute(FloatFunc="fract(a)", V={"V0": 1.5})[0]
     assert abs(res - 0.5) < 1e-5
 
 
 def test_float_softplus():
     node = FloatMathNode()
-    res = node.execute("softplus(a)", a=0.0)[0]
+    res = node.execute(FloatFunc="softplus(a)", V={"V0": 0.0})[0]
     assert abs(res - 0.69314718) < 1e-5
 
 
 def test_float_sign_negative():
     node = FloatMathNode()
-    assert node.execute("sign(a)", a=-10.0)[0] == -1.0
+    assert node.execute(FloatFunc="sign(a)", V={"V0": -10.0})[0] == -1.0
 
 
 def test_float_sign_positive():
     node = FloatMathNode()
-    assert node.execute("sign(a)", a=10.0)[0] == 1.0
+    assert node.execute(FloatFunc="sign(a)", V={"V0": 10.0})[0] == 1.0
 
 
 def test_float_sign_zero():
     node = FloatMathNode()
-    assert node.execute("sign(a)", a=0.0)[0] == 0.0
+    assert node.execute(FloatFunc="sign(a)", V={"V0": 0.0})[0] == 0.0
 
 
 def test_float_gelu():
     node = FloatMathNode()
-    assert node.execute("gelu(a)", a=0.0)[0] == 0.0
+    assert node.execute(FloatFunc="gelu(a)", V={"V0": 0.0})[0] == 0.0
 
 
 # ==========================================
@@ -225,21 +228,21 @@ def test_float_gelu():
 def test_latent_smoothstep():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute("smoothstep(0.5, 0, 1)", a=l_a)[0]["samples"]
+    res = node.execute(Expression="smoothstep(0.5, 0, 1)", V={"V0": l_a}, F={})[0]["samples"]
     assert torch.allclose(res, torch.full_like(res, 0.5))
 
 
 def test_latent_softplus():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute("softplus(0.0)", a=l_a)[0]["samples"]
+    res = node.execute(Expression="softplus(0.0)", V={"V0": l_a}, F={})[0]["samples"]
     assert torch.allclose(res, torch.full_like(res, 0.69314718))
 
 
 def test_latent_gelu():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute("gelu(0.0)", a=l_a)[0]["samples"]
+    res = node.execute(Expression="gelu(0.0)", V={"V0": l_a}, F={})[0]["samples"]
     assert torch.allclose(res, torch.zeros_like(res))
 
 
@@ -252,7 +255,7 @@ def test_image_lerp():
     node = ImageMathNode()
     img_red = torch.tensor([1.0, 0.0, 0.0]).view(1, 1, 1, 3)
     img_blue = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 1, 3)
-    res_blend = node.execute("lerp(a, b, 0.5)", a=img_red, b=img_blue)[0]
+    res_blend = node.execute(Expression="lerp(a, b, 0.5)", V={"V0": img_red, "V1": img_blue}, F={})[0]
     expected = torch.tensor([0.5, 0.0, 0.5]).view(1, 1, 1, 3)
     assert torch.allclose(res_blend, expected)
 
@@ -261,7 +264,7 @@ def test_image_swap():
     node = ImageMathNode()
     img_red = torch.tensor([1.0, 0.0, 0.0]).view(1, 1, 1, 3)
     img_blue = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 1, 3)
-    res_swap = node.execute("swap(a, 3, 0, 2)", a=img_red)[0]
+    res_swap = node.execute(Expression="swap(a, 3, 0, 2)", V={"V0": img_red}, F={})[0]
     assert torch.allclose(res_swap, img_blue)
 
 
@@ -275,7 +278,7 @@ def test_audio_math_basic():
     waveform = torch.randn(1, 1, 1024)
     audio = {"waveform": waveform, "sample_rate": 44100}
     # result = a * 2.0
-    res = node.execute("a * 2.0", a=audio)[0]
+    res = node.execute(Expression="a * 2.0", V={"V0": audio}, F={})[0]
     assert isinstance(res, dict)
     assert "waveform" in res
     assert res["sample_rate"] == 44100
@@ -290,14 +293,14 @@ def test_audio_math_basic():
 def test_float_nested_expressions_true():
     node = FloatMathNode()
     # lerp(0, 10, step(0.8, 0.5)) -> lerp(0, 10, 1) -> 10
-    res = node.execute("lerp(0, 10, step(0.8, 0.5))", a=0.0)[0]
+    res = node.execute(FloatFunc="lerp(0, 10, step(0.8, 0.5))", V={"V0": 0.0})[0]
     assert res == 10.0
 
 
 def test_float_nested_expressions_false():
     node = FloatMathNode()
     # lerp(0, 10, step(0.2, 0.5)) -> lerp(0, 10, 0) -> 0
-    res2 = node.execute("lerp(0, 10, step(0.2, 0.5))", a=0.0)[0]
+    res2 = node.execute(FloatFunc="lerp(0, 10, step(0.2, 0.5))", V={"V0": 0.0})[0]
     assert res2 == 0.0
 
 
@@ -310,7 +313,7 @@ def test_5d_tensors_identity():
     node = LatentMathNode()
     samples = torch.randn(1, 5, 4, 32, 32)
     l_in = {"samples": samples}
-    res = node.execute("a * 1.0", a=l_in)[0]["samples"]
+    res = node.execute(Expression="a * 1.0", V={"V0": l_in}, F={})[0]["samples"]
     assert res.shape == (1, 5, 4, 32, 32)
     assert torch.allclose(res, samples)
 
@@ -320,7 +323,7 @@ def test_5d_tensors_variable_T():
     samples = torch.randn(1, 5, 4, 32, 32)
     l_in = {"samples": samples}
     # In 5D, T maps to dim -4 (size 5)
-    res_t = node.execute("a + T", a=l_in)[0]["samples"]
+    res_t = node.execute(Expression="a + T", V={"V0": l_in}, F={})[0]["samples"]
     assert torch.allclose(res_t, samples + 5.0)
 
 
@@ -328,7 +331,7 @@ def test_5d_tensors_fft():
     node = LatentMathNode()
     samples = torch.randn(1, 5, 4, 32, 32)
     l_in = {"samples": samples}
-    res_fft = node.execute("ifft(fft(a))", a=l_in)[0]["samples"]
+    res_fft = node.execute(Expression="ifft(fft(a))", V={"V0": l_in}, F={})[0]["samples"]
     assert torch.allclose(res_fft, samples, atol=1e-5)
 
 
@@ -401,7 +404,7 @@ def test_nested_tensor_support():
     nt_in = NestedTensor([t1, t2])
     l_in = {"samples": nt_in}
 
-    res_lat = node.execute("a + 1.0", a=l_in)[0]["samples"]
+    res_lat = node.execute(Expression="a + 1.0", V={"V0": l_in}, F={})[0]["samples"]
 
     assert getattr(res_lat, "is_nested", False)
     res_list = res_lat.unbind()
@@ -419,32 +422,32 @@ def test_trig_functions():
     node = FloatMathNode()
     # Sin/Cos checks
     # sin(0) = 0, cos(0) = 1
-    assert abs(node.execute("sin(0)", a=0.0)[0] - 0.0) < 1e-5
-    assert abs(node.execute("cos(0)", a=0.0)[0] - 1.0) < 1e-5
+    assert abs(node.execute(FloatFunc="sin(0)", V={"V0": 0.0})[0] - 0.0) < 1e-5
+    assert abs(node.execute(FloatFunc="cos(0)", V={"V0": 0.0})[0] - 1.0) < 1e-5
     # tan(0) = 0
-    assert abs(node.execute("tan(0)", a=0.0)[0] - 0.0) < 1e-5
+    assert abs(node.execute(FloatFunc="tan(0)", V={"V0": 0.0})[0] - 0.0) < 1e-5
 
 
 def test_inverse_trig_functions():
     node = FloatMathNode()
     # asin(0) = 0, acos(1) = 0, atan(0) = 0
-    assert abs(node.execute("asin(0)", a=0.0)[0] - 0.0) < 1e-5
-    assert abs(node.execute("acos(1)", a=0.0)[0] - 0.0) < 1e-5
-    assert abs(node.execute("atan(0)", a=0.0)[0] - 0.0) < 1e-5
+    assert abs(node.execute(FloatFunc="asin(0)", V={"V0": 0.0})[0] - 0.0) < 1e-5
+    assert abs(node.execute(FloatFunc="acos(1)", V={"V0": 0.0})[0] - 0.0) < 1e-5
+    assert abs(node.execute(FloatFunc="atan(0)", V={"V0": 0.0})[0] - 0.0) < 1e-5
 
 
 def test_pow_log_functions():
     node = FloatMathNode()
     # pow(2, 3) = 8
-    assert abs(node.execute("pow(2, 3)", a=0.0)[0] - 8.0) < 1e-5
+    assert abs(node.execute(FloatFunc="pow(2, 3)", V={"V0": 0.0})[0] - 8.0) < 1e-5
     # sqrt(4) = 2
-    assert abs(node.execute("sqrt(4)", a=0.0)[0] - 2.0) < 1e-5
+    assert abs(node.execute(FloatFunc="sqrt(4)", V={"V0": 0.0})[0] - 2.0) < 1e-5
     # exp(0) = 1
-    assert abs(node.execute("exp(0)", a=0.0)[0] - 1.0) < 1e-5
+    assert abs(node.execute(FloatFunc="exp(0)", V={"V0": 0.0})[0] - 1.0) < 1e-5
     # log(100) = 2 (base 10)
-    assert abs(node.execute("log(100)", a=0.0)[0] - 2.0) < 1e-5
+    assert abs(node.execute(FloatFunc="log(100)", V={"V0": 0.0})[0] - 2.0) < 1e-5
     # ln(e) = 1. Using 'e' constant logic check or approx 2.718
-    assert abs(node.execute("ln(2.7182818)", a=0.0)[0] - 1.0) < 1e-4
+    assert abs(node.execute(FloatFunc="ln(2.7182818)", V={"V0": 0.0})[0] - 1.0) < 1e-4
 
 
 def test_min_max_functions():
@@ -452,19 +455,19 @@ def test_min_max_functions():
     node = FloatMathNode()
     print("Testing tmin...", flush=True)
     # tmin(2, 5) = 2, tmax(2, 5) = 5
-    assert abs(node.execute("tmin(2, 5)", a=0.0)[0] - 2.0) < 1e-5
+    assert abs(node.execute(FloatFunc="tmin(2, 5)", V={"V0": 0.0})[0] - 2.0) < 1e-5
     print("Testing tmax...", flush=True)
-    assert abs(node.execute("tmax(2, 5)", a=0.0)[0] - 5.0) < 1e-5
+    assert abs(node.execute(FloatFunc="tmax(2, 5)", V={"V0": 0.0})[0] - 5.0) < 1e-5
 
     # smin/smax (Smooth min/max? Or just multi-arg min/max? TensorEvalVisitor uses stack.min/max)
     # smin(1, 2, 3) = 1
     print("Testing smin...", flush=True)
-    res_smin = node.execute("smin(1, 2, 3)", a=0.0)[0]
+    res_smin = node.execute(FloatFunc="smin(1, 2, 3)", V={"V0": 0.0})[0]
     print(f"smin result: {res_smin} type: {type(res_smin)}", flush=True)
     assert abs(res_smin - 1.0) < 1e-5
 
     print("Testing smax...", flush=True)
-    res_smax = node.execute("smax(1, 2, 3)", a=0.0)[0]
+    res_smax = node.execute(FloatFunc="smax(1, 2, 3)", V={"V0": 0.0})[0]
     print(f"smax result: {res_smax} type: {type(res_smax)}", flush=True)
     assert abs(res_smax - 3.0) < 1e-5
 
@@ -472,23 +475,23 @@ def test_min_max_functions():
 def test_basic_utilities():
     node = FloatMathNode()
     # abs(-5) = 5
-    assert abs(node.execute("abs(-5)", a=0.0)[0] - 5.0) < 1e-5
+    assert abs(node.execute(FloatFunc="abs(-5)", V={"V0": 0.0})[0] - 5.0) < 1e-5
     # floor(1.9) = 1
-    assert abs(node.execute("floor(1.9)", a=0.0)[0] - 1.0) < 1e-5
+    assert abs(node.execute(FloatFunc="floor(1.9)", V={"V0": 0.0})[0] - 1.0) < 1e-5
     # ceil(1.1) = 2
-    assert abs(node.execute("ceil(1.1)", a=0.0)[0] - 2.0) < 1e-5
+    assert abs(node.execute(FloatFunc="ceil(1.1)", V={"V0": 0.0})[0] - 2.0) < 1e-5
     # round(1.6) = 2, round(1.4) = 1
-    assert abs(node.execute("round(1.6)", a=0.0)[0] - 2.0) < 1e-5
-    assert abs(node.execute("round(1.4)", a=0.0)[0] - 1.0) < 1e-5
+    assert abs(node.execute(FloatFunc="round(1.6)", V={"V0": 0.0})[0] - 2.0) < 1e-5
+    assert abs(node.execute(FloatFunc="round(1.4)", V={"V0": 0.0})[0] - 1.0) < 1e-5
     # clamp(10, 0, 5) = 5, clamp(-5, 0, 5) = 0
-    assert abs(node.execute("clamp(10, 0, 5)", a=0.0)[0] - 5.0) < 1e-5
-    assert abs(node.execute("clamp(-5, 0, 5)", a=0.0)[0] - 0.0) < 1e-5
+    assert abs(node.execute(FloatFunc="clamp(10, 0, 5)", V={"V0": 0.0})[0] - 5.0) < 1e-5
+    assert abs(node.execute(FloatFunc="clamp(-5, 0, 5)", V={"V0": 0.0})[0] - 0.0) < 1e-5
 
 
 def test_advanced_activations():
     node = FloatMathNode()
     # sigm(0) = 0.5
-    assert abs(node.execute("sigm(0)", a=0.0)[0] - 0.5) < 1e-5
+    assert abs(node.execute(FloatFunc="sigm(0)", V={"V0": 0.0})[0] - 0.5) < 1e-5
 
 
 if __name__ == "__main__":

@@ -6,12 +6,13 @@ start: funcDef* varDef* expr EOF;
 funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW expr SEMICOLON # FunctionDef;
 
-varDef:
-	VARIABLE EQUEALS expr SEMICOLON ;
+varDef: VARIABLE EQUEALS expr SEMICOLON;
 
 paramList: VARIABLE (COMMA VARIABLE)*;
 
-expr: atom | compExpr;
+expr: ternaryExpr | atom | compExpr;
+
+ternaryExpr: compExpr QUESTION expr COLON expr # TernaryExp;
 
 compExpr:
 	compExpr GT addExpr		# GtExp
@@ -137,8 +138,8 @@ func3:
 	| LOGNORMAL LPAREN expr COMMA expr COMMA expr RPAREN	# LogNormalFunc;
 
 func4:
-	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # SwapFunc
-	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # NvlFunc;
+	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
+	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc;
 
 // N-argument functions
 funcN:
@@ -253,6 +254,8 @@ SEMICOLON: ';';
 ARROW: '->';
 LBRACKET: '[';
 RBRACKET: ']';
+QUESTION: '?';
+COLON: ':';
 
 CONSTANT: ('pi' | 'PI' | 'e' | 'E');
 NUMBER: [0-9]+ ('.' [0-9]+)?;

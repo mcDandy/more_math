@@ -150,6 +150,38 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitToAtom(self, ctx):
         return self.visit(ctx.atom())
 
+    def visitTernaryExp(self, ctx):
+        condition = self.visit(ctx.compExpr())
+
+        if self._is_tensor(condition):
+            true_val = self.visit(ctx.expr(0))
+            false_val = self.visit(ctx.expr(1))
+            true_t = self._promote_to_tensor(true_val)
+            false_t = self._promote_to_tensor(false_val)
+
+            cond_t = torch.isclose(condition, torch.tensor(0.0, device=self.device)) == False
+            return torch.where(cond_t, true_t, false_t).contiguous()
+
+        if self._is_list(condition):
+            res = []
+            cache_true = None
+            cache_false = None
+            for i, c in enumerate(condition):
+                if c:
+                    if cache_true is None:
+                        cache_true = self.visit(ctx.expr(0))
+                    res.append(cache_true)
+                else:
+                    if cache_false is None:
+                        cache_false = self.visit(ctx.expr(1))
+                    res.append(cache_false)
+            return res
+
+        if condition:
+            return self.visit(ctx.expr(0))
+        else:
+            return self.visit(ctx.expr(1))
+
     # Binary Ops
     def visitAddExp(self, ctx):
         return self._bin_op(self.visit(ctx.addExpr()), self.visit(ctx.mulExpr()), torch.add, lambda a, b: a + b)
@@ -747,6 +779,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         p_raw = self.visit(ctx.expr(1))
 
         if self._is_tensor(p_raw):
+            # p is 0-100. q = p / 100
             # p is 0-100. q = p / 100
             return self._quartile_helper(val, p_raw.float() / 100.0)
         if self._is_list(p_raw):

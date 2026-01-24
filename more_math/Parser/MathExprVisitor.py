@@ -34,6 +34,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#TernaryExp.
+    def visitTernaryExp(self, ctx:MathExprParser.TernaryExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#LtExp.
     def visitLtExp(self, ctx:MathExprParser.LtExpContext):
         return self.visitChildren(ctx)

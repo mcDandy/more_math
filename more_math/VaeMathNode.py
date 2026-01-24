@@ -92,7 +92,9 @@ class VAEMathNode(io.ComfyNode):
                 patchers_V[k] = v.patcher
                 
         # Calculate patches using the patchers (weights are in patcher.model.state_dict)
-        patches = calculate_patches(Expression, patcher_a, None, None, None, 0,0,0,0, V=patchers_V, F=F)
+        from .modelLikeCommon import calculate_patches_autogrow
+        aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
+        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F, mapping=aliases)
 
         # VAE does not have a clone method, so we shallow copy and clone the patcher
         out_vae = copy.copy(a)

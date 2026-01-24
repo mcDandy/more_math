@@ -108,7 +108,14 @@ class ModelMathNode(io.ComfyNode):
         # Let's pass the V and F dicts to a modified calculate_patches, or overload it.
         # I will update modelLikeCommon.py as part of this task.
         
-        patches = calculate_patches(Expression, a, b, c, d, w, x, y, z, V=V, F=F)
+        from .modelLikeCommon import calculate_patches_autogrow
+        
+        # Map inputs to patchers if needed (Model.Input gives Model wrapper, need state_dict source?)
+        # ModelMathNode inputs are Model wrappers (comfy.model_patcher.ModelPatcher).
+        # So V items are ready to be used.
+        
+        aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
+        patches = calculate_patches_autogrow(Expression, V=V, F=F, mapping=aliases)
         
         out_model = a.clone()
         if patches:

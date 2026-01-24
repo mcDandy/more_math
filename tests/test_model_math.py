@@ -229,7 +229,10 @@ def test_model_math_disjoint_keys():
 
     assert "common" in patches
     assert torch.allclose(patches["common"][0], torch.tensor([2.0]))
-    assert "extra_b" not in patches
+    # With Autogrow/Union logic, extra_b is included (treated as 0 in A).
+    # Result = a(0) + b(3) = 3. Diff vs a(0) = 3.
+    assert "extra_b" in patches
+    assert torch.allclose(patches["extra_b"][0], torch.tensor([3.0]))
 
 
 def test_model_math_weighted_merge():
@@ -250,6 +253,27 @@ def test_model_math_weighted_merge():
     assert torch.allclose(patches["w"][0], torch.tensor([5.0]))
 
 
+def test_model_math_3_way_merge():
+    # Test merging 3 models: V0 + V1 + V2
+    sd_a = {"w": torch.tensor([1.0])}
+    sd_b = {"w": torch.tensor([2.0])}
+    sd_c = {"w": torch.tensor([3.0])}
+
+    a = MockPatcherContainer(sd_a)
+    b = MockPatcherContainer(sd_b)
+    c = MockPatcherContainer(sd_c)
+
+    # Expression: a + b + c
+    # Expected: 1 + 2 + 3 = 6.
+    # Diff vs a (1.0) = 5.0.
+    
+    result_tuple = ModelMathNode.execute(Expression="a + b + c", V={"V0": a.patcher, "V1": b.patcher, "V2": c.patcher}, F={})
+    patches = result_tuple[0].patches
+
+    assert "w" in patches
+    assert torch.allclose(patches["w"][0], torch.tensor([5.0]))
+
+
 if __name__ == "__main__":
     test_model_math_simple_add()
     test_model_math_zero_default()
@@ -259,4 +283,5 @@ if __name__ == "__main__":
     test_vae_math()
     test_model_math_disjoint_keys()
     test_model_math_weighted_merge()
+    test_model_math_3_way_merge()
     print("All ModelMathNode tests passed!")

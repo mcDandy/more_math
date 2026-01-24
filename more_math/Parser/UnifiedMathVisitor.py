@@ -1071,7 +1071,17 @@ class UnifiedMathVisitor(MathExprVisitor):
             for i in range(len(ctx.funcDef())):
                 self.visit(ctx.funcDef(i))
 
+        if ctx.varDef():
+            for i in range(len(ctx.varDef())):
+                self.visit(ctx.varDef(i))
+
         return self.visit(ctx.expr())
+
+    def visitVarDef(self, ctx):
+        var_name = ctx.VARIABLE().getText()
+        var_value = self.visit(ctx.expr())
+        self.variables[var_name] = var_value
+        return {var_name: var_value}
 
 
     def visitFunctionDef(self, ctx):

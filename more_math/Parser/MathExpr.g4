@@ -1,10 +1,13 @@
 grammar MathExpr;
 
 // Top-level entry point
-start: funcDef* expr EOF;
+start: funcDef* varDef* expr EOF;
 
 funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW expr SEMICOLON # FunctionDef;
+
+varDef:
+	VARIABLE EQUEALS expr SEMICOLON ;
 
 paramList: VARIABLE (COMMA VARIABLE)*;
 
@@ -237,6 +240,7 @@ GT: '>';
 LE: '<=';
 LT: '<';
 EQ: '==';
+EQUEALS: '=';
 NE: '!=';
 PIPE: '|';
 LPAREN: '(';

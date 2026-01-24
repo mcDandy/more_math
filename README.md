@@ -22,6 +22,7 @@ You can also get the node from comfy manager under the name of More math.
 - Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS and GUIDER
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 - Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work.
+- Custom variables `varname=expression;` They must be between function definitions and expression an can be used in any later assigment or final expression. 
 
 ## Operators
 

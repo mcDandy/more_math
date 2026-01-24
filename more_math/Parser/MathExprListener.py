@@ -26,6 +26,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#varDef.
+    def enterVarDef(self, ctx:MathExprParser.VarDefContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#varDef.
+    def exitVarDef(self, ctx:MathExprParser.VarDefContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#paramList.
     def enterParamList(self, ctx:MathExprParser.ParamListContext):
         pass

@@ -19,6 +19,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#varDef.
+    def visitVarDef(self, ctx:MathExprParser.VarDefContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#paramList.
     def visitParamList(self, ctx:MathExprParser.ParamListContext):
         return self.visitChildren(ctx)

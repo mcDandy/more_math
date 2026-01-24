@@ -44,7 +44,7 @@ class MockPatcherContainer:
         new_obj = MockPatcherContainer(self.patcher.model.state_dict())
         new_obj.patcher = self.patcher.clone()
         return new_obj
-    
+
     def add_patches(self, patches, s1, s2):
         self.patcher.add_patches(patches, s1, s2)
 
@@ -84,7 +84,7 @@ def test_deprecated_model_math():
     sd_b = {"w": torch.tensor([2.0])}
     patcher_a = MockModelPatcher(sd_a)
     patcher_b = MockModelPatcher(sd_b)
-    
+
     # OLD signature: Model, a, b=...
     res = ModelMathNodeOLD.execute(Model="a+b", a=patcher_a, b=patcher_b)[0]
     print(f"DEBUG: res.patches keys: {res.patches.keys()}")
@@ -97,7 +97,7 @@ def test_deprecated_model_math():
 def test_deprecated_vae_math():
     sd_a = {"w": torch.tensor([1.0])}
     vae_a = MockVAE(sd_a) # VAE wrapper
-    
+
     # OLD signature: Model, a, b=... (Note: VAE node param name was Model in old schema too)
     res = VAEMathNodeOLD.execute(Model="a+1", a=vae_a)[0]
     # 1+1=2. diff=1.
@@ -107,7 +107,7 @@ def test_deprecated_vae_math():
 def test_deprecated_clip_math():
     sd_a = {"w": torch.tensor([1.0])}
     clip_a = MockPatcherContainer(sd_a)
-    
+
     # OLD signature: Model, a, b=...
     res = CLIPMathNodeOLD.execute(Model="a*2", a=clip_a)[0]
     # 1*2=2. diff=1.

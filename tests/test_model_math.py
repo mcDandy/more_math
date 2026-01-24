@@ -266,7 +266,7 @@ def test_model_math_3_way_merge():
     # Expression: a + b + c
     # Expected: 1 + 2 + 3 = 6.
     # Diff vs a (1.0) = 5.0.
-    
+
     result_tuple = ModelMathNode.execute(Expression="a + b + c", V={"V0": a.patcher, "V1": b.patcher, "V2": c.patcher}, F={})
     patches = result_tuple[0].patches
 

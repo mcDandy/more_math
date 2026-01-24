@@ -177,7 +177,7 @@ class LatentMathNode(io.ComfyNode):
         if time_dim is not None:
             F_idx = getIndexTensorAlongDim(ae, time_dim)
             variables.update({"frame_idx": F_idx, "frame": F_idx, "frame_count": frame_count})
-        
+
         # Add all dynamic inputs
         for k, v in V.items():
             if v is not None:

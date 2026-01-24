@@ -1,7 +1,5 @@
 from inspect import cleandoc
 from comfy_api.latest import io
-from .helper_functions import commonLazy
-from .modelLikeCommon import calculate_patches
 from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
@@ -97,26 +95,26 @@ class ModelMathNode(io.ComfyNode):
         # Looking at Step 34, calculate_patches signature: (Model, a, b, c, d, w, x, y, z)
         # We need to verify if calculate_patches handles V/F. It probably doesn't.
         # We should check 'modelLikeCommon.py' to see if update is needed.
-        
+
         # Assume for now we pass a,b,c,d,w,x,y,z as standard. 
         # But for full autogrow support (more than 4 inputs), calculate_patches needs update.
         # The prompt didn't explicitly ask to update modelLikeCommon, but "switch to Autogrow" implies full functionality.
         # I'll check modelLikeCommon.py after this block. 
         # For now, I will pass V and F to calculate_patches if I modify it, or I will stick to legacy args if I don't modify it.
         # However, to support V4+, I MUST modify calculate_patches.
-        
+
         # Let's pass the V and F dicts to a modified calculate_patches, or overload it.
         # I will update modelLikeCommon.py as part of this task.
-        
+
         from .modelLikeCommon import calculate_patches_autogrow
-        
+
         # Map inputs to patchers if needed (Model.Input gives Model wrapper, need state_dict source?)
         # ModelMathNode inputs are Model wrappers (comfy.model_patcher.ModelPatcher).
         # So V items are ready to be used.
-        
+
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
         patches = calculate_patches_autogrow(Expression, V=V, F=F, mapping=aliases)
-        
+
         out_model = a.clone()
         if patches:
             out_model.add_patches(patches, 1.0, 1.0)

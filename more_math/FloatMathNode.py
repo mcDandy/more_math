@@ -1,7 +1,7 @@
 from inspect import cleandoc
 import torch
 
-from .helper_functions import parse_expr, as_tensor
+from .helper_functions import parse_expr
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
 from comfy_api.latest import io
@@ -81,7 +81,7 @@ class FloatMathNode(io.ComfyNode):
         variables["x"] = V.get("V5", 0.0)
         variables["y"] = V.get("V6", 0.0)
         variables["z"] = V.get("V7", 0.0)
-        
+
         # Populate all V inputs
         for k, val in V.items():
             variables[k] = val if val is not None else 0.0

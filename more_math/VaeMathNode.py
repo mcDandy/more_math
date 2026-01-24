@@ -1,7 +1,6 @@
 from inspect import cleandoc
 from comfy_api.latest import io
 import copy
-from .modelLikeCommon import calculate_patches
 from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
@@ -82,15 +81,15 @@ class VAEMathNode(io.ComfyNode):
              raise ValueError("At least one input VAE is required.")
 
         patcher_a = a.patcher
-        
+
         # Prepare VAE patchers for calculation
         # We need to map VAE wrappers to their patchers for `calculate_patches`
-        
+
         patchers_V = {}
         for k, v in V.items():
             if v is not None:
                 patchers_V[k] = v.patcher
-                
+
         # Calculate patches using the patchers (weights are in patcher.model.state_dict)
         from .modelLikeCommon import calculate_patches_autogrow
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}

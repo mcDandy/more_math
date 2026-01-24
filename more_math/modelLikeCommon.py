@@ -1,10 +1,6 @@
 from .helper_functions import parse_expr, getIndexTensorAlongDim, as_tensor
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from .Parser.MathExprParser import MathExprParser
-from antlr4 import InputStream, CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
 import torch
-import comfy.utils
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Legacy calculate_patches for backward compatibility."""
@@ -28,7 +24,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
     # Collect all unique keys from all models
     all_keys = set()
     models = [v for v in V.values() if v is not None]
-    
+
     if not models:
         return {}
 
@@ -54,17 +50,17 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
 
     tree = parse_expr(Expr)
     patches = {}
-    
+
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
     # Just skip for utility or use if substantial.
-    
+
     for key in all_keys:
         variables = {}
-        
+
         # Populate F variables (constants for all keys)
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
-            
+
         # Also populate mapped aliases for F (w, x, y, z)
         for alias, target in mapping.items():
             if target in F:
@@ -73,7 +69,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
         # Inject weights for this key from V models
         valid_key = False
         ref_tensor = None
-        
+
         for v_name, v_val in V.items():
             if v_val is not None:
                 w_tensor = get_weight(v_val, key)
@@ -84,19 +80,19 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
                 else:
                     # Missing key in this model will be handled later (zero init)
                     pass
-        
+
         if not valid_key:
             continue
-            
+
         # Find reference shape
         if ref_tensor is None:
             continue # Should not happen if valid_key is true
-            
+
         # Fill missing models with zeros
         for v_name in V.keys():
             if v_name not in variables:
                 variables[v_name] = torch.zeros_like(ref_tensor)
-        
+
         # Populate aliases for V (a, b, c, d)
         for alias, target in mapping.items():
             if target in variables:
@@ -109,31 +105,31 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
             idx_tensor = getIndexTensorAlongDim(ref_tensor, dim_idx)
             variables[f"D{dim_idx}"] = idx_tensor
             variables[f"dim_{dim_idx}"] = idx_tensor
-            
+
         # Execute math
         try:
              visitor = UnifiedMathVisitor(variables, ref_tensor.shape)
              res = visitor.visit(tree)
              res = as_tensor(res, ref_tensor.shape)
-             
+
              # Calculate patch: Result - Original(V0)
              # Assumption: We are patching V0. 
              # If V0 doesn't have the key, we assume V0 was zero?
              # ComfyUI patching mechanism adds patch to original weights.
              # If we output 'res', we need to return (res - original).
-             
+
              # Get original weight for V0 (alias 'a' usually)
              original = variables.get("V0") # Or strictly V.get("V0")'s weight
              if original is None: 
                  original = torch.zeros_like(res)
-                 
+
              diff = res - original
-             
+
              # Clean up: don't store zero patches
              if not torch.all(diff == 0):
                  patches[key] = (diff,)
-                 
+
         except Exception:
             pass
-            
+
     return patches

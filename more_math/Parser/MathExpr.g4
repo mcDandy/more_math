@@ -137,7 +137,8 @@ func3:
 	| LOGNORMAL LPAREN expr COMMA expr COMMA expr RPAREN	# LogNormalFunc;
 
 func4:
-	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # SwapFunc;
+	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # SwapFunc
+	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN # NvlFunc;
 
 // N-argument functions
 funcN:
@@ -187,6 +188,7 @@ SIFFT: 'ifft';
 ANGL: 'angle';
 PRNT: 'print';
 PRINT_SHAPE: 'print_shape' | 'pshp';
+NVL: 'nvl' | 'nan_to_num';
 LERP: 'lerp';
 STEP: 'step';
 SMOOTHSTEP: 'smoothstep';
@@ -214,6 +216,7 @@ PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
+
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';
 CAUCHY: 'randc' | 'random_cauchy';

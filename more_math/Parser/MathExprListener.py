@@ -971,6 +971,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#NvlFunc.
+    def enterNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NvlFunc.
+    def exitNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SMinFunc.
     def enterSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
         pass

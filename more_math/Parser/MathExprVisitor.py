@@ -544,6 +544,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#NvlFunc.
+    def visitNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SMinFunc.
     def visitSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
         return self.visitChildren(ctx)

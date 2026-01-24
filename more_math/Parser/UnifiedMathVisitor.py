@@ -1168,3 +1168,5 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(lam):
             return torch.poisson(lam, generator=generator).to(device=self.device)
         return torch.poisson(torch.full(self.shape, lam, device=self.device), generator=generator)
+    def visitNvlFunc(self, ctx):
+        return torch.nan_to_num(self._promote_to_tensor(self.visit(ctx.expr(0))),self.visit(ctx.expr(1)),self.visit(ctx.expr(2)),self.visit(ctx.expr(3)))

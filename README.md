@@ -194,7 +194,7 @@ You can also get the node from comfy manager under the name of More math.
   - `N` or `channel_count` - count of channels
   - `C` or `channel` - channel of audio
   - `S` or `sample` – current audio sample
-  - 'T' or 'sample_count` - audio lenght in samples
+  - `T` or `sample_count` - audio lenght in samples
   - `R` or `sample_rate` – sample rate
 
 - **VIDEO**

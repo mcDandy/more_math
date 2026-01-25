@@ -109,7 +109,7 @@ func1:
 	| RAND LPAREN expr RPAREN			# RandFunc
 	| ANY LPAREN expr RPAREN			# AnyFunc
 	| ALL LPAREN expr RPAREN			# AllFunc
-	| EDGE LPAREN expr RPAREN			# EdgeFunc
+	| EDGE LPAREN expr (COMMA expr)? RPAREN			# EdgeFunc
 	| MEDIAN LPAREN expr RPAREN			# MedianFunc
 	| MODE LPAREN expr RPAREN			# ModeFunc
 	| CUMSUM LPAREN expr RPAREN			# CumsumFunc
@@ -135,7 +135,7 @@ func2:
 	| EXPONENTIAL LPAREN expr COMMA expr RPAREN	# ExponentialFunc
 	| BERNOULLI LPAREN expr COMMA expr RPAREN	# BernoulliFunc
 	| POISSON LPAREN expr COMMA expr RPAREN		# PoissonFunc
-	| GAUSSIAN LPAREN expr COMMA expr RPAREN	# GaussianFunc
+	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 	| TOPK_IND LPAREN expr COMMA expr RPAREN	# TopkIndFunc
 	| BOTK_IND LPAREN expr COMMA expr RPAREN	# BotkIndFunc;
 

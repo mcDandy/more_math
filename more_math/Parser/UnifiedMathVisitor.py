@@ -1379,7 +1379,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         return res
 
     def visitEdgeFunc(self, ctx):
-        tsr = self._promote_to_tensor(self.visit(ctx.expr()))
         original_shape = tsr.shape
         tsr = tsr.float()
         reshap = False

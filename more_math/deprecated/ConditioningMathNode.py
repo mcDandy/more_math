@@ -23,7 +23,6 @@ class ConditioningMathNodeOLD(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ConditioningMathNode",
             display_name="Conditioning math",
-            category="More math",
             inputs=[
                 io.Conditioning.Input(id="a"),
                 io.Conditioning.Input(id="b", optional=True, lazy=True),

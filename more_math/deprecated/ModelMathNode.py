@@ -15,7 +15,6 @@ class ModelMathNodeOLD(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ModelMathNode",
             display_name="Model Math",
-            category="More math",
             is_deprecated=True,
             inputs=[
                 io.Model.Input(id="a", tooltip="Main model (base)"),

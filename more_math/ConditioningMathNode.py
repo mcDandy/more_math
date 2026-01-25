@@ -109,12 +109,10 @@ class ConditioningMathNode(io.ComfyNode):
                  new_p_values = normalize_to_common_shape(*valid_pooled.values(), mode=length_mismatch)
                  pooled_output.update(zip(valid_pooled.keys(), new_p_values))
 
-        ac,bc,cc,dc = prepare_inputs(V.get("V0"),V.get("V1"),V.get("V2"),V.get("V3"))
-
-        a = ac[0][0]
-        b = bc[0][0]
-        c = cc[0][0]
-        d = dc[0][0]
+        a = tensor.get("V0")
+        b = tensor.get("V1")
+        c = tensor.get("V2")
+        d = tensor.get("V3")
 
         # variables for Main Tensor (Expression)
         variables = {
@@ -137,10 +135,10 @@ class ConditioningMathNode(io.ComfyNode):
 
 
         # variables for Pooled Output (Expression_pi)
-        a_p = ac[0][1].get("pooled_output", torch.zeros(ref_pooled_shape) if ref_pooled_shape is not None else torch.tensor([]))
-        b_p = bc[0][1].get("pooled_output", torch.zeros_like(a_p))
-        c_p = cc[0][1].get("pooled_output", torch.zeros_like(a_p))
-        d_p = dc[0][1].get("pooled_output", torch.zeros_like(a_p))
+        a_p = pooled_output.get("V0")
+        b_p = pooled_output.get("V1")
+        c_p = pooled_output.get("V2")
+        d_p = pooled_output.get("V3")
 
         variables = {
             "a": a_p, "b": b_p, "c": c_p, "d": d_p,
@@ -162,7 +160,15 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Clone result structure
         import copy
-        vl = copy.deepcopy(V["V0"])
-        vl[0][0] = rtensor
-        vl[0][1]["pooled_output"] = rpooled
-        return (vl,)
+        # Conditioning is often a list of lists/tuples: [[tensor, dict], ...]
+        # We assume the first element is the main one to update
+        res_list = []
+        for i, entry in enumerate(V.get("V0", [])):
+            if i == 0:
+                # Update first entry with result
+                new_dict = copy.deepcopy(entry[1])
+                new_dict["pooled_output"] = rpooled
+                res_list.append([rtensor, new_dict])
+            else:
+                res_list.append(copy.deepcopy(entry))
+        return (res_list,)

@@ -38,7 +38,6 @@ class LatentMathNodeOLD(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_LatentMathNode",
             display_name="Latent math",
-            category="More math",
             is_deprecated=True,
             inputs=[
                 io.Latent.Input(id="a"),

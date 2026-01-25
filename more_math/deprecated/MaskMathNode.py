@@ -22,7 +22,6 @@ class MaskMathNodeOLD(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_MaskMathNode",
-            category="More math",
             display_name="Mask math",
             is_deprecated=True,
             inputs=[

@@ -130,8 +130,8 @@ You can also get the node from comfy manager under the name of More math.
 
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
 - `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
-- `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma`.
-- `edge(x)`: Applies a Sobel edge detection filter along the spatial dimensions (Height and Width). Supports `[B, H, W, C]` and `[H, W, C]` layouts.
+- `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two or spatial dimensions (toggleable by optional parameter) - default use last 2 dimensions.
+- `edge(x)`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
 
 ### FFT (Tensor Only)
 

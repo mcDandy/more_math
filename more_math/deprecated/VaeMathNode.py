@@ -15,7 +15,6 @@ class VAEMathNodeOLD(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_VAEMathNode",
             display_name="VAE Math",
-            category="More math",
             is_deprecated=True,
             inputs=[
                 io.Vae.Input(id="a", tooltip="Main VAE (base)"),

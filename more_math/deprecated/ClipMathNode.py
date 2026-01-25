@@ -14,7 +14,6 @@ class CLIPMathNodeOLD(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_CLIPMathNode",
             display_name="CLIP Math",
-            category="More math",
             is_deprecated=True,
             inputs=[
                 io.Clip.Input(id="a", tooltip="Main CLIP (base)"),

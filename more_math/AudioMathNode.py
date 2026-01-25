@@ -78,7 +78,7 @@ class AudioMathNode(io.ComfyNode):
             max_lengths = V.get("V0")["waveform"].shape
             for name, tensor in V.items():
                 if tensor["waveform"] is not None and max_lengths!=tensor["waveform"].shape:
-                    raise ValueError(f"Input '{name}' has shape {tensor['waveform'].shape}, expected {max_lengths} to match input.")
+                    raise ValueError(f"Input '{name}' has shape ({tensor['waveform'].shape[0]}, {tensor['waveform'].shape[2]}), expected ({max_lengths[0]}, {max_lengths[2]}) to match input.")
 
         waveforms={}
         sample_rates={}

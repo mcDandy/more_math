@@ -1314,6 +1314,104 @@ class UnifiedMathVisitor(MathExprVisitor):
         val = self._promote_to_tensor(self.visit(ctx.expr()))
         return torch.cumprod(val, dim=0)
 
+    def visitTopkIndFunc(self, ctx):
+        val = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        k = int(self.visit(ctx.expr(1)))
+        return torch.topk(val.flatten(), k=min(k, val.numel()), largest=True).indices
+
+    def visitBotkIndFunc(self, ctx):
+        val = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        k = int(self.visit(ctx.expr(1)))
+        return torch.topk(val.flatten(), k=min(k, val.numel()), largest=False).indices
+
+    def _apply_spatial_op(self, tsr, op_fn, original_shape):
+        """
+        Helper to handle spatial operations on different layouts.
+        Detects [B, H, W, C], [B, C, H, W], [B, H, W], and [H, W, C].
+        """
+        ndim = tsr.ndim
+        if ndim < 2: return tsr
+
+        layout = "unknown"
+        if ndim == 4:
+            # Heuristic: BHWC vs BCHW
+            # If last dim is 1, 3, or 4 and much smaller than first/middle dims, likely BHWC
+            c_last = original_shape[3]
+            if c_last <= 4 and c_last < original_shape[1] and c_last < original_shape[2]:
+                tsr = tsr.permute(0, 3, 1, 2)
+                layout = "bhwc"
+            else:
+                # Assume BCHW
+                layout = "bchw"
+        elif ndim == 3:
+            # Heuristic: [B, H, W] (Mask) or [H, W, C] (Image)?
+            c_last = original_shape[2]
+            if c_last <= 4 and c_last < original_shape[0] and c_last < original_shape[1]:
+                # image [H, W, C] -> [1, C, H, W]
+                tsr = tsr.permute(2, 0, 1).unsqueeze(0)
+                layout = "hwc"
+            else:
+                # mask [B, H, W] -> [B, 1, H, W]
+                tsr = tsr.unsqueeze(1)
+                layout = "bhw"
+        elif ndim == 2:
+            # [H, W] -> [1, 1, H, W]
+            tsr = tsr.unsqueeze(0).unsqueeze(0)
+            layout = "hw"
+
+        res = op_fn(tsr)
+
+        # Restore layout
+        if layout == "bhwc":
+            return res.permute(0, 2, 3, 1)
+        elif layout == "bchw":
+            return res
+        elif layout == "hwc":
+            return res.squeeze(0).permute(1, 2, 0)
+        elif layout == "bhw":
+            return res.squeeze(1)
+        elif layout == "hw":
+            return res.squeeze(0).squeeze(0)
+        return res
+
+    def visitEdgeFunc(self, ctx):
+        tsr = self._promote_to_tensor(self.visit(ctx.expr()))
+        original_shape = tsr.shape
+        tsr = tsr.float()
+        reshap = False
+
+        def sobel_op(x):
+            kx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], device=x.device, dtype=x.dtype)
+            ky = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], device=x.device, dtype=x.dtype)
+            gx = self._apply_conv_internal(x, kx, [3, 3], 2)
+            gy = self._apply_conv_internal(x, ky, [3, 3], 2)
+            return torch.sqrt(gx**2 + gy**2)
+
+        return self._apply_spatial_op(tsr, sobel_op, original_shape) if reshap else sobel_op(tsr)
+
+    def visitGaussianFunc(self, ctx):
+        tsr = self._promote_to_tensor(self.visit(ctx.expr(0)))
+        sigma = float(self.visit(ctx.expr(1)))
+        if sigma <= 0: return tsr
+        original_shape = tsr.shape
+        tsr = tsr.float()
+        reshap = False
+        def blur_op(x):
+            kernel_size = int(6 * sigma + 1)
+            if kernel_size % 2 == 0: kernel_size += 1
+            coords = torch.linspace(-kernel_size//2, kernel_size//2, kernel_size, device=x.device)
+            kernel = torch.exp(-coords**2 / (2 * sigma**2))
+            kernel = kernel / kernel.sum()
+
+
+            kh = kernel.view(1, kernel_size)
+            x_h = self._apply_conv_internal(x, kh, [kernel_size, 1], 2)
+
+            kv = kernel.view(kernel_size, 1)
+            return self._apply_conv_internal(x_h, kv, [1, kernel_size], 2)
+
+        return self._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
+
     def visitDistFunc(self, ctx):
         x1, y1, x2, y2 = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)), self.visit(ctx.expr(3))
         res_sq = (x2-x1)**2 + (y2-y1)**2

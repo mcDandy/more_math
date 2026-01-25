@@ -1314,3 +1314,27 @@ class UnifiedMathVisitor(MathExprVisitor):
         val = self._promote_to_tensor(self.visit(ctx.expr()))
         return torch.cumprod(val, dim=0)
 
+    def visitDistFunc(self, ctx):
+        x1, y1, x2, y2 = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)), self.visit(ctx.expr(3))
+        res_sq = (x2-x1)**2 + (y2-y1)**2
+        if self._is_tensor(res_sq):
+            return torch.sqrt(res_sq)
+        return math.sqrt(res_sq)
+
+    def visitRemapFunc(self, ctx):
+        v = self.visit(ctx.expr(0))
+        i_min = self.visit(ctx.expr(1))
+        i_max = self.visit(ctx.expr(2))
+        o_min = self.visit(ctx.expr(3))
+        o_max = self.visit(ctx.expr(4))
+        epsilon = 1.0e-10
+        denom = (i_max - i_min)
+        if self._is_tensor(denom):
+            denom = torch.where(denom == 0, torch.fill(denom,epsilon), denom)
+        elif self._is_list(denom):
+            denom = [epsilon if d == 0 else d for d in denom]
+            return [o_min + (vi - i_min) * (o_max - o_min) / di for vi, di in zip(v, denom)]
+        elif denom == 0:
+            denom = epsilon
+
+        return o_min + (v - i_min) * (o_max - o_min) / denom

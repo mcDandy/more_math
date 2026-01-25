@@ -1,3 +1,4 @@
+import torch
 from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, normalize_to_common_shape, make_zero_like
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
@@ -78,34 +79,34 @@ class ImageMathNode(io.ComfyNode):
     def execute(cls, V, F, Expression, length_mismatch="tile"):
         # I and F are Autogrow.Type which is dict[str, Any]
 
-        # Determine reference image for zero-initialization (fallback for a,b,c,d)
-        ref_image = None
-        for img in V.values():
-            if img is not None:
-                ref_image = img
-                break
-
-        if ref_image is None:
+        # Identify all present tensors and their keys
+        tensor_keys = [k for k, v in V.items() if v is not None]
+        if not tensor_keys:
              raise ValueError("At least one input is required.")
 
-        a = V.get("V0")
-        b = V.get("V1")
-        c = V.get("V2")
-        d = V.get("V3")
+        tensors = [V[k] for k in tensor_keys]
 
-        # Fallback for a if missing (unlikely if V0 is default but possible)
-        if a is None:
-            a = make_zero_like(ref_image)
+        # Normalize all tensors together to find the common target shape
+        normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
+        V_norm = dict(zip(tensor_keys, normalized_tensors))
 
-        ae, be, ce, de = prepare_inputs(a, b, c, d)
+        # Use first normalized tensor to establish the reference shape
+        ref_tensor = normalized_tensors[0]
+        common_shape = ref_tensor.shape
 
+        # Setup legacy variables a, b, c, d
+        ae = V_norm.get("V0", make_zero_like(ref_tensor))
+        be = V_norm.get("V1", make_zero_like(ae))
+        ce = V_norm.get("V2", make_zero_like(ae))
+        de = V_norm.get("V3", make_zero_like(ae))
+
+        # Ensure legacy variables are normalized in case they were zero-initialized
         ae, be, ce, de = normalize_to_common_shape(ae, be, ce, de, mode=length_mismatch)
 
         if(length_mismatch == "error"):
-            max_length = ae.shape[0]
             for name, tensor in V.items():
-                if tensor is not None and tensor.shape[0] != max_length:
-                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
+                if tensor is not None and tensor.shape[0] != common_shape[0]:
+                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {common_shape[0]} to match input.")
 
         variables = {
             "a": ae, "b": be, "c": ce, "d": de,
@@ -130,13 +131,7 @@ class ImageMathNode(io.ComfyNode):
         } | generate_dim_variables(ae)
 
         # Add all dynamic inputs
-        for k, v in V.items():
-            if v is not None:
-                # Normalize all images in V to match ae.shape
-                # Note: normalize_to_common_shape args are *tensors.
-                # We normalize individual V item against 'ae' (the reference shape)
-                norm_v = normalize_to_common_shape(ae, v, mode=length_mismatch)[1]
-                variables[k] = norm_v
+        variables.update(V_norm)
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0

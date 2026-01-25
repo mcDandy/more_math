@@ -125,18 +125,26 @@ class LatentMathNode(io.ComfyNode):
         if a is None:
             a = make_zero_like(ref_latent)
 
-        a_c, b_c, c_c, d_c = prepare_inputs(a, b, c, d)
-        at,bt,ct,dt = a_c["samples"],b_c["samples"],c_c["samples"],d_c["samples"]
+        # Identify all present tensors and their keys
+        tensor_keys = [k for k, v in V.items() if v is not None]
+        at_list = [V[k]["samples"] for k in tensor_keys]
+
+        # Normalize all together
+        normalized_samples = normalize_to_common_shape(*at_list, mode=length_mismatch)
+        V_norm_samples = dict(zip(tensor_keys, normalized_samples))
+
+        ae = V_norm_samples.get("V0", make_zero_like(normalized_samples[0]))
+        be = V_norm_samples.get("V1", make_zero_like(ae))
+        ce = V_norm_samples.get("V2", make_zero_like(ae))
+        de = V_norm_samples.get("V3", make_zero_like(ae))
+
+        # Ensure legacy are normalized
+        ae, be, ce, de = normalize_to_common_shape(ae, be, ce, de, mode=length_mismatch)
 
         if(length_mismatch == "error"):
-            max_length = at.shape[0]
-            for name, val in V.items():
-                if val is not None:
-                    tensor = val["samples"]
-                    if tensor.shape[0] != max_length:
-                         raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
-
-        ae, be, ce, de = normalize_to_common_shape(at, bt, ct, dt, mode=length_mismatch)
+            for name in tensor_keys:
+                 if V[name]["samples"].shape[0] != ae.shape[0]:
+                      raise ValueError(f"Input '{name}' has shape {V[name]['samples'].shape[0]}, expected {ae.shape[0]} to match input.")
 
         # parse expression once
         tree = parse_expr(Expression)
@@ -179,11 +187,7 @@ class LatentMathNode(io.ComfyNode):
             variables.update({"frame_idx": F_idx, "frame": F_idx, "frame_count": frame_count})
 
         # Add all dynamic inputs
-        for k, v in V.items():
-            if v is not None:
-                v_tensor = v["samples"]
-                norm_v = normalize_to_common_shape(ae, v_tensor, mode=length_mismatch)[1]
-                variables[k] = norm_v
+        variables.update(V_norm_samples)
 
         for k, v in F.items():
             variables[k] = v if v is not None else 0.0
@@ -191,7 +195,7 @@ class LatentMathNode(io.ComfyNode):
         visitor = UnifiedMathVisitor(variables, ae.shape)
         result_t = as_tensor(visitor.visit(tree), ae.shape)
 
-        result_latent = a_c.copy()
+        result_latent = ref_latent.copy()
         if stacked and orig_split_sizes is not None:
             from comfy.nested_tensor import NestedTensor
             # Restore original split sizes

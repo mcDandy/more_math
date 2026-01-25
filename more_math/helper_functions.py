@@ -18,12 +18,12 @@ def as_tensor(value, shape):
     if getattr(value, "is_nested", False):
         return value
     if isinstance(value, torch.Tensor):
-        if value.shape != shape:
-            return value.broadcast_to(shape).contiguous()
+        # Pass tensors through unchanged; the expression defines the output shape.
         return value.contiguous()
     if isinstance(value, (float, int)):
         value = (value,)
-    return torch.broadcast_to(torch.Tensor(value), shape)
+    # If it's a scalar or list, broadcast to the reference shape provided.
+    return torch.broadcast_to(torch.Tensor(value).to(dtype=torch.float32), shape).contiguous()
 
 
 def parse_expr(expr: str):

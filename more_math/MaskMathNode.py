@@ -73,32 +73,33 @@ class MaskMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, V, F, Expression, length_mismatch="tile"):
-        # Determine reference mask
-        ref_mask = None
-        for mask in V.values():
-            if mask is not None:
-                ref_mask = mask
-                break
-
-        if ref_mask is None:
+        # Identify all present tensors and their keys
+        tensor_keys = [k for k, v in V.items() if v is not None]
+        if not tensor_keys:
              raise ValueError("At least one input is required.")
 
-        a = V.get("V0")
-        b = V.get("V1")
-        c = V.get("V2")
-        d = V.get("V3")
+        tensors = [V[k] for k in tensor_keys]
 
-        if a is None:
-            a = make_zero_like(ref_mask)
+        # Normalize all tensors together
+        normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
+        V_norm = dict(zip(tensor_keys, normalized_tensors))
 
-        ae, be, ce, de = prepare_inputs(a, b, c, d)
+        # Establish reference shape
+        ref_tensor = normalized_tensors[0]
+        common_shape = ref_tensor.shape
 
         if(length_mismatch == "error"):
-            max_length = ae.shape[0]
             for name, tensor in V.items():
-                if tensor is not None and tensor.shape[0] != max_length:
-                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {max_length} to match largest input.")
+                if tensor is not None and tensor.shape[0] != common_shape[0]:
+                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {common_shape[0]} to match largest input.")
 
+        # Setup legacy variables a, b, c, d
+        ae = V_norm.get("V0", make_zero_like(ref_tensor))
+        be = V_norm.get("V1", make_zero_like(ae))
+        ce = V_norm.get("V2", make_zero_like(ae))
+        de = V_norm.get("V3", make_zero_like(ae))
+
+        # Ensure legacy are normalized
         ae, be, ce, de = normalize_to_common_shape(ae, be, ce, de, mode=length_mismatch)
 
         variables = {
@@ -120,13 +121,10 @@ class MaskMathNode(io.ComfyNode):
         } | generate_dim_variables(ae)
 
         # Add all dynamic inputs
-        for k, v in V.items():
-            if v is not None:
-                norm_v = normalize_to_common_shape(ae, v, mode=length_mismatch)[1]
-                variables[k] = norm_v
+        variables.update(V_norm)
 
-        for k, v in F.items():
-            variables[k] = v if v is not None else 0.0
+        for k, val in F.items():
+            variables[k] = val if val is not None else 0.0
 
         tree = parse_expr(Expression);
         visitor = UnifiedMathVisitor(variables, ae.shape)

@@ -1381,7 +1381,11 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitEdgeFunc(self, ctx):
         original_shape = tsr.shape
         tsr = tsr.float()
+        
         reshap = False
+        if len(ctx.expr()) >= 2:
+            reshap_val = self.visit(ctx.expr(1))
+            reshap = bool(reshap_val.item()) if self._is_tensor(reshap_val) else bool(reshap_val)
 
         def sobel_op(x):
             kx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], device=x.device, dtype=x.dtype)
@@ -1394,11 +1398,17 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitGaussianFunc(self, ctx):
         tsr = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        sigma = float(self.visit(ctx.expr(1)))
+        
+        sigma_val = self.visit(ctx.expr(1))
+        sigma = float(sigma_val.item()) if self._is_tensor(sigma_val) else float(sigma_val)
+        
         if sigma <= 0: return tsr
         original_shape = tsr.shape
         tsr = tsr.float()
         reshap = False
+        if len(ctx.expr()) >= 3:
+            reshap_val = self.visit(ctx.expr(2))
+            reshap = bool(reshap_val.item()) if self._is_tensor(reshap_val) else bool(reshap_val)
         def blur_op(x):
             kernel_size = int(6 * sigma + 1)
             if kernel_size % 2 == 0: kernel_size += 1

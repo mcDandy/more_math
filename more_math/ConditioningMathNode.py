@@ -1,5 +1,5 @@
 import torch
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, normalize_to_common_shape
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, normalize_to_common_shape, make_zero_like
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 from antlr4 import InputStream, CommonTokenStream
@@ -79,40 +79,44 @@ class ConditioningMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile"):
+        # Identify all present conditioning inputs
+        tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
+        if not tensor_keys:
+             raise ValueError("At least one input is required.")
+
         # Extract tensors and pooled outputs
-        tensor = {}
-        pooled_output = {}
+        tensors = {}
+        pooled_outputs = {}
 
-        # Get shape reference from V0 (assumed to exist and be valid conditioning)
-        ref_cond = V.get("V0")
-        ref_tensor_shape = ref_cond[0][0].shape if ref_cond else None
-        ref_pooled_shape = ref_cond[0][1].get("pooled_output").shape if ref_cond and "pooled_output" in ref_cond[0][1] else None
+        for key in tensor_keys:
+             conditioning = V[key]
+             tensors[key] = conditioning[0][0]
+             # pooled_output is optional in the dict
+             pooled_outputs[key] = conditioning[0][1].get("pooled_output")
 
-        for key, conditioning in V.items():
-            # Standard Conditioning is list of [tensor, dict]
-            if isinstance(conditioning, list) and len(conditioning) > 0 and isinstance(conditioning[0], (list, tuple)):
-                tensor[key] = conditioning[0][0]
-                pooled_output[key] = conditioning[0][1].get("pooled_output", torch.zeros(ref_pooled_shape) if ref_pooled_shape is not None else None)
-            else:
-                # Fallback to zeros if structure is unknown or empty
-                tensor[key] = torch.zeros(ref_tensor_shape) if ref_tensor_shape is not None else None
-                pooled_output[key] = torch.zeros(ref_pooled_shape) if ref_pooled_shape is not None else None
+        # Normalize main tensors
+        norm_tensors_batch = normalize_to_common_shape(*tensors.values(), mode=length_mismatch)
+        V_norm_tensors = dict(zip(tensor_keys, norm_tensors_batch))
 
-        # Normalize shapes
-        new_values = normalize_to_common_shape(*tensor.values(), mode=length_mismatch)
-        tensor.update(zip(tensor.keys(), new_values))
+        ref_tensor = norm_tensors_batch[0]
+        common_shape = ref_tensor.shape
 
-        if any(p is not None for p in pooled_output.values()):
-             # Filter out Nones for normalization if any
-             valid_pooled = {k:v for k,v in pooled_output.items() if v is not None}
-             if valid_pooled:
-                 new_p_values = normalize_to_common_shape(*valid_pooled.values(), mode=length_mismatch)
-                 pooled_output.update(zip(valid_pooled.keys(), new_p_values))
+        # Normalize pooled outputs (if they exist)
+        valid_pooled_keys = [k for k, v in pooled_outputs.items() if v is not None]
+        if valid_pooled_keys:
+             norm_pooled_batch = normalize_to_common_shape(*[pooled_outputs[k] for k in valid_pooled_keys], mode=length_mismatch)
+             V_norm_pooled = dict(zip(valid_pooled_keys, norm_pooled_batch))
+             ref_pooled = norm_pooled_batch[0]
+        else:
+             V_norm_pooled = {}
+             ref_pooled = torch.tensor([])
 
-        a = tensor.get("V0")
-        b = tensor.get("V1")
-        c = tensor.get("V2")
-        d = tensor.get("V3")
+        # Setup legacy variables a, b, c, d (Main Tensor)
+        a = V_norm_tensors.get("V0", make_zero_like(ref_tensor))
+        b = V_norm_tensors.get("V1", make_zero_like(a))
+        c = V_norm_tensors.get("V2", make_zero_like(a))
+        d = V_norm_tensors.get("V3", make_zero_like(a))
+        a, b, c, d = normalize_to_common_shape(a, b, c, d, mode=length_mismatch)
 
         # variables for Main Tensor (Expression)
         variables = {
@@ -125,7 +129,7 @@ class ConditioningMathNode(io.ComfyNode):
             "batch": getIndexTensorAlongDim(a, 0),
             "T": a.shape[0],
             "batch_count": a.shape[0],
-        } | generate_dim_variables(a) | tensor
+        } | generate_dim_variables(a) | V_norm_tensors
 
         # Execute Expression (Main Tensor)
         tree = parse_expr(Expression)
@@ -135,28 +139,29 @@ class ConditioningMathNode(io.ComfyNode):
 
 
         # variables for Pooled Output (Expression_pi)
-        a_p = pooled_output.get("V0")
-        b_p = pooled_output.get("V1")
-        c_p = pooled_output.get("V2")
-        d_p = pooled_output.get("V3")
+        a_p = V_norm_pooled.get("V0", make_zero_like(ref_pooled))
+        b_p = V_norm_pooled.get("V1", make_zero_like(a_p))
+        c_p = V_norm_pooled.get("V2", make_zero_like(a_p))
+        d_p = V_norm_pooled.get("V3", make_zero_like(a_p))
+        a_p, b_p, c_p, d_p = normalize_to_common_shape(a_p, b_p, c_p, d_p, mode=length_mismatch)
 
-        variables = {
+        variables_pi = {
             "a": a_p, "b": b_p, "c": c_p, "d": d_p,
             "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
             "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
             "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
-            "B": getIndexTensorAlongDim(a_p, 0),
-            "batch": getIndexTensorAlongDim(a_p, 0),
-            "T": a_p.shape[0],
-            "batch_count": a_p.shape[0],
-        } | generate_dim_variables(a_p) | pooled_output
+            "B": getIndexTensorAlongDim(a_p, 0) if a_p.numel() > 0 else torch.tensor([]),
+            "batch": getIndexTensorAlongDim(a_p, 0) if a_p.numel() > 0 else torch.tensor([]),
+            "T": a_p.shape[0] if a_p.numel() > 0 else 0,
+            "batch_count": a_p.shape[0] if a_p.numel() > 0 else 0,
+        } | generate_dim_variables(a_p) | V_norm_pooled
 
         # Execute Expression_pi (Pooled Output)
-        tree = parse_expr(Expression_pi)
-        visitor = UnifiedMathVisitor(variables, a_p.shape)
-        rpooled = visitor.visit(tree)
-        rpooled = as_tensor(rpooled, a_p.shape)
+        tree_pi = parse_expr(Expression_pi)
+        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape)
+        rpooled_raw = visitor_pi.visit(tree_pi)
+        rpooled = as_tensor(rpooled_raw, a_p.shape)
 
         # Clone result structure
         import copy

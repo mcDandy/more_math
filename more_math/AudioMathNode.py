@@ -1,5 +1,13 @@
 import torch
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, prepare_inputs, normalize_to_common_shape
+from .helper_functions import (
+    generate_dim_variables,
+    parse_expr,
+    getIndexTensorAlongDim,
+    as_tensor,
+    prepare_inputs,
+    normalize_to_common_shape,
+    make_zero_like,
+)
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 from antlr4 import InputStream, CommonTokenStream
@@ -73,50 +81,59 @@ class AudioMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, V, F, Expression, length_mismatch="tile"):
+        # Identify all present audio inputs and their keys
+        tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, dict) and "waveform" in v]
+        if not tensor_keys:
+             raise ValueError("At least one audio input is required.")
+
+        waveforms = {k: V[k]["waveform"] for k in tensor_keys}
+        sample_rates = {k + "sr": V[k].get("sample_rate", 44100) for k in tensor_keys}
+
+        # Normalize all waveforms together
+        normalized_waveforms = normalize_to_common_shape(*waveforms.values(), mode=length_mismatch)
+        V_norm_waveforms = dict(zip(tensor_keys, normalized_waveforms))
+
+        ref_waveform = normalized_waveforms[0]
+        common_shape = ref_waveform.shape
+        sample_rate = V[tensor_keys[0]].get("sample_rate", 44100)
 
         if(length_mismatch == "error"):
-            max_lengths = V.get("V0")["waveform"].shape
-            for name, tensor in V.items():
-                if tensor["waveform"] is not None and max_lengths!=tensor["waveform"].shape:
-                    raise ValueError(f"Input '{name}' has shape ({tensor['waveform'].shape[0]}, {tensor['waveform'].shape[2]}), expected ({max_lengths[0]}, {max_lengths[2]}) to match input.")
+            for name in tensor_keys:
+                if waveforms[name].shape != common_shape:
+                     raise ValueError(f"Input '{name}' has shape ({waveforms[name].shape[0]}, {waveforms[name].shape[2]}), expected ({common_shape[0]}, {common_shape[2]}) to match input.")
 
-        waveforms={}
-        sample_rates={}
-        for key, audio in V.items():
-            if audio is not None and isinstance(audio, dict) and "waveform" in audio:
-                waveforms[key] = audio["waveform"]
-                sample_rates[key+"sr"] = audio.get("sample_rate", 44100)
-            else:
-                waveforms[key] = torch.zeros(V["V0"]["waveform"].shape)
-                sample_rates[key] = 44100
-        sample_rate = sample_rates["V0sr"] if len(sample_rates) > 0 else 44100
-        new_values = normalize_to_common_shape(*waveforms.values(), mode=length_mismatch)
-        waveforms.update(zip(waveforms.keys(), new_values))
-        a,b,c,d = prepare_inputs(V.get("V0"),V.get("V1"),V.get("V2"),V.get("V3"))
-        a = a["waveform"]
-        b = b["waveform"]
-        c = c["waveform"]
-        d = d["waveform"]
+        # Setup legacy variables a, b, c, d
+        a_w = V_norm_waveforms.get("V0", make_zero_like(ref_waveform))
+        b_w = V_norm_waveforms.get("V1", make_zero_like(a_w))
+        c_w = V_norm_waveforms.get("V2", make_zero_like(a_w))
+        d_w = V_norm_waveforms.get("V3", make_zero_like(a_w))
+
+        # Ensure legacy are normalized
+        a_w, b_w, c_w, d_w = normalize_to_common_shape(a_w, b_w, c_w, d_w, mode=length_mismatch)
+
         variables = {
-            "a": a, "b": b, "c": c, "d": d,
+            "a": a_w, "b": b_w, "c": c_w, "d": d_w,
             "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
             "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
             "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
-            "B": getIndexTensorAlongDim(a, 0),
-            "C": getIndexTensorAlongDim(a, 1),
-            "channel": getIndexTensorAlongDim(a, 1),
-            "S": getIndexTensorAlongDim(a, 2),
-            "sample": getIndexTensorAlongDim(a, 2),
+            "B": getIndexTensorAlongDim(a_w, 0),
+            "C": getIndexTensorAlongDim(a_w, 1),
+            "channel": getIndexTensorAlongDim(a_w, 1),
+            "S": getIndexTensorAlongDim(a_w, 2),
+            "sample": getIndexTensorAlongDim(a_w, 2),
             "R": sample_rate,
             "sample_rate": sample_rate,
-            "batch": getIndexTensorAlongDim(a, 0),
-            "T": a.shape[0],
-            "batch_count": a.shape[0],
-        } | generate_dim_variables(a) | waveforms | sample_rates
+            "batch": getIndexTensorAlongDim(a_w, 0),
+            "T": a_w.shape[0],
+            "batch_count": a_w.shape[0],
+        } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
+
+        for k, val in F.items():
+            variables[k] = val if val is not None else 0.0
 
         tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, a.shape)
+        visitor = UnifiedMathVisitor(variables, a_w.shape)
         result = visitor.visit(tree)
-        result = as_tensor(result, a.shape)
+        result = as_tensor(result, a_w.shape)
         return ({"waveform":result,"sample_rate":sample_rate},)

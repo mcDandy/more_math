@@ -22,7 +22,7 @@ You can also get the node from comfy manager under the name of More math.
 - Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS and GUIDER
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 - Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work.
-- Custom variables `varname=expression;` They must be between function definitions and expression an can be used in any later assigment or final expression. 
+- Custom variables `varname=expression;` They must be between function definitions and expression an can be used in any later assigment or final expression.
 
 ## Operators
 
@@ -56,6 +56,9 @@ You can also get the node from comfy manager under the name of More math.
 - `fract(x)`: Returns the fractional part of x (x - floor(x)).
 - `sign(x)`: Returns -1 for negative, 1 for positive, 0 for zero.
 - `gamma(x)`: Gamma function.
+- `dist(x1, y1, x2, y2)` or `distance`: Euclidean distance between points (x1, y1) and (x2, y2).
+- `clamp(x, min, max)`: Constrains x to be between min and max.
+- `step(x, edge)`: Returns 1.0 if x >= edge, else 0.0.
 
 ### Trigonometric
 
@@ -75,12 +78,14 @@ You can also get the node from comfy manager under the name of More math.
 - `softplus(x)`: Softplus function (log(1 + e^x)).
 - `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
 
-### Shaders / Interpolation
+### Interpolation
 
-- `clamp(x, min, max)`: Constrains x to be between min and max.
-- `lerp(a, b, w)`: Linear interpolation: `a + (b - a) * w`.
-- `step(x, edge)`: Returns 1.0 if x >= edge, else 0.0.
 - `smoothstep(x, edge0, edge1)`: Hermite interpolation between edge0 and edge1.
+- `smootherstep(x, edge0, edge1)`: Quintic interpolation (Perlin's improved smootherstep).
+- `cubic_ease(a, b, t)` or `cubic`: In-Out Cubic interpolation between `a` and `b`.
+- `sine_ease(a, b, t)` or `sine`: In-Out Sine interpolation between `a` and `b`.
+- `elastic_ease(a, b, t)` or `elastic`: In-Out Elastic interpolation between `a` and `b`.
+- `lerp(a, b, w)`: Linear interpolation: `a + (b - a) * w`.
 
 ### Aggregates & Tensor Operations
 
@@ -99,6 +104,8 @@ You can also get the node from comfy manager under the name of More math.
 - `moment(x, a, k)`: Returns the k-th moment of x centered around a.
 - `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for complex numbers).
 - `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for complex numbers)
+- `topk_ind(x, k)` or `topk_indices`: Returns the **indices** of the top K largest values in the flattened tensor.
+- `botk_ind(x, k)` or `botk_indices`: Returns the **indices** of the bottom K smallest values in the flattened tensor.
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
 - `snorm(x)`: The same as |x| for tensors.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
@@ -107,6 +114,10 @@ You can also get the node from comfy manager under the name of More math.
 - `cov(x, y)`: Compute covariance between x and y.
 - `sort(x)`: Sorts elements in ascending order along the last dimension.
 - `append(a, b)`: Appends `b` to `a`. If inputs are lists, it concatenates them. If inputs are tensors, it concatenates them along dim 0.
+- `any(x)`: Returns 1.0 if any element in `x` is non-zero (True), else 0.0.
+- `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.
+- `cumsum(x)`: Returns the cumulative sum of elements along the batch dimension (dim 0).
+- `cumprod(x)`: Returns the cumulative product of elements along the batch dimension (dim 0).
 
 ### Advanced Tensor Operations
 
@@ -119,6 +130,8 @@ You can also get the node from comfy manager under the name of More math.
 
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
 - `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
+- `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma`.
+- `edge(x)`: Applies a Sobel edge detection filter along the spatial dimensions (Height and Width). Supports `[B, H, W, C]` and `[H, W, C]` layouts.
 
 ### FFT (Tensor Only)
 
@@ -133,6 +146,7 @@ You can also get the node from comfy manager under the name of More math.
 - `pinv(x)`: Computes the permutation inverse of list. If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`.
 - `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
 - `nan_to_num(x, nan_value, posinf_value, neginf_value)` or `nvl`: Replaces NaN and infinite values in tensor with specified values.
+- `remap(v, i_min, i_max, o_min, o_max)`: Remaps value `v` from input range `[i_min, i_max]` to output range `[o_min, o_max]`.
 
 ### Random Distributions
 
@@ -149,9 +163,11 @@ You can also get the node from comfy manager under the name of More math.
 - **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
   - `D{N}` - position in n-th dimension of tensor (for example D0, D1, D2, ...)
   - `S{N}` - size of n-th dimension of tensor (for example S0, S1, S2, ...)
-- **common inputs** (matches node input type):
+  - `V{N}` - value input (for example V0, V1, V2, ...) - input type
+  - `F{N}` - float input (for example F0, F1, F2, ...) - float type
+- **common inputs** (legacy):
   - `a`, `b`, `c`, `d`
-- **Extra floats**:
+- **Extra floats** (legacy):
   - `w`, `x`, `y`, `z`
 - **INSIDE IFFT**
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)

@@ -51,6 +51,7 @@ atom:
 	| func2									# Func2Exp
 	| func3									# Func3Exp
 	| func4									# Func4Exp
+	| func5									# Func5Exp
 	| funcN									# FuncNExp
 	| VARIABLE								# VariableExp
 	| NUMBER								# NumberExp
@@ -105,7 +106,14 @@ func1:
 	| VAR LPAREN expr RPAREN			# VarFunc
 	| SORT LPAREN expr RPAREN			# SortFunc
 	| NOISE LPAREN expr RPAREN			# NoiseFunc
-	| RAND LPAREN expr RPAREN			# RandFunc;
+	| RAND LPAREN expr RPAREN			# RandFunc
+	| ANY LPAREN expr RPAREN			# AnyFunc
+	| ALL LPAREN expr RPAREN			# AllFunc
+	| EDGE LPAREN expr RPAREN			# EdgeFunc
+	| MEDIAN LPAREN expr RPAREN			# MedianFunc
+	| MODE LPAREN expr RPAREN			# ModeFunc
+	| CUMSUM LPAREN expr RPAREN			# CumsumFunc
+	| CUMPROD LPAREN expr RPAREN		# CumprodFunc;
 
 // Two-argument functions Two-argument functions
 func2:
@@ -126,7 +134,10 @@ func2:
 	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc
 	| EXPONENTIAL LPAREN expr COMMA expr RPAREN	# ExponentialFunc
 	| BERNOULLI LPAREN expr COMMA expr RPAREN	# BernoulliFunc
-	| POISSON LPAREN expr COMMA expr RPAREN		# PoissonFunc;
+	| POISSON LPAREN expr COMMA expr RPAREN		# PoissonFunc
+	| GAUSSIAN LPAREN expr COMMA expr RPAREN	# GaussianFunc
+	| TOPK_IND LPAREN expr COMMA expr RPAREN	# TopkIndFunc
+	| BOTK_IND LPAREN expr COMMA expr RPAREN	# BotkIndFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -135,11 +146,19 @@ func3:
 	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN		# RangeFunc
 	| MOMENT LPAREN expr COMMA expr COMMA expr RPAREN		# MomentFunc
 	| CAUCHY LPAREN expr COMMA expr COMMA expr RPAREN		# CauchyFunc
-	| LOGNORMAL LPAREN expr COMMA expr COMMA expr RPAREN	# LogNormalFunc;
+	| LOGNORMAL LPAREN expr COMMA expr COMMA expr RPAREN	# LogNormalFunc
+	| CUBIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# CubicEaseFunc
+	| ELASTIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# ElasticEaseFunc
+	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
+	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
-	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc;
+	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
+	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc;
+
+func5:
+	REMAP LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN # RemapFunc;
 
 // N-argument functions
 funcN:
@@ -217,6 +236,22 @@ PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
+ANY: 'any';
+ALL: 'all';
+EDGE: 'edge';
+GAUSSIAN: 'blur' | 'gaussian';
+MEDIAN: 'median';
+MODE: 'mode';
+CUMSUM: 'cumsum';
+CUMPROD: 'cumprod';
+TOPK_IND: 'topk_ind' | 'topk_indices';
+BOTK_IND: 'botk_ind' | 'botk_indices';
+CUBIC_EASE: 'cubic_ease' | 'cubic';
+ELASTIC_EASE: 'elastic_ease' | 'elastic';
+SINE_EASE: 'sine_ease' | 'sine';
+SMOOTHERSTEP: 'smootherstep';
+DIST: 'dist' | 'distance';
+REMAP: 'remap';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';

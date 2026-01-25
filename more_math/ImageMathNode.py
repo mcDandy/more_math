@@ -129,13 +129,13 @@ class ImageMathNode(io.ComfyNode):
             "channel_count": ae.shape[3],
         } | generate_dim_variables(ae)
 
+        norm_v = normalize_to_common_shape(ae, v, mode=length_mismatch)[1]
         # Add all dynamic inputs
         for k, v in V.items():
             if v is not None:
                 # Normalize all images in V to match ae.shape
                 # Note: normalize_to_common_shape args are *tensors.
                 # We normalize individual V item against 'ae' (the reference shape)
-                norm_v = normalize_to_common_shape(ae, v, mode=length_mismatch)[1]
                 variables[k] = norm_v
 
         for k, v in F.items():

@@ -164,6 +164,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#Func5Exp.
+    def visitFunc5Exp(self, ctx:MathExprParser.Func5ExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#FuncNExp.
     def visitFuncNExp(self, ctx:MathExprParser.FuncNExpContext):
         return self.visitChildren(ctx)
@@ -419,6 +424,41 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#AnyFunc.
+    def visitAnyFunc(self, ctx:MathExprParser.AnyFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#AllFunc.
+    def visitAllFunc(self, ctx:MathExprParser.AllFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#EdgeFunc.
+    def visitEdgeFunc(self, ctx:MathExprParser.EdgeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MedianFunc.
+    def visitMedianFunc(self, ctx:MathExprParser.MedianFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ModeFunc.
+    def visitModeFunc(self, ctx:MathExprParser.ModeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CumsumFunc.
+    def visitCumsumFunc(self, ctx:MathExprParser.CumsumFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CumprodFunc.
+    def visitCumprodFunc(self, ctx:MathExprParser.CumprodFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -509,6 +549,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#GaussianFunc.
+    def visitGaussianFunc(self, ctx:MathExprParser.GaussianFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#TopkIndFunc.
+    def visitTopkIndFunc(self, ctx:MathExprParser.TopkIndFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BotkIndFunc.
+    def visitBotkIndFunc(self, ctx:MathExprParser.BotkIndFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
@@ -544,6 +599,26 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#CubicEaseFunc.
+    def visitCubicEaseFunc(self, ctx:MathExprParser.CubicEaseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ElasticEaseFunc.
+    def visitElasticEaseFunc(self, ctx:MathExprParser.ElasticEaseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SineEaseFunc.
+    def visitSineEaseFunc(self, ctx:MathExprParser.SineEaseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SmootherstepFunc.
+    def visitSmootherstepFunc(self, ctx:MathExprParser.SmootherstepFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SwapFunc.
     def visitSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         return self.visitChildren(ctx)
@@ -551,6 +626,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#NvlFunc.
     def visitNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DistFunc.
+    def visitDistFunc(self, ctx:MathExprParser.DistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RemapFunc.
+    def visitRemapFunc(self, ctx:MathExprParser.RemapFuncContext):
         return self.visitChildren(ctx)
 
 

@@ -463,9 +463,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         a = self.visit(ctx.expr(0))
         b = self.visit(ctx.expr(1))
         w = self.visit(ctx.expr(2))
-        if any(self._is_tensor(x) for x in [a, b, w]):
-            # Lerp: a + w*(b-a)
-            return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), self._promote_to_tensor(w))
+
+        if self._is_list(w):
+             return [self._lerp_helper(a[i] if self._is_list(a) else a,
+                                      b[i] if self._is_list(b) else b,
+                                      t) for i, t in enumerate(w)]
+
+        return self._lerp_helper(a, b, w)
+
+    def _lerp_helper(self, a, b, w):
+        if any(self._is_tensor(x) for x in [a, b, w]) or any(self._is_list(x) for x in [a, b, w]):
+             return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), self._promote_to_tensor(w))
         return a*(1-w)+b*w
 
     def visitSmoothstepFunc(self, ctx):
@@ -486,6 +494,50 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitRangeFunc(self, ctx):
         return list(torch.arange(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))))
+
+    def visitSmootherstepFunc(self, ctx):
+        x = self.visit(ctx.expr(0))
+        edge0 = self.visit(ctx.expr(1))
+        edge1 = self.visit(ctx.expr(2))
+
+        def smoother(t):
+            return 6*t**5 - 15*t**4 + 10*t**3
+
+        if any(self._is_tensor(v) for v in [x, edge0, edge1]):
+            x_t, e0_t, e1_t = self._promote_to_tensor(x), self._promote_to_tensor(edge0), self._promote_to_tensor(edge1)
+            t = torch.clamp((x_t - e0_t) / (e1_t - e0_t), 0.0, 1.0)
+            return smoother(t)
+
+        t = max(0.0, min(1.0, (x - edge0) / (edge1 - edge0)))
+        return smoother(t)
+
+    def visitCubicEaseFunc(self, ctx):
+        a, b, t = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))
+        def cubic(v):
+             return torch.where(v < 0.5, 4 * v**3, 1 - torch.pow(-2 * v + 2, 3) / 2) if self._is_tensor(v) else \
+                    (4 * v**3 if v < 0.5 else 1 - math.pow(-2 * v + 2, 3) / 2)
+        return self._lerp_helper(a, b, cubic(t))
+
+    def visitSineEaseFunc(self, ctx):
+        a, b, t = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))
+        def sine(v):
+             return -(torch.cos(math.pi * v) - 1) / 2 if self._is_tensor(v) else -(math.cos(math.pi * v) - 1) / 2
+        return self._lerp_helper(a, b, sine(t))
+
+    def visitElasticEaseFunc(self, ctx):
+        a, b, t = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))
+        # Specific elastic formula (simplified InOut)
+        def elastic(v):
+             c4 = (2 * math.pi) / 3
+             if self._is_tensor(v):
+                 return torch.where(v <= 0, 0, torch.where(v >= 1, 1,
+                        torch.where(v < 0.5, -(torch.pow(2, 20 * v - 10) * torch.sin((20 * v - 11.125) * c4)) / 2,
+                                     (torch.pow(2, -20 * v + 10) * torch.sin((20 * v - 11.125) * c4)) / 2 + 1)))
+             if v <= 0: return 0
+             if v >= 1: return 1
+             if v < 0.5: return -(math.pow(2, 20 * v - 10) * math.sin((20 * v - 11.125) * c4)) / 2
+             return (math.pow(2, -20 * v + 10) * math.sin((20 * v - 11.125) * c4)) / 2 + 1
+        return self._lerp_helper(a, b, elastic(t))
 
     # Helpers for visiting generic exprs
     def visitFunc1Exp(self, ctx):
@@ -1084,18 +1136,42 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAppendFunc(self, ctx):
         a = self.visit(ctx.expr(0))
         b = self.visit(ctx.expr(1))
-        if(self._is_tensor(a) and a.numel()==1):
-            a = a.Item()
-        if(self._is_tensor(b) and b.numel()==1):
-            b = b.Item()
+        if self._is_tensor(a) and a.numel() == 1:
+            a = a.item()
+        if self._is_tensor(b) and b.numel() == 1:
+            b = b.item()
+
         if self._is_tensor(a) or self._is_tensor(b):
-            a = self._promote_to_tensor(a,True)
-            b = self._promote_to_tensor(b,True)
-            if a.ndim == 0: a = a.unsqueeze(0)
-            if b.ndim == 0: b = b.unsqueeze(0)
+            if self._is_tensor(a) and not self._is_tensor(b):
+                b_tensor = torch.tensor(b, device=self.device, dtype=a.dtype)
+                if a.ndim > 0:
+                    target_shape = [1] + list(a.shape[1:])
+                    b = b_tensor.expand(target_shape).contiguous()
+                else:
+                    b = b_tensor
+            elif not self._is_tensor(a) and self._is_tensor(b):
+                a_tensor = torch.tensor(a, device=self.device, dtype=b.dtype)
+                if b.ndim > 0:
+                    target_shape = [1] + list(b.shape[1:])
+                    a = a_tensor.expand(target_shape).contiguous()
+                else:
+                    a = a_tensor
+            else:
+                a = self._promote_to_tensor(a)
+                b = self._promote_to_tensor(b)
+
+            # Ensure at least 1D for cat
+            if a.ndim == 0:
+                a = a.unsqueeze(0)
+            if b.ndim == 0:
+                b = b.unsqueeze(0)
+
             return torch.cat((a, b), dim=0)
-        if not self._is_list(a): a = [a]
-        if not self._is_list(b): b = [b]
+
+        if not self._is_list(a):
+            a = [a]
+        if not self._is_list(b):
+            b = [b]
         return a + b
 
     def visitStart(self, ctx):
@@ -1203,3 +1279,38 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.poisson(torch.full(self.shape, lam, device=self.device), generator=generator)
     def visitNvlFunc(self, ctx):
         return torch.nan_to_num(self._promote_to_tensor(self.visit(ctx.expr(0))),self.visit(ctx.expr(1)),self.visit(ctx.expr(2)),self.visit(ctx.expr(3)))
+
+    def visitAnyFunc(self, ctx):
+        val = self.visit(ctx.expr())
+        if self._is_tensor(val): return torch.any(torch.isclose(val, torch.tensor(0.0, device=self.device)) == False).float()
+        if self._is_list(val): return float(any(val))
+        return float(bool(val))
+
+    def visitAllFunc(self, ctx):
+        val = self.visit(ctx.expr())
+        if self._is_tensor(val): return torch.all(torch.isclose(val, torch.tensor(0.0, device=self.device)) == False).float()
+        if self._is_list(val): return float(all(val))
+        return float(bool(val))
+
+    def visitMedianFunc(self, ctx):
+        val = self.visit(ctx.expr())
+        if self._is_tensor(val): return torch.median(val.float())
+        if self._is_list(val): return sorted(val)[len(val)//2]
+        return val
+
+    def visitModeFunc(self, ctx):
+        val = self.visit(ctx.expr())
+        if self._is_tensor(val): return torch.mode(val.float().flatten()).values
+        if self._is_list(val):
+             from collections import Counter
+             return Counter(val).most_common(1)[0][0]
+        return val
+
+    def visitCumsumFunc(self, ctx):
+        val = self._promote_to_tensor(self.visit(ctx.expr()))
+        return torch.cumsum(val, dim=0)
+
+    def visitCumprodFunc(self, ctx):
+        val = self._promote_to_tensor(self.visit(ctx.expr()))
+        return torch.cumprod(val, dim=0)
+

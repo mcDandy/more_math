@@ -159,7 +159,11 @@ class UnifiedMathVisitor(MathExprVisitor):
             true_t = self._promote_to_tensor(true_val)
             false_t = self._promote_to_tensor(false_val)
 
-            cond_t = torch.isclose(condition, torch.tensor(0.0, device=self.device)) == False
+            if true_t.dtype != false_t.dtype:
+                true_t = true_t.float()
+                false_t = false_t.float()
+
+            cond_t = torch.isclose(condition.float(), torch.tensor(0.0, device=self.device)) == False
             return torch.where(cond_t, true_t, false_t).contiguous()
 
         if self._is_list(condition):

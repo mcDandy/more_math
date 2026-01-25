@@ -10,7 +10,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
-    
+
     Args:
         Expr: The math expression string.
         V: Dictionary of input models (Autogrow Input).

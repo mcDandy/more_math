@@ -83,13 +83,6 @@ class ModelMathNode(io.ComfyNode):
 
         # Prepare variables
         # V0..V3 map to a..d for backward compatibility in calculate_patches
-        b = V.get("V1")
-        c = V.get("V2")
-        d = V.get("V3")
-        w = F.get("F0", 0.0) if F.get("F0") is not None else 0.0
-        x = F.get("F1", 0.0) if F.get("F1") is not None else 0.0
-        y = F.get("F2", 0.0) if F.get("F2") is not None else 0.0
-        z = F.get("F3", 0.0) if F.get("F3") is not None else 0.0
 
         # Note: calculate_patches usually takes specific args. We might need to update it to support dynamic V/F or just pass everything.
         # Looking at Step 34, calculate_patches signature: (Model, a, b, c, d, w, x, y, z)

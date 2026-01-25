@@ -80,7 +80,6 @@ class VAEMathNode(io.ComfyNode):
         if a is None:
              raise ValueError("At least one input VAE is required.")
 
-        patcher_a = a.patcher
 
         # Prepare VAE patchers for calculation
         # We need to map VAE wrappers to their patchers for `calculate_patches`

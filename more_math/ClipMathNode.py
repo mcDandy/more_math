@@ -79,8 +79,6 @@ class CLIPMathNode(io.ComfyNode):
         if a is None:
              raise ValueError("At least one input CLIP is required.")
 
-        patcher_a = a.patcher
-
         # Prepare CLIP patchers
         patchers_V = {}
         for k, v in V.items():

@@ -1,14 +1,27 @@
 grammar MathExpr;
 
 // Top-level entry point
-start: funcDef* varDef* expr EOF;
+start: (funcDef | varDef | stmt)* expr EOF;
 
 funcDef:
-	VARIABLE LPAREN paramList? RPAREN ARROW expr SEMICOLON # FunctionDef;
+	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;
 
 varDef: VARIABLE EQUEALS expr SEMICOLON;
 
 paramList: VARIABLE (COMMA VARIABLE)*;
+
+stmt:
+	ifStmt				# IfStatement
+	| whileStmt			# WhileStatement
+	| block				# BlockStatement
+	| returnStmt		# ReturnStatement
+	| varDef			# VarDefStmt
+	| expr SEMICOLON	# ExprStatement;
+
+ifStmt: IF LPAREN expr RPAREN stmt (ELSE stmt)?;
+whileStmt: WHILE LPAREN expr RPAREN stmt;
+block: LBRACE stmt* RBRACE;
+returnStmt: RETURN expr? SEMICOLON;
 
 expr: ternaryExpr | atom | compExpr;
 
@@ -65,79 +78,79 @@ exprList: expr (COMMA expr)*;
 
 // Single-argument functions
 func1:
-	SIN LPAREN expr RPAREN				# SinFunc
-	| COS LPAREN expr RPAREN			# CosFunc
-	| TAN LPAREN expr RPAREN			# TanFunc
-	| ASIN LPAREN expr RPAREN			# AsinFunc
-	| ACOS LPAREN expr RPAREN			# AcosFunc
-	| ATAN LPAREN expr RPAREN			# AtanFunc
-	| SINH LPAREN expr RPAREN			# SinhFunc
-	| COSH LPAREN expr RPAREN			# CoshFunc
-	| TANH LPAREN expr RPAREN			# TanhFunc
-	| ASINH LPAREN expr RPAREN			# AsinhFunc
-	| ACOSH LPAREN expr RPAREN			# AcoshFunc
-	| ATANH LPAREN expr RPAREN			# AtanhFunc
-	| ABS LPAREN expr RPAREN			# AbsFunc
-	| SQRT LPAREN expr RPAREN			# SqrtFunc
-	| LN LPAREN expr RPAREN				# LnFunc
-	| LOG LPAREN expr RPAREN			# LogFunc
-	| EXP LPAREN expr RPAREN			# ExpFunc
-	| TNORM LPAREN expr RPAREN			# TNormFunc
-	| SNORM LPAREN expr RPAREN			# SNormFunc
-	| FLOOR LPAREN expr RPAREN			# FloorFunc
-	| CEIL LPAREN expr RPAREN			# CeilFunc
-	| ROUND LPAREN expr RPAREN			# RoundFunc
-	| GAMMA LPAREN expr RPAREN			# GammaFunc
-	| SIGM LPAREN expr RPAREN			# sigmoidFunc
-	| SFFT LPAREN expr RPAREN			# sfftFunc
-	| SIFFT LPAREN expr RPAREN			# sifftFunc
-	| ANGL LPAREN expr RPAREN			# anglFunc
-	| PRNT LPAREN expr RPAREN			# printFunc
-	| FRACT LPAREN expr RPAREN			# FractFunc
-	| RELU LPAREN expr RPAREN			# ReluFunc
-	| SOFTPLUS LPAREN expr RPAREN		# SoftplusFunc
-	| GELU LPAREN expr RPAREN			# GeluFunc
-	| SIGN LPAREN expr RPAREN			# SignFunc
-	| PRINT_SHAPE LPAREN expr RPAREN	# PrintShapeFunc
-	| PINV LPAREN expr RPAREN			# PinvFunc
-	| SUM LPAREN expr RPAREN			# SumFunc
-	| MEAN LPAREN expr RPAREN			# MeanFunc
-	| STD LPAREN expr RPAREN			# StdFunc
-	| VAR LPAREN expr RPAREN			# VarFunc
-	| SORT LPAREN expr RPAREN			# SortFunc
-	| NOISE LPAREN expr RPAREN			# NoiseFunc
-	| RAND LPAREN expr RPAREN			# RandFunc
-	| ANY LPAREN expr RPAREN			# AnyFunc
-	| ALL LPAREN expr RPAREN			# AllFunc
-	| EDGE LPAREN expr (COMMA expr)? RPAREN			# EdgeFunc
-	| MEDIAN LPAREN expr RPAREN			# MedianFunc
-	| MODE LPAREN expr RPAREN			# ModeFunc
-	| CUMSUM LPAREN expr RPAREN			# CumsumFunc
-	| CUMPROD LPAREN expr RPAREN		# CumprodFunc;
+	SIN LPAREN expr RPAREN					# SinFunc
+	| COS LPAREN expr RPAREN				# CosFunc
+	| TAN LPAREN expr RPAREN				# TanFunc
+	| ASIN LPAREN expr RPAREN				# AsinFunc
+	| ACOS LPAREN expr RPAREN				# AcosFunc
+	| ATAN LPAREN expr RPAREN				# AtanFunc
+	| SINH LPAREN expr RPAREN				# SinhFunc
+	| COSH LPAREN expr RPAREN				# CoshFunc
+	| TANH LPAREN expr RPAREN				# TanhFunc
+	| ASINH LPAREN expr RPAREN				# AsinhFunc
+	| ACOSH LPAREN expr RPAREN				# AcoshFunc
+	| ATANH LPAREN expr RPAREN				# AtanhFunc
+	| ABS LPAREN expr RPAREN				# AbsFunc
+	| SQRT LPAREN expr RPAREN				# SqrtFunc
+	| LN LPAREN expr RPAREN					# LnFunc
+	| LOG LPAREN expr RPAREN				# LogFunc
+	| EXP LPAREN expr RPAREN				# ExpFunc
+	| TNORM LPAREN expr RPAREN				# TNormFunc
+	| SNORM LPAREN expr RPAREN				# SNormFunc
+	| FLOOR LPAREN expr RPAREN				# FloorFunc
+	| CEIL LPAREN expr RPAREN				# CeilFunc
+	| ROUND LPAREN expr RPAREN				# RoundFunc
+	| GAMMA LPAREN expr RPAREN				# GammaFunc
+	| SIGM LPAREN expr RPAREN				# sigmoidFunc
+	| SFFT LPAREN expr RPAREN				# sfftFunc
+	| SIFFT LPAREN expr RPAREN				# sifftFunc
+	| ANGL LPAREN expr RPAREN				# anglFunc
+	| PRNT LPAREN expr RPAREN				# printFunc
+	| FRACT LPAREN expr RPAREN				# FractFunc
+	| RELU LPAREN expr RPAREN				# ReluFunc
+	| SOFTPLUS LPAREN expr RPAREN			# SoftplusFunc
+	| GELU LPAREN expr RPAREN				# GeluFunc
+	| SIGN LPAREN expr RPAREN				# SignFunc
+	| PRINT_SHAPE LPAREN expr RPAREN		# PrintShapeFunc
+	| PINV LPAREN expr RPAREN				# PinvFunc
+	| SUM LPAREN expr RPAREN				# SumFunc
+	| MEAN LPAREN expr RPAREN				# MeanFunc
+	| STD LPAREN expr RPAREN				# StdFunc
+	| VAR LPAREN expr RPAREN				# VarFunc
+	| SORT LPAREN expr RPAREN				# SortFunc
+	| NOISE LPAREN expr RPAREN				# NoiseFunc
+	| RAND LPAREN expr RPAREN				# RandFunc
+	| ANY LPAREN expr RPAREN				# AnyFunc
+	| ALL LPAREN expr RPAREN				# AllFunc
+	| EDGE LPAREN expr (COMMA expr)? RPAREN	# EdgeFunc
+	| MEDIAN LPAREN expr RPAREN				# MedianFunc
+	| MODE LPAREN expr RPAREN				# ModeFunc
+	| CUMSUM LPAREN expr RPAREN				# CumsumFunc
+	| CUMPROD LPAREN expr RPAREN			# CumprodFunc;
 
 // Two-argument functions Two-argument functions
 func2:
-	POWE LPAREN expr COMMA expr RPAREN			# PowFunc
-	| ATAN2 LPAREN expr COMMA expr RPAREN		# Atan2Func
-	| TMIN LPAREN expr COMMA expr RPAREN		# TMinFunc
-	| TMAX LPAREN expr COMMA expr RPAREN		# TMaxFunc
-	| STEP LPAREN expr COMMA expr RPAREN		# StepFunc
-	| TOPK LPAREN expr COMMA expr RPAREN		# TopkFunc
-	| BOTK LPAREN expr COMMA expr RPAREN		# BotkFunc
-	| QUARTILE LPAREN expr COMMA expr RPAREN	# QuartileFunc
-	| PERCENTILE LPAREN expr COMMA expr RPAREN	# PercentileFunc
-	| QUANTILE LPAREN expr COMMA expr RPAREN	# QuantileFunc
-	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
-	| COSSIM LPAREN expr COMMA expr RPAREN		# CossimFunc
-	| FLIP LPAREN expr COMMA expr RPAREN		# FlipFunc
-	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
-	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc
-	| EXPONENTIAL LPAREN expr COMMA expr RPAREN	# ExponentialFunc
-	| BERNOULLI LPAREN expr COMMA expr RPAREN	# BernoulliFunc
-	| POISSON LPAREN expr COMMA expr RPAREN		# PoissonFunc
+	POWE LPAREN expr COMMA expr RPAREN						# PowFunc
+	| ATAN2 LPAREN expr COMMA expr RPAREN					# Atan2Func
+	| TMIN LPAREN expr COMMA expr RPAREN					# TMinFunc
+	| TMAX LPAREN expr COMMA expr RPAREN					# TMaxFunc
+	| STEP LPAREN expr COMMA expr RPAREN					# StepFunc
+	| TOPK LPAREN expr COMMA expr RPAREN					# TopkFunc
+	| BOTK LPAREN expr COMMA expr RPAREN					# BotkFunc
+	| QUARTILE LPAREN expr COMMA expr RPAREN				# QuartileFunc
+	| PERCENTILE LPAREN expr COMMA expr RPAREN				# PercentileFunc
+	| QUANTILE LPAREN expr COMMA expr RPAREN				# QuantileFunc
+	| DOT LPAREN expr COMMA expr RPAREN						# DotFunc
+	| COSSIM LPAREN expr COMMA expr RPAREN					# CossimFunc
+	| FLIP LPAREN expr COMMA expr RPAREN					# FlipFunc
+	| COV LPAREN expr COMMA expr RPAREN						# CovFunc
+	| APPEND LPAREN expr COMMA expr RPAREN					# AppendFunc
+	| EXPONENTIAL LPAREN expr COMMA expr RPAREN				# ExponentialFunc
+	| BERNOULLI LPAREN expr COMMA expr RPAREN				# BernoulliFunc
+	| POISSON LPAREN expr COMMA expr RPAREN					# PoissonFunc
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
-	| TOPK_IND LPAREN expr COMMA expr RPAREN	# TopkIndFunc
-	| BOTK_IND LPAREN expr COMMA expr RPAREN	# BotkIndFunc;
+	| TOPK_IND LPAREN expr COMMA expr RPAREN				# TopkIndFunc
+	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -253,6 +266,11 @@ SMOOTHERSTEP: 'smootherstep';
 DIST: 'dist' | 'distance';
 REMAP: 'remap';
 
+IF: 'if';
+ELSE: 'else';
+WHILE: 'while';
+RETURN: 'return';
+
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';
 CAUCHY: 'randc' | 'random_cauchy';
@@ -291,6 +309,8 @@ LBRACKET: '[';
 RBRACKET: ']';
 QUESTION: '?';
 COLON: ':';
+LBRACE: '{';
+RBRACE: '}';
 
 CONSTANT: ('pi' | 'PI' | 'e' | 'E');
 NUMBER: [0-9]+ ('.' [0-9]+)?;

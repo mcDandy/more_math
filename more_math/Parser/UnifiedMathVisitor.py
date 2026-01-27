@@ -1,13 +1,22 @@
 from ast import If
 import torch
 import math
+import inspect
 import torch.nn.functional as F
 from .MathExprVisitor import MathExprVisitor
 from ..helper_functions import generate_dim_variables
 
 
+class ReturnException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+
 class UnifiedMathVisitor(MathExprVisitor):
-    def __init__(self, variables, shape=None, device=None, functions=None):
+    def __init__(self, variables, shape=None, device=None, functions=None, depth=0):
+        import sys
+        if sys.getrecursionlimit() < 10000:
+             sys.setrecursionlimit(10000)
         self.variables = variables
         self.spatial_variables = variables.copy()
         self.shape = shape if shape is not None else (1,)
@@ -16,6 +25,59 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             self.device = device
         self.functions = functions if functions is not None else {}
+        self.depth = depth
+        self._scope_stack = []
+
+    def visit(self, tree):
+        """
+        Iterative visitor implementation using a generator-based trampoline.
+        Supports unlimited recursion depth for nodes that 'yield' their children.
+        """
+        if tree is None:
+            return None
+
+        gen = tree.accept(self)
+        if not inspect.isgenerator(gen):
+            return gen
+
+        stack = [gen]
+        last_result = None
+        while stack:
+            try:
+                res = stack[-1].send(last_result)
+                if hasattr(res, 'accept'): # It's a context node
+                    next_gen = res.accept(self)
+                    if inspect.isgenerator(next_gen):
+                        stack.append(next_gen)
+                        last_result = None
+                    else:
+                        last_result = next_gen
+                else: 
+                    last_result = res
+            except StopIteration as e:
+                stack.pop()
+                last_result = e.value
+            except ReturnException as re:
+                # Bubble the ReturnException through the generator stack
+                stack.pop()
+                while stack:
+                    try:
+                        # Throw the exception into the parent generator
+                        last_result = stack[-1].throw(re)
+                        break # Found a generator that caught it
+                    except ReturnException as re_next:
+                        # Parent didn't catch it, keep bubbling
+                        re = re_next
+                        stack.pop()
+                    except StopIteration as e:
+                        # Parent caught it and returned/finished
+                        stack.pop()
+                        last_result = e.value
+                        break
+                else:
+                    # No one caught it
+                    raise re
+        return last_result
 
     def _is_tensor(self, val):
         return isinstance(val, torch.Tensor)
@@ -86,43 +148,47 @@ class UnifiedMathVisitor(MathExprVisitor):
     # ========================
 
     def visitNumberExp(self, ctx):
-        val_str = ctx.getText()
-        if "." in val_str or "e" in val_str:
-            return float(val_str)
-        return int(val_str)
+        return float(ctx.NUMBER().getText())
 
     def visitConstantExp(self, ctx):
-        name = ctx.getText().lower()
-        if name == "pi":
+        val = ctx.CONSTANT().getText().lower()
+        if val == "pi":
             return math.pi
-        if name == "e":
+        if val == "e":
             return math.e
-        raise ValueError(f"Unknown constant: {name}")
+        return 0.0
 
     def visitVariableExp(self, ctx):
-        name = ctx.getText()
-        if name not in self.variables:
-            raise ValueError(f"Variable '{name}' not found")
-        return self.variables[name]
+        var_name = ctx.VARIABLE().getText()
+        if var_name == "depth":
+            return float(self.depth)
+        if var_name in self.variables:
+            return self.variables[var_name]
+        raise ValueError(f"Variable '{var_name}' not found")
 
     def visitListExp(self, ctx):
-        return [self.visit(e) for e in ctx.expr()]
+        res = []
+        for e in ctx.expr():
+            res.append((yield e))
+        return res
 
     def visitParenExp(self, ctx):
-        return self.visit(ctx.expr())
+        return (yield ctx.expr())
 
     def visitUnaryPlus(self, ctx):
-        return self._unary_op(self.visit(ctx.unaryExpr()), lambda x: x, lambda x: +x)
+        return self._unary_op((yield ctx.unaryExpr()), lambda x: x, lambda x: +x)
 
     def visitUnaryMinus(self, ctx):
-        return self._unary_op(self.visit(ctx.unaryExpr()), torch.neg, lambda x: -x)
+        return self._unary_op((yield ctx.unaryExpr()), torch.neg, lambda x: -x)
 
     def visitToIndex(self, ctx):
-        return self.visit(ctx.indexExpr())
+        return (yield ctx.indexExpr())
 
     def visitIndexExp(self, ctx):
-        val = self.visit(ctx.indexExpr())
-        index_args = [self.visit(e) for e in ctx.expr()]
+        val = (yield ctx.indexExpr())
+        index_args = []
+        for e in ctx.expr():
+            index_args.append((yield e))
 
         flat_indices = []
         for idx in index_args:
@@ -148,14 +214,14 @@ class UnifiedMathVisitor(MathExprVisitor):
             raise ValueError("Indexing only supported on tensors and lists.")
 
     def visitToAtom(self, ctx):
-        return self.visit(ctx.atom())
+        return (yield ctx.atom())
 
     def visitTernaryExp(self, ctx):
-        condition = self.visit(ctx.compExpr())
+        condition = yield ctx.compExpr()
 
         if self._is_tensor(condition):
-            true_val = self.visit(ctx.expr(0))
-            false_val = self.visit(ctx.expr(1))
+            true_val = yield ctx.expr(0)
+            false_val = yield ctx.expr(1)
             true_t = self._promote_to_tensor(true_val)
             false_t = self._promote_to_tensor(false_val)
 
@@ -173,103 +239,139 @@ class UnifiedMathVisitor(MathExprVisitor):
             for i, c in enumerate(condition):
                 if c:
                     if cache_true is None:
-                        cache_true = self.visit(ctx.expr(0))
+                        cache_true = yield ctx.expr(0)
                     res.append(cache_true)
                 else:
                     if cache_false is None:
-                        cache_false = self.visit(ctx.expr(1))
+                        cache_false = yield ctx.expr(1)
                     res.append(cache_false)
             return res
 
         if condition:
-            return self.visit(ctx.expr(0))
+            return (yield ctx.expr(0))
         else:
-            return self.visit(ctx.expr(1))
+            return (yield ctx.expr(1))
 
     # Binary Ops
     def visitAddExp(self, ctx):
-        return self._bin_op(self.visit(ctx.addExpr()), self.visit(ctx.mulExpr()), torch.add, lambda a, b: a + b)
+        a = yield ctx.addExpr()
+        b = yield ctx.mulExpr()
+        return self._bin_op(a, b, torch.add, lambda a, b: a + b)
 
     def visitSubExp(self, ctx):
-        return self._bin_op(self.visit(ctx.addExpr()), self.visit(ctx.mulExpr()), torch.sub, lambda a, b: a - b)
+        a = yield ctx.addExpr()
+        b = yield ctx.mulExpr()
+        return self._bin_op(a, b, torch.sub, lambda a, b: a - b)
 
     def visitMulExp(self, ctx):
-        return self._bin_op(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()), torch.mul, lambda a, b: a * b)
+        a = yield ctx.mulExpr()
+        b = yield ctx.powExpr()
+        return self._bin_op(a, b, torch.mul, lambda a, b: a * b)
 
     def visitDivExp(self, ctx):
-        return self._bin_op(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()), torch.div, lambda a, b: a / b)
+        a = yield ctx.mulExpr()
+        b = yield ctx.powExpr()
+        return self._bin_op(a, b, torch.div, lambda a, b: a / b)
 
     def visitModExp(self, ctx):
-        return self._bin_op(self.visit(ctx.mulExpr()), self.visit(ctx.powExpr()), torch.fmod, lambda a, b: a % b)
+        a = yield ctx.mulExpr()
+        b = yield ctx.powExpr()
+        return self._bin_op(a, b, torch.remainder, lambda a, b: a % b)
 
     def visitPowExp(self, ctx):
-        return self._bin_op(self.visit(ctx.unaryExpr()), self.visit(ctx.powExpr()), torch.pow, math.pow)
+        a = yield ctx.unaryExpr()
+        b = yield ctx.powExpr()
+        return self._bin_op(a, b, torch.pow, lambda a, b: a ** b)
 
     def _bool_op(self, a, b, torch_op, scalar_op):
         return self._bin_op(a, b, torch_op, scalar_op)
 
     def visitNeExp(self, ctx):
-        return self._bool_op(self.visit(ctx.compExpr()), self.visit(ctx.addExpr()), torch.ne, lambda a, b: float(a != b))
+        a = yield ctx.compExpr()
+        b = yield ctx.addExpr()
+        return self._bool_op(a, b, torch.ne, lambda a, b: a != b)
 
     def visitEqExp(self, ctx):
-        return self._bool_op(self.visit(ctx.compExpr()), self.visit(ctx.addExpr()), torch.eq, lambda a, b: float(a == b))
+        a = yield ctx.compExpr()
+        b = yield ctx.addExpr()
+        return self._bool_op(a, b, torch.eq, lambda a, b: a == b)
 
     def visitGtExp(self, ctx):
-        return self._bool_op(self.visit(ctx.compExpr()), self.visit(ctx.addExpr()), torch.gt, lambda a, b: float(a > b))
+        a = yield ctx.compExpr()
+        b = yield ctx.addExpr()
+        return self._bool_op(a, b, torch.gt, lambda a, b: a > b)
 
     def visitLtExp(self, ctx):
-        return self._bool_op(self.visit(ctx.compExpr()), self.visit(ctx.addExpr()), torch.lt, lambda a, b: float(a < b))
+        a = yield ctx.compExpr()
+        b = yield ctx.addExpr()
+        return self._bool_op(a, b, torch.lt, lambda a, b: a < b)
 
     def visitGeExp(self, ctx):
-        return self._bool_op(self.visit(ctx.compExpr()), self.visit(ctx.addExpr()), torch.ge, lambda a, b: float(a >= b))
+        a = yield ctx.compExpr()
+        b = yield ctx.addExpr()
+        return self._bool_op(a, b, torch.ge, lambda a, b: a >= b)
 
     def visitLeExp(self, ctx):
-        return self._bool_op(self.visit(ctx.compExpr()), self.visit(ctx.addExpr()), torch.le, lambda a, b: float(a <= b))
+        a = yield ctx.compExpr()
+        b = yield ctx.addExpr()
+        return self._bool_op(a, b, torch.le, lambda a, b: a <= b)
+
+    def visitToAdd(self, ctx):
+        return (yield ctx.addExpr())
+
+    def visitToMul(self, ctx):
+        return (yield ctx.mulExpr())
+
+    def visitToPow(self, ctx):
+        return (yield ctx.powExpr())
+
+    def visitToUnary(self, ctx):
+        return (yield ctx.unaryExpr())
 
     # Functions
 
 
     def visitSinFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.sin, math.sin)
+        return self._unary_op((yield ctx.expr()), torch.sin, math.sin)
 
     def visitCosFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.cos, math.cos)
+        return self._unary_op((yield ctx.expr()), torch.cos, math.cos)
 
     def visitTanFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.tan, math.tan)
+        return self._unary_op((yield ctx.expr()), torch.tan, math.tan)
 
     def visitAsinFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.asin, math.asin)
+        return self._unary_op((yield ctx.expr()), torch.asin, math.asin)
 
     def visitAcosFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.acos, math.acos)
+        return self._unary_op((yield ctx.expr()), torch.acos, math.acos)
 
     def visitAtanFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.atan, math.atan)
+        return self._unary_op((yield ctx.expr()), torch.atan, math.atan)
 
     def visitSinhFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.sinh, math.sinh)
+        return self._unary_op((yield ctx.expr()), torch.sinh, math.sinh)
 
     def visitCoshFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.cosh, math.cosh)
+        return self._unary_op((yield ctx.expr()), torch.cosh, math.cosh)
 
     def visitTanhFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.tanh, math.tanh)
+        return self._unary_op((yield ctx.expr()), torch.tanh, math.tanh)
 
     def visitAsinhFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.asinh, math.asinh)
+        return self._unary_op((yield ctx.expr()), torch.asinh, math.asinh)
 
     def visitAcoshFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.acosh, math.acosh)
+        return self._unary_op((yield ctx.expr()), torch.acosh, math.acosh)
 
     def visitAtanhFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.atanh, math.atanh)
+        return self._unary_op((yield ctx.expr()), torch.atanh, math.atanh)
 
     def visitAbsFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.abs, abs)
+        return self._unary_op((yield ctx.expr()), torch.abs, abs)
 
     def visitAbsExp(self, ctx):
-        val = self.visit(ctx.expr())
+        val = (yield ctx.expr())
         if self._is_list(val):
             return torch.linalg.norm(self._promote_to_tensor(val))
         if self._is_tensor(val):
@@ -277,97 +379,97 @@ class UnifiedMathVisitor(MathExprVisitor):
         return abs(val)
 
     def visitSqrtFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.sqrt, math.sqrt)
+        return self._unary_op((yield ctx.expr()), torch.sqrt, math.sqrt)
 
     def visitLnFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.log, math.log)
+        return self._unary_op((yield ctx.expr()), torch.log, math.log)
 
     def visitLogFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.log10, math.log10)
+        return self._unary_op((yield ctx.expr()), torch.log10, math.log10)
 
     def visitExpFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.exp, math.exp)
+        return self._unary_op((yield ctx.expr()), torch.exp, math.exp)
 
     def visitFloorFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.floor, math.floor)
+        return self._unary_op((yield ctx.expr()), torch.floor, math.floor)
 
     def visitCeilFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.ceil, math.ceil)
+        return self._unary_op((yield ctx.expr()), torch.ceil, math.ceil)
 
     def visitRoundFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.round, round)
+        return self._unary_op((yield ctx.expr()), torch.round, round)
 
     def visitSignFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.sign, lambda x: (1.0 if x > 0 else (-1.0 if x < 0 else 0.0)))
+        return self._unary_op((yield ctx.expr()), torch.sign, lambda x: (1.0 if x > 0 else (-1.0 if x < 0 else 0.0)))
 
     def visitFractFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), lambda x: x - torch.floor(x), lambda x: x - math.floor(x))
+        return self._unary_op((yield ctx.expr()), lambda x: x - torch.floor(x), lambda x: x - math.floor(x))
 
     def visitGammaFunc(self, ctx):
         torch_gamma = getattr(torch.special, "gamma", None)
         if torch_gamma is None:
             torch_gamma = lambda x: torch.exp(torch.lgamma(x))
-        return self._unary_op(self.visit(ctx.expr()), torch_gamma, math.gamma)
+        return self._unary_op((yield ctx.expr()), torch_gamma, math.gamma)
 
     def visitSigmoidFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.sigmoid, lambda x: 1.0 / (1.0 + math.exp(-x)))
+        return self._unary_op((yield ctx.expr()), torch.sigmoid, lambda x: 1.0 / (1.0 + math.exp(-x)))
 
     def visitReluFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.relu, lambda x: max(0.0, x))
+        return self._unary_op((yield ctx.expr()), torch.relu, lambda x: max(0.0, x))
 
     def visitSoftplusFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), F.softplus, lambda x: math.log(1.0 + math.exp(x)))
+        return self._unary_op((yield ctx.expr()), F.softplus, lambda x: math.log(1.0 + math.exp(x)))
 
     def visitGeluFunc(self, ctx):
         return self._unary_op(
-            self.visit(ctx.expr()), F.gelu, lambda x: 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * math.pow(x, 3))))
+            (yield ctx.expr()), F.gelu, lambda x: 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * math.pow(x, 3))))
         )
 
     def visitAnglFunc(self, ctx):
-        return self._unary_op(self.visit(ctx.expr()), torch.angle, lambda x: math.atan2(0, x) if x < 0 else 0)
+        return self._unary_op((yield ctx.expr()), torch.angle, lambda x: math.atan2(0, x) if x < 0 else 0)
 
     def visitPrintFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = (yield ctx.expr())
         print(f"{val}")
         return val
 
     def visitTNormFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = (yield ctx.expr())
         if self._is_tensor(val):
             return F.normalize(val, p=2, dim=-1)
         return 1.0 if val != 0 else 0.0
 
     def visitSNormFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = (yield ctx.expr())
         if self._is_tensor(val):
             return torch.linalg.norm(val)
         return abs(val)
 
     # Two-argument functions
     def visitPowFunc(self, ctx):
-        return self._bin_op(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), torch.pow, math.pow)
+        return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.pow, math.pow)
 
     def visitAtan2Func(self, ctx):
-        return self._bin_op(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), torch.atan2, math.atan2)
+        return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.atan2, math.atan2)
 
     def visitTMinFunc(self, ctx):
-        return self._bin_op(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), torch.minimum, min)
+        return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.minimum, min)
 
     def visitTMaxFunc(self, ctx):
-        return self._bin_op(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), torch.maximum, max)
+        return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.maximum, max)
 
     def visitStepFunc(self, ctx):
         # step(x, edge) = 1 if x >= edge else 0
         return self._bin_op(
-            self.visit(ctx.expr(0)),
-            self.visit(ctx.expr(1)),
+            (yield ctx.expr(0)),
+            (yield ctx.expr(1)),
             lambda x, edge: torch.where(x >= edge, 1.0, 0.0),
             lambda x, edge: 1.0 if x >= edge else 0.0,
         )
 
     def visitTopkFunc(self, ctx):
-        val = self.visit(ctx.expr(0))
-        k = self.visit(ctx.expr(1))
+        val = (yield ctx.expr(0))
+        k = (yield ctx.expr(1))
 
         if self._is_tensor(k):
             k_val = int(k.flatten()[0].item())
@@ -397,8 +499,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return val
 
     def visitBotkFunc(self, ctx):
-        val = self.visit(ctx.expr(0))
-        k = self.visit(ctx.expr(1))
+        val = (yield ctx.expr(0))
+        k = (yield ctx.expr(1))
 
         if self._is_tensor(k):
             k_val = int(k.flatten()[0].item())
@@ -429,7 +531,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitPinvFunc(self, ctx):
         """Permutation inverse: if input[i] = j, output[j] = i."""
-        val = self.visit(ctx.expr())
+        val = (yield ctx.expr())
 
         if self._is_list(val):
             n = len(val)
@@ -454,9 +556,9 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     # Three-argument functions
     def visitClampFunc(self, ctx):
-        val = self.visit(ctx.expr(0))
-        min_v = self.visit(ctx.expr(1))
-        max_v = self.visit(ctx.expr(2))
+        val = (yield ctx.expr(0))
+        min_v = (yield ctx.expr(1))
+        max_v = (yield ctx.expr(2))
         if any(self._is_tensor(x) for x in [val, min_v, max_v]):
             return torch.clamp(self._promote_to_tensor(val), self._promote_to_tensor(min_v), self._promote_to_tensor(max_v))
         if self._is_list(val):
@@ -464,9 +566,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return max(min(val, max_v), min_v)
 
     def visitLerpFunc(self, ctx):
-        a = self.visit(ctx.expr(0))
-        b = self.visit(ctx.expr(1))
-        w = self.visit(ctx.expr(2))
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        w = (yield ctx.expr(2))
 
         if self._is_list(w):
              return [self._lerp_helper(a[i] if self._is_list(a) else a,
@@ -481,9 +583,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return a*(1-w)+b*w
 
     def visitSmoothstepFunc(self, ctx):
-        x = self.visit(ctx.expr(0))
-        edge0 = self.visit(ctx.expr(1))
-        edge1 = self.visit(ctx.expr(2))
+        x = (yield ctx.expr(0))
+        edge0 = (yield ctx.expr(1))
+        edge1 = (yield ctx.expr(2))
 
         # t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
         # return t * t * (3.0 - 2.0 * t)
@@ -497,12 +599,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         return t * t * (3.0 - 2.0 * t)
 
     def visitRangeFunc(self, ctx):
-        return list(torch.arange(self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))))
+        return list(torch.arange((yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))))
 
     def visitSmootherstepFunc(self, ctx):
-        x = self.visit(ctx.expr(0))
-        edge0 = self.visit(ctx.expr(1))
-        edge1 = self.visit(ctx.expr(2))
+        x = (yield ctx.expr(0))
+        edge0 = (yield ctx.expr(1))
+        edge1 = (yield ctx.expr(2))
 
         def smoother(t):
             return 6*t**5 - 15*t**4 + 10*t**3
@@ -516,20 +618,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         return smoother(t)
 
     def visitCubicEaseFunc(self, ctx):
-        a, b, t = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))
+        a, b, t = (yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))
         def cubic(v):
              return torch.where(v < 0.5, 4 * v**3, 1 - torch.pow(-2 * v + 2, 3) / 2) if self._is_tensor(v) else \
                     (4 * v**3 if v < 0.5 else 1 - math.pow(-2 * v + 2, 3) / 2)
         return self._lerp_helper(a, b, cubic(t))
 
     def visitSineEaseFunc(self, ctx):
-        a, b, t = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))
+        a, b, t = (yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))
         def sine(v):
              return -(torch.cos(math.pi * v) - 1) / 2 if self._is_tensor(v) else -(math.cos(math.pi * v) - 1) / 2
         return self._lerp_helper(a, b, sine(t))
 
     def visitElasticEaseFunc(self, ctx):
-        a, b, t = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2))
+        a, b, t = (yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))
         # Specific elastic formula (simplified InOut)
         def elastic(v):
              c4 = (2 * math.pi) / 3
@@ -560,7 +662,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self.visitChildren(ctx)
 
     def visitSMinFunc(self, ctx):
-        vals = [self.visit(e) for e in ctx.expr()]
+        vals = []
+        for e in ctx.expr():
+            vals.append((yield e))
 
         if all(not self._is_tensor(x) and not self._is_list(x) for x in vals):
             return min(vals)
@@ -571,7 +675,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.min(torch.stack(torch.broadcast_tensors(*promoted))).item()
 
     def visitSMaxFunc(self, ctx):
-        args = [self.visit(e) for e in ctx.expr()]
+        args = []
+        for e in ctx.expr():
+            args.append((yield e))
         if len(args) == 1:
             # Check if list or scalar
             if not self._is_tensor(args[0]) and not self._is_list(args[0]):
@@ -620,21 +726,21 @@ class UnifiedMathVisitor(MathExprVisitor):
         return tsr
 
     def visitPermuteFunc(self, ctx):
-        tsr = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        dims = self.visit(ctx.expr(1))
+        tsr = self._promote_to_tensor((yield ctx.expr(0)))
+        dims = (yield ctx.expr(1))
         if isinstance(dims, torch.Tensor):
             dims = dims.flatten().long().tolist()
         return tsr.permute(*dims)
 
     def visitReshapeFunc(self, ctx):
-        tsr = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        new_shape = self.visit(ctx.expr(1))
+        tsr = self._promote_to_tensor((yield ctx.expr(0)))
+        new_shape = (yield ctx.expr(1))
         if isinstance(new_shape, torch.Tensor):
             new_shape = new_shape.flatten().long().tolist()
         return tsr.reshape(*new_shape)
 
     def visitPrintShapeFunc(self, ctx):
-        tsr = self.visit(ctx.expr())
+        tsr = (yield ctx.expr())
         if hasattr(tsr, "shape"):
             print(tsr.shape)
         else:
@@ -645,7 +751,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         old_vars = self.variables
         self.variables = self.spatial_variables.copy()
         try:
-            val = self._promote_to_tensor(self.visit(ctx.expr()))
+            val = self._promote_to_tensor((yield ctx.expr()))
             dims = tuple(range(val.ndim))
             return torch.fft.fftn(val, dim=dims)
         finally:
@@ -692,17 +798,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         self.variables = self.variables | generate_dim_variables(k_sq_sum)
 
         try:
-            val = self._promote_to_tensor(self.visit(ctx.expr()))
+            val = self._promote_to_tensor((yield ctx.expr()))
             dims = tuple(range(val.ndim))
             return torch.fft.ifftn(val, dim=dims).real
         finally:
             self.variables = old_vars
 
     def visitSwapFunc(self, ctx):
-        tsr = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        dim_t = self.visit(ctx.expr(1))
-        idx1_t = self.visit(ctx.expr(2))
-        idx2_t = self.visit(ctx.expr(3))
+        tsr = self._promote_to_tensor((yield ctx.expr(0)))
+        dim_t = (yield ctx.expr(1))
+        idx1_t = (yield ctx.expr(2))
+        idx2_t = (yield ctx.expr(3))
 
         dim = int(dim_t.flatten()[0].item()) if isinstance(dim_t, torch.Tensor) else int(dim_t)
         i = int(idx1_t.flatten()[0].item()) if isinstance(idx1_t, torch.Tensor) else int(idx1_t)
@@ -728,11 +834,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.zeros_like(coord)
 
     def visitSumFunc(self, ctx):
-        return self._reduction_op(self.visit(ctx.expr()), torch.sum, sum)
+        return self._reduction_op((yield ctx.expr()), torch.sum, sum)
 
     def visitMeanFunc(self, ctx):
         return self._reduction_op(
-            self.visit(ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0
+            (yield ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0
         )
 
     def visitStdFunc(self, ctx):
@@ -743,7 +849,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             variance = sum((x - mean) ** 2 for x in val) / (len(val) - 1)
             return math.sqrt(variance)
 
-        return self._reduction_op(self.visit(ctx.expr()), lambda x: torch.std(x.float()), list_std)
+        return self._reduction_op((yield ctx.expr()), lambda x: torch.std(x.float()), list_std)
 
     def visitVarFunc(self, ctx):
         def list_var(val):
@@ -752,7 +858,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             mean = sum(val) / len(val)
             return sum((x - mean) ** 2 for x in val) / (len(val) - 1)
 
-        return self._reduction_op(self.visit(ctx.expr()), lambda x: torch.var(x.float()), list_var)
+        return self._reduction_op((yield ctx.expr()), lambda x: torch.var(x.float()), list_var)
 
     def _manual_quantile(self, val, q):
         """Fallback implementation using sort for when torch.quantile fails on large tensors."""
@@ -816,8 +922,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return val
 
     def visitQuartileFunc(self, ctx):
-        val = self.visit(ctx.expr(0))
-        k = self.visit(ctx.expr(1))
+        val = (yield ctx.expr(0))
+        k = (yield ctx.expr(1))
 
         if self._is_tensor(k):
              # q = k * 0.25. Ensure k is treated as int-like (1,2,3)?
@@ -831,8 +937,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._quartile_helper(val, q)
 
     def visitPercentileFunc(self, ctx):
-        val = self.visit(ctx.expr(0))
-        p_raw = self.visit(ctx.expr(1))
+        val = (yield ctx.expr(0))
+        p_raw = (yield ctx.expr(1))
 
         if self._is_tensor(p_raw):
             # p is 0-100. q = p / 100
@@ -846,8 +952,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._quartile_helper(val, q)
 
     def visitQuantileFunc(self, ctx):
-        val = self.visit(ctx.expr(0))
-        q_raw = self.visit(ctx.expr(1))
+        val = (yield ctx.expr(0))
+        q_raw = (yield ctx.expr(1))
 
         if self._is_tensor(q_raw):
             return self._quartile_helper(val, q_raw.float())
@@ -859,30 +965,30 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._quartile_helper(val, q)
 
     def visitDotFunc(self, ctx):
-        a = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        b = self._promote_to_tensor(self.visit(ctx.expr(1)))
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
         return torch.dot(a.flatten(), b.flatten())
 
     def visitMomentFunc(self,ctx):
-        x = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        a = self.visit(ctx.expr(1))
-        k = self.visit(ctx.expr(2))
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        a = (yield ctx.expr(1))
+        k = (yield ctx.expr(2))
 
         return torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a),k,torch.pow,pow)).item()/x.numel()
 
     def visitSortFunc(self, ctx):
-        val = self._promote_to_tensor(self.visit(ctx.expr()))
+        val = self._promote_to_tensor((yield ctx.expr()))
         sorted_val, _ = torch.sort(val)
         return sorted_val
 
     def visitCossimFunc(self, ctx):
-        a = self._promote_to_tensor(self.visit(ctx.expr(0))).float()
-        b = self._promote_to_tensor(self.visit(ctx.expr(1))).float()
+        a = self._promote_to_tensor((yield ctx.expr(0))).float()
+        b = self._promote_to_tensor((yield ctx.expr(1))).float()
         return F.cosine_similarity(a, b, dim=-1)
 
     def visitFlipFunc(self, ctx):
-        val = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        dims = self.visit(ctx.expr(1))
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        dims = (yield ctx.expr(1))
 
         if self._is_list(dims):
             dims_tuple = tuple(int(x) for x in dims)
@@ -894,8 +1000,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.flip(val, dims_tuple)
 
     def visitCovFunc(self, ctx):
-        x = self._promote_to_tensor(self.visit(ctx.expr(0))).float()
-        y = self._promote_to_tensor(self.visit(ctx.expr(1))).float()
+        x = self._promote_to_tensor((yield ctx.expr(0))).float()
+        y = self._promote_to_tensor((yield ctx.expr(1))).float()
 
         x_flat = x.flatten()
         y_flat = y.flatten()
@@ -914,8 +1020,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         return sum_sq_diff / (n - 1)
 
     def visitMapFunc(self, ctx):
-        tensor = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        coords = [self._promote_to_tensor(self.visit(ctx.expr(i))) for i in range(1, len(ctx.expr()))]
+        tensor = self._promote_to_tensor((yield ctx.expr(0)))
+        coords = []
+        for i in range(1, len(ctx.expr())):
+            coords.append(self._promote_to_tensor((yield ctx.expr(i))))
         num_coords = len(coords)
 
         if num_coords == 0:
@@ -965,7 +1073,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return output.reshape(final_shape)
 
     def _parse_conv_args(self, ctx):
-        input_raw = self.visit(ctx.expr(0))
+        input_raw = (yield ctx.expr(0))
         tensor = self._promote_to_tensor(input_raw)
         num_args = len(ctx.expr())
         if num_args < 3:
@@ -979,7 +1087,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         kernel_sizes = []
         for i in range(1, 1 + spatial_dims_count):
-            val = self.visit(ctx.expr(i))
+            val = (yield ctx.expr(i))
             if isinstance(val, torch.Tensor):
                 val = int(val.flatten()[0].item())
             kernel_sizes.append(val)
@@ -1006,7 +1114,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self.shape = tuple(kernel_sizes)
 
         try:
-            kernel_val = self._promote_to_tensor(self.visit(ctx.expr(kernel_arg_idx)))
+            kernel_val = self._promote_to_tensor((yield ctx.expr(kernel_arg_idx)))
         finally:
             self.shape = original_shape
             self.variables = old_vars
@@ -1048,7 +1156,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return result
 
     def visitEzConvFunc(self, ctx):
-        tensor, kernel_val, kernel_sizes, spatial_dims_count = self._parse_conv_args(ctx)
+        tensor, kernel_val, kernel_sizes, spatial_dims_count = (yield from self._parse_conv_args(ctx))
         input_ndim = tensor.ndim
 
         is_channels_first = False
@@ -1114,7 +1222,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return out
 
     def visitConvFunc(self, ctx):
-        tensor, kernel_val, kernel_sizes, spatial_dims_count = self._parse_conv_args(ctx)
+        tensor, kernel_val, kernel_sizes, spatial_dims_count = (yield from self._parse_conv_args(ctx))
 
         # Expect (Batch..., Channel, Spatial...)
         # spatial_dims_count = 1, 2, or 3
@@ -1138,8 +1246,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return result.reshape(*batch_shape, in_channels, *spatial_shape)
 
     def visitAppendFunc(self, ctx):
-        a = self.visit(ctx.expr(0))
-        b = self.visit(ctx.expr(1))
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
         if self._is_tensor(a) and a.numel() == 1:
             a = a.item()
         if self._is_tensor(b) and b.numel() == 1:
@@ -1179,22 +1287,104 @@ class UnifiedMathVisitor(MathExprVisitor):
         return a + b
 
     def visitStart(self, ctx):
-        # Visit all statements (function definitions)
-        if ctx.funcDef():
-            for i in range(len(ctx.funcDef())):
-                self.visit(ctx.funcDef(i))
+        # Visit all definitions and statements
+        for i in range(ctx.getChildCount()):
+            child = ctx.getChild(i)
+            if i == ctx.getChildCount() - 2: # expr is the one before EOF
+                break
 
-        if ctx.varDef():
-            for i in range(len(ctx.varDef())):
-                self.visit(ctx.varDef(i))
+            try:
+                yield child
+            except ReturnException as e:
+                return e.value
 
-        return self.visit(ctx.expr())
+        try:
+            val = yield ctx.expr()
+            return val
+        except ReturnException as e:
+            return e.value
+
+    def visitExprStatement(self, ctx):
+        return (yield ctx.expr())
+
+    def visitVarDefStmt(self, ctx):
+        return (yield ctx.varDef())
+
+    def visitBlockStatement(self, ctx):
+        return (yield ctx.block())
+
+    def visitBlock(self, ctx):
+        # Track variables that existed before entering the block
+        vars_before_block = set(self.variables.keys())
+
+        try:
+            for stmt in ctx.stmt():
+                yield stmt
+            return None
+        finally:
+            # Remove only variables that were newly defined in this block
+            vars_after_block = set(self.variables.keys())
+            new_vars = vars_after_block - vars_before_block
+            for var in new_vars:
+                del self.variables[var]
+
+    def visitIfStatement(self, ctx):
+        return (yield ctx.ifStmt())
+
+    def visitIfStmt(self, ctx):
+        condition = yield ctx.expr()
+        # Support tensor/list conditions
+        is_true = False
+        if isinstance(condition, torch.Tensor):
+            is_true = torch.any(condition != 0).item()
+        elif isinstance(condition, (list, tuple)):
+            is_true = any(condition)
+        else:
+            is_true = bool(condition)
+
+        if is_true:
+            val = yield ctx.stmt(0)
+            return val
+        elif ctx.stmt(1):
+            val = yield ctx.stmt(1)
+            return val
+        return None
+
+    def visitWhileStatement(self, ctx):
+        return (yield ctx.whileStmt())
+
+    def visitWhileStmt(self, ctx):
+        while True:
+            condition = yield ctx.expr()
+            is_true = False
+            if isinstance(condition, torch.Tensor):
+                is_true = torch.any(condition != 0).item()
+            elif isinstance(condition, (list, tuple)):
+                is_true = any(condition)
+            else:
+                is_true = bool(condition)
+
+            if not is_true:
+                break
+
+            try:
+                yield ctx.stmt()
+            except ReturnException:
+                raise # Pass it up
+        return None
+
+    def visitReturnStatement(self, ctx):
+        return (yield ctx.returnStmt())
+
+    def visitReturnStmt(self, ctx):
+        val = (yield ctx.expr()) if ctx.expr() else None
+        raise ReturnException(val)
 
     def visitVarDef(self, ctx):
         var_name = ctx.VARIABLE().getText()
-        var_value = self.visit(ctx.expr())
-        self.variables[var_name] = var_value
-        return {var_name: var_value}
+        val = yield ctx.expr()
+        self.variables[var_name] = val
+        return val
 
 
     def visitFunctionDef(self, ctx):
@@ -1205,7 +1395,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         self.functions[func_name] = {
             "params": params,
-            "body": ctx.expr()
+            "body": ctx.block() if ctx.block() else ctx.expr()
         }
         return None
 
@@ -1220,7 +1410,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             # Evaluate arguments
             args = []
             if ctx.exprList():
-                args = [self.visit(e) for e in ctx.exprList().expr()]
+                for e in ctx.exprList().expr():
+                    args.append((yield e))
 
             if len(args) != len(params):
                 raise ValueError(f"Function '{func_name}' expects {len(params)} arguments, got {len(args)}")
@@ -1230,80 +1421,112 @@ class UnifiedMathVisitor(MathExprVisitor):
             for param, arg in zip(params, args):
                 new_vars[param] = arg
 
-            # Create a new visitor to execute the function body in the new scope - easier than managing stack of variables and call stack
-            visitor = UnifiedMathVisitor(new_vars, self.shape, self.device, self.functions)
-            return visitor.visit(func_def["body"])
+            # Push current variables to scope stack
+            self._scope_stack.append(self.variables)
+
+            # Update variables and depth
+            self.variables = new_vars
+            self.depth += 1
+            self.variables["depth"] = float(self.depth)
+
+            try:
+                # Visit the body using yield (trampoline will handle it)
+                val = yield func_def["body"]
+                return val
+            except ReturnException as e:
+                return e.value
+            finally:
+                # Restore variables and depth
+                self.variables = self._scope_stack.pop()
+                self.depth -= 1
 
         raise ValueError(f"Unknown function: {func_name}")
 
     def visitNoiseFunc(self,ctx):
-        seed = int(self.visit(ctx.expr()))
+        seed_val = yield ctx.expr()
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.randn(self.shape, generator=generator, device=self.device)
 
     def visitRandFunc(self, ctx):
-        seed = int(self.visit(ctx.expr()))
+        seed_val = yield ctx.expr()
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.rand(self.shape, generator=generator, device=self.device)
 
     def visitExponentialFunc(self, ctx):
-        seed = int(self.visit(ctx.expr(0)))
-        lambd = float(self.visit(ctx.expr(1)))
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        lambd_val = yield ctx.expr(1)
+        lambd = float(lambd_val.item()) if self._is_tensor(lambd_val) else float(lambd_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.empty(self.shape, device=self.device).exponential_(lambd, generator=generator)
 
     def visitCauchyFunc(self, ctx):
-        seed = int(self.visit(ctx.expr(0)))
-        median = float(self.visit(ctx.expr(1)))
-        sigma = float(self.visit(ctx.expr(2)))
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        median_val = yield ctx.expr(1)
+        median = float(median_val.item()) if self._is_tensor(median_val) else float(median_val)
+        sigma_val = yield ctx.expr(2)
+        sigma = float(sigma_val.item()) if self._is_tensor(sigma_val) else float(sigma_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.empty(self.shape, device=self.device).cauchy_(median, sigma, generator=generator)
 
     def visitLogNormalFunc(self, ctx):
-        seed = int(self.visit(ctx.expr(0)))
-        mean = float(self.visit(ctx.expr(1)))
-        std = float(self.visit(ctx.expr(2)))
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        mean_val = yield ctx.expr(1)
+        mean = float(mean_val.item()) if self._is_tensor(mean_val) else float(mean_val)
+        std_val = yield ctx.expr(2)
+        std = float(std_val.item()) if self._is_tensor(std_val) else float(std_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.empty(self.shape, device=self.device).log_normal_(mean, std, generator=generator)
 
     def visitBernoulliFunc(self, ctx):
-        seed = int(self.visit(ctx.expr(0)))
-        p = self.visit(ctx.expr(1))
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        p = yield ctx.expr(1)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         if self._is_tensor(p):
             return torch.bernoulli(p, generator=generator).to(device=self.device)
         return torch.bernoulli(torch.full(self.shape, p, device=self.device), generator=generator)
 
     def visitPoissonFunc(self, ctx):
-        seed = int(self.visit(ctx.expr(0)))
-        lam = self.visit(ctx.expr(1))
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        lam = yield ctx.expr(1)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         if self._is_tensor(lam):
             return torch.poisson(lam, generator=generator).to(device=self.device)
         return torch.poisson(torch.full(self.shape, lam, device=self.device), generator=generator)
+
     def visitNvlFunc(self, ctx):
-        return torch.nan_to_num(self._promote_to_tensor(self.visit(ctx.expr(0))),self.visit(ctx.expr(1)),self.visit(ctx.expr(2)),self.visit(ctx.expr(3)))
+        v = yield ctx.expr(0)
+        v1 = yield ctx.expr(1)
+        v2 = yield ctx.expr(2)
+        v3 = yield ctx.expr(3)
+        return torch.nan_to_num(self._promote_to_tensor(v), v1, v2, v3)
 
     def visitAnyFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = yield ctx.expr()
         if self._is_tensor(val): return torch.any(torch.isclose(val, torch.tensor(0.0, device=self.device)) == False).float()
         if self._is_list(val): return float(any(val))
         return float(bool(val))
 
     def visitAllFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = yield ctx.expr()
         if self._is_tensor(val): return torch.all(torch.isclose(val, torch.tensor(0.0, device=self.device)) == False).float()
         if self._is_list(val): return float(all(val))
         return float(bool(val))
 
     def visitMedianFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = yield ctx.expr()
         if self._is_tensor(val): return torch.median(val.float())
         if self._is_list(val): return sorted(val)[len(val)//2]
         return val
 
     def visitModeFunc(self, ctx):
-        val = self.visit(ctx.expr())
+        val = yield ctx.expr()
         if self._is_tensor(val): return torch.mode(val.float().flatten()).values
         if self._is_list(val):
              from collections import Counter
@@ -1311,21 +1534,23 @@ class UnifiedMathVisitor(MathExprVisitor):
         return val
 
     def visitCumsumFunc(self, ctx):
-        val = self._promote_to_tensor(self.visit(ctx.expr()))
+        val = self._promote_to_tensor((yield ctx.expr()))
         return torch.cumsum(val, dim=0)
 
     def visitCumprodFunc(self, ctx):
-        val = self._promote_to_tensor(self.visit(ctx.expr()))
+        val = self._promote_to_tensor((yield ctx.expr()))
         return torch.cumprod(val, dim=0)
 
     def visitTopkIndFunc(self, ctx):
-        val = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        k = int(self.visit(ctx.expr(1)))
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        k_val = yield ctx.expr(1)
+        k = int(k_val.item()) if self._is_tensor(k_val) else int(k_val)
         return torch.topk(val.flatten(), k=min(k, val.numel()), largest=True).indices
 
     def visitBotkIndFunc(self, ctx):
-        val = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        k = int(self.visit(ctx.expr(1)))
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        k_val = yield ctx.expr(1)
+        k = int(k_val.item()) if self._is_tensor(k_val) else int(k_val)
         return torch.topk(val.flatten(), k=min(k, val.numel()), largest=False).indices
 
     def _apply_spatial_op(self, tsr, op_fn, original_shape):
@@ -1381,10 +1606,10 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitEdgeFunc(self, ctx):
         original_shape = tsr.shape
         tsr = tsr.float()
-        
+
         reshap = False
         if len(ctx.expr()) >= 2:
-            reshap_val = self.visit(ctx.expr(1))
+            reshap_val = yield ctx.expr(1)
             reshap = bool(reshap_val.item()) if self._is_tensor(reshap_val) else bool(reshap_val)
 
         def sobel_op(x):
@@ -1397,17 +1622,18 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._apply_spatial_op(tsr, sobel_op, original_shape) if reshap else sobel_op(tsr)
 
     def visitGaussianFunc(self, ctx):
-        tsr = self._promote_to_tensor(self.visit(ctx.expr(0)))
-        
-        sigma_val = self.visit(ctx.expr(1))
+        tsr_val = yield ctx.expr(0)
+        tsr = self._promote_to_tensor(tsr_val)
+
+        sigma_val = yield ctx.expr(1)
         sigma = float(sigma_val.item()) if self._is_tensor(sigma_val) else float(sigma_val)
-        
+
         if sigma <= 0: return tsr
         original_shape = tsr.shape
         tsr = tsr.float()
         reshap = False
         if len(ctx.expr()) >= 3:
-            reshap_val = self.visit(ctx.expr(2))
+            reshap_val = yield ctx.expr(2)
             reshap = bool(reshap_val.item()) if self._is_tensor(reshap_val) else bool(reshap_val)
         def blur_op(x):
             kernel_size = int(6 * sigma + 1)
@@ -1426,18 +1652,21 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
 
     def visitDistFunc(self, ctx):
-        x1, y1, x2, y2 = self.visit(ctx.expr(0)), self.visit(ctx.expr(1)), self.visit(ctx.expr(2)), self.visit(ctx.expr(3))
+        x1 = yield ctx.expr(0)
+        y1 = yield ctx.expr(1)
+        x2 = yield ctx.expr(2)
+        y2 = yield ctx.expr(3)
         res_sq = (x2-x1)**2 + (y2-y1)**2
         if self._is_tensor(res_sq):
             return torch.sqrt(res_sq)
         return math.sqrt(res_sq)
 
     def visitRemapFunc(self, ctx):
-        v = self.visit(ctx.expr(0))
-        i_min = self.visit(ctx.expr(1))
-        i_max = self.visit(ctx.expr(2))
-        o_min = self.visit(ctx.expr(3))
-        o_max = self.visit(ctx.expr(4))
+        v = yield ctx.expr(0)
+        i_min = yield ctx.expr(1)
+        i_max = yield ctx.expr(2)
+        o_min = yield ctx.expr(3)
+        o_max = yield ctx.expr(4)
         epsilon = 1.0e-10
         denom = (i_max - i_min)
         if self._is_tensor(denom):

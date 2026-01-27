@@ -29,6 +29,56 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#IfStatement.
+    def visitIfStatement(self, ctx:MathExprParser.IfStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#WhileStatement.
+    def visitWhileStatement(self, ctx:MathExprParser.WhileStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BlockStatement.
+    def visitBlockStatement(self, ctx:MathExprParser.BlockStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ReturnStatement.
+    def visitReturnStatement(self, ctx:MathExprParser.ReturnStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#VarDefStmt.
+    def visitVarDefStmt(self, ctx:MathExprParser.VarDefStmtContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ExprStatement.
+    def visitExprStatement(self, ctx:MathExprParser.ExprStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ifStmt.
+    def visitIfStmt(self, ctx:MathExprParser.IfStmtContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#whileStmt.
+    def visitWhileStmt(self, ctx:MathExprParser.WhileStmtContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#block.
+    def visitBlock(self, ctx:MathExprParser.BlockContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#returnStmt.
+    def visitReturnStmt(self, ctx:MathExprParser.ReturnStmtContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#expr.
     def visitExpr(self, ctx:MathExprParser.ExprContext):
         return self.visitChildren(ctx)

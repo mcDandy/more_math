@@ -1,10 +1,8 @@
-import torch
 from .helper_functions import (
     generate_dim_variables,
     parse_expr,
     getIndexTensorAlongDim,
     as_tensor,
-    prepare_inputs,
     normalize_to_common_shape,
     make_zero_like,
 )

@@ -358,8 +358,8 @@ def test_noise_math_5d():
     dummy_latent = {"samples": samples}
     res = result_executor.generate_noise(dummy_latent)
 
-    assert res["samples"].shape == (1, 5, 4, 32, 32)
-    assert torch.allclose(res["samples"], samples + 5.0)
+    assert res.shape == (1, 5, 4, 32, 32)
+    assert torch.allclose(res, samples + 5.0)
 
 
 def test_noise_math_autogrow():
@@ -382,9 +382,9 @@ def test_noise_math_autogrow():
     dummy_latent = {"samples": samples}
     res = result_executor.generate_noise(dummy_latent)
 
-    assert res["samples"].shape == (1, 4, 32, 32)
+    assert res.shape == (1, 4, 32, 32)
     # 1.0 + 2.0 * 0.5 = 2.0
-    assert torch.allclose(res["samples"], samples * 2.0)
+    assert torch.allclose(res, samples * 2.0)
 
 
 # ==========================================

@@ -6,7 +6,6 @@ from .helper_functions import (
     parse_expr,
     as_tensor,
     normalize_to_common_shape,
-    prepare_inputs,
     make_zero_like
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
@@ -116,14 +115,6 @@ class LatentMathNode(io.ComfyNode):
                     new_val = val.copy()
                     new_val["samples"] = torch.cat(new_val["samples"].tensors, dim=0)
                     V[k] = new_val
-
-        a = V.get("V0")
-        b = V.get("V1")
-        c = V.get("V2")
-        d = V.get("V3")
-
-        if a is None:
-            a = make_zero_like(ref_latent)
 
         # Identify all present tensors and their keys
         tensor_keys = [k for k, v in V.items() if v is not None]

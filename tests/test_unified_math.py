@@ -394,6 +394,27 @@ def test_random_generators():
     res_p = parse_and_visit("randp(123, 5.0)", vars)
     assert res_p.shape == (1, 1, 1, 1)
     assert torch.all(res_p >= 0)
+ 
+def test_recursion_and_depth():
+    vars = {}
+    # 1. Test recursion depth (100 levels)
+    # f(i) -> i == 0 ? 0 : f(i-1) + 1; f(100)
+    expr_rec = "f(i) -> i == 0 ? 0 : f(i-1) + 1; f(100)"
+    assert parse_and_visit(expr_rec, vars) == 100.0
+
+    # 2. Test 'depth' variable
+    # g(i) -> i == 0 ? depth : g(i-1); g(10)
+    # g(10) is depth 1, g(0) is depth 11
+    expr_depth = "g(i) -> i == 0 ? depth : g(i-1); g(10)"
+    assert parse_and_visit(expr_depth, vars) == 11.0
+
+    # 3. Test scope stack (shadowing with recursion)
+    # x = 100
+    # h(x, i) -> i == 0 ? x : h(x + 1, i - 1); h(0, 5)
+    # Should result in 5, not affected by global x=100 or previous levels' x in a broken way
+    vars = {"x": 100.0}
+    expr_scope = "h(x, i) -> i == 0 ? x : h(x + 1, i - 1); h(0, 5)"
+    assert parse_and_visit(expr_scope, vars) == 5.0
 
 if __name__ == "__main__":
     try:
@@ -414,6 +435,7 @@ if __name__ == "__main__":
         test_custom_functions()
         test_append()
         test_random_generators()
+        test_recursion_and_depth()
         print("All UnifiedMathVisitor tests passed!")
     except Exception:
         import traceback

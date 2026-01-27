@@ -22,13 +22,13 @@ class TestMathGuider(unittest.TestCase):
         # Setup input guiders
         g0 = MockGuider(1.0)
         g1 = MockGuider(2.0)
-        G = {"G0": g0, "G1": g1}
+        V = {"V0": g0, "V1": g1}
         F = {"F0": 0.5}
 
-        # Expression: Average G0 and G1
-        expr = "G0 * 0.5 + G1 * 0.5"
+        # Expression: Average V0 and V1
+        expr = "V0 * 0.5 + V1 * 0.5"
 
-        math_guider = MathGuider(G, F, expr)
+        math_guider = MathGuider(V, F, expr)
 
         # Pseudo input
         x = torch.zeros((1, 4, 16, 16))
@@ -42,13 +42,13 @@ class TestMathGuider(unittest.TestCase):
 
     def test_math_guider_aliases(self):
         g0 = MockGuider(10.0)
-        G = {"G0": g0}
+        V = {"V0": g0}
         F = {"F0": 2.0}
 
-        # a = G0, w = F0
+        # a = V0, w = F0
         expr = "a + w"
 
-        math_guider = MathGuider(G, F, expr)
+        math_guider = MathGuider(V, F, expr)
         x = torch.zeros((1, 4, 8, 8))
         sigma = torch.tensor(1.0)
 
@@ -58,9 +58,9 @@ class TestMathGuider(unittest.TestCase):
     def test_math_guider_model_patcher(self):
         # Verify that math_guider exposes model_patcher from its input guider
         g0 = MockGuider(1.0)
-        G = {"G0": g0}
+        V = {"V0": g0}
         F = {}
-        math_guider = MathGuider(G, F, "G0")
+        math_guider = MathGuider(V, F, "V0")
 
         # Check if the property exists and matches g0's patcher
         self.assertIsNotNone(math_guider.model_patcher)
@@ -70,18 +70,18 @@ class TestMathGuider(unittest.TestCase):
         # Verify behavior when input guiders don't have model_patcher (e.g. None or broken)
         g0 = MockGuider(1.0)
         del g0.model_patcher # force remove
-        G = {"G0": g0}
+        V = {"V0": g0}
         F = {}
-        math_guider = MathGuider(G, F, "G0")
+        math_guider = MathGuider(V, F, "V0")
         self.assertIsNone(math_guider.model_patcher)
 
     def test_math_guider_steps_context(self):
         # Mock sigmas: [10.0, 5.0, 0.0] -> 2 steps
         sigmas = torch.tensor([10.0, 5.0, 0.0])
         g0 = MockGuider(1.0)
-        G = {"G0": g0}
+        V = {"V0": g0}
 
-        math_guider = MathGuider(G, {}, "current_step / steps")
+        math_guider = MathGuider(V, {}, "current_step / steps")
         math_guider.sigmas = sigmas # sets sigmas directly for testing
 
         # Step 0: sigma = 10.0

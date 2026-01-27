@@ -126,7 +126,11 @@ func1:
 	| MEDIAN LPAREN expr RPAREN				# MedianFunc
 	| MODE LPAREN expr RPAREN				# ModeFunc
 	| CUMSUM LPAREN expr RPAREN				# CumsumFunc
-	| CUMPROD LPAREN expr RPAREN			# CumprodFunc;
+	| CUMPROD LPAREN expr RPAREN			# CumprodFunc
+	| POP LPAREN expr RPAREN				# PopFunc
+	| CLEAR LPAREN expr RPAREN				# ClearFunc
+	| HAS LPAREN expr RPAREN				# HasFunc
+	| GET LPAREN expr RPAREN				# GetFunc;
 
 // Two-argument functions Two-argument functions
 func2:
@@ -150,7 +154,8 @@ func2:
 	| POISSON LPAREN expr COMMA expr RPAREN					# PoissonFunc
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 	| TOPK_IND LPAREN expr COMMA expr RPAREN				# TopkIndFunc
-	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc;
+	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
+	| PUSH LPAREN expr COMMA expr RPAREN					# PushFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -270,6 +275,11 @@ IF: 'if';
 ELSE: 'else';
 WHILE: 'while';
 RETURN: 'return';
+PUSH: 'push';
+POP: 'pop';
+CLEAR: 'clear';
+HAS: 'has';
+GET: 'get';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';

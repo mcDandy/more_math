@@ -509,6 +509,26 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#PopFunc.
+    def visitPopFunc(self, ctx:MathExprParser.PopFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ClearFunc.
+    def visitClearFunc(self, ctx:MathExprParser.ClearFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#HasFunc.
+    def visitHasFunc(self, ctx:MathExprParser.HasFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GetFunc.
+    def visitGetFunc(self, ctx:MathExprParser.GetFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -611,6 +631,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#BotkIndFunc.
     def visitBotkIndFunc(self, ctx:MathExprParser.BotkIndFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PushFunc.
+    def visitPushFunc(self, ctx:MathExprParser.PushFuncContext):
         return self.visitChildren(ctx)
 
 

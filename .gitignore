@@ -119,3 +119,4 @@ node.zip
 !.pre-commit-config.yaml
 /more_math.pyproj
 /more_math.slnx
+/more_math/Parser/.antlr

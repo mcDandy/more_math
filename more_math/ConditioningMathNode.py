@@ -87,7 +87,7 @@ class ConditioningMathNode(io.ComfyNode):
         # Extract tensors and pooled outputs
         tensors = {}
         pooled_outputs = {}
-
+        ss = dict()
         for key in tensor_keys:
              conditioning = V[key]
              tensors[key] = conditioning[0][0]
@@ -133,7 +133,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Execute Expression (Main Tensor)
         tree = parse_expr(Expression)
-        visitor = UnifiedMathVisitor(variables, a.shape)
+        visitor = UnifiedMathVisitor(variables, a.shape, state_storage=ss)
         rtensor = visitor.visit(tree)
         rtensor = as_tensor(rtensor, a.shape)
 
@@ -159,7 +159,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Execute Expression_pi (Pooled Output)
         tree_pi = parse_expr(Expression_pi)
-        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape)
+        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape, state_storage=ss)
         rpooled_raw = visitor_pi.visit(tree_pi)
         rpooled = as_tensor(rpooled_raw, a_p.shape)
 

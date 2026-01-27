@@ -21,66 +21,21 @@ You can also get the node from comfy manager under the name of More math.
 - Conversion between INT and FLOAT; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
 - Nodes for FLOAT, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS and GUIDER
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
-- Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work.
-- Custom variables `varname=expression;` They must be between function definitions and expression an can be used in any later assigment or final expression.
-- **Procedural Programming**: Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements
-- **Unlimited Recursion Depth**: Generator-based iterative evaluator supports arbitrarily deep recursion (limited only by RAM, not Python's call stack)
-
-## Procedural Programming
-
-The expression parser now supports procedural programming constructs, enabling complex control flow and recursive algorithms:
+- Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work. **Be careful with recursion. There is no stack limit. Got to 700 000 iterations before I got bored.**
+- Custom variables `varname=expression;` They can be used in any later assigment or final expression.
+- Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. These do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
+- Support for stack. Stack survives between field evaluations but not between nodes or end of node execution.
+  - Usefull in GuiderMath node to store variables between steps.
 
 ### Control Flow Statements
 
 - **If/Else**: `if (condition) statement [else statement]`
-
-  ```
-  if (x > 0) { y = 1; } else { y = -1; }
-  ```
-
 - **While Loops**: `while (condition) statement`
-
-  ```
-  i = 0; while (i < 10) { i = i + 1; }
-  ```
-
 - **Blocks**: `{ statement1; statement2; ... }`
   - New variables defined in blocks are isolated and don't leak to outer scope
   - Modifications to existing variables persist to outer scope
-
-  ```
-  x = 1; { x = 2; y = 10; }; x  // Returns 2 (x modified), y is not accessible
-  ```
-
 - **Return Statements**: `return [expression];`
   - Early return from functions or top-level expressions
-
-  ```
-  f(x) -> { if (x <= 0) return 1; return x * f(x-1); }; f(5)  // Factorial
-  ```
-
-### Recursive Functions
-
-Functions can now call themselves recursively with unlimited depth:
-
-```
-// Fibonacci sequence
-fib(n) -> { if (n <= 1) return n; return fib(n-1) + fib(n-2); }; fib(10)
-
-// Factorial
-factorial(n) -> { if (n <= 1) return 1; return n * factorial(n-1); }; factorial(10)
-
-// Deep recursion (tested at depth 2000+)
-countdown(n) -> { if (n <= 0) return depth; return countdown(n-1); }; countdown(2000)
-```
-
-### Built-in Variables
-
-- **`depth`**: Current recursion depth (0 at top level, increments with each function call)
-
-  ```
-  f(n) -> { if (n <= 0) return depth; return f(n-1); }; f(100)  // Returns 101.0
-  ```
 
 ## Operators
 
@@ -216,6 +171,14 @@ countdown(n) -> { if (n <= 0) return depth; return countdown(n-1); }; countdown(
 - `random_bernoulli(seed, p)` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor.
 - `random_poisson(seed, lambda)` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
 
+### Stack
+
+- `push(id, value)`: Pushes value to stack with id.
+- `pop(id)`: Pops value from stack with id.
+- `get(id)`: Gets value from stack with id.
+- `clear(id)`: Clears stack with id.
+- `has(id)`: Checks if stack with id exists.
+
 ## Variables
 
 - **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
@@ -223,6 +186,7 @@ countdown(n) -> { if (n <= 0) return depth; return countdown(n-1); }; countdown(
   - `S{N}` - size of n-th dimension of tensor (for example S0, S1, S2, ...)
   - `V{N}` - value input (for example V0, V1, V2, ...) - input type
   - `F{N}` - float input (for example F0, F1, F2, ...) - float type
+  - `depth`: Current recursion depth (0 at top level)
 - **common inputs** (legacy):
   - `a`, `b`, `c`, `d`
 - **Extra floats** (legacy):
@@ -267,12 +231,11 @@ countdown(n) -> { if (n <= 0) return depth; return countdown(n-1); }; countdown(
   - `seed` - seed used for noise generation
   - `steps` - total number of sampling steps
   - `current_step` - current step index (0 to steps)
+  - `sample` - tensor input to guider or output from sampling
 
 - **CONDITIONING, SIGMAS and FLOAT**
   - no additional variables
 - **MODEL, CLIP and VAE**
   - `L` or `layer` - a position of layer from beginning of object
   - `LC` or `layer_count` - a count of layers
-- **Procedural Programming**
-  - `depth` - Current recursion depth (0 at top level, increments with each function call)
 - **Constants**: `e`, `pi`

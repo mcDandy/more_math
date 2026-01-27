@@ -13,10 +13,8 @@ class ReturnException(Exception):
 
 
 class UnifiedMathVisitor(MathExprVisitor):
-    def __init__(self, variables, shape=None, device=None, functions=None, depth=0):
-        import sys
-        if sys.getrecursionlimit() < 10000:
-             sys.setrecursionlimit(10000)
+    def __init__(self, variables, shape=None, device=None, functions=None, depth=0, state_storage=None):
+
         self.variables = variables
         self.spatial_variables = variables.copy()
         self.shape = shape if shape is not None else (1,)
@@ -27,6 +25,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self.functions = functions if functions is not None else {}
         self.depth = depth
         self._scope_stack = []
+        self._state_storage = state_storage if state_storage is not None else {}
 
     def visit(self, tree):
         """
@@ -52,7 +51,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                         last_result = None
                     else:
                         last_result = next_gen
-                else: 
+                else:
                     last_result = res
             except StopIteration as e:
                 stack.pop()
@@ -1678,3 +1677,34 @@ class UnifiedMathVisitor(MathExprVisitor):
             denom = epsilon
 
         return o_min + (v - i_min) * (o_max - o_min) / denom
+
+    def visitPushFunc(self, ctx):
+        slot = yield ctx.expr(0)
+        if slot not in self._state_storage:
+            self._state_storage[slot] = []
+        value = yield ctx.expr(1)
+        self._state_storage[slot].append(value)
+        return value
+
+    def visitPopFunc(self, ctx):
+        slot = yield ctx.expr()
+        if slot not in self._state_storage or not self._state_storage[slot]:
+            raise ValueError(f"Pop from empty slot: {slot}")
+        return self._state_storage[slot].pop()
+
+    def visitClearFunc(self, ctx):
+        slot = yield ctx.expr()
+        if slot in self._state_storage:
+            self._state_storage[slot] = []
+        return None
+
+    def visitHasFunc(self, ctx):
+        slot = yield ctx.expr()
+        return float(slot in self._state_storage and bool(self._state_storage[slot]))
+
+    def visitGetFunc(self, ctx):
+        slot = yield ctx.expr()
+        if slot not in self._state_storage:
+            raise ValueError(f"Get from empty slot: {slot}")
+        storage_list = self._state_storage[slot]
+        return storage_list.last()

@@ -34,6 +34,7 @@ class GuiderMathNode(io.ComfyNode):
                 io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Guider.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.String.Input(id="Expression", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
+                io.String.Input(id="Expression1", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply after generation finishes."),
             ],
             outputs=[
                 io.Guider.Output(),
@@ -41,11 +42,15 @@ class GuiderMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F):
+    def check_lazy_status(cls, Expression,Expression1, V, F):
         input_stream = InputStream(Expression)
+        input_stream1 = InputStream(Expression1)
         lexer = MathExprLexer(input_stream)
+        lexer1 = MathExprLexer(input_stream1)
         stream = CommonTokenStream(lexer)
+        stream1 = CommonTokenStream(lexer1)
         stream.fill()
+        stream1.fill()
 
         # Support aliases
         aliases_smp = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
@@ -53,7 +58,7 @@ class GuiderMathNode(io.ComfyNode):
 
         needed = []
         needed1 = []
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
+        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens+stream1.tokens):
             var_name = token.text
             if re.match(r"[VF][0-9]+", var_name):
                 needed.append(var_name)
@@ -72,20 +77,22 @@ class GuiderMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression):
-        return (MathGuider(V, F, Expression),)
+    def execute(cls, V, F, Expression,Expression1):
+        return (MathGuider(V, F, Expression,Expression1),)
 
 
 class MathGuider:
-    def __init__(self, V, F, expression):
+    def __init__(self, V, F, expression,expression1):
         self.V = V
         self.F = F
         self.expression = expression
         self.tree = parse_expr(expression)
+        self.tree1 = parse_expr(expression1)
         self.inner_model = None  # Will be set during sample
         self.sigmas = None
         self.current_step = 0
         self.steps = 0
+        self.stck = {}
 
     @property
     def model_patcher(self):
@@ -103,6 +110,15 @@ class MathGuider:
             else:
                 g_results[k] = torch.zeros_like(x)
 
+        eval_samples, variables = self.setVars(x, sigma, seed, g_results)
+
+        visitor = UnifiedMathVisitor(variables, eval_samples.shape,state_storage=self.stck)
+        result_tensor = visitor.visit(self.tree)
+        self.current_step = self.current_step + 1;
+        return as_tensor(result_tensor, eval_samples.shape).to(x.device)
+
+
+    def setVars(self, x, sigma, seed, g_results):
         eval_samples = x
         ndim = eval_samples.ndim
 
@@ -135,36 +151,33 @@ class MathGuider:
             "batch_count": eval_samples.shape[0],
             "N": eval_samples.shape[channel_dim] if channel_dim < ndim else 0,
             "channel_count": eval_samples.shape[channel_dim] if channel_dim < ndim else 0,
-            "sigma": sigma.item(),
+            "sigma": sigma.item() if isinstance(sigma,torch.Tensor) else sigma,
             "seed": seed if seed is not None else 0,
             "steps": self.steps,
             "current_step": self.current_step,
+            "sample": x
         }
-
-        variables.update(g_results)
-        variables.update({
-            "a": g_results.get("V0", make_zero_like(eval_samples)),
-            "b": g_results.get("V1", make_zero_like(eval_samples)),
-            "c": g_results.get("V2", make_zero_like(eval_samples)),
-            "d": g_results.get("V3", make_zero_like(eval_samples)),
-        })
+        if g_results is not None:
+            variables.update(g_results)
+            variables.update({
+                "a": g_results.get("V0", make_zero_like(eval_samples)),
+                "b": g_results.get("V1", make_zero_like(eval_samples)),
+                "c": g_results.get("V2", make_zero_like(eval_samples)),
+                "d": g_results.get("V3", make_zero_like(eval_samples)),
+            })
 
         for k, v in self.F.items():
             variables[k] = v if v is not None else 0.0
 
         variables.update(generate_dim_variables(eval_samples))
-
-        visitor = UnifiedMathVisitor(variables, eval_samples.shape)
-        result_tensor = visitor.visit(self.tree)
-        self.current_step = self.current_step + 1;
-        return as_tensor(result_tensor, eval_samples.shape).to(x.device)
+        return eval_samples,variables
 
     def sample(self, noise, latent_image, sampler, sigmas, denoise_mask=None, callback=None, disable_pbar=False, seed=None):
         self.sigmas = sigmas
         self.steps = len(sigmas)
         if sigmas.shape[-1] == 0:
             return latent_image
-
+        self.stck = {}
         active_guiders = [g for g in self.V.values() if g is not None]
         if not active_guiders:
             return latent_image
@@ -225,6 +238,10 @@ class MathGuider:
                 extra_args = {"model_options": extra_model_options, "seed": seed}
 
                 output = sampler.sample(self, sigmas, extra_args, callback, noise, latent_image, denoise_mask, disable_pbar)
+
+                eval_samples, variables = self.setVars(output, 0.0, seed, None)
+                visitor = UnifiedMathVisitor(variables, eval_samples.shape,state_storage=self.stck)
+                output = visitor.visit(self.tree1)
 
                 if hasattr(primary_guider.inner_model, "process_latent_out"):
                      output = primary_guider.inner_model.process_latent_out(output.to(torch.float32))

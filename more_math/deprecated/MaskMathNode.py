@@ -36,7 +36,7 @@ class MaskMathNodeOLD(io.ComfyNode):
                 io.String.Input(id="Mask", default="a*(1-w)+b*w", tooltip="Expression to apply on input masks"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["error", "error", "pad"],
+                    options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched mask batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 )

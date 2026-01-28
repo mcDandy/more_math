@@ -23,7 +23,7 @@ class CLIPMathNode(io.ComfyNode):
                 io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on weights"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["error", "passthrough", "pad"],
+                    options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched layer counts. For models, this usually defaults to broadcast (zero for missing layers)."
                 )

@@ -1,4 +1,3 @@
-from ast import If
 import torch
 import math
 import inspect

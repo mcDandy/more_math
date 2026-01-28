@@ -34,7 +34,7 @@ class ImageMathNodeOLD(io.ComfyNode):
                 io.String.Input(id="Image", default="a*(1-w)+b*w", tooltip="Expression to apply on input images"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["error", "error", "pad"],
+                    options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 )

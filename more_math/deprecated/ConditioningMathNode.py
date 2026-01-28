@@ -23,6 +23,7 @@ class ConditioningMathNodeOLD(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ConditioningMathNode",
             display_name="Conditioning math",
+            is_deprecated=True,
             inputs=[
                 io.Conditioning.Input(id="a"),
                 io.Conditioning.Input(id="b", optional=True, lazy=True),
@@ -38,7 +39,7 @@ class ConditioningMathNodeOLD(io.ComfyNode):
                 ),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["error", "error", "pad"],
+                    options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched conditioning segment counts. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing as zero."
                 )

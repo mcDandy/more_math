@@ -27,6 +27,7 @@ class FloatMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_FloatMathNode",
+            is_deprecated=True,
             display_name="Float math",
             inputs=[
                 io.Float.Input(id="a", force_input=True),

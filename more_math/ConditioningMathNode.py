@@ -48,7 +48,7 @@ class ConditioningMathNode(io.ComfyNode):
         stream = CommonTokenStream(lexer)
         stream.fill()
 
-        input_stream = InputStream(Expression)
+        input_stream = InputStream(Expression_pi)
         lexer = MathExprLexer(input_stream)
         stream1 = CommonTokenStream(lexer)
         stream1.fill()
@@ -130,6 +130,9 @@ class ConditioningMathNode(io.ComfyNode):
             "T": a.shape[0],
             "batch_count": a.shape[0],
         } | generate_dim_variables(a) | V_norm_tensors
+
+        for k, val in F.items():
+            variables[k] = val if val is not None else 0.0
 
         # Execute Expression (Main Tensor)
         tree = parse_expr(Expression)

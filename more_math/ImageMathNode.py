@@ -19,11 +19,7 @@ class ImageMathNode(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_ag_ImageMathNode", # New ID to avoid collision if necessary, or keep standard and user migrates? User asked to "switch", likely implies replacing functionality but maybe keeping ID? Usually replacing ID breaks workflows. 
-            # Strategy: Use a NEW ID for the autogrow version if we want to allow side-by-side, but typically "Autogrow switch" implies replacing the main node. 
-            # However, standard ComfyUI practice for breaking changes is often a new node or careful migration.
-            # Looking at AudioMathNode in step 6, it used "mrmth_ag_AudioMathNode". 
-            # I will follow that pattern: mrmth_ag_ImageMathNode.
+            node_id="mrmth_ag_ImageMathNode",
             category="More math",
             display_name="Image math",
             inputs=[
@@ -75,7 +71,7 @@ class ImageMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile"):
+    def execute(cls, V, F, Expression, length_mismatch="error"):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Identify all present tensors and their keys

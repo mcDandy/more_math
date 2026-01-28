@@ -34,7 +34,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
         elif hasattr(m, "state_dict"): # VAE might have state_dict directly?
              all_keys.update(m.state_dict().keys())
         elif hasattr(m, "patches"): # Mock object or raw patcher
-             # If it's just a patcher without underlying model access? 
+             # If it's just a patcher without underlying model access?
              # Usually patcher.model.state_dict() is the way.
              pass
 
@@ -112,15 +112,8 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
              res = visitor.visit(tree)
              res = as_tensor(res, ref_tensor.shape)
 
-             # Calculate patch: Result - Original(V0)
-             # Assumption: We are patching V0. 
-             # If V0 doesn't have the key, we assume V0 was zero?
-             # ComfyUI patching mechanism adds patch to original weights.
-             # If we output 'res', we need to return (res - original).
-
-             # Get original weight for V0 (alias 'a' usually)
-             original = variables.get("V0") # Or strictly V.get("V0")'s weight
-             if original is None: 
+             original = variables.get("V0")
+             if original is None:
                  original = torch.zeros_like(res)
 
              diff = res - original

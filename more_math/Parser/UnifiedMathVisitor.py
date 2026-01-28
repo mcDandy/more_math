@@ -162,7 +162,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             return float(self.depth)
         if var_name in self.variables:
             return self.variables[var_name]
-        raise ValueError(f"Variable '{var_name}' not found")
+        raise ValueError(f"line {ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Variable '{var_name}' not found")
 
     def visitListExp(self, ctx):
         res = []

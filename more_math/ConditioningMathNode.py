@@ -160,6 +160,9 @@ class ConditioningMathNode(io.ComfyNode):
             "batch_count": a_p.shape[0] if a_p.numel() > 0 else 0,
         } | generate_dim_variables(a_p) | V_norm_pooled
 
+        for k, val in F.items():
+            variables_pi[k] = val if val is not None else 0.0
+
         # Execute Expression_pi (Pooled Output)
         tree_pi = parse_expr(Expression_pi)
         visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape, state_storage=ss)

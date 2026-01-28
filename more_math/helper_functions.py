@@ -22,8 +22,8 @@ def as_tensor(value, shape):
         return value.contiguous()
     if isinstance(value, (float, int)):
         value = (value,)
-    # If it's a scalar or list, broadcast to the reference shape provided.
-    return torch.broadcast_to(torch.Tensor(value).to(dtype=torch.float32), shape).contiguous()
+        return torch.broadcast_to(torch.Tensor(value).to(dtype=torch.float32), shape).contiguous()
+    return torch.cat(value)
 
 
 def parse_expr(expr: str):

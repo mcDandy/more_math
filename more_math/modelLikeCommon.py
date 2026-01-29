@@ -107,22 +107,20 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
             variables[f"dim_{dim_idx}"] = idx_tensor
 
         # Execute math
-        try:
-             visitor = UnifiedMathVisitor(variables, ref_tensor.shape)
-             res = visitor.visit(tree)
-             res = as_tensor(res, ref_tensor.shape)
+        
+        visitor = UnifiedMathVisitor(variables, ref_tensor.shape)
+        res = visitor.visit(tree)
+        res = as_tensor(res, ref_tensor.shape)
 
-             original = variables.get("V0")
-             if original is None:
-                 original = torch.zeros_like(res)
+        original = variables.get("V0")
+        if original is None:
+            original = torch.zeros_like(res)
 
-             diff = res - original
+        diff = res - original
 
-             # Clean up: don't store zero patches
-             if not torch.all(diff == 0):
-                 patches[key] = (diff,)
+        # Clean up: don't store zero patches
+        if not torch.all(diff == 0):
+            patches[key] = (diff,)
 
-        except Exception:
-            pass
 
     return patches

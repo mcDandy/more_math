@@ -7,7 +7,8 @@ from .MathExprVisitor import MathExprVisitor
 from ..helper_functions import generate_dim_variables
 
 
-class ReturnException(Exception):
+class ReturnSignal:
+    __slots__ = ("value",)
     def __init__(self, value):
         self.value = value
 
@@ -28,10 +29,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         self._state_storage = state_storage if state_storage is not None else {}
 
     def visit(self, tree):
-        """
-        Iterative visitor implementation using a generator-based trampoline.
-        Supports unlimited recursion depth for nodes that 'yield' their children.
-        """
         if tree is None:
             return None
 
@@ -41,10 +38,17 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         stack = [gen]
         last_result = None
+
         while stack:
             try:
                 res = stack[-1].send(last_result)
-                if hasattr(res, 'accept'): # It's a context node
+
+                if isinstance(res, ReturnSignal):
+                    stack.pop()
+                    last_result = res
+                    continue
+
+                if hasattr(res, 'accept'):
                     next_gen = res.accept(self)
                     if inspect.isgenerator(next_gen):
                         stack.append(next_gen)
@@ -53,31 +57,14 @@ class UnifiedMathVisitor(MathExprVisitor):
                         last_result = next_gen
                 else:
                     last_result = res
+
             except StopIteration as e:
                 stack.pop()
                 last_result = e.value
-            except ReturnException as re:
-                # Bubble the ReturnException through the generator stack
-                stack.pop()
-                while stack:
-                    try:
-                        # Throw the exception into the parent generator
-                        last_result = stack[-1].throw(re)
-                        break # Found a generator that caught it
-                    except ReturnException as re_next:
-                        # Parent didn't catch it, keep bubbling
-                        re = re_next
-                        stack.pop()
-                    except StopIteration as e:
-                        # Parent caught it and returned/finished
-                        stack.pop()
-                        last_result = e.value
-                        break
-                else:
-                    # No one caught it
-                    raise re
-        return last_result
 
+        if isinstance(last_result, ReturnSignal):
+            return last_result.value
+        return last_result
     def _is_tensor(self, val):
         return isinstance(val, torch.Tensor)
 
@@ -162,7 +149,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         if var_name == "depth":
             return float(self.depth)
         if var_name in self.variables:
-            return self.variables[var_name]
+            res = self.variables[var_name]
+            return res
         raise ValueError(f"line {ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Variable '{var_name}' not found")
 
     def visitListExp(self, ctx):
@@ -647,19 +635,24 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     # Helpers for visiting generic exprs
     def visitFunc1Exp(self, ctx):
-        return self.visitChildren(ctx)
+        res = yield ctx.getChild(0)
+        return res
 
     def visitFunc2Exp(self, ctx):
-        return self.visitChildren(ctx)
+        res = yield ctx.getChild(0)
+        return res
 
     def visitFuncNExp(self, ctx):
-        return self.visitChildren(ctx)
+        res = yield ctx.getChild(0)
+        return res
 
     def visitAtomExp(self, ctx):
-        return self.visitChildren(ctx)
+        res = yield ctx.getChild(0)
+        return res
 
     def visitExpr(self, ctx):
-        return self.visitChildren(ctx)
+        res = yield ctx.getChild(0)
+        return res
 
     def visitSMinFunc(self, ctx):
         vals = []
@@ -1287,98 +1280,98 @@ class UnifiedMathVisitor(MathExprVisitor):
         return a + b
 
     def visitStart(self, ctx):
-        # Visit all definitions and statements
-        for i in range(ctx.getChildCount()):
+        count = ctx.getChildCount()
+
+        for i in range(count - 2):
             child = ctx.getChild(i)
-            if i == ctx.getChildCount() - 2: # expr is the one before EOF
-                break
+            res = yield child
 
-            try:
-                yield child
-            except ReturnException as e:
-                return e.value
+            if isinstance(res, ReturnSignal):
+                return res.value
 
-        try:
-            val = yield ctx.expr()
-            return val
-        except ReturnException as e:
-            return e.value
+        final_expr_node = ctx.getChild(count - 2)
+        if final_expr_node:
+            final_result = yield final_expr_node
+
+            if isinstance(final_result, ReturnSignal):
+                return final_result.value
+
+            return final_result
+        return None
 
     def visitExprStatement(self, ctx):
-        return (yield ctx.expr())
+        res = yield ctx.expr()
+        return res
 
     def visitVarDefStmt(self, ctx):
-        return (yield ctx.varDef())
+        res = yield ctx.expr()
+        return res
 
     def visitBlockStatement(self, ctx):
-        return (yield ctx.block())
+        res = yield ctx.expr()
+        return res
 
     def visitBlock(self, ctx):
-        # Track variables that existed before entering the block
-        vars_before_block = set(self.variables.keys())
-
+        vars_before = set(self.variables.keys())
         try:
             for stmt in ctx.stmt():
-                yield stmt
+                res = yield stmt
+                if isinstance(res, (ReturnSignal, BreakSignal, ContinueSignal)):
+                    return res
             return None
         finally:
-            # Remove only variables that were newly defined in this block
-            vars_after_block = set(self.variables.keys())
-            new_vars = vars_after_block - vars_before_block
-            for var in new_vars:
-                del self.variables[var]
+            for v in set(self.variables.keys()) - vars_before:
+                del self.variables[v]
 
     def visitIfStatement(self, ctx):
         return (yield ctx.ifStmt())
 
     def visitIfStmt(self, ctx):
-        condition = yield ctx.expr()
-        # Support tensor/list conditions
-        is_true = False
-        if isinstance(condition, torch.Tensor):
-            is_true = torch.any(condition != 0).item()
-        elif isinstance(condition, (list, tuple)):
-            is_true = any(condition)
-        else:
-            is_true = bool(condition)
+        cond = yield ctx.expr()
 
-        if is_true:
-            val = yield ctx.stmt(0)
-            return val
+        def truthy(x):
+            if isinstance(x, torch.Tensor):
+                return torch.any(x != 0).item()
+            if isinstance(x, (list, tuple)):
+                return any(x)
+            return bool(x)
+
+        if truthy(cond):
+            res = yield ctx.stmt(0)
         elif ctx.stmt(1):
-            val = yield ctx.stmt(1)
-            return val
-        return None
+            res = yield ctx.stmt(1)
+        else:
+            return None
 
-    def visitWhileStatement(self, ctx):
-        return (yield ctx.whileStmt())
+        if isinstance(res, ReturnSignal):
+            return res
+        return res
 
     def visitWhileStmt(self, ctx):
         while True:
-            condition = yield ctx.expr()
-            is_true = False
-            if isinstance(condition, torch.Tensor):
-                is_true = torch.any(condition != 0).item()
-            elif isinstance(condition, (list, tuple)):
-                is_true = any(condition)
-            else:
-                is_true = bool(condition)
+            cond = yield ctx.expr()
+            is_true = (
+                torch.any(cond != 0).item() if isinstance(cond, torch.Tensor)
+                else any(cond) if isinstance(cond, (list, tuple))
+                else bool(cond)
+            )
 
             if not is_true:
                 break
 
-            try:
-                yield ctx.stmt()
-            except ReturnException:
-                raise # Pass it up
+            res = yield ctx.stmt()
+
+            if isinstance(res, ReturnSignal):
+                return res
         return None
 
     def visitReturnStatement(self, ctx):
-        return (yield ctx.returnStmt())
+        res = yield ctx.returnStmt()
+        return res
 
     def visitReturnStmt(self, ctx):
         val = (yield ctx.expr()) if ctx.expr() else None
-        raise ReturnException(val)
+        return ReturnSignal(val)
 
     def visitVarDef(self, ctx):
         var_name = ctx.VARIABLE().getText()
@@ -1414,7 +1407,9 @@ class UnifiedMathVisitor(MathExprVisitor):
                     args.append((yield e))
 
             if len(args) != len(params):
-                raise ValueError(f"Function '{func_name}' expects {len(params)} arguments, got {len(args)}")
+                raise ValueError(
+                    f"Function '{func_name}' expects {len(params)} arguments, got {len(args)}"
+                )
 
             # Create a new scope for function execution
             new_vars = self.variables.copy()
@@ -1431,10 +1426,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             try:
                 # Visit the body using yield (trampoline will handle it)
-                val = yield func_def["body"]
-                return val
-            except ReturnException as e:
-                return e.value
+                res = yield func_def["body"]
+                if isinstance(res, ReturnSignal):
+                    return res.value
+
+                return res
+
             finally:
                 # Restore variables and depth
                 self.variables = self._scope_stack.pop()

@@ -325,4 +325,7 @@ RBRACE: '}';
 CONSTANT: ('pi' | 'PI' | 'e' | 'E');
 NUMBER: [0-9]+ ('.' [0-9]+)?;
 VARIABLE: [a-zA-Z_] [a-zA-Z_0-9]*;
+
+SL_COMMENT : '#' ~[\r\n]* -> skip;
+ML_COMMENT : '/*' .*? '*/' -> skip;
 WS: [ \t\r\n]+ -> skip;

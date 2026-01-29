@@ -7,7 +7,7 @@ from ..helper_functions import commonLazy
 from comfy_api.latest import io
 
 
-class FloatMathNode(io.ComfyNode):
+class FloatMathNodeOLD(io.ComfyNode):
     """
     This node enables the use of math expressions on Floats.
 

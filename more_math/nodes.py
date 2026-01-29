@@ -10,6 +10,7 @@ from .deprecated.ModelMathNode import ModelMathNodeOLD
 from .deprecated.VaeMathNode import VAEMathNodeOLD
 from .deprecated.ClipMathNode import CLIPMathNodeOLD
 from .deprecated.VideoMathNode import VideoMathNodeOLD
+from .deprecated.FloatMathNode import FloatMathNodeOLD
 
 from .FloatMathNode import FloatMathNode
 from .ConditioningMathNode import ConditioningMathNode
@@ -101,6 +102,7 @@ class MoreMathExtension(ComfyExtension):
             MaskMathNode,
             MaskMathNodeOLD,
             FloatMathNode,
+            FloatMathNodeOLD,
             NoiseMathNodeOLD,
             IntToFloatNode,
             FloatToIntNode,

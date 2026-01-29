@@ -23,9 +23,10 @@ You can also get the node from comfy manager under the name of More math.
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 - Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work. **Be careful with recursion. There is no stack limit. Got to 700 000 iterations before I got bored.**
 - Custom variables `varname=expression;` They can be used in any later assigment or final expression.
-- Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. These do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
+- Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. `if`/`else`/`while` do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
 - Support for stack. Stack survives between field evaluations but not between nodes or end of node execution.
   - Usefull in GuiderMath node to store variables between steps.
+- comments `#...` and `/*...*/`
 
 ### Control Flow Statements
 
@@ -160,6 +161,7 @@ You can also get the node from comfy manager under the name of More math.
 - `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
 - `nan_to_num(x, nan_value, posinf_value, neginf_value)` or `nvl`: Replaces NaN and infinite values in tensor with specified values.
 - `remap(v, i_min, i_max, o_min, o_max)`: Remaps value `v` from input range `[i_min, i_max]` to output range `[o_min, o_max]`.
+- `timestamp()` or `now`: Returns current UNIX timestamp (precision to microseconds, can be different on other systems)
 
 ### Random Distributions
 

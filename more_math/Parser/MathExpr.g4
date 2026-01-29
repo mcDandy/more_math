@@ -60,7 +60,8 @@ indexExpr:
 
 // Atoms: function calls, variable, number, constant, or parenthesized expression
 atom:
-	func1									# Func1Exp
+	  func0									# Func0Exp
+	| func1									# Func1Exp
 	| func2									# Func2Exp
 	| func3									# Func3Exp
 	| func4									# Func4Exp
@@ -76,6 +77,8 @@ atom:
 
 exprList: expr (COMMA expr)*;
 
+func0:
+	TIMESTAMP LPAREN RPAREN					#TimestampFunc;
 // Single-argument functions
 func1:
 	SIN LPAREN expr RPAREN					# SinFunc
@@ -294,6 +297,8 @@ FLIP: 'flip';
 COV: 'cov';
 SORT: 'sort';
 APPEND: 'append';
+
+TIMESTAMP: 'timestamp' | 'now';
 
 PLUS: '+';
 MINUS: '-';

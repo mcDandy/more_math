@@ -1,3 +1,4 @@
+import time
 import torch
 import math
 import inspect
@@ -327,7 +328,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return (yield ctx.unaryExpr())
 
     # Functions
-
+    def visitTimestampFunc(self, ctx):
+        return time.time();
 
     def visitSinFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.sin, math.sin)

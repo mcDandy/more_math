@@ -14,6 +14,8 @@ stmt:
 	ifStmt				# IfStatement
 	| whileStmt			# WhileStatement
 	| block				# BlockStatement
+	| breakStmt			# BreakStatement
+	| continueStmt		# ContinueStatement
 	| returnStmt		# ReturnStatement
 	| varDef			# VarDefStmt
 	| expr SEMICOLON	# ExprStatement;
@@ -21,6 +23,8 @@ stmt:
 ifStmt: IF LPAREN expr RPAREN stmt (ELSE stmt)?;
 whileStmt: WHILE LPAREN expr RPAREN stmt;
 block: LBRACE stmt* RBRACE;
+breakStmt: BREAK SEMICOLON;
+continueStmt: CONTINUE SEMICOLON;
 returnStmt: RETURN expr? SEMICOLON;
 
 expr: ternaryExpr | atom | compExpr;
@@ -299,6 +303,8 @@ SORT: 'sort';
 APPEND: 'append';
 
 TIMESTAMP: 'timestamp' | 'now';
+BREAK: break;
+CONTINUE: continue;
 
 PLUS: '+';
 MINUS: '-';

@@ -12,6 +12,11 @@ class ReturnSignal:
     def __init__(self, value):
         self.value = value
 
+class BreakSignal:
+    pass
+
+class ContinueSignal:
+    pass
 
 class UnifiedMathVisitor(MathExprVisitor):
     def __init__(self, variables, shape=None, device=None, functions=None, depth=0, state_storage=None):
@@ -1288,6 +1293,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             if isinstance(res, ReturnSignal):
                 return res.value
+            if isinstance(res, (BreakSignal, ContinueSignal)):
+                raise RuntimeError("break/continue outside of loop")
 
         final_expr_node = ctx.getChild(count - 2)
         if final_expr_node:
@@ -1363,7 +1370,16 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             if isinstance(res, ReturnSignal):
                 return res
+            if isinstance(res, BreakSignal):
+                break
+            if isinstance(res, ContinueSignal):
+                continue
         return None
+    def visitBreakStmt(self, ctx):
+        return BreakSignal()
+
+    def visitContinueStmt(self, ctx):
+        return ContinueSignal()
 
     def visitReturnStatement(self, ctx):
         res = yield ctx.returnStmt()

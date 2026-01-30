@@ -44,6 +44,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BreakStatement.
+    def visitBreakStatement(self, ctx:MathExprParser.BreakStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ContinueStatement.
+    def visitContinueStatement(self, ctx:MathExprParser.ContinueStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ReturnStatement.
     def visitReturnStatement(self, ctx:MathExprParser.ReturnStatementContext):
         return self.visitChildren(ctx)
@@ -71,6 +81,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#block.
     def visitBlock(self, ctx:MathExprParser.BlockContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#breakStmt.
+    def visitBreakStmt(self, ctx:MathExprParser.BreakStmtContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#continueStmt.
+    def visitContinueStmt(self, ctx:MathExprParser.ContinueStmtContext):
         return self.visitChildren(ctx)
 
 

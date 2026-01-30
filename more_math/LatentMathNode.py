@@ -183,7 +183,7 @@ class LatentMathNode(io.ComfyNode):
         for k, v in F.items():
             variables[k] = v if v is not None else 0.0
 
-        visitor = UnifiedMathVisitor(variables, ae.shape)
+        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device)
         result_t = as_tensor(visitor.visit(tree), ae.shape)
 
         result_latent = ref_latent.copy()

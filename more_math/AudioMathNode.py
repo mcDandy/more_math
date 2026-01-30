@@ -131,7 +131,7 @@ class AudioMathNode(io.ComfyNode):
             variables[k] = val if val is not None else 0.0
 
         tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, a_w.shape)
+        visitor = UnifiedMathVisitor(variables, a_w.shape,a_w.device)
         result = visitor.visit(tree)
         result = as_tensor(result, a_w.shape)
         return ({"waveform":result,"sample_rate":sample_rate},)

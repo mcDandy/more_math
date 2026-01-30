@@ -1,6 +1,8 @@
-from .helper_functions import parse_expr, getIndexTensorAlongDim, as_tensor
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
+
+from custom_nodes.more_math.more_math import helper_functions
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Legacy calculate_patches for backward compatibility."""
@@ -100,11 +102,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
             elif target in V: # V exists but key missing
                  variables[alias] = torch.zeros_like(ref_tensor)
 
-        # Add dimension variables based on ref_tensor
-        for dim_idx in range(ref_tensor.ndim):
-            idx_tensor = getIndexTensorAlongDim(ref_tensor, dim_idx)
-            variables[f"D{dim_idx}"] = idx_tensor
-            variables[f"dim_{dim_idx}"] = idx_tensor
+        variables = variables | generate_dim_variables(ref_tensor)
 
         # Execute math
 

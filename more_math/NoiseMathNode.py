@@ -127,7 +127,7 @@ class NoiseExecutor:
             F = getIndexTensorAlongDim(samples, time_dim)
             variables.update({"frame": F, "frame_count": frame_count})
 
-        visitor = UnifiedMathVisitor(variables, samples.shape)
+        visitor = UnifiedMathVisitor(variables, samples.shape,samples.device)
         result = visitor.visit(self.tree)
         result = as_tensor(result, samples.shape)
         return result

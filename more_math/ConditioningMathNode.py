@@ -136,7 +136,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Execute Expression (Main Tensor)
         tree = parse_expr(Expression)
-        visitor = UnifiedMathVisitor(variables, a.shape, state_storage=ss)
+        visitor = UnifiedMathVisitor(variables, a.shape,a.device, state_storage=ss)
         rtensor = visitor.visit(tree)
         rtensor = as_tensor(rtensor, a.shape)
 
@@ -165,7 +165,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Execute Expression_pi (Pooled Output)
         tree_pi = parse_expr(Expression_pi)
-        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape, state_storage=ss)
+        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape,a_p.device, state_storage=ss)
         rpooled_raw = visitor_pi.visit(tree_pi)
         rpooled = as_tensor(rpooled_raw, a_p.shape)
 

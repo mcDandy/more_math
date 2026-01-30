@@ -125,7 +125,7 @@ class SigmasMathNode(io.ComfyNode):
             variables[k] = v if v is not None else 0.0
 
         tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, ae.shape)
+        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device)
         result = visitor.visit(tree)
         result = as_tensor(result, ae.shape)
         return (result,)

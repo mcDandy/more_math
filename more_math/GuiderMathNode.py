@@ -112,7 +112,7 @@ class MathGuider:
 
         eval_samples, variables = self.setVars(x, sigma, seed, g_results)
 
-        visitor = UnifiedMathVisitor(variables, eval_samples.shape,state_storage=self.stck)
+        visitor = UnifiedMathVisitor(variables, eval_samples.shape,eval_samples.device,state_storage=self.stck)
         result_tensor = visitor.visit(self.tree)
         self.current_step = self.current_step + 1;
         return as_tensor(result_tensor, eval_samples.shape).to(x.device)

@@ -137,7 +137,7 @@ class VideoMathNode(io.ComfyNode):
             variables[k] = val if val is not None else 0.0
 
         tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, ae.shape,state_storage=ss)
+        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=ss)
         result = visitor.visit(tree)
         result = as_tensor(result, ae.shape)
 

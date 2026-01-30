@@ -150,7 +150,7 @@ def serializedATN():
         242,1,0,0,0,240,238,1,0,0,0,240,241,1,0,0,0,241,37,1,0,0,0,242,240,
         1,0,0,0,243,279,3,42,21,0,244,279,3,44,22,0,245,279,3,46,23,0,246,
         279,3,48,24,0,247,279,3,50,25,0,248,279,3,52,26,0,249,279,3,54,27,
-        0,250,279,5,132,0,0,251,279,5,131,0,0,252,279,5,130,0,0,253,254,
+        0,250,279,5,132,0,0,251,279,5,130,0,0,252,279,5,131,0,0,253,254,
         5,119,0,0,254,255,3,22,11,0,255,256,5,120,0,0,256,279,1,0,0,0,257,
         258,5,118,0,0,258,259,3,22,11,0,259,260,5,118,0,0,260,279,1,0,0,
         0,261,262,5,124,0,0,262,267,3,22,11,0,263,264,5,121,0,0,264,266,
@@ -427,7 +427,7 @@ class MathExprParser ( Parser ):
                       "GT", "LE", "LT", "EQ", "EQUEALS", "NE", "PIPE", "LPAREN", 
                       "RPAREN", "COMMA", "SEMICOLON", "ARROW", "LBRACKET", 
                       "RBRACKET", "QUESTION", "COLON", "LBRACE", "RBRACE", 
-                      "CONSTANT", "NUMBER", "VARIABLE", "SL_COMMENT", "ML_COMMENT", 
+                      "NUMBER", "CONSTANT", "VARIABLE", "SL_COMMENT", "ML_COMMENT", 
                       "WS" ]
 
     RULE_start = 0
@@ -596,8 +596,8 @@ class MathExprParser ( Parser ):
     COLON=127
     LBRACE=128
     RBRACE=129
-    CONSTANT=130
-    NUMBER=131
+    NUMBER=130
+    CONSTANT=131
     VARIABLE=132
     SL_COMMENT=133
     ML_COMMENT=134

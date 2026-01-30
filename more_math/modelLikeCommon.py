@@ -24,7 +24,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
     # Collect all unique keys from all models
     all_keys = set()
     models = [v for v in V.values() if v is not None]
-
+    stck = {}
     if not models:
         return {}
 
@@ -107,8 +107,8 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
             variables[f"dim_{dim_idx}"] = idx_tensor
 
         # Execute math
-        
-        visitor = UnifiedMathVisitor(variables, ref_tensor.shape)
+
+        visitor = UnifiedMathVisitor(variables, ref_tensor.shape,state_storage=stck)
         res = visitor.visit(tree)
         res = as_tensor(res, ref_tensor.shape)
 

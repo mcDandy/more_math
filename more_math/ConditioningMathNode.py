@@ -1,3 +1,4 @@
+from unittest import result
 import torch
 from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
@@ -26,22 +27,23 @@ class ConditioningMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Conditioning.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on tensor part of conditioning"),
-                io.String.Input(id="Expression_pi", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on pooled_input part of conditioning"),
+                io.String.Input(id="Expression",display_name="Tensor expr.", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on tensor part of conditioning"),
+                io.String.Input(id="Expression_pi",display_name="pooled output expr.", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on pooled_input part of conditioning"),
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
-                )
+                ),
+                io.Int.Input(id="batching")
             ],
             outputs=[
-                io.Conditioning.Output(),
+                io.Conditioning.Output(is_output_list=True),
             ],
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F,batching, length_mismatch="tile"):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -78,7 +80,7 @@ class ConditioningMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile"):
+    def execute(cls, V, F, Expression, Expression_pi,batching, length_mismatch="tile"):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
@@ -92,6 +94,7 @@ class ConditioningMathNode(io.ComfyNode):
              conditioning = V[key]
              tensors[key] = conditioning[0][0]
              # pooled_output is optional in the dict
+
              pooled_outputs[key] = conditioning[0][1].get("pooled_output")
 
         # Normalize main tensors
@@ -169,17 +172,20 @@ class ConditioningMathNode(io.ComfyNode):
         rpooled_raw = visitor_pi.visit(tree_pi)
         rpooled = as_tensor(rpooled_raw, a_p.shape)
 
-        # Clone result structure
-        import copy
-        # Conditioning is often a list of lists/tuples: [[tensor, dict], ...]
-        # We assume the first element is the main one to update
+
+        if rtensor is None:
+            rtensor = torch.zeros([1])
+        if rpooled is None:
+            rpooled = torch.zeros([1])
+        res = torch.split_copy(rtensor,batching) if batching>0 else [rtensor]
+        rpld  = torch.split_copy(rpooled,batching) if batching>0 else [rpooled]
         res_list = []
-        for i, entry in enumerate(V.get("V0", [])):
-            if i == 0:
-                # Update first entry with result
-                new_dict = copy.deepcopy(entry[1])
-                new_dict["pooled_output"] = rpooled
-                res_list.append([rtensor, new_dict])
-            else:
-                res_list.append(copy.deepcopy(entry))
+        for i in range(max(len(res),len(rpld))):
+            result_tensor = res[i] if i<len(res) else torch.zeros([1])
+            result_pooled = rpld[i] if i<len(rpld) else torch.zeros([1])
+            res_list.append(V["V0"])
+            res_list[i][0][0] = result_tensor
+            if(len(res_list[i][0])==1):
+                res_list[i][0].append({"pooled_output",result_pooled})
+            else: res_list[i][0][1]["pooled_output"]=result_pooled
         return (res_list,)

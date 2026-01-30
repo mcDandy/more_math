@@ -91,6 +91,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         """
         Generic binary operation handler.
         """
+        if self._is_tensor(a) and a.numel() == 1:
+            a = float(a.flatten()[0].item())
+        if self._is_tensor(b) and b.numel() == 1:
+            b = float(b.flatten()[0].item())
+
         # one of them is a list and one is tensor
         if self._is_tensor(a) and self._is_list(b):
              if(a.shape[0]==len(b)):
@@ -121,6 +126,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return scalar_op(a, b)
 
     def _unary_op(self, a, torch_op, scalar_op):
+        if self._is_tensor(a) and a.numel() == 1:
+            a = float(a.flatten()[0].item())
+
         if self._is_list(a):
             return [self._unary_op(x, torch_op, scalar_op) for x in a]
         if self._is_tensor(a):
@@ -128,7 +136,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         return scalar_op(a)
 
     def _reduction_op(self, val, torch_op, list_op):
+        # If it's a scalar tensor, return Python float to avoid 0-dim tensor propagation
         if self._is_tensor(val):
+            if val.numel() == 1:
+                return float(val.flatten()[0].item())
             return torch_op(val)
         if self._is_list(val):
             return list_op(val)
@@ -592,7 +603,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         return t * t * (3.0 - 2.0 * t)
 
     def visitRangeFunc(self, ctx):
-        return list(torch.arange((yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))))
+        s = (yield ctx.expr(0))
+        e = (yield ctx.expr(1))
+        st = (yield ctx.expr(2))
+        arr = torch.arange(s, e, st, device=self.device, dtype=torch.float32)
+        return [float(x) for x in arr.tolist()]
 
     def visitSmootherstepFunc(self, ctx):
         x = (yield ctx.expr(0))
@@ -1311,11 +1326,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         return res
 
     def visitVarDefStmt(self, ctx):
-        res = yield ctx.expr()
+        res = yield ctx.varDef()
         return res
 
     def visitBlockStatement(self, ctx):
-        res = yield ctx.expr()
+        res = yield ctx.block()
         return res
 
     def visitBlock(self, ctx):

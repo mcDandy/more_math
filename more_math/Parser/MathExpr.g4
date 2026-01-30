@@ -23,9 +23,9 @@ stmt:
 ifStmt: IF LPAREN expr RPAREN stmt (ELSE stmt)?;
 whileStmt: WHILE LPAREN expr RPAREN stmt;
 block: LBRACE stmt* RBRACE;
-breakStmt: BRK SEMICOLON;
-continueStmt: CONT SEMICOLON;
-returnStmt: RET expr? SEMICOLON;
+breakStmt: BREAK SEMICOLON;
+continueStmt: CONTINUE SEMICOLON;
+returnStmt: RETURN expr? SEMICOLON;
 
 expr: ternaryExpr | atom | compExpr;
 
@@ -281,7 +281,7 @@ REMAP: 'remap';
 IF: 'if';
 ELSE: 'else';
 WHILE: 'while';
-RET: 'return';
+RETURN: 'return';
 PUSH: 'push';
 POP: 'pop';
 CLEAR: 'clear';
@@ -303,8 +303,8 @@ SORT: 'sort';
 APPEND: 'append';
 
 TIMESTAMP: 'timestamp' | 'now';
-BRK: 'break';
-CONT: 'continue';
+BREAK: 'break';
+CONTINUE: 'continue';
 
 PLUS: '+';
 MINUS: '-';

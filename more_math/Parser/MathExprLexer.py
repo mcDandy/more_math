@@ -562,7 +562,7 @@ class MathExprLexer(Lexer):
     IF = 81
     ELSE = 82
     WHILE = 83
-    RET = 84
+    RETURN = 84
     PUSH = 85
     POP = 86
     CLEAR = 87
@@ -581,8 +581,8 @@ class MathExprLexer(Lexer):
     SORT = 100
     APPEND = 101
     TIMESTAMP = 102
-    BRK = 103
-    CONT = 104
+    BREAK = 103
+    CONTINUE = 104
     PLUS = 105
     MINUS = 106
     MULT = 107
@@ -650,15 +650,15 @@ class MathExprLexer(Lexer):
             "PERCENTILE", "QUANTILE", "DOT", "MOMENT", "ANY", "ALL", "EDGE", 
             "GAUSSIAN", "MEDIAN", "MODE", "CUMSUM", "CUMPROD", "TOPK_IND", 
             "BOTK_IND", "CUBIC_EASE", "ELASTIC_EASE", "SINE_EASE", "SMOOTHERSTEP", 
-            "DIST", "REMAP", "IF", "ELSE", "WHILE", "RET", "PUSH", "POP", 
+            "DIST", "REMAP", "IF", "ELSE", "WHILE", "RETURN", "PUSH", "POP", 
             "CLEAR", "HAS", "GET", "NOISE", "RAND", "CAUCHY", "EXPONENTIAL", 
             "LOGNORMAL", "BERNOULLI", "POISSON", "COSSIM", "FLIP", "COV", 
-            "SORT", "APPEND", "TIMESTAMP", "BRK", "CONT", "PLUS", "MINUS", 
-            "MULT", "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", "EQ", "EQUEALS", 
-            "NE", "PIPE", "LPAREN", "RPAREN", "COMMA", "SEMICOLON", "ARROW", 
-            "LBRACKET", "RBRACKET", "QUESTION", "COLON", "LBRACE", "RBRACE", 
-            "CONSTANT", "NUMBER", "VARIABLE", "SL_COMMENT", "ML_COMMENT", 
-            "WS" ]
+            "SORT", "APPEND", "TIMESTAMP", "BREAK", "CONTINUE", "PLUS", 
+            "MINUS", "MULT", "DIV", "MOD", "POW", "GE", "GT", "LE", "LT", 
+            "EQ", "EQUEALS", "NE", "PIPE", "LPAREN", "RPAREN", "COMMA", 
+            "SEMICOLON", "ARROW", "LBRACKET", "RBRACKET", "QUESTION", "COLON", 
+            "LBRACE", "RBRACE", "CONSTANT", "NUMBER", "VARIABLE", "SL_COMMENT", 
+            "ML_COMMENT", "WS" ]
 
     ruleNames = [ "SIN", "COS", "TAN", "ASIN", "ACOS", "ATAN", "ATAN2", 
                   "SINH", "COSH", "TANH", "ASINH", "ACOSH", "ATANH", "ABS", 
@@ -672,12 +672,12 @@ class MathExprLexer(Lexer):
                   "DOT", "MOMENT", "ANY", "ALL", "EDGE", "GAUSSIAN", "MEDIAN", 
                   "MODE", "CUMSUM", "CUMPROD", "TOPK_IND", "BOTK_IND", "CUBIC_EASE", 
                   "ELASTIC_EASE", "SINE_EASE", "SMOOTHERSTEP", "DIST", "REMAP", 
-                  "IF", "ELSE", "WHILE", "RET", "PUSH", "POP", "CLEAR", 
+                  "IF", "ELSE", "WHILE", "RETURN", "PUSH", "POP", "CLEAR", 
                   "HAS", "GET", "NOISE", "RAND", "CAUCHY", "EXPONENTIAL", 
                   "LOGNORMAL", "BERNOULLI", "POISSON", "COSSIM", "FLIP", 
-                  "COV", "SORT", "APPEND", "TIMESTAMP", "BRK", "CONT", "PLUS", 
-                  "MINUS", "MULT", "DIV", "MOD", "POW", "GE", "GT", "LE", 
-                  "LT", "EQ", "EQUEALS", "NE", "PIPE", "LPAREN", "RPAREN", 
+                  "COV", "SORT", "APPEND", "TIMESTAMP", "BREAK", "CONTINUE", 
+                  "PLUS", "MINUS", "MULT", "DIV", "MOD", "POW", "GE", "GT", 
+                  "LE", "LT", "EQ", "EQUEALS", "NE", "PIPE", "LPAREN", "RPAREN", 
                   "COMMA", "SEMICOLON", "ARROW", "LBRACKET", "RBRACKET", 
                   "QUESTION", "COLON", "LBRACE", "RBRACE", "CONSTANT", "NUMBER", 
                   "VARIABLE", "SL_COMMENT", "ML_COMMENT", "WS" ]

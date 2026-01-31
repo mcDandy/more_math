@@ -177,15 +177,24 @@ class ConditioningMathNode(io.ComfyNode):
             rtensor = torch.zeros([1])
         if rpooled is None:
             rpooled = torch.zeros([1])
-        res = torch.split_copy(rtensor,batching) if batching>0 else [rtensor]
-        rpld  = torch.split_copy(rpooled,batching) if batching>0 else [rpooled]
-        res_list = []
-        for i in range(max(len(res),len(rpld))):
-            result_tensor = res[i] if i<len(res) else torch.zeros([1])
-            result_pooled = rpld[i] if i<len(rpld) else torch.zeros([1])
+        if(batching>0):
+            res = torch.split(rtensor,batching) if batching>0 else [rtensor]
+            rpld  = torch.split(rpooled,batching) if batching>0 else [rpooled]
+            res_list = []
+            for i in range(max(len(res),len(rpld))):
+                result_tensor = res[i] if i<len(res) else torch.zeros([1])
+                result_pooled = rpld[i] if i<len(rpld) else torch.zeros([1])
+                res_list.append(V["V0"])
+                res_list[i][0][0] = result_tensor
+                if(len(res_list[i][0])==1):
+                    res_list[i][0].append({"pooled_output",result_pooled})
+                else: res_list[i][0][1]["pooled_output"]=result_pooled
+            return (res_list,)
+            i=0
+            res_list = []
+            result_tensor = rtensor
+            result_pooled = rpooled
             res_list.append(V["V0"])
             res_list[i][0][0] = result_tensor
-            if(len(res_list[i][0])==1):
-                res_list[i][0].append({"pooled_output",result_pooled})
-            else: res_list[i][0][1]["pooled_output"]=result_pooled
-        return (res_list,)
+            res_list[i][0][1]["pooled_output"]=result_pooled
+        return(res_list,)

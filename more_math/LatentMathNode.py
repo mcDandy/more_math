@@ -14,7 +14,7 @@ from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
-
+from comfy.nested_tensor import NestedTensor
 
 class LatentMathNode(io.ComfyNode):
     """
@@ -40,17 +40,18 @@ class LatentMathNode(io.ComfyNode):
                     options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched latent batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
-                )
+                ),
+                io.Int.Input(id="batching")
             ],
             outputs=[
-                io.Latent.Output(),
+                io.Latent.Output(is_output_list=True),
             ],
         )
 
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile"):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -82,7 +83,7 @@ class LatentMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile") -> io.NodeOutput:
+    def execute(cls, V, F, Expression,batching, length_mismatch="tile") -> io.NodeOutput:
         # Determine reference latent
         ref_latent = None
         for lat in V.values():
@@ -187,15 +188,26 @@ class LatentMathNode(io.ComfyNode):
         result_t = as_tensor(visitor.visit(tree), ae.shape)
 
         result_latent = ref_latent.copy()
-        if stacked and orig_split_sizes is not None:
-            from comfy.nested_tensor import NestedTensor
-            # Restore original split sizes
-            try:
-                result_latent["samples"] = NestedTensor(torch.split(result_t, orig_split_sizes, dim=0))
-            except Exception:
-                # Fallback if split fails (e.g. result shape changed)
-                result_latent["samples"] = result_t
-        else:
-            result_latent["samples"] = result_t
-
-        return (result_latent,)
+        if(batching>0):
+            res = torch.split(result_t,batching)
+            results=[]
+            results1=[]
+            for i in range(len(res)):
+                result_tensor = res[i] if i<len(res) else torch.zeros([1])
+                results.append(result_tensor)
+            for result_t in results:
+                rl = result_latent.copy()
+                if stacked and orig_split_sizes is not None:
+                    # Restore original split sizes
+                    try:
+                        rl["samples"] = NestedTensor(torch.split(result_t, orig_split_sizes, dim=0))
+                    except Exception:
+                        # Fallback if split fails (e.g. result shape changed)
+                        rl["samples"] = result_t
+                else:
+                    rl["samples"] = result_t
+                results1.append(rl)
+            return (results1,)
+        rl = result_latent.copy()
+        rl["samples"] = result_t
+        return ([rl],)

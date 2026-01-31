@@ -7,6 +7,7 @@ from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
+import copy
 
 class ConditioningMathNode(io.ComfyNode):
     """
@@ -177,24 +178,30 @@ class ConditioningMathNode(io.ComfyNode):
             rtensor = torch.zeros([1])
         if rpooled is None:
             rpooled = torch.zeros([1])
-        if(batching>0):
-            res = torch.split(rtensor,batching) if batching>0 else [rtensor]
-            rpld  = torch.split(rpooled,batching) if batching>0 else [rpooled]
+
+        # batching = size of each chunk -> use torch.split(tensor, batching, dim=0)
+        if batching and batching > 0:
+            rt_chunks = torch.split(rtensor, batching, dim=0)
+            rp_chunks = torch.split(rpooled, batching, dim=0)
             res_list = []
-            for i in range(max(len(res),len(rpld))):
-                result_tensor = res[i] if i<len(res) else torch.zeros([1])
-                result_pooled = rpld[i] if i<len(rpld) else torch.zeros([1])
-                res_list.append(V["V0"])
-                res_list[i][0][0] = result_tensor
-                if(len(res_list[i][0])==1):
-                    res_list[i][0].append({"pooled_output",result_pooled})
-                else: res_list[i][0][1]["pooled_output"]=result_pooled
-            return (res_list,)
-            i=0
-            res_list = []
-            result_tensor = rtensor
-            result_pooled = rpooled
-            res_list.append(V["V0"])
-            res_list[i][0][0] = result_tensor
-            res_list[i][0][1]["pooled_output"]=result_pooled
-        return(res_list,)
+            for i in range(max(len(rt_chunks), len(rp_chunks))):
+                result_tensor = rt_chunks[i] if i < len(rt_chunks) else torch.zeros([1])
+                result_pooled = rp_chunks[i] if i < len(rp_chunks) else torch.zeros([1])
+                base = copy.deepcopy(V["V0"])
+                base[0][0] = result_tensor
+                if len(base[0]) == 1:
+                    base[0].append({"pooled_output": result_pooled})
+                else:
+                    base[0][1]["pooled_output"] = result_pooled
+                res_list.append(base)
+        else:
+            # Single output (no batching)
+            base = copy.deepcopy(V["V0"])
+            base[0][0] = rtensor
+            if len(base[0]) == 1:
+                base[0].append({"pooled_output": rpooled})
+            else:
+                base[0][1]["pooled_output"] = rpooled
+            res_list = [base]
+
+        return (res_list,)

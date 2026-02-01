@@ -178,6 +178,9 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitParenExp(self, ctx):
         return (yield ctx.expr())
 
+    def visitNoneExp(self, ctx):
+        return None
+
     def visitUnaryPlus(self, ctx):
         return self._unary_op((yield ctx.unaryExpr()), lambda x: x, lambda x: +x)
 
@@ -1365,6 +1368,12 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAppendFunc(self, ctx):
         a = (yield ctx.expr(0))
         b = (yield ctx.expr(1))
+        
+        if a is None:
+            return b
+        if b is None:
+            return a
+
         if self._is_tensor(a) and a.numel() == 1:
             a = a.item()
         if self._is_tensor(b) and b.numel() == 1:

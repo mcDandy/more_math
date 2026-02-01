@@ -80,7 +80,8 @@ atom:
 	| LPAREN expr RPAREN					# ParenExp
 	| PIPE expr PIPE						# AbsExp
 	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
-	| VARIABLE LPAREN exprList? RPAREN		# CallExp;
+	| VARIABLE LPAREN exprList? RPAREN		# CallExp
+	| NONE									# NoneExp;
 
 exprList: expr (COMMA expr)*;
 
@@ -313,6 +314,7 @@ FOR: 'for';
 IN: 'in';
 
 TIMESTAMP: 'timestamp' | 'now';
+NONE: 'None' | 'none' | 'NULL' | 'null';
 BREAK: 'break';
 CONTINUE: 'continue';
 

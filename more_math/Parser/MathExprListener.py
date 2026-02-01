@@ -1,4 +1,4 @@
-# Generated from MathExpr.g4 by ANTLR 4.13.2
+# Generated from d:/stability/Data/Packages/ComfyUI/custom_nodes/more_math/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -518,6 +518,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#CallExp.
     def exitCallExp(self, ctx:MathExprParser.CallExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NoneExp.
+    def enterNoneExp(self, ctx:MathExprParser.NoneExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NoneExp.
+    def exitNoneExp(self, ctx:MathExprParser.NoneExpContext):
         pass
 
 

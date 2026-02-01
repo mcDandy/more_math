@@ -64,6 +64,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ForStatement.
+    def visitForStatement(self, ctx:MathExprParser.ForStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ExprStatement.
     def visitExprStatement(self, ctx:MathExprParser.ExprStatementContext):
         return self.visitChildren(ctx)
@@ -76,6 +81,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#whileStmt.
     def visitWhileStmt(self, ctx:MathExprParser.WhileStmtContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#forStmt.
+    def visitForStmt(self, ctx:MathExprParser.ForStmtContext):
         return self.visitChildren(ctx)
 
 
@@ -669,6 +679,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#GetValueFunc.
+    def visitGetValueFunc(self, ctx:MathExprParser.GetValueFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
@@ -721,6 +736,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#SmootherstepFunc.
     def visitSmootherstepFunc(self, ctx:MathExprParser.SmootherstepFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CropFunc.
+    def visitCropFunc(self, ctx:MathExprParser.CropFuncContext):
         return self.visitChildren(ctx)
 
 

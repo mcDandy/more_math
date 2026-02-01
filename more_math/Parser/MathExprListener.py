@@ -107,6 +107,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#ForStatement.
+    def enterForStatement(self, ctx:MathExprParser.ForStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ForStatement.
+    def exitForStatement(self, ctx:MathExprParser.ForStatementContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ExprStatement.
     def enterExprStatement(self, ctx:MathExprParser.ExprStatementContext):
         pass
@@ -131,6 +140,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#whileStmt.
     def exitWhileStmt(self, ctx:MathExprParser.WhileStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#forStmt.
+    def enterForStmt(self, ctx:MathExprParser.ForStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#forStmt.
+    def exitForStmt(self, ctx:MathExprParser.ForStmtContext):
         pass
 
 
@@ -1196,6 +1214,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#GetValueFunc.
+    def enterGetValueFunc(self, ctx:MathExprParser.GetValueFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetValueFunc.
+    def exitGetValueFunc(self, ctx:MathExprParser.GetValueFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ClampFunc.
     def enterClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         pass
@@ -1292,6 +1319,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#SmootherstepFunc.
     def exitSmootherstepFunc(self, ctx:MathExprParser.SmootherstepFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CropFunc.
+    def enterCropFunc(self, ctx:MathExprParser.CropFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CropFunc.
+    def exitCropFunc(self, ctx:MathExprParser.CropFuncContext):
         pass
 
 

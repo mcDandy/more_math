@@ -6,7 +6,8 @@ start: (funcDef | varDef | stmt)* expr EOF;
 funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;
 
-varDef: VARIABLE EQUEALS expr SEMICOLON;
+varDef:
+	VARIABLE (LBRACKET expr (COMMA expr)* RBRACKET)* EQUEALS expr SEMICOLON;
 
 paramList: VARIABLE (COMMA VARIABLE)*;
 

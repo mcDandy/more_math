@@ -1538,9 +1538,67 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitVarDef(self, ctx):
         var_name = ctx.VARIABLE().getText()
-        val = yield ctx.expr()
-        self.variables[var_name] = val
-        return val
+        expr_list = ctx.expr()
+        
+        if not ctx.LBRACKET():
+            # Standard assignment: x = value
+            val = yield expr_list[0]
+            self.variables[var_name] = val
+            return val
+            
+        # Indexed assignment: x[i, j...] = value
+        # The last expression is the value to assign
+        val_expr = expr_list[-1]
+        assigned_val = yield val_expr
+        
+        # Evaluate indices
+        indices = []
+        for i in range(len(expr_list) - 1):
+            indices.append((yield expr_list[i]))
+            
+        if var_name not in self.variables:
+            raise ValueError(f"Variable '{var_name}' not found for indexed assignment.")
+            
+        target = self.variables[var_name]
+        
+        if self._is_tensor(target):
+            # Process indices for PyTorch
+            torch_indices = []
+            for idx in indices:
+                if self._is_list(idx):
+                    torch_indices.append(torch.tensor(idx, device=self.device, dtype=torch.long))
+                elif self._is_tensor(idx):
+                    torch_indices.append(idx.long())
+                else:
+                    torch_indices.append(int(idx))
+            
+            idx_tuple = tuple(torch_indices)
+            val_t = self._promote_to_tensor(assigned_val)
+            
+            try:
+                # Target slice - used to compute expected shape
+                target_slice = target[idx_tuple]
+                
+                # Squeeze leading ones to match target slice rank if it's smaller
+                # but target_slice.ndim might be 0 if it's a scalar location.
+                while val_t.ndim > target_slice.ndim and val_t.shape[0] == 1:
+                    val_t = val_t.squeeze(0)
+                
+                target[idx_tuple] = val_t
+                return assigned_val
+            except Exception as e:
+                raise ValueError(f"Indexed assignment to '{var_name}' failed: {str(e)}")
+                
+        elif self._is_list(target):
+            # Recurse through nested lists if multiple indices provided
+            curr = target
+            for idx in indices[:-1]:
+                curr = curr[int(idx + len(curr) if idx < 0 else idx)]
+            last_idx = int(indices[-1])
+            curr[last_idx + len(curr) if last_idx < 0 else last_idx] = assigned_val
+            return assigned_val
+        else:
+            raise ValueError(f"Indexed assignment not supported for {type(target)}")
 
 
     def visitFunctionDef(self, ctx):

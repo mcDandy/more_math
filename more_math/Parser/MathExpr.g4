@@ -1,7 +1,7 @@
 grammar MathExpr;
 
 // Top-level entry point
-start: (funcDef | varDef | stmt)* expr EOF;
+start: (funcDef | varDef | stmt)* expr SEMICOLON? EOF;
 
 funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;

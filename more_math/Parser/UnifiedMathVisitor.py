@@ -1405,6 +1405,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitStart(self, ctx):
         count = ctx.getChildCount()
+        if count <= 1: # Only EOF or empty
+            return None
 
         for i in range(count - 2):
             child = ctx.getChild(i)
@@ -1417,12 +1419,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         final_expr_node = ctx.getChild(count - 2)
         if final_expr_node:
-            final_result = yield final_expr_node
+            res = yield final_expr_node
 
-            if isinstance(final_result, ReturnSignal):
-                return final_result.value
+            if isinstance(res, ReturnSignal):
+                return res.value
 
-            return final_result
+            return res
         return None
 
     def visitExprStatement(self, ctx):

@@ -578,6 +578,37 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return val
 
+    def visitGetValueFunc(self, ctx):
+        var = yield ctx.expr(0)
+        pos_list = yield ctx.expr(1)
+        
+        if not self._is_tensor(var):
+             raise ValueError("get_value expects a tensor as first argument")
+        
+        if not self._is_list(pos_list) and not self._is_tensor(pos_list):
+            pos_list = [pos_list]
+            
+        if self._is_tensor(pos_list):
+             pos_list = pos_list.tolist()
+             
+        if len(pos_list) != var.ndim:
+             raise ValueError(f"Position list length {len(pos_list)} does not match tensor dimensions {var.ndim}")
+             
+        shape = var.shape
+        c_strides = [1] * var.ndim
+        if var.ndim > 0:
+            for i in range(var.ndim - 2, -1, -1):
+                c_strides[i] = c_strides[i+1] * shape[i+1]
+            
+        offset = 0
+        for i, p in enumerate(pos_list):
+            idx = int(p)
+            if idx < 0 or idx >= shape[i]:
+                 raise ValueError(f"Index {idx} out of bounds for dimension {i} with size {shape[i]}")
+            offset += idx * c_strides[i]
+             
+        return var.contiguous().flatten()[offset]
+
     # Three-argument functions
     def visitClampFunc(self, ctx):
         val = (yield ctx.expr(0))
@@ -644,6 +675,59 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         t = max(0.0, min(1.0, (x - edge0) / (edge1 - edge0)))
         return smoother(t)
+
+    def visitCropFunc(self, ctx):
+        inp = yield ctx.expr(0)
+        pos_list = yield ctx.expr(1)
+        size_list = yield ctx.expr(2)
+        
+        inp = self._promote_to_tensor(inp)
+
+        def to_int_list(x):
+             if self._is_list(x): return [int(v) for v in x]
+             if self._is_tensor(x): return x.int().tolist()
+             return [int(x)]
+             
+        p_l = to_int_list(pos_list)
+        s_l = to_int_list(size_list)
+        
+        if len(p_l) != inp.ndim or len(s_l) != inp.ndim:
+             # Basic safety fallback if dims don't match, though robust logic might handle slices properly if we truncate?
+             # Let's enforce or just take first N?
+             # For robustness, we'll assume user provides correct dims or we raise error?
+             # Given "lists described in get_value" implies stricter checking.
+             if len(p_l) != inp.ndim: raise ValueError(f"crop: position dim {len(p_l)} != input dim {inp.ndim}")
+             if len(s_l) != inp.ndim: raise ValueError(f"crop: size dim {len(s_l)} != input dim {inp.ndim}")
+
+        out_tensor = torch.zeros(tuple(s_l), dtype=inp.dtype, device=inp.device)
+        
+        slices_in = []
+        slices_out = []
+        
+        valid_intersection = True
+        
+        for i in range(inp.ndim):
+            start = p_l[i]
+            length = s_l[i]
+            end = start + length
+            
+            in_start = max(0, start)
+            in_end = min(inp.shape[i], end)
+            
+            if in_start >= in_end:
+                 valid_intersection = False
+                 break
+            
+            slices_in.append(slice(in_start, in_end))
+            
+            out_start = in_start - start
+            out_len = in_end - in_start
+            slices_out.append(slice(out_start, out_start + out_len))
+            
+        if valid_intersection:
+            out_tensor[tuple(slices_out)] = inp[tuple(slices_in)]
+            
+        return out_tensor
 
     def visitCubicEaseFunc(self, ctx):
         a, b, t = (yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))

@@ -1410,6 +1410,34 @@ class UnifiedMathVisitor(MathExprVisitor):
             if isinstance(res, ContinueSignal):
                 continue
         return None
+
+    def visitForStmt(self, ctx):
+        var_name = ctx.VARIABLE().getText()
+        iterable = yield ctx.expr()
+        
+        iterator = []
+        if self._is_tensor(iterable):
+            if iterable.ndim == 0:
+                iterator = [iterable]
+            else:
+                iterator = iterable
+        elif self._is_list(iterable):
+            iterator = iterable
+        else:
+            iterator = [iterable]
+
+        for val in iterator:
+            self.variables[var_name] = val
+            res = yield ctx.stmt()
+            
+            if isinstance(res, ReturnSignal):
+                return res
+            if isinstance(res, BreakSignal):
+                break
+            if isinstance(res, ContinueSignal):
+                continue
+        return None
+
     def visitBreakStmt(self, ctx):
         return BreakSignal()
 

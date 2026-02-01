@@ -18,10 +18,12 @@ stmt:
 	| continueStmt		# ContinueStatement
 	| returnStmt		# ReturnStatement
 	| varDef			# VarDefStmt
+	| forStmt			# ForStatement
 	| expr SEMICOLON	# ExprStatement;
 
 ifStmt: IF LPAREN expr RPAREN stmt (ELSE stmt)?;
 whileStmt: WHILE LPAREN expr RPAREN stmt;
+forStmt: FOR LPAREN VARIABLE IN expr RPAREN stmt;
 block: LBRACE stmt* RBRACE;
 breakStmt: BREAK SEMICOLON;
 continueStmt: CONTINUE SEMICOLON;
@@ -162,7 +164,9 @@ func2:
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 	| TOPK_IND LPAREN expr COMMA expr RPAREN				# TopkIndFunc
 	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
-	| PUSH LPAREN expr COMMA expr RPAREN					# PushFunc;
+	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
+	| PUSH LPAREN expr COMMA expr RPAREN					# PushFunc
+	| GET_VALUE LPAREN expr COMMA expr RPAREN				# GetValueFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -301,6 +305,8 @@ FLIP: 'flip';
 COV: 'cov';
 SORT: 'sort';
 APPEND: 'append';
+FOR: 'for';
+IN: 'in';
 
 TIMESTAMP: 'timestamp' | 'now';
 BREAK: 'break';

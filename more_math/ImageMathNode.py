@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 from antlr4 import InputStream, CommonTokenStream
@@ -133,6 +133,12 @@ class ImageMathNode(io.ComfyNode):
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)
              variables["V_count"] = float(v_cnt)
+
+        f_stacked, f_cnt = get_f_variable(F)
+        if f_stacked is not None:
+             variables["F"] = f_stacked
+             variables["Fcnt"] = float(f_cnt)
+             variables["F_count"] = float(f_cnt)
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0

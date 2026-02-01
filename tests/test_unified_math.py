@@ -150,8 +150,13 @@ def test_hyperbolic_trig():
 
     t = torch.tensor([0.0])
     vars["t"] = t
-    assert torch.allclose(parse_and_visit("sinh(t)", vars), torch.tensor([0.0]))
-    assert torch.allclose(parse_and_visit("cosh(t)", vars), torch.tensor([1.0]))
+    res_sinh = parse_and_visit("sinh(t)", vars)
+    if isinstance(res_sinh, float): res_sinh = torch.tensor([res_sinh])
+    assert torch.allclose(res_sinh, torch.tensor([0.0]))
+
+    res_cosh = parse_and_visit("cosh(t)", vars)
+    if isinstance(res_cosh, float): res_cosh = torch.tensor([res_cosh])
+    assert torch.allclose(res_cosh, torch.tensor([1.0]))
 
 
 def test_kernel_coords():
@@ -416,6 +421,49 @@ def test_recursion_and_depth():
     expr_scope = "h(x, i) -> i == 0 ? x : h(x + 1, i - 1); h(0, 5)"
     assert parse_and_visit(expr_scope, vars) == 5.0
 
+def test_new_loop_features():
+    vars = {}
+    
+    # 1. Test FOR loop with range() (list)
+    # x = 0; for(i in range(0, 5, 1)) x = x + i; x
+    expr1 = "x = 0; for(i in range(0, 5, 1)) x = x + i; x"
+    assert parse_and_visit(expr1, vars) == 10.0
+    
+    # 2. Test FOR loop with list
+    # x = 1; for(i in [1, 2, 3]) x = x * i; x
+    expr2 = "x = 1; for(i in [1, 2, 3]) x = x * i; x"
+    assert parse_and_visit(expr2, vars) == 6.0
+    
+    # 3. Test get_value (2D tensor)
+    # T = [[1, 2], [3, 4]] -> pos=[1, 0] -> 3
+    t = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+    vars = {"T": t}
+    # get_value(T, [1, 0])
+    expr3 = "get_value(T, [1, 0])"
+    res3 = parse_and_visit(expr3, vars)
+    assert res3 == 3.0
+    
+    # get_value(T, [0, 1]) -> 2
+    assert parse_and_visit("get_value(T, [0, 1])", vars) == 2.0
+
+    # 4. Test crop
+    # crop(T, [0, 0], [1, 1]) -> [[1]]
+    res4 = parse_and_visit("crop(T, [0, 0], [1, 1])", vars)
+    assert torch.equal(res4, torch.tensor([[1.0]]))
+    
+    # crop(T, [0, 0], [2, 2]) -> T
+    res5 = parse_and_visit("crop(T, [0, 0], [2, 2])", vars)
+    assert torch.equal(res5, t)
+    
+    # 5. Test crop with padding (zeros)
+    # crop(T, [1, 1], [2, 2]) -> [[4, 0], [0, 0]]
+    # T at [1,1] is 4. Size [2,2].
+    # Row 1 (from T[1]): [4, T[1,2](out)] -> [4, 0]
+    # Row 2 (from T[2]): [0, 0]
+    expected_pad = torch.tensor([[4.0, 0.0], [0.0, 0.0]])
+    res6 = parse_and_visit("crop(T, [1, 1], [2, 2])", vars)
+    assert torch.equal(res6, expected_pad)
+
 if __name__ == "__main__":
     try:
         test_scalar_ops()
@@ -436,7 +484,10 @@ if __name__ == "__main__":
         test_append()
         test_random_generators()
         test_recursion_and_depth()
+        test_new_loop_features()
         print("All UnifiedMathVisitor tests passed!")
+
+
     except Exception:
         import traceback
 

@@ -227,3 +227,31 @@ def get_v_variable(v_norm_dict, length_mismatch="error"):
              raise ValueError(f"Failed to stack input variables into 'V': {str(e)}")
         return None, len(ordered_tensors)
 
+def get_f_variable(f_dict):
+    """
+    Collects F0, F1, ... from the dict, stacks them into an F 1D tensor,
+    and returns (F_stacked, F_count).
+    """
+    sorted_keys = sorted([k for k in f_dict.keys() if k.startswith("F")], key=lambda x: int(x[1:]))
+    ordered_values = []
+    
+    for k in sorted_keys:
+        val = f_dict[k]
+        if torch.is_tensor(val):
+            # If it's a tensor, just get the first element if it's a scalar or keep as is if it's already 1D?
+            # Usually F inputs are floats. If they are tensors, we'll try to treat them as values.
+            ordered_values.append(val.flatten()[0] if val.numel() > 0 else torch.tensor(0.0))
+        elif isinstance(val, (int, float)):
+             ordered_values.append(torch.tensor(float(val)))
+        else:
+             ordered_values.append(torch.tensor(0.0))
+    
+    if not ordered_values:
+         return None, 0
+         
+    try:
+        stacked = torch.stack(ordered_values)
+        return stacked, len(ordered_values)
+    except Exception:
+        return None, len(ordered_values)
+

@@ -28,8 +28,11 @@ You can also get the node from comfy manager under the name of More math.
   - **Rank Matching**: Automatically squeezes leading ones from the value to match the rank of the target slice (e.g., assigning a 4D tensor with `dim0=1` to a 3D slice).
 - **Available Variables**:
   - `V0`, `V1`, ...: Individual input variables.
-  - `V`: A stacked tensor of all input variables `V` (shape: `[num_variables, ...]`). Available when shapes match.
+  - `V`: A stacked tensor of all input variables `V` (shape: `[num_variables, ...]` for tensors, `[num_variables]` for floats). Available when shapes match.
   - `Vcnt` or `V_count`: Number of input variables.
+  - `F0`, `F1`, ...: Individual float inputs (if the node supports them).
+  - `F`: A 1D tensor of all input variables `F` (shape: `[num_floats]`).
+  - `Fcnt` or `F_count`: Number of float inputs.
 - Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. `if`/`else`/`while` do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
 - Support for stack. Stack survives between field evaluations but not between nodes or end of node execution.
   - Usefull in GuiderMath node to store variables between steps.

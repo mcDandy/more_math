@@ -1404,28 +1404,23 @@ class UnifiedMathVisitor(MathExprVisitor):
         return a + b
 
     def visitStart(self, ctx):
+        from antlr4.tree.Tree import TerminalNode
         count = ctx.getChildCount()
-        if count <= 1: # Only EOF or empty
-            return None
+        last_res = None
 
-        for i in range(count - 2):
+        for i in range(count):
             child = ctx.getChild(i)
+            if isinstance(child, TerminalNode):
+                continue
+            
             res = yield child
-
             if isinstance(res, ReturnSignal):
                 return res.value
             if isinstance(res, (BreakSignal, ContinueSignal)):
                 raise RuntimeError("break/continue outside of loop")
-
-        final_expr_node = ctx.getChild(count - 2)
-        if final_expr_node:
-            res = yield final_expr_node
-
-            if isinstance(res, ReturnSignal):
-                return res.value
-
-            return res
-        return None
+            last_res = res
+            
+        return last_res
 
     def visitExprStatement(self, ctx):
         res = yield ctx.expr()

@@ -10,7 +10,8 @@ from .helper_functions import (
     parse_expr,
     make_zero_like,
     as_tensor,
-    get_v_variable
+    get_v_variable,
+    get_f_variable
 )
 from comfy_api.latest import io
 import comfy.sampler_helpers
@@ -175,6 +176,12 @@ class MathGuider:
 
         for k, v in self.F.items():
             variables[k] = v if v is not None else 0.0
+
+        f_stacked, f_cnt = get_f_variable(self.F)
+        if f_stacked is not None:
+             variables["F"] = f_stacked
+             variables["Fcnt"] = float(f_cnt)
+             variables["F_count"] = float(f_cnt)
 
         variables.update(generate_dim_variables(eval_samples))
         return eval_samples,variables

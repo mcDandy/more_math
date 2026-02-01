@@ -193,26 +193,46 @@ class UnifiedMathVisitor(MathExprVisitor):
         for e in ctx.expr():
             index_args.append((yield e))
 
-        flat_indices = []
-        for idx in index_args:
-            if self._is_list(idx):
-                flat_indices.extend(idx)
-            elif self._is_tensor(idx):
-                flat_indices.extend(idx.flatten().tolist())
-            else:
-                flat_indices.append(idx)
-
         if self._is_tensor(val):
-            flat_indices = [i + val.shape[0] if i < 0 else i for i in flat_indices]
-            idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
-            return torch.index_select(val, 0, idx_tensor)
+            
+            if len(index_args) == 1 and (self._is_list(index_args[0]) or self._is_tensor(index_args[0])):
+                idx = index_args[0]
+                if self._is_tensor(idx): idx = idx.flatten().tolist()
+                flat_indices = [int(i + val.shape[0] if i < 0 else i) for i in idx]
+                idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
+                return torch.index_select(val, 0, idx_tensor).contiguous()
+            
+            # Tuple indexing
+            torch_indices = []
+            for idx in index_args:
+                if self._is_list(idx):
+                    torch_indices.append(torch.tensor(idx, device=self.device, dtype=torch.long))
+                elif self._is_tensor(idx):
+                    torch_indices.append(idx.long())
+                else:
+                    torch_indices.append(int(idx))
+            
+            res = val[tuple(torch_indices)]
+            if isinstance(res, torch.Tensor):
+                if res.numel() == 1 and res.ndim == 0:
+                    return float(res.item())
+                return res.contiguous()
+            return float(res)
 
         elif self._is_list(val):
-            flat_indices = [i + len(val) if i < 0 else i for i in flat_indices]
-            res = [val[int(i)] for i in flat_indices]
-            if len(index_args) == 1 and not (self._is_list(index_args[0]) or self._is_tensor(index_args[0])):
-                return res[0]
-            return res
+            # Nested list indexing or selection
+            if len(index_args) > 1:
+                curr = val
+                for idx in index_args:
+                    curr = curr[int(idx + len(curr) if idx < 0 else idx)]
+                return curr
+            
+            idx = index_args[0]
+            if self._is_list(idx) or self._is_tensor(idx):
+                if self._is_tensor(idx): idx = idx.flatten().tolist()
+                return [val[int(i + len(val) if i < 0 else i)] for i in idx]
+            else:
+                return val[int(idx + len(val) if idx < 0 else idx)]
         else:
             raise ValueError("Indexing only supported on tensors and lists.")
 

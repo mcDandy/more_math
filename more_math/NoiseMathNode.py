@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, as_tensor, parse_expr, getIndexTensorAlongDim, make_zero_like
+from .helper_functions import generate_dim_variables, as_tensor, parse_expr, getIndexTensorAlongDim, make_zero_like, get_v_variable
 from comfy_api.latest import io
 import torch
 from .Parser.MathExprParser import MathExprParser,InputStream,CommonTokenStream
@@ -122,6 +122,12 @@ class NoiseExecutor:
             "batch_count": samples.shape[batch_dim], "channel_count": samples.shape[channel_dim],
             "input_latent": samples,
         } | generate_dim_variables(samples) | vals | self.F
+
+        v_stacked, v_cnt = get_v_variable(vals)
+        if v_stacked is not None:
+             variables["V"] = v_stacked
+             variables["Vcnt"] = float(v_cnt)
+             variables["V_count"] = float(v_cnt)
 
         if time_dim is not None:
             F = getIndexTensorAlongDim(samples, time_dim)

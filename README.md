@@ -23,6 +23,13 @@ You can also get the node from comfy manager under the name of More math.
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 - Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work. **Be careful with recursion. There is no stack limit. Got to 700 000 iterations before I got bored.**
 - Custom variables `varname=expression;` They can be used in any later assigment or final expression.
+- Support for **indexed assignment**: `a[i, j, ...] = expression;`. Supports multidimensional tensors and nested lists.
+  - **Scalar Filling**: If the assigned value has only 1 element (scalar, 1-element list/tensor), it fills the entire selected slice.
+  - **Rank Matching**: Automatically squeezes leading ones from the value to match the rank of the target slice (e.g., assigning a 4D tensor with `dim0=1` to a 3D slice).
+- **Available Variables**:
+  - `V0`, `V1`, ...: Individual input variables.
+  - `V`: A stacked tensor of all input variables `V` (shape: `[num_variables, ...]`). Available when shapes match.
+  - `Vcnt` or `V_count`: Number of input variables.
 - Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. `if`/`else`/`while` do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
 - Support for stack. Stack survives between field evaluations but not between nodes or end of node execution.
   - Usefull in GuiderMath node to store variables between steps.
@@ -37,6 +44,10 @@ You can also get the node from comfy manager under the name of More math.
   - Modifications to existing variables persist to outer scope
 - **Return Statements**: `return [expression];`
   - Early return from functions or top-level expressions
+- **For Loops**: `for (variable in expression) statement`
+  - Iterates over elements of a list or a tensor (along dimension 0)
+- **Break/Continue**: `break;`, `continue;`
+  - Control loop execution (works in `while` and `for` loops)
 
 ## Operators
 
@@ -141,6 +152,8 @@ You can also get the node from comfy manager under the name of More math.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 - `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects standard PyTorch layout `(Batch, Channel, Spatial...)`.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
+- **`get_value(tensor, position)`**: Retrieves a value from a tensor at the specified N-dimensional position (provided as a list or tensor). Uses the formula `pos0*strides[0] + pos1*strides[1] + ...` to find the linear index.
+- **`crop(tensor, position, size)`**: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
 
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
 - `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)

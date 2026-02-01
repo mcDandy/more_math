@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables,parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape,make_zero_like
+from .helper_functions import generate_dim_variables,parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape,make_zero_like, get_v_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 from antlr4 import InputStream, CommonTokenStream
@@ -119,6 +119,12 @@ class MaskMathNode(io.ComfyNode):
             "T": ae.shape[0],
             "batch_count": ae.shape[0],
         } | generate_dim_variables(ae)
+
+        v_stacked, v_cnt = get_v_variable(V_norm, length_mismatch=length_mismatch)
+        if v_stacked is not None:
+             variables["V"] = v_stacked
+             variables["Vcnt"] = float(v_cnt)
+             variables["V_count"] = float(v_cnt)
 
         # Add all dynamic inputs
         variables.update(V_norm)

@@ -6,7 +6,8 @@ from .helper_functions import (
     parse_expr,
     as_tensor,
     normalize_to_common_shape,
-    make_zero_like
+    make_zero_like,
+    get_v_variable
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
@@ -180,6 +181,12 @@ class LatentMathNode(io.ComfyNode):
 
         # Add all dynamic inputs
         variables.update(V_norm_samples)
+
+        v_stacked, v_cnt = get_v_variable(V_norm_samples, length_mismatch=length_mismatch)
+        if v_stacked is not None:
+             variables["V"] = v_stacked
+             variables["Vcnt"] = float(v_cnt)
+             variables["V_count"] = float(v_cnt)
 
         for k, v in F.items():
             variables[k] = v if v is not None else 0.0

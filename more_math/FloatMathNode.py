@@ -1,7 +1,7 @@
 from inspect import cleandoc
 import torch
 
-from .helper_functions import parse_expr
+from .helper_functions import parse_expr, get_v_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
 from comfy_api.latest import io
@@ -85,6 +85,12 @@ class FloatMathNode(io.ComfyNode):
         # Populate all V inputs
         for k, val in V.items():
             variables[k] = val if val is not None else 0.0
+
+        v_stacked, v_cnt = get_v_variable(variables)
+        if v_stacked is not None:
+             variables["V"] = v_stacked
+             variables["Vcnt"] = float(v_cnt)
+             variables["V_count"] = float(v_cnt)
 
         tree = parse_expr(FloatFunc);
         # scalar execution

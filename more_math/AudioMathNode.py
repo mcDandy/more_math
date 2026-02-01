@@ -5,6 +5,7 @@ from .helper_functions import (
     as_tensor,
     normalize_to_common_shape,
     make_zero_like,
+    get_v_variable
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
@@ -126,6 +127,12 @@ class AudioMathNode(io.ComfyNode):
             "T": a_w.shape[0],
             "batch_count": a_w.shape[0],
         } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
+
+        v_stacked, v_cnt = get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)
+        if v_stacked is not None:
+             variables["V"] = v_stacked
+             variables["Vcnt"] = float(v_cnt)
+             variables["V_count"] = float(v_cnt)
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0

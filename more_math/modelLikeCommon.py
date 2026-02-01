@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, get_v_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
 
@@ -101,6 +101,12 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
                 variables[alias] = variables[target]
             elif target in V: # V exists but key missing
                  variables[alias] = torch.zeros_like(ref_tensor)
+
+        v_stacked, v_cnt = get_v_variable(variables)
+        if v_stacked is not None:
+             variables["V"] = v_stacked
+             variables["Vcnt"] = float(v_cnt)
+             variables["V_count"] = float(v_cnt)
 
         variables = variables | generate_dim_variables(ref_tensor)
 

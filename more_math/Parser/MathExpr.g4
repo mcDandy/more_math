@@ -66,7 +66,7 @@ indexExpr:
 
 // Atoms: function calls, variable, number, constant, or parenthesized expression
 atom:
-	  func0									# Func0Exp
+	func0									# Func0Exp
 	| func1									# Func1Exp
 	| func2									# Func2Exp
 	| func3									# Func3Exp
@@ -83,8 +83,7 @@ atom:
 
 exprList: expr (COMMA expr)*;
 
-func0:
-	TIMESTAMP LPAREN RPAREN					#TimestampFunc;
+func0: TIMESTAMP LPAREN RPAREN # TimestampFunc;
 // Single-argument functions
 func1:
 	SIN LPAREN expr RPAREN					# SinFunc
@@ -179,7 +178,9 @@ func3:
 	| CUBIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# CubicEaseFunc
 	| ELASTIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# ElasticEaseFunc
 	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
-	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc;
+	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
+	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
+	| CROP LPAREN expr COMMA expr COMMA expr RPAREN			# CropFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
@@ -305,6 +306,8 @@ FLIP: 'flip';
 COV: 'cov';
 SORT: 'sort';
 APPEND: 'append';
+GET_VALUE: 'get_value';
+CROP: 'crop';
 FOR: 'for';
 IN: 'in';
 
@@ -343,6 +346,6 @@ NUMBER: ([0-9]+ ('.' [0-9]*)? | '.' [0-9]+) ([eE][+-]? [0-9]+)?;
 CONSTANT: ('pi' | 'PI' | 'e' | 'E');
 VARIABLE: [a-zA-Z_] [a-zA-Z_0-9]*;
 
-SL_COMMENT : '#' ~[\r\n]* -> skip;
-ML_COMMENT : '/*' .*? '*/' -> skip;
+SL_COMMENT: '#' ~[\r\n]* -> skip;
+ML_COMMENT: '/*' .*? '*/' -> skip;
 WS: [ \t\r\n]+ -> skip;

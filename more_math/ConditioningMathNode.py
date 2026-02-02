@@ -8,6 +8,7 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
 import copy
+from .Stack import MrmthStack
 
 class ConditioningMathNode(io.ComfyNode):
     """
@@ -36,15 +37,17 @@ class ConditioningMathNode(io.ComfyNode):
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
-                io.Int.Input(id="batching")
+                io.Int.Input(id="batching"),
+                MrmthStack.Input(id="stack",optional=True)
             ],
             outputs=[
                 io.Conditioning.Output(is_output_list=True),
+                MrmthStack.Output()
             ],
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F,batching, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F,batching, length_mismatch="tile",stack=[]):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -81,7 +84,7 @@ class ConditioningMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi,batching, length_mismatch="tile"):
+    def execute(cls, V, F, Expression, Expression_pi,batching, length_mismatch="tile",stack=[]):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
@@ -90,7 +93,6 @@ class ConditioningMathNode(io.ComfyNode):
         # Extract tensors and pooled outputs
         tensors = {}
         pooled_outputs = {}
-        ss = dict()
         for key in tensor_keys:
              conditioning = V[key]
              tensors[key] = conditioning[0][0]
@@ -152,7 +154,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Execute Expression (Main Tensor)
         tree = parse_expr(Expression)
-        visitor = UnifiedMathVisitor(variables, a.shape,a.device, state_storage=ss)
+        visitor = UnifiedMathVisitor(variables, a.shape,a.device, state_storage=stack)
         rtensor = visitor.visit(tree)
         rtensor = as_tensor(rtensor, a.shape)
 
@@ -193,7 +195,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         # Execute Expression_pi (Pooled Output)
         tree_pi = parse_expr(Expression_pi)
-        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape,a_p.device, state_storage=ss)
+        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape,a_p.device, state_storage=stack)
         rpooled_raw = visitor_pi.visit(tree_pi)
         rpooled = as_tensor(rpooled_raw, a_p.shape)
 

@@ -4,6 +4,7 @@ from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
+from .Stack import MrmthStack
 
 
 class CLIPMathNode(io.ComfyNode):
@@ -26,17 +27,19 @@ class CLIPMathNode(io.ComfyNode):
                     options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched layer counts. For models, this usually defaults to broadcast (zero for missing layers)."
-                )
+                ),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
                 io.Clip.Output(),
+                MrmthStack.Output(),
             ],
         )
 
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=[]):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -68,7 +71,7 @@ class CLIPMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile") -> io.NodeOutput:
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack=[]) -> io.NodeOutput:
         # Determine reference CLIP
         a = V.get("V0")
         if a is None:
@@ -93,9 +96,9 @@ class CLIPMathNode(io.ComfyNode):
         # The prompt says aliases are supported in check_lazy_status. Variables map in helper handles logic.
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 
-        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F, mapping=aliases)
+        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F, mapping=aliases,stack=stack)
 
         out_clip = a.clone()
         if patches:
             out_clip.add_patches(patches, 1.0, 1.0)
-        return (out_clip,)
+        return (out_clip,stack)

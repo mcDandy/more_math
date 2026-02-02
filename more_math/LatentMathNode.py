@@ -17,6 +17,7 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
 from comfy.nested_tensor import NestedTensor
+from .Stack import MrmthStack
 
 class LatentMathNode(io.ComfyNode):
     """
@@ -43,17 +44,20 @@ class LatentMathNode(io.ComfyNode):
                     default="error",
                     tooltip="How to handle mismatched latent batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
-                io.Int.Input(id="batching")
+                io.Int.Input(id="batching"),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
                 io.Latent.Output(is_output_list=True),
+                MrmthStack.Output(),
+
             ],
         )
 
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",stack=[]):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -85,7 +89,7 @@ class LatentMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression,batching, length_mismatch="tile") -> io.NodeOutput:
+    def execute(cls, V, F, Expression,batching, length_mismatch="tile",stack=[]) -> io.NodeOutput:
         # Determine reference latent
         ref_latent = None
         for lat in V.values():
@@ -198,7 +202,7 @@ class LatentMathNode(io.ComfyNode):
         for k, v in F.items():
             variables[k] = v if v is not None else 0.0
 
-        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device)
+        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=stack)
         result_t = as_tensor(visitor.visit(tree), ae.shape)
 
         result_latent = ref_latent.copy()
@@ -221,7 +225,7 @@ class LatentMathNode(io.ComfyNode):
                 else:
                     rl["samples"] = result_t
                 results1.append(rl)
-            return (results1,)
+            return (results1,stack)
         rl = result_latent.copy()
         rl["samples"] = result_t
-        return ([rl],)
+        return ([rl],stack)

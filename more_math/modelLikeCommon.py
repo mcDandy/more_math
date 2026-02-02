@@ -8,7 +8,7 @@ def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0
     """Legacy calculate_patches for backward compatibility."""
     return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"})
 
-def calculate_patches_autogrow(Expr, V, F, mapping=None):
+def calculate_patches_autogrow(Expr, V, F, mapping=None,stack = []):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
@@ -26,7 +26,6 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
     # Collect all unique keys from all models
     all_keys = set()
     models = [v for v in V.values() if v is not None]
-    stck = {}
     if not models:
         return {}
 
@@ -118,7 +117,7 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None):
 
         # Execute math
 
-        visitor = UnifiedMathVisitor(variables, ref_tensor.shape,state_storage=stck)
+        visitor = UnifiedMathVisitor(variables, ref_tensor.shape,state_storage=stack)
         res = visitor.visit(tree)
         res = as_tensor(res, ref_tensor.shape)
 

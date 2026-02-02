@@ -9,6 +9,7 @@ from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
+from .Stack import MrmthStack
 
 
 class FloatMathNode(io.ComfyNode):
@@ -29,16 +30,18 @@ class FloatMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Float.Input("values"), prefix="V", min=1, max=50)),
                 io.String.Input(id="FloatFunc", default="a*(1-w)+b*w", tooltip="Expression to use on inputs"),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
                 io.Float.Output(),
+                MrmthStack.Output(),
             ],
         )
 
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, FloatFunc, V):
+    def check_lazy_status(cls, FloatFunc, V,stack=[]):
         input_stream = InputStream(FloatFunc)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -69,7 +72,7 @@ class FloatMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, FloatFunc, V):
+    def execute(cls, FloatFunc, V,stack=[]):
 
         variables = {}
         # Populate aliases
@@ -95,9 +98,9 @@ class FloatMathNode(io.ComfyNode):
         tree = parse_expr(FloatFunc);
         # scalar execution
         # UnifiedMathVisitor expects variables and a shape. Shape [1] for scalar?
-        visitor = UnifiedMathVisitor(variables, [1])
+        visitor = UnifiedMathVisitor(variables, [1],state_storage=stack)
         result = visitor.visit(tree)
         # Result might be float or tensor(scalar)
         if torch.is_tensor(result):
              result = result[0].item()
-        return (float(result),)
+        return (float(result),stack)

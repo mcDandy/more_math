@@ -6,6 +6,7 @@ from antlr4 import InputStream, CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
+from .Stack import MrmthStack
 
 class VideoMathNode(io.ComfyNode):
     """
@@ -33,15 +34,17 @@ class VideoMathNode(io.ComfyNode):
                     options=["tile", "error", "pad"],
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
-                )
+                ),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
                 io.Conditioning.Output(),
+                MrmthStack.Output(),
             ],
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile"):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile",stack=[]):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -78,8 +81,7 @@ class VideoMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile"):
-        ss = {}
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile",stack=[]):
         tensor_keys = [k for k, v in V.items() if v is not None]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
@@ -149,7 +151,7 @@ class VideoMathNode(io.ComfyNode):
             variables[k] = val if val is not None else 0.0
 
         tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=ss)
+        visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=stack)
         result = visitor.visit(tree)
         result = as_tensor(result, ae.shape)
 
@@ -216,8 +218,8 @@ class VideoMathNode(io.ComfyNode):
             variables[k] = val if val is not None else 0.0
 
         tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, a_w.shape,state_storage=ss)
+        visitor = UnifiedMathVisitor(variables, a_w.shape,state_storage=stack)
         result1 = visitor.visit(tree)
         result1 = as_tensor(result, a_w.shape)
 
-        return ([result,{"waveform":result1,"sample_rate":sample_rate}],)
+        return ([result,{"waveform":result1,"sample_rate":sample_rate}],stack)

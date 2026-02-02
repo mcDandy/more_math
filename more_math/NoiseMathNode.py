@@ -5,6 +5,7 @@ from .Parser.MathExprParser import MathExprParser,InputStream,CommonTokenStream
 from .Parser.MathExprLexer import MathExprLexer
 import re
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from .Stack import MrmthStack
 
 class NoiseMathNode(io.ComfyNode):
     """
@@ -31,16 +32,17 @@ class NoiseMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Noise.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-
                 io.String.Input(id="Noise", default="a*(1-w)+b*w"),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
                 io.Noise.Output(),
+                MrmthStack.Output(),
             ],
         )
 
     @classmethod
-    def check_lazy_status(cls, Noise, V, F):
+    def check_lazy_status(cls, Noise, V, F,stack=[]):
         input_stream = InputStream(Noise)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -71,15 +73,16 @@ class NoiseMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, Noise, V,F):
-        return (NoiseExecutor(V,F, Noise),)
+    def execute(cls, Noise, V,F,stack=[]):
+        return (NoiseExecutor(V,F, Noise,stack),)
 
 
 class NoiseExecutor:
-    def __init__(self, V,F, expr):
+    def __init__(self, V,F, expr,stack):
         self.V = V
         self.F = F
         self.tree = parse_expr(expr)
+        self.stack = stack
 
     seed = -1
 
@@ -139,7 +142,7 @@ class NoiseExecutor:
             F = getIndexTensorAlongDim(samples, time_dim)
             variables.update({"frame": F, "frame_count": frame_count})
 
-        visitor = UnifiedMathVisitor(variables, samples.shape,samples.device)
+        visitor = UnifiedMathVisitor(variables, samples.shape,samples.device,state_storage=self.stack)
         result = visitor.visit(self.tree)
         result = as_tensor(result, samples.shape)
         return result

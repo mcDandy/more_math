@@ -1,3 +1,4 @@
+from numpy import stack
 import torch
 import re
 from antlr4 import InputStream, CommonTokenStream
@@ -19,6 +20,7 @@ import comfy.model_patcher
 import comfy.utils
 import comfy.hooks
 import comfy.samplers
+from .Stack import MrmthStack
 
 
 class GuiderMathNode(io.ComfyNode):
@@ -37,14 +39,16 @@ class GuiderMathNode(io.ComfyNode):
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.String.Input(id="Expression", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
                 io.String.Input(id="Expression1", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply after generation finishes."),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
                 io.Guider.Output(),
+                MrmthStack.Output()
             ],
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression1, V, F):
+    def check_lazy_status(cls, Expression,Expression1, V, F,stack=[]):
         input_stream = InputStream(Expression)
         input_stream1 = InputStream(Expression1)
         lexer = MathExprLexer(input_stream)
@@ -79,12 +83,12 @@ class GuiderMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression,Expression1):
-        return (MathGuider(V, F, Expression,Expression1),)
+    def execute(cls, V, F, Expression,Expression1,stack=[]):
+        return (MathGuider(V, F, Expression,Expression1),stack)
 
 
 class MathGuider:
-    def __init__(self, V, F, expression,expression1):
+    def __init__(self, V, F, expression,expression1,stack=[]):
         self.V = V
         self.F = F
         self.expression = expression
@@ -94,7 +98,7 @@ class MathGuider:
         self.sigmas = None
         self.current_step = 0
         self.steps = 0
-        self.stck = {}
+        self.stck = stack
 
     @property
     def model_patcher(self):
@@ -167,7 +171,7 @@ class MathGuider:
                 "c": g_results.get("V2", make_zero_like(eval_samples)),
                 "d": g_results.get("V3", make_zero_like(eval_samples)),
             })
-            
+
             v_stacked, v_cnt = get_v_variable(g_results)
             if v_stacked is not None:
                  variables["V"] = v_stacked

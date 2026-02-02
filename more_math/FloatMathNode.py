@@ -41,7 +41,7 @@ class FloatMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, FloatFunc, V,stack=[]):
+    def check_lazy_status(cls, FloatFunc, V,stack=dict()):
         input_stream = InputStream(FloatFunc)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -72,7 +72,7 @@ class FloatMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, FloatFunc, V,stack=[]):
+    def execute(cls, FloatFunc, V,stack=dict()):
 
         variables = {}
         # Populate aliases

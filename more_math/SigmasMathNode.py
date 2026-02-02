@@ -42,7 +42,7 @@ class SigmasMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=[]):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=dict()):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -74,7 +74,7 @@ class SigmasMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack=[]):
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack=dict()):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Determine reference image for zero-initialization (fallback for a,b,c,d)

@@ -197,14 +197,14 @@ class UnifiedMathVisitor(MathExprVisitor):
             index_args.append((yield e))
 
         if self._is_tensor(val):
-            
+
             if len(index_args) == 1 and (self._is_list(index_args[0]) or self._is_tensor(index_args[0])):
                 idx = index_args[0]
                 if self._is_tensor(idx): idx = idx.flatten().tolist()
                 flat_indices = [int(i + val.shape[0] if i < 0 else i) for i in idx]
                 idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
                 return torch.index_select(val, 0, idx_tensor).contiguous()
-            
+
             # Tuple indexing
             torch_indices = []
             for idx in index_args:
@@ -214,7 +214,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     torch_indices.append(idx.long())
                 else:
                     torch_indices.append(int(idx))
-            
+
             res = val[tuple(torch_indices)]
             if isinstance(res, torch.Tensor):
                 if res.numel() == 1 and res.ndim == 0:
@@ -229,7 +229,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 for idx in index_args:
                     curr = curr[int(idx + len(curr) if idx < 0 else idx)]
                 return curr
-            
+
             idx = index_args[0]
             if self._is_list(idx) or self._is_tensor(idx):
                 if self._is_tensor(idx): idx = idx.flatten().tolist()
@@ -584,32 +584,32 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitGetValueFunc(self, ctx):
         var = yield ctx.expr(0)
         pos_list = yield ctx.expr(1)
-        
+
         if not self._is_tensor(var):
              raise ValueError("get_value expects a tensor as first argument")
-        
+
         if not self._is_list(pos_list) and not self._is_tensor(pos_list):
             pos_list = [pos_list]
-            
+
         if self._is_tensor(pos_list):
              pos_list = pos_list.tolist()
-             
+
         if len(pos_list) != var.ndim:
              raise ValueError(f"Position list length {len(pos_list)} does not match tensor dimensions {var.ndim}")
-             
+
         shape = var.shape
         c_strides = [1] * var.ndim
         if var.ndim > 0:
             for i in range(var.ndim - 2, -1, -1):
                 c_strides[i] = c_strides[i+1] * shape[i+1]
-            
+
         offset = 0
         for i, p in enumerate(pos_list):
             idx = int(p)
             if idx < 0 or idx >= shape[i]:
                  raise ValueError(f"Index {idx} out of bounds for dimension {i} with size {shape[i]}")
             offset += idx * c_strides[i]
-             
+
         return var.contiguous().flatten()[offset]
 
     # Three-argument functions
@@ -683,17 +683,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         inp = yield ctx.expr(0)
         pos_list = yield ctx.expr(1)
         size_list = yield ctx.expr(2)
-        
+
         inp = self._promote_to_tensor(inp)
 
         def to_int_list(x):
              if self._is_list(x): return [int(v) for v in x]
              if self._is_tensor(x): return x.int().tolist()
              return [int(x)]
-             
+
         p_l = to_int_list(pos_list)
         s_l = to_int_list(size_list)
-        
+
         if len(p_l) != inp.ndim or len(s_l) != inp.ndim:
              # Basic safety fallback if dims don't match, though robust logic might handle slices properly if we truncate?
              # Let's enforce or just take first N?
@@ -703,33 +703,33 @@ class UnifiedMathVisitor(MathExprVisitor):
              if len(s_l) != inp.ndim: raise ValueError(f"crop: size dim {len(s_l)} != input dim {inp.ndim}")
 
         out_tensor = torch.zeros(tuple(s_l), dtype=inp.dtype, device=inp.device)
-        
+
         slices_in = []
         slices_out = []
-        
+
         valid_intersection = True
-        
+
         for i in range(inp.ndim):
             start = p_l[i]
             length = s_l[i]
             end = start + length
-            
+
             in_start = max(0, start)
             in_end = min(inp.shape[i], end)
-            
+
             if in_start >= in_end:
                  valid_intersection = False
                  break
-            
+
             slices_in.append(slice(in_start, in_end))
-            
+
             out_start = in_start - start
             out_len = in_end - in_start
             slices_out.append(slice(out_start, out_start + out_len))
-            
+
         if valid_intersection:
             out_tensor[tuple(slices_out)] = inp[tuple(slices_in)]
-            
+
         return out_tensor
 
     def visitCubicEaseFunc(self, ctx):
@@ -1368,7 +1368,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAppendFunc(self, ctx):
         a = (yield ctx.expr(0))
         b = (yield ctx.expr(1))
-        
+
         if a is None:
             return b
         if b is None:
@@ -1421,14 +1421,14 @@ class UnifiedMathVisitor(MathExprVisitor):
             child = ctx.getChild(i)
             if isinstance(child, TerminalNode):
                 continue
-            
+
             res = yield child
             if isinstance(res, ReturnSignal):
                 return res.value
             if isinstance(res, (BreakSignal, ContinueSignal)):
                 raise RuntimeError("break/continue outside of loop")
             last_res = res
-            
+
         return last_res
 
     def visitExprStatement(self, ctx):
@@ -1504,7 +1504,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitForStmt(self, ctx):
         var_name = ctx.VARIABLE().getText()
         iterable = yield ctx.expr()
-        
+
         iterator = []
         if self._is_tensor(iterable):
             if iterable.ndim == 0:
@@ -1519,7 +1519,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         for val in iterator:
             self.variables[var_name] = val
             res = yield ctx.stmt()
-            
+
             if isinstance(res, ReturnSignal):
                 return res
             if isinstance(res, BreakSignal):
@@ -1545,28 +1545,28 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitVarDef(self, ctx):
         var_name = ctx.VARIABLE().getText()
         expr_list = ctx.expr()
-        
+
         if not ctx.LBRACKET():
             # Standard assignment: x = value
             val = yield expr_list[0]
             self.variables[var_name] = val
             return val
-            
+
         # Indexed assignment: x[i, j...] = value
         # The last expression is the value to assign
         val_expr = expr_list[-1]
         assigned_val = yield val_expr
-        
+
         # Evaluate indices
         indices = []
         for i in range(len(expr_list) - 1):
             indices.append((yield expr_list[i]))
-            
+
         if var_name not in self.variables:
             raise ValueError(f"Variable '{var_name}' not found for indexed assignment.")
-            
+
         target = self.variables[var_name]
-        
+
         if self._is_tensor(target):
             # Process indices for PyTorch
             torch_indices = []
@@ -1577,24 +1577,24 @@ class UnifiedMathVisitor(MathExprVisitor):
                     torch_indices.append(idx.long())
                 else:
                     torch_indices.append(int(idx))
-            
+
             idx_tuple = tuple(torch_indices)
             val_t = self._promote_to_tensor(assigned_val)
-            
+
             try:
                 # Target slice - used to compute expected shape
                 target_slice = target[idx_tuple]
-                
+
                 # Squeeze leading ones to match target slice rank if it's smaller
                 # but target_slice.ndim might be 0 if it's a scalar location.
                 while val_t.ndim > target_slice.ndim and val_t.shape[0] == 1:
                     val_t = val_t.squeeze(0)
-                
+
                 target[idx_tuple] = val_t
                 return assigned_val
             except Exception as e:
                 raise ValueError(f"Indexed assignment to '{var_name}' failed: {str(e)}")
-                
+
         elif self._is_list(target):
             # Recurse through nested lists if multiple indices provided
             curr = target
@@ -1904,7 +1904,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return o_min + (v - i_min) * (o_max - o_min) / denom
 
     def visitPushFunc(self, ctx):
-        slot = yield ctx.expr(0)
+        f= yield ctx.expr(0)
+        slot = int(f)
         if slot not in self._state_storage:
             self._state_storage[slot] = []
         value = yield ctx.expr(1)

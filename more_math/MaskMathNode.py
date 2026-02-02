@@ -43,7 +43,7 @@ class MaskMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=[]):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=dict()):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -75,7 +75,7 @@ class MaskMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack=[]):
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack=dict()):
         # Identify all present tensors and their keys
         tensor_keys = [k for k, v in V.items() if v is not None]
         if not tensor_keys:

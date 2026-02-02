@@ -41,7 +41,7 @@ class VAEMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=[]):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=dict()):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)

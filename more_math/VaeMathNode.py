@@ -73,7 +73,7 @@ class VAEMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack=[]) -> io.NodeOutput:
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack=dict()) -> io.NodeOutput:
         # Determine reference VAE
         a = V.get("V0")
         if a is None:

@@ -530,6 +530,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#BreakExp.
+    def enterBreakExp(self, ctx:MathExprParser.BreakExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BreakExp.
+    def exitBreakExp(self, ctx:MathExprParser.BreakExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ContinueExp.
+    def enterContinueExp(self, ctx:MathExprParser.ContinueExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ContinueExp.
+    def exitContinueExp(self, ctx:MathExprParser.ContinueExpContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#exprList.
     def enterExprList(self, ctx:MathExprParser.ExprListContext):
         pass
@@ -977,6 +995,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#CumsumFunc.
     def exitCumsumFunc(self, ctx:MathExprParser.CumsumFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CountFunc.
+    def enterCountFunc(self, ctx:MathExprParser.CountFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CountFunc.
+    def exitCountFunc(self, ctx:MathExprParser.CountFuncContext):
         pass
 
 

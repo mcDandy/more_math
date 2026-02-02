@@ -1,7 +1,7 @@
 grammar MathExpr;
 
 // Top-level entry point
-start: (funcDef | varDef | stmt)* expr SEMICOLON? EOF;
+start: (funcDef | varDef | stmt)* expr? SEMICOLON? EOF;
 
 funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;
@@ -81,7 +81,9 @@ atom:
 	| PIPE expr PIPE						# AbsExp
 	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
 	| VARIABLE LPAREN exprList? RPAREN		# CallExp
-	| NONE									# NoneExp;
+	| NONE									# NoneExp
+	| BREAK									# BreakExp
+	| CONTINUE								# ContinueExp;
 
 exprList: expr (COMMA expr)*;
 
@@ -136,6 +138,7 @@ func1:
 	| MEDIAN LPAREN expr RPAREN				# MedianFunc
 	| MODE LPAREN expr RPAREN				# ModeFunc
 	| CUMSUM LPAREN expr RPAREN				# CumsumFunc
+	| COUNT LPAREN expr RPAREN				# CountFunc
 	| CUMPROD LPAREN expr RPAREN			# CumprodFunc
 	| POP LPAREN expr RPAREN				# PopFunc
 	| CLEAR LPAREN expr RPAREN				# ClearFunc
@@ -307,6 +310,7 @@ COSSIM: 'cossim';
 FLIP: 'flip';
 COV: 'cov';
 SORT: 'sort';
+COUNT: 'count' | 'length' | 'cnt';
 APPEND: 'append';
 GET_VALUE: 'get_value';
 CROP: 'crop';

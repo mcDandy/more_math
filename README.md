@@ -178,6 +178,7 @@ You can also get the node from comfy manager under the name of More math.
 - `nan_to_num(x, nan_value, posinf_value, neginf_value)` or `nvl`: Replaces NaN and infinite values in tensor with specified values.
 - `remap(v, i_min, i_max, o_min, o_max)`: Remaps value `v` from input range `[i_min, i_max]` to output range `[o_min, o_max]`.
 - `timestamp()` or `now`: Returns current UNIX timestamp (precision to microseconds, can be different on other systems)
+- `count(x)` or `length(x)` or `cnt(x)`: Returns the length of a list or the size of the first dimension of a tensor.
 
 ### Random Distributions
 

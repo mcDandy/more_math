@@ -299,6 +299,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BreakExp.
+    def visitBreakExp(self, ctx:MathExprParser.BreakExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ContinueExp.
+    def visitContinueExp(self, ctx:MathExprParser.ContinueExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#exprList.
     def visitExprList(self, ctx:MathExprParser.ExprListContext):
         return self.visitChildren(ctx)
@@ -546,6 +556,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#CumsumFunc.
     def visitCumsumFunc(self, ctx:MathExprParser.CumsumFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CountFunc.
+    def visitCountFunc(self, ctx:MathExprParser.CountFuncContext):
         return self.visitChildren(ctx)
 
 

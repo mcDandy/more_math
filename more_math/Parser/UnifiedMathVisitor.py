@@ -46,12 +46,24 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         while stack:
             try:
-                res = stack[-1].send(last_result)
+                # If we're bubbling a signal, we need to check if the parent can handle it.
+                if isinstance(last_result, (ReturnSignal, BreakSignal, ContinueSignal)):
+                    parent_gen = stack[-1]
+                    func_name = parent_gen.gi_code.co_name
+                    
+                    is_handler = False
+                    if isinstance(last_result, (BreakSignal, ContinueSignal)):
+                        if func_name in ("visitWhileStmt", "visitForStmt"):
+                            is_handler = True
+                    elif isinstance(last_result, ReturnSignal):
+                        if func_name in ("visitCallExp", "visitStart"):
+                            is_handler = True
+                    
+                    if not is_handler:
+                        stack.pop().close()
+                        continue
 
-                if isinstance(res, ReturnSignal):
-                    stack.pop()
-                    last_result = res
-                    continue
+                res = stack[-1].send(last_result)
 
                 if hasattr(res, 'accept'):
                     next_gen = res.accept(self)
@@ -956,6 +968,16 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitSumFunc(self, ctx):
         return self._reduction_op((yield ctx.expr()), torch.sum, sum)
 
+    def visitCountFunc(self, ctx):
+        val = yield ctx.expr()
+        if self._is_list(val):
+            return float(len(val))
+        if self._is_tensor(val):
+            if val.ndim == 0:
+                return 1.0
+            return float(val.size(0))
+        return 1.0
+
     def visitMeanFunc(self, ctx):
         return self._reduction_op(
             (yield ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0
@@ -1423,11 +1445,8 @@ class UnifiedMathVisitor(MathExprVisitor):
                 continue
 
             res = yield child
-            if isinstance(res, ReturnSignal):
-                return res.value
-            if isinstance(res, (BreakSignal, ContinueSignal)):
-                raise RuntimeError("break/continue outside of loop")
-            last_res = res
+            if res is not None:
+                last_res = res
 
         return last_res
 
@@ -1446,11 +1465,10 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitBlock(self, ctx):
         vars_before = set(self.variables.keys())
         try:
+            val = None
             for stmt in ctx.stmt():
-                res = yield stmt
-                if isinstance(res, (ReturnSignal, BreakSignal, ContinueSignal)):
-                    return res
-            return None
+                val = yield stmt
+            return val
         finally:
             for v in set(self.variables.keys()) - vars_before:
                 del self.variables[v]
@@ -1469,15 +1487,10 @@ class UnifiedMathVisitor(MathExprVisitor):
             return bool(x)
 
         if truthy(cond):
-            res = yield ctx.stmt(0)
+            return (yield ctx.stmt(0))
         elif ctx.stmt(1):
-            res = yield ctx.stmt(1)
-        else:
-            return None
-
-        if isinstance(res, ReturnSignal):
-            return res
-        return res
+            return (yield ctx.stmt(1))
+        return None
 
     def visitWhileStmt(self, ctx):
         while True:
@@ -1520,8 +1533,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             self.variables[var_name] = val
             res = yield ctx.stmt()
 
-            if isinstance(res, ReturnSignal):
-                return res
             if isinstance(res, BreakSignal):
                 break
             if isinstance(res, ContinueSignal):
@@ -1903,7 +1914,15 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return o_min + (v - i_min) * (o_max - o_min) / denom
 
+    def _ensure_dict_storage(self):
+        if not isinstance(self._state_storage, dict):
+             if not self._state_storage:
+                 self._state_storage = {}
+             else:
+                 self._state_storage = {i: v for i, v in enumerate(self._state_storage)}
+
     def visitPushFunc(self, ctx):
+        self._ensure_dict_storage()
         f= yield ctx.expr(0)
         slot = int(f)
         if slot not in self._state_storage:
@@ -1913,24 +1932,34 @@ class UnifiedMathVisitor(MathExprVisitor):
         return value
 
     def visitPopFunc(self, ctx):
-        slot = yield ctx.expr()
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
         if slot not in self._state_storage or not self._state_storage[slot]:
             raise ValueError(f"Pop from empty slot: {slot}")
         return self._state_storage[slot].pop()
 
     def visitClearFunc(self, ctx):
-        slot = yield ctx.expr()
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
         if slot in self._state_storage:
             self._state_storage[slot] = []
         return None
 
     def visitHasFunc(self, ctx):
-        slot = yield ctx.expr()
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
         return float(slot in self._state_storage and bool(self._state_storage[slot]))
 
     def visitGetFunc(self, ctx):
-        slot = yield ctx.expr()
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
         if slot not in self._state_storage:
             raise ValueError(f"Get from empty slot: {slot}")
         storage_list = self._state_storage[slot]
-        return storage_list.last()
+        return storage_list[-1] if storage_list else None
+
+    def visitBreakExp(self, ctx):
+        return BreakSignal()
+
+    def visitContinueExp(self, ctx):
+        return ContinueSignal()

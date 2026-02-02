@@ -79,6 +79,55 @@ class FloatToIntNode(io.ComfyNode):
     def execute(cls, value):
         return (int(value),)
 
+class BoolToIntNode(io.ComfyNode):
+    """
+    Converts bool to int.
+    """
+
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        """ """
+        return io.Schema(
+            node_id="mrmth_BoolToInt",
+            display_name="Bool -> Int",
+            category="More math",
+            inputs=[
+                io.Boolean.Input(id="value", default=0),
+            ],
+            outputs=[
+                io.Int.Output(),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, value):
+        return (int(value),)
+
+
+class IntToBoolNode(io.ComfyNode):
+    """
+    Converts int to bool.
+    """
+
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        """ """
+        return io.Schema(
+            node_id="mrmth_IntToBool",
+            category="More math",
+            display_name="Int -> bool",
+            inputs=[
+                io.Int.Input(id="value", default=0.0),
+            ],
+            outputs=[
+                io.Boolean.Output(),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, value):
+        return (bool(value),)
+
 
 class MoreMathExtension(ComfyExtension):
     def __init__(self):
@@ -106,6 +155,8 @@ class MoreMathExtension(ComfyExtension):
             NoiseMathNodeOLD,
             IntToFloatNode,
             FloatToIntNode,
+            BoolToIntNode,
+            IntToBoolNode,
             AudioMathNodeOLD,
             VideoMathNode,
             VideoMathNodeOLD,
@@ -114,7 +165,7 @@ class MoreMathExtension(ComfyExtension):
             SigmasMathNode,
             GuiderMathNode,
             NoiseMathNode,
-            AudioMathNode
+            AudioMathNode,
         ]
 
 

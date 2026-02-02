@@ -84,11 +84,11 @@ null
 'else'
 'while'
 'return'
-'push'
-'pop'
-'clear'
-'has'
-'get'
+'stack_push'
+'stack_pop'
+'stack_clear'
+'stack_has'
+'stack_get'
 null
 null
 null

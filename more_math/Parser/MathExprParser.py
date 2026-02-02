@@ -1,4 +1,4 @@
-# Generated from d:/stability/Data/Packages/ComfyUI/custom_nodes/more_math/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
+# Generated from MathExpr.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -420,16 +420,16 @@ class MathExprParser ( Parser ):
                      "'median'", "'mode'", "'cumsum'", "'cumprod'", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "'smootherstep'", "<INVALID>", "'remap'", "'if'", "'else'", 
-                     "'while'", "'return'", "'push'", "'pop'", "'clear'", 
-                     "'has'", "'get'", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "'while'", "'return'", "'stack_push'", "'stack_pop'", 
+                     "'stack_clear'", "'stack_has'", "'stack_get'", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "'cossim'", "'flip'", "'cov'", "'sort'", "'append'", 
-                     "'get_value'", "'crop'", "'for'", "'in'", "<INVALID>", 
-                     "<INVALID>", "'break'", "'continue'", "'+'", "'-'", 
-                     "'*'", "'/'", "'%'", "'^'", "'>='", "'>'", "'<='", 
-                     "'<'", "'=='", "'='", "'!='", "'|'", "'('", "')'", 
-                     "','", "';'", "'->'", "'['", "']'", "'?'", "':'", "'{'", 
-                     "'}'" ]
+                     "<INVALID>", "<INVALID>", "'cossim'", "'flip'", "'cov'", 
+                     "'sort'", "'append'", "'get_value'", "'crop'", "'for'", 
+                     "'in'", "<INVALID>", "<INVALID>", "'break'", "'continue'", 
+                     "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", "'>='", "'>'", 
+                     "'<='", "'<'", "'=='", "'='", "'!='", "'|'", "'('", 
+                     "')'", "','", "';'", "'->'", "'['", "']'", "'?'", "':'", 
+                     "'{'", "'}'" ]
 
     symbolicNames = [ "<INVALID>", "SIN", "COS", "TAN", "ASIN", "ACOS", 
                       "ATAN", "ATAN2", "SINH", "COSH", "TANH", "ASINH", 

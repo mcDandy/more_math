@@ -1,4 +1,4 @@
-# Generated from d:/stability/Data/Packages/ComfyUI/custom_nodes/more_math/more_math/Parser/MathExpr.g4 by ANTLR 4.13.2
+# Generated from MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser

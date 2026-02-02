@@ -289,11 +289,11 @@ IF: 'if';
 ELSE: 'else';
 WHILE: 'while';
 RETURN: 'return';
-PUSH: 'push';
-POP: 'pop';
-CLEAR: 'clear';
-HAS: 'has';
-GET: 'get';
+PUSH: 'stack_push';
+POP: 'stack_pop';
+CLEAR: 'stack_clear';
+HAS: 'stack_has';
+GET: 'stack_get';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';

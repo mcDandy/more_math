@@ -179,7 +179,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if var_name in self.variables:
             res = self.variables[var_name]
             return res
-        raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Variable '{var_name}' not found")
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Variable '{var_name}' not found")
 
     def visitListExp(self, ctx):
         res = []
@@ -249,7 +249,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             else:
                 return val[int(idx + len(val) if idx < 0 else idx)]
         else:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Indexing only supported on tensors and lists.")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexing only supported on tensors and lists.")
 
     def visitToAtom(self, ctx):
         return (yield ctx.atom())
@@ -598,7 +598,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         pos_list = yield ctx.expr(1)
 
         if not self._is_tensor(var):
-             raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: get_value expects a tensor as first argument")
+             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: get_value expects a tensor as first argument")
 
         if not self._is_list(pos_list) and not self._is_tensor(pos_list):
             pos_list = [pos_list]
@@ -607,7 +607,7 @@ class UnifiedMathVisitor(MathExprVisitor):
              pos_list = pos_list.tolist()
 
         if len(pos_list) != var.ndim:
-             raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Position list length {len(pos_list)} does not match tensor dimensions {var.ndim}")
+             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Position list length {len(pos_list)} does not match tensor dimensions {var.ndim}")
 
         shape = var.shape
         c_strides = [1] * var.ndim
@@ -640,7 +640,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         # Check bounds
         max_idx = tsr.size(0)
         if torch.any(indices < 0) or torch.any(indices >= max_idx):
-             raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Batch index out of bounds (0-{max_idx-1})")
+             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Batch index out of bounds (0-{max_idx-1})")
 
         return tsr[indices]
 
@@ -731,8 +731,8 @@ class UnifiedMathVisitor(MathExprVisitor):
              # Let's enforce or just take first N?
              # For robustness, we'll assume user provides correct dims or we raise error?
              # Given "lists described in get_value" implies stricter checking.
-             if len(p_l) != inp.ndim: raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: crop: position dim {len(p_l)} != input dim {inp.ndim}")
-             if len(s_l) != inp.ndim: raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: crop: size dim {len(s_l)} != input dim {inp.ndim}")
+             if len(p_l) != inp.ndim: raise ValueError(f"{ctx.start.line}:{ctx.start.column}: crop: position dim {len(p_l)} != input dim {inp.ndim}")
+             if len(s_l) != inp.ndim: raise ValueError(f"{ctx.start.line}:{ctx.start.column}: crop: size dim {len(s_l)} != input dim {inp.ndim}")
 
         out_tensor = torch.zeros(tuple(s_l), dtype=inp.dtype, device=inp.device)
 
@@ -1169,7 +1169,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         y_flat = y.flatten()
 
         if x_flat.numel() != y_flat.numel():
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: x and y must have the same number of elements")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: x and y must have the same number of elements")
 
         n = x_flat.numel()
         if n < 2:
@@ -1191,7 +1191,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if num_coords == 0:
             return tensor
         if num_coords > 3:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: map() supports max 3 mapping functions.")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: map() supports max 3 mapping functions.")
 
         spatial_in_shape = tensor.shape[-num_coords:]
         leading_shape = tensor.shape[:-num_coords]
@@ -1239,13 +1239,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         tensor = self._promote_to_tensor(input_raw)
         num_args = len(ctx.expr())
         if num_args < 3:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: conv() requires at least 3 arguments")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: conv() requires at least 3 arguments")
 
         kernel_arg_idx = num_args - 1
 
         spatial_dims_count = num_args - 2
         if spatial_dims_count not in [1, 2, 3]:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: conv() supports 1D, 2D, or 3D. Found {spatial_dims_count}")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: conv() supports 1D, 2D, or 3D. Found {spatial_dims_count}")
 
         kernel_sizes = []
         for i in range(1, 1 + spatial_dims_count):
@@ -1391,7 +1391,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         # Must have at least Channel + Spatial dims
         min_dims = spatial_dims_count + 1
         if tensor.ndim < min_dims:
-             raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: convolution() input requires at least Channels + Spatial dimensions. Got shape {tensor.shape} for {spatial_dims_count}D conv.")
+             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: convolution() input requires at least Channels + Spatial dimensions. Got shape {tensor.shape} for {spatial_dims_count}D conv.")
 
         spatial_shape = tensor.shape[-spatial_dims_count:]
         in_channels = tensor.shape[-(spatial_dims_count + 1)]
@@ -1594,7 +1594,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             indices.append((yield expr_list[i]))
 
         if var_name not in self.variables:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Variable '{var_name}' not found for indexed assignment.")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Variable '{var_name}' not found for indexed assignment.")
 
         target = self.variables[var_name]
 
@@ -1624,7 +1624,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 target[idx_tuple] = val_t
                 return assigned_val
             except Exception as e:
-                raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Indexed assignment to '{var_name}' failed: {str(e)}")
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment to '{var_name}' failed: {str(e)}")
 
         elif self._is_list(target):
             # Recurse through nested lists if multiple indices provided
@@ -1635,7 +1635,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             curr[last_idx + len(curr) if last_idx < 0 else last_idx] = assigned_val
             return assigned_val
         else:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Indexed assignment not supported for {type(target)}")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment not supported for {type(target)}")
 
 
     def visitFunctionDef(self, ctx):
@@ -1665,7 +1665,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     args.append((yield e))
 
             if len(args) != len(params):
-                raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Function '{func_name}' expects {len(params)} arguments, got {len(args)}"
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Function '{func_name}' expects {len(params)} arguments, got {len(args)}"
                 )
 
             # Create a new scope for function execution
@@ -1694,7 +1694,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 self.variables = self._scope_stack.pop()
                 self.depth -= 1
 
-        raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Unknown function: {func_name}")
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Unknown function: {func_name}")
 
     def visitNoiseFunc(self,ctx):
         seed_val = yield ctx.expr()
@@ -1957,7 +1957,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self._ensure_dict_storage()
         slot = int((yield ctx.expr()))
         if slot not in self._state_storage or not self._state_storage[slot]:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Pop from empty slot: {slot}")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pop from empty slot: {slot}")
         return self._state_storage[slot].pop()
 
     def visitClearFunc(self, ctx):
@@ -1977,7 +1977,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self._ensure_dict_storage()
         slot = int((yield ctx.expr()))
         if slot not in self._state_storage:
-            raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Get from empty slot: {slot}")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Get from empty slot: {slot}")
         storage_list = self._state_storage[slot]
         return storage_list[-1] if storage_list else None
 

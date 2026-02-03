@@ -50,7 +50,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 if isinstance(last_result, (ReturnSignal, BreakSignal, ContinueSignal)):
                     parent_gen = stack[-1]
                     func_name = parent_gen.gi_code.co_name
-                    
+
                     is_handler = False
                     if isinstance(last_result, (BreakSignal, ContinueSignal)):
                         if func_name in ("visitWhileStmt", "visitForStmt"):
@@ -58,7 +58,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     elif isinstance(last_result, ReturnSignal):
                         if func_name in ("visitCallExp", "visitStart"):
                             is_handler = True
-                    
+
                     if not is_handler:
                         stack.pop().close()
                         continue
@@ -1839,6 +1839,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return res
 
     def visitEdgeFunc(self, ctx):
+        tsr_val = yield ctx.expr(0)
+        tsr = self._promote_to_tensor(tsr_val)
         original_shape = tsr.shape
         tsr = tsr.float()
 
@@ -1963,3 +1965,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitContinueExp(self, ctx):
         return ContinueSignal()
+
+    def visitEmptyTensorFunc(self, ctx):
+        value = (yield ctx.expr()) if ctx.expr() else 0.0
+        shape = yield ctx.indexExpr()
+        return torch.full(shape, value, device=self.device)

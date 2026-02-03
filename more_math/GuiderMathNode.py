@@ -1,4 +1,3 @@
-from numpy import stack
 import torch
 import re
 from antlr4 import InputStream, CommonTokenStream

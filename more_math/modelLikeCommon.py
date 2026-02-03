@@ -1,8 +1,7 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, get_v_variable, get_f_variable
+from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
 
-from custom_nodes.more_math.more_math import helper_functions
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Legacy calculate_patches for backward compatibility."""

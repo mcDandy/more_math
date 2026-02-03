@@ -202,14 +202,14 @@ def get_v_variable(v_norm_dict, length_mismatch="error"):
     """
     sorted_keys = sorted([k for k in v_norm_dict.keys() if k.startswith("V")], key=lambda x: int(x[1:]))
     ordered_tensors = []
-    
+
     for k in sorted_keys:
         val = v_norm_dict[k]
         if torch.is_tensor(val):
             ordered_tensors.append(val)
         elif isinstance(val, (int, float)):
              ordered_tensors.append(torch.tensor(val))
-    
+
     if not ordered_tensors:
          return None, 0
 
@@ -234,7 +234,7 @@ def get_f_variable(f_dict):
     """
     sorted_keys = sorted([k for k in f_dict.keys() if k.startswith("F")], key=lambda x: int(x[1:]))
     ordered_values = []
-    
+
     for k in sorted_keys:
         val = f_dict[k]
         if torch.is_tensor(val):
@@ -245,10 +245,10 @@ def get_f_variable(f_dict):
              ordered_values.append(torch.tensor(float(val)))
         else:
              ordered_values.append(torch.tensor(0.0))
-    
+
     if not ordered_values:
          return None, 0
-         
+
     try:
         stacked = torch.stack(ordered_values)
         return stacked, len(ordered_values)

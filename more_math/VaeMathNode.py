@@ -3,7 +3,6 @@ from comfy_api.latest import io
 import copy
 from antlr4 import InputStream, CommonTokenStream
 
-from custom_nodes.more_math.more_math.Stack import MrmthStack
 from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re

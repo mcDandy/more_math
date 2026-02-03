@@ -1259,6 +1259,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#EmptyTensorFunc.
+    def enterEmptyTensorFunc(self, ctx:MathExprParser.EmptyTensorFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EmptyTensorFunc.
+    def exitEmptyTensorFunc(self, ctx:MathExprParser.EmptyTensorFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ClampFunc.
     def enterClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         pass

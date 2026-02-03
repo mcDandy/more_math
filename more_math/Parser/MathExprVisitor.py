@@ -704,6 +704,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#EmptyTensorFunc.
+    def visitEmptyTensorFunc(self, ctx:MathExprParser.EmptyTensorFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)

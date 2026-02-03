@@ -1,4 +1,3 @@
-from unittest import result
 import torch
 from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
@@ -105,7 +104,6 @@ class ConditioningMathNode(io.ComfyNode):
         V_norm_tensors = dict(zip(tensor_keys, norm_tensors_batch))
 
         ref_tensor = norm_tensors_batch[0]
-        common_shape = ref_tensor.shape
 
         # Normalize pooled outputs (if they exist)
         valid_pooled_keys = [k for k, v in pooled_outputs.items() if v is not None]

@@ -399,7 +399,7 @@ def test_random_generators():
     res_p = parse_and_visit("randp(123, 5.0)", vars)
     assert res_p.shape == (1, 1, 1, 1)
     assert torch.all(res_p >= 0)
- 
+
 def test_recursion_and_depth():
     vars = {}
     # 1. Test recursion depth (100 levels)
@@ -423,17 +423,17 @@ def test_recursion_and_depth():
 
 def test_new_loop_features():
     vars = {}
-    
+
     # 1. Test FOR loop with range() (list)
     # x = 0; for(i in range(0, 5, 1)) x = x + i; x
     expr1 = "x = 0; for(i in range(0, 5, 1)) x = x + i; x"
     assert parse_and_visit(expr1, vars) == 10.0
-    
+
     # 2. Test FOR loop with list
     # x = 1; for(i in [1, 2, 3]) x = x * i; x
     expr2 = "x = 1; for(i in [1, 2, 3]) x = x * i; x"
     assert parse_and_visit(expr2, vars) == 6.0
-    
+
     # 3. Test get_value (2D tensor)
     # T = [[1, 2], [3, 4]] -> pos=[1, 0] -> 3
     t = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
@@ -442,7 +442,7 @@ def test_new_loop_features():
     expr3 = "get_value(T, [1, 0])"
     res3 = parse_and_visit(expr3, vars)
     assert res3 == 3.0
-    
+
     # get_value(T, [0, 1]) -> 2
     assert parse_and_visit("get_value(T, [0, 1])", vars) == 2.0
 
@@ -450,11 +450,11 @@ def test_new_loop_features():
     # crop(T, [0, 0], [1, 1]) -> [[1]]
     res4 = parse_and_visit("crop(T, [0, 0], [1, 1])", vars)
     assert torch.equal(res4, torch.tensor([[1.0]]))
-    
+
     # crop(T, [0, 0], [2, 2]) -> T
     res5 = parse_and_visit("crop(T, [0, 0], [2, 2])", vars)
     assert torch.equal(res5, t)
-    
+
     # 5. Test crop with padding (zeros)
     # crop(T, [1, 1], [2, 2]) -> [[4, 0], [0, 0]]
     # T at [1,1] is 4. Size [2,2].

@@ -1,7 +1,7 @@
 grammar MathExpr;
 
 // Top-level entry point
-start: (funcDef | varDef | stmt)* expr? SEMICOLON? EOF;
+start: (funcDef | varDef | stmt)* expr SEMICOLON? EOF;
 
 funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;
@@ -170,7 +170,8 @@ func2:
 	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
 	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
 	| PUSH LPAREN expr COMMA expr RPAREN					# PushFunc
-	| GET_VALUE LPAREN expr COMMA expr RPAREN				# GetValueFunc;
+	| GET_VALUE LPAREN expr COMMA expr RPAREN				# GetValueFunc
+	| TENSOR LPAREN indexExpr (COMMA expr)? RPAREN			# EmptyTensorFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -321,6 +322,8 @@ TIMESTAMP: 'timestamp' | 'now';
 NONE: 'None' | 'none' | 'NULL' | 'null';
 BREAK: 'break';
 CONTINUE: 'continue';
+
+TENSOR: 'tensor';
 
 PLUS: '+';
 MINUS: '-';

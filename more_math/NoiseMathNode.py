@@ -42,7 +42,7 @@ class NoiseMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Noise, V, F,stack=dict()):
+    def check_lazy_status(cls, Noise, V, F,stack={}):
         input_stream = InputStream(Noise)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -73,7 +73,7 @@ class NoiseMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, Noise, V,F,stack=dict()):
+    def execute(cls, Noise, V,F,stack={}):
         return (NoiseExecutor(V,F, Noise,stack),)
 
 

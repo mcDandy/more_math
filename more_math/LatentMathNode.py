@@ -57,7 +57,7 @@ class LatentMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",stack=dict()):
+    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",stack={}):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -89,7 +89,7 @@ class LatentMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression,batching, length_mismatch="tile",stack=dict()) -> io.NodeOutput:
+    def execute(cls, V, F, Expression,batching, length_mismatch="tile",stack={}) -> io.NodeOutput:
         # Determine reference latent
         ref_latent = None
         for lat in V.values():

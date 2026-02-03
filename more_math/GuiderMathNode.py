@@ -47,7 +47,7 @@ class GuiderMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression1, V, F,stack=dict()):
+    def check_lazy_status(cls, Expression,Expression1, V, F,stack={}):
         input_stream = InputStream(Expression)
         input_stream1 = InputStream(Expression1)
         lexer = MathExprLexer(input_stream)
@@ -82,12 +82,12 @@ class GuiderMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression,Expression1,stack=dict()):
+    def execute(cls, V, F, Expression,Expression1,stack={}):
         return (MathGuider(V, F, Expression,Expression1),stack)
 
 
 class MathGuider:
-    def __init__(self, V, F, expression,expression1,stack=dict()):
+    def __init__(self, V, F, expression,expression1,stack={}):
         self.V = V
         self.F = F
         self.expression = expression

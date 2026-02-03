@@ -51,7 +51,7 @@ class AudioMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=dict()):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack={}):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -83,7 +83,7 @@ class AudioMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack=dict()):
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack={}):
         # Identify all present audio inputs and their keys
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, dict) and "waveform" in v]
         if not tensor_keys:

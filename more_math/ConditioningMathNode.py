@@ -46,7 +46,7 @@ class ConditioningMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F,batching, length_mismatch="tile",stack=dict()):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F,batching, length_mismatch="tile",stack={}):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -83,7 +83,7 @@ class ConditioningMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi,batching, length_mismatch="tile",stack=dict()):
+    def execute(cls, V, F, Expression, Expression_pi,batching, length_mismatch="tile",stack={}):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:

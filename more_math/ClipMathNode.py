@@ -39,7 +39,7 @@ class CLIPMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=dict()):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack={}):
 
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
@@ -71,7 +71,7 @@ class CLIPMathNode(io.ComfyNode):
         return needed1
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack=dict()) -> io.NodeOutput:
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack={}) -> io.NodeOutput:
         # Determine reference CLIP
         a = V.get("V0")
         if a is None:

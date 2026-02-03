@@ -228,4 +228,4 @@ class ConditioningMathNode(io.ComfyNode):
                 base[0][1]["pooled_output"] = rpooled
             res_list = [base]
 
-        return (res_list,)
+        return (res_list,stack)

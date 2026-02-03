@@ -1241,6 +1241,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#BatchShuffleFunc.
+    def enterBatchShuffleFunc(self, ctx:MathExprParser.BatchShuffleFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BatchShuffleFunc.
+    def exitBatchShuffleFunc(self, ctx:MathExprParser.BatchShuffleFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PushFunc.
     def enterPushFunc(self, ctx:MathExprParser.PushFuncContext):
         pass

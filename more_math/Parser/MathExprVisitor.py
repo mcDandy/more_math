@@ -694,6 +694,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BatchShuffleFunc.
+    def visitBatchShuffleFunc(self, ctx:MathExprParser.BatchShuffleFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PushFunc.
     def visitPushFunc(self, ctx:MathExprParser.PushFuncContext):
         return self.visitChildren(ctx)

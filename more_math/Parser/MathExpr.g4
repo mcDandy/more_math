@@ -168,7 +168,7 @@ func2:
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 	| TOPK_IND LPAREN expr COMMA expr RPAREN				# TopkIndFunc
 	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
-	| BOTK_IND LPAREN expr COMMA expr RPAREN				# BotkIndFunc
+	| BATCH_SHUFFLE LPAREN expr COMMA expr RPAREN			# BatchShuffleFunc
 	| PUSH LPAREN expr COMMA expr RPAREN					# PushFunc
 	| GET_VALUE LPAREN expr COMMA expr RPAREN				# GetValueFunc
 	| TENSOR LPAREN indexExpr (COMMA expr)? RPAREN			# EmptyTensorFunc;
@@ -314,6 +314,7 @@ SORT: 'sort';
 COUNT: 'count' | 'length' | 'cnt';
 APPEND: 'append';
 GET_VALUE: 'get_value';
+BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle' | 'select';
 CROP: 'crop';
 FOR: 'for';
 IN: 'in';

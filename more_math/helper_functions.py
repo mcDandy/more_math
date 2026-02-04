@@ -197,35 +197,14 @@ def normalize_to_common_shape(*tensors, mode="pad"):
 
 def get_v_variable(v_norm_dict, length_mismatch="error"):
     """
-    Collects V0, V1, ... from the dict, stacks them into a V tensor, 
+    Collects V0, V1, ... from the dict, stacks them into a V tensor,
     and returns (V_stacked, V_count).
     """
     sorted_keys = sorted([k for k in v_norm_dict.keys() if k.startswith("V")], key=lambda x: int(x[1:]))
-    ordered_tensors = []
-
-    for k in sorted_keys:
-        val = v_norm_dict[k]
-        if torch.is_tensor(val):
-            ordered_tensors.append(val)
-        elif isinstance(val, (int, float)):
-             ordered_tensors.append(torch.tensor(val))
-
-    if not ordered_tensors:
-         return None, 0
-
-    if length_mismatch == "error" and len(ordered_tensors) > 1:
-        first_shape = ordered_tensors[0].shape
-        for i in range(1, len(ordered_tensors)):
-            if ordered_tensors[i].shape != first_shape:
-                 raise ValueError(f"Input variables have mismatched shapes: {first_shape} vs {ordered_tensors[i].shape}. Cannot create 'V' variable. Switch 'length_mismatch' to 'pad' or 'tile' to enable 'V'.")
-
-    try:
-        stacked = torch.stack(ordered_tensors)
-        return stacked, len(ordered_tensors)
-    except RuntimeError as e:
-        if length_mismatch == "error":
-             raise ValueError(f"Failed to stack input variables into 'V': {str(e)}")
-        return None, len(ordered_tensors)
+    listt = list()
+    for i in range(0,len(sorted_keys)):
+        listt.append(v_norm_dict[sorted_keys[i]])
+    return listt,len(listt)
 
 def get_f_variable(f_dict):
     """

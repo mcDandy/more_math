@@ -679,6 +679,13 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return tsr[indices]
 
+    def visitArgsortFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        descending = False
+        if ctx.expr(1):
+            descending = bool((yield ctx.expr(1)))
+        return torch.argsort(val, descending=descending)
+
     # Three-argument functions
     def visitClampFunc(self, ctx):
         val = (yield ctx.expr(0))
@@ -1460,7 +1467,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             a = self._promote_to_tensor(a)
             b = self._promote_to_tensor(b)
 
-            # Ensure at least 1D for cat
             if a.ndim == 0:
                 a = a.unsqueeze(0)
             if b.ndim == 0:

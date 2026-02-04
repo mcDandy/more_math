@@ -1052,6 +1052,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#ArgsortFunc.
+    def enterArgsortFunc(self, ctx:MathExprParser.ArgsortFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ArgsortFunc.
+    def exitArgsortFunc(self, ctx:MathExprParser.ArgsortFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass

@@ -143,7 +143,8 @@ func1:
 	| POP LPAREN expr RPAREN				# PopFunc
 	| CLEAR LPAREN expr RPAREN				# ClearFunc
 	| HAS LPAREN expr RPAREN				# HasFunc
-	| GET LPAREN expr RPAREN				# GetFunc;
+	| GET LPAREN expr RPAREN				# GetFunc
+	| ARGSORT LPAREN expr (COMMA expr)? RPAREN			# ArgsortFunc;
 
 // Two-argument functions Two-argument functions
 func2:
@@ -316,6 +317,7 @@ APPEND: 'append';
 GET_VALUE: 'get_value';
 BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle' | 'select';
 CROP: 'crop';
+ARGSORT: 'argsort';
 FOR: 'for';
 IN: 'in';
 

@@ -29,7 +29,8 @@ class ImageMathNode(io.ComfyNode):
                 io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input images"), # Changed ID to Expression to match AudioMathNode pattern, or keep Image? AudioMathNode used "Expression".
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["tile", "error", "pad"],
+                    options=["do nothing","error","tile", "pad"],
+                    display_name="on size mismatch",
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),

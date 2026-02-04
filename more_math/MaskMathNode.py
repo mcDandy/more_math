@@ -30,7 +30,8 @@ class MaskMathNode(io.ComfyNode):
                 io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input masks"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["tile", "error", "pad"],
+                    options=["do nothing","error","tile", "pad"],
+                    display_name="on size mismatch",
                     default="error",
                     tooltip="How to handle mismatched mask batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),

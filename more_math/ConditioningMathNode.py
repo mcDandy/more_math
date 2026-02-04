@@ -32,7 +32,8 @@ class ConditioningMathNode(io.ComfyNode):
                 io.String.Input(id="Expression_pi",display_name="pooled output expr.", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on pooled_input part of conditioning"),
                 io.Combo.Input(
                     id="length_mismatch",
-                    options=["tile", "error", "pad"],
+                    options=["do nothing","error","tile", "pad"],
+                    display_name="on size mismatch",
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),

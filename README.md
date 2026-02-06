@@ -26,13 +26,6 @@ You can also get the node from comfy manager under the name of More math.
 - Support for **indexed assignment**: `a[i, j, ...] = expression;`. Supports multidimensional tensors and nested lists.
   - **Scalar Filling**: If the assigned value has only 1 element (scalar, 1-element list/tensor), it fills the entire selected slice.
   - **Rank Matching**: Automatically squeezes leading ones from the value to match the rank of the target slice (e.g., assigning a 4D tensor with `dim0=1` to a 3D slice).
-- **Available Variables**:
-  - `V0`, `V1`, ...: Individual input variables.
-  - `V`: A stacked tensor of all input variables `V` (shape: `[num_variables, ...]` for tensors, `[num_variables]` for floats). Available when shapes match.
-  - `Vcnt` or `V_count`: Number of input variables.
-  - `F0`, `F1`, ...: Individual float inputs (if the node supports them).
-  - `F`: A 1D tensor of all input variables `F` (shape: `[num_floats]`).
-  - `Fcnt` or `F_count`: Number of float inputs.
 - Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. `if`/`else`/`while` do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
 - Support for stack. Stack survives between field evaluations but not between nodes or end of node execution.
   - Usefull in GuiderMath node to store variables between steps.
@@ -64,8 +57,9 @@ You can also get the node from comfy manager under the name of More math.
   - You can &lt;operator&gt; batched tensor with another tensor which is not batched (dim[0] = 1) - the non batched tensor will be duplicated along batch dimension
   - In imageMath node you can use 3 element list to specify a color of image. You cannot use any imput tensor, doing so will result in behaviour in subpoint 1 in list
 - **Length Mismatch Handling**: All math nodes (except Model, Clip, Vae which default to broadcast) include a `length_mismatch` option to handle inputs with different batch sizes, sample counts, or list lengths. The target length is determined by the **maximum length** among all provided inputs (`a`, `b`, `c`, `d`).
-  - `tile` (Default): Repeats shorter inputs to match the maximum length.
-  - `error`: Raises a `ValueError` if any input lengths differ.
+  - `do nothing`: dones **no validation** on input
+  - `tile`: Repeats shorter inputs to match the maximum length.
+  - `error` (Default): Raises a `ValueError` if any input lengths differ.
   - `pad`: Shorter inputs are padded with zeros to match the maximum length.
 
 ## Functions
@@ -155,14 +149,16 @@ You can also get the node from comfy manager under the name of More math.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 - `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects standard PyTorch layout `(Batch, Channel, Spatial...)`.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
-- **`get_value(tensor, position)`**: Retrieves a value from a tensor at the specified N-dimensional position (provided as a list or tensor). Uses the formula `pos0*strides[0] + pos1*strides[1] + ...` to find the linear index.
-- **`crop(tensor, position, size)`**: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
+- `get_value(tensor, position)`: Retrieves a value from a tensor at the specified N-dimensional position (provided as a list or tensor). Uses the formula `pos0*strides[0] + pos1*strides[1] + ...` to find the linear index.
+- `crop(tensor, position, size)`: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
 
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
 - `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
 - `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two or spatial dimensions (toggleable by optional parameter) - default use last 2 dimensions.
 - `edge(x)`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
 - `batch_shuffle(tensor, indices)` or `shuffle` or `select`: Reorders or gathers slices along the 0th dimension of a tensor based on a list of indices. (e.g., `shuffle(V0, [0, 0, 1])` repeats the first frame twice and then the second).
+- `tensor([shape],value)` Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero.
+- `
 
 ### FFT (Tensor Only)
 
@@ -193,11 +189,11 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Stack
 
-- `push(id, value)`: Pushes value to stack with id.
-- `pop(id)`: Pops value from stack with id.
-- `get(id)`: Gets value from stack with id.
-- `clear(id)`: Clears stack with id.
-- `has(id)`: Checks if stack with id exists.
+- `stack_push(id, value)`: Pushes value to stack with id.
+- `stack_pop(id)`: Pops value from stack with id.
+- `stack_get(id)`: Gets value from stack with id.
+- `stack_clear(id)`: Clears stack with id.
+- `stack_has(id)`: Checks if stack with id exists.
 
 ## Variables
 
@@ -205,7 +201,11 @@ You can also get the node from comfy manager under the name of More math.
   - `D{N}` - position in n-th dimension of tensor (for example D0, D1, D2, ...)
   - `S{N}` - size of n-th dimension of tensor (for example S0, S1, S2, ...)
   - `V{N}` - value input (for example V0, V1, V2, ...) - input type
+  - `V` - list of value inputs
   - `F{N}` - float input (for example F0, F1, F2, ...) - float type
+  - `F` - list of float inputs
+  - `Fcnt` or `F_count`: Number of float inputs.
+  - `Vcnt` or `V_count`: Number of value inputs.
   - `depth`: Current recursion depth (0 at top level)
 - **common inputs** (legacy):
   - `a`, `b`, `c`, `d`

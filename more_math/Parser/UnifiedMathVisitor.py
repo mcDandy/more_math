@@ -148,11 +148,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         return scalar_op(a)
 
     def _reduction_op(self, val, torch_op, list_op):
-        # If it's a scalar tensor, return Python float to avoid 0-dim tensor propagation
         if self._is_tensor(val):
-            if val.numel() == 1:
-                return float(val.flatten()[0].item())
-            return torch_op(val)
+            res = torch_op(val)
+            if self._is_tensor(res) and res.numel() == 1:
+                return float(res.item())
+            return res
         if self._is_list(val):
             return list_op(val)
         return val
@@ -225,7 +225,10 @@ class UnifiedMathVisitor(MathExprVisitor):
 
                 flat_indices = [int(i + max_idx if i < 0 else i) for i in idx]
                 idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
-                return torch.index_select(val, 0, idx_tensor).contiguous()
+                x = torch.index_select(val, 0, idx_tensor).contiguous()
+                if x.numel() == 1 and x.ndim == 0:
+                    return x.item()
+                return x
 
             # Multi-dimensional indexing
             torch_indices = []
@@ -447,9 +450,12 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAbsExp(self, ctx):
         val = (yield ctx.expr())
         if self._is_list(val):
-            return torch.linalg.norm(self._promote_to_tensor(val))
+            return float(torch.linalg.norm(self._promote_to_tensor(val)).item())
         if self._is_tensor(val):
-            return torch.linalg.norm(val)
+            res = torch.linalg.norm(val)
+            if res.numel() == 1:
+                return float(res.item())
+            return res
         return abs(val)
 
     def visitSqrtFunc(self, ctx):
@@ -516,7 +522,10 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitSNormFunc(self, ctx):
         val = (yield ctx.expr())
         if self._is_tensor(val):
-            return torch.linalg.norm(val)
+            res = torch.linalg.norm(val)
+            if res.numel() == 1:
+                return float(res.item())
+            return res
         return abs(val)
 
     # Two-argument functions
@@ -865,8 +874,13 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         promoted = [self._promote_to_tensor(x) for x in vals]
         if len(promoted) == 1:
-            return torch.min(promoted[0])
-        return torch.min(torch.stack(torch.broadcast_tensors(*promoted))).item()
+            res = torch.min(promoted[0])
+        else:
+            res = torch.min(torch.stack(torch.broadcast_tensors(*promoted)))
+
+        if self._is_tensor(res) and res.numel() == 1:
+            return float(res.item())
+        return res
 
     def visitSMaxFunc(self, ctx):
         args = []
@@ -878,7 +892,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return args[0]
             if self._is_list(args[0]):
                 return max(args[0])  # max of list
-            return torch.max(args[0]).item()  # Global max of single tensor
+            return float(torch.max(args[0]).item())  # Global max of single tensor
 
         # Multiple args
         if all(not self._is_tensor(x) and not self._is_list(x) for x in args):
@@ -886,8 +900,13 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         promoted = [self._promote_to_tensor(x) for x in args]
         if len(promoted) == 1:
-            return torch.max(promoted[0])
-        return torch.max(torch.stack(torch.broadcast_tensors(*promoted)))
+            res = torch.max(promoted[0])
+        else:
+            res = torch.max(torch.stack(torch.broadcast_tensors(*promoted)))
+
+        if self._is_tensor(res) and res.numel() == 1:
+            return float(res.item())
+        return res
 
     def _fold_nd(self, tsr, spatial_dims):
         original_shape = tsr.shape
@@ -1100,7 +1119,10 @@ class UnifiedMathVisitor(MathExprVisitor):
                     res = torch.quantile(val.float(), q_flat)
                     return res.reshape(q.shape)
 
-                return torch.quantile(val.float(), q)
+                res = torch.quantile(val.float(), q)
+                if self._is_tensor(res) and res.numel() == 1:
+                    return float(res.item())
+                return res
             except RuntimeError as e:
                 # Fallback for "input tensor is too large" or other quantile-specific issues
                 if "quantile" in str(e).lower() or "too large" in str(e).lower():
@@ -1108,7 +1130,10 @@ class UnifiedMathVisitor(MathExprVisitor):
                         q_flat = q.flatten()
                         res = self._manual_quantile(val, q_flat)
                         return res.reshape(q.shape)
-                    return self._manual_quantile(val, q)
+                    res = self._manual_quantile(val, q)
+                    if self._is_tensor(res) and res.numel() == 1:
+                        return float(res.item())
+                    return res
                 raise e
 
         if self._is_list(val):
@@ -1171,14 +1196,14 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitDotFunc(self, ctx):
         a = self._promote_to_tensor((yield ctx.expr(0)))
         b = self._promote_to_tensor((yield ctx.expr(1)))
-        return torch.dot(a.flatten(), b.flatten())
+        return float(torch.dot(a.flatten(), b.flatten()).item())
 
     def visitMomentFunc(self,ctx):
         x = self._promote_to_tensor((yield ctx.expr(0)))
         a = (yield ctx.expr(1))
         k = (yield ctx.expr(2))
 
-        return torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a),k,torch.pow,pow)).item()/x.numel()
+        return float(torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a),k,torch.pow,pow)).item())/x.numel()
 
     def visitSortFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))
@@ -1804,13 +1829,21 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitMedianFunc(self, ctx):
         val = yield ctx.expr()
-        if self._is_tensor(val): return torch.median(val.float())
+        if self._is_tensor(val):
+            res = torch.median(val.float())
+            if res.numel() == 1:
+                return float(res.item())
+            return res
         if self._is_list(val): return sorted(val)[len(val)//2]
         return val
 
     def visitModeFunc(self, ctx):
         val = yield ctx.expr()
-        if self._is_tensor(val): return torch.mode(val.float().flatten()).values
+        if self._is_tensor(val):
+            res = torch.mode(val.float().flatten()).values
+            if res.numel() == 1:
+                return float(res.item())
+            return res
         if self._is_list(val):
              from collections import Counter
              return Counter(val).most_common(1)[0][0]

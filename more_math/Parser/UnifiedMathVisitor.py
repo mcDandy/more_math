@@ -3,6 +3,7 @@ import torch
 import math
 import inspect
 import torch.nn.functional as F
+from antlr4 import TerminalNode
 from .MathExprVisitor import MathExprVisitor
 from ..helper_functions import generate_dim_variables
 
@@ -976,7 +977,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         device = self.device
 
         shape_to_use = self.shape if self.shape else (1, 1, 1, 1)
-
+        if len(ctx.expr()) > 1:
+            shape_to_use = (yield ctx.expr(1))
         ndim = len(shape_to_use)
         dim_names = ["x", "y", "z", "w", "v", "u"]
 
@@ -1509,7 +1511,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return a + b
     def visitStart(self, ctx):
-        from antlr4.tree.Tree import TerminalNode
         count = ctx.getChildCount()
         last_res = None
 
@@ -1752,33 +1753,45 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitNoiseFunc(self,ctx):
         seed_val = yield ctx.expr()
+        shape_arg = self.shape;
+        if len(ctx.expr(0)) > 1:
+            shape_arg = (yield ctx.expr(1))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.randn(self.shape, generator=generator, device=self.device)
+        return torch.randn(shape_arg, generator=generator, device=self.device)
 
     def visitRandFunc(self, ctx):
-        seed_val = yield ctx.expr()
+        seed_val = yield ctx.expr(0)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 1:
+            shape_arg = (yield ctx.expr(1))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.rand(self.shape, generator=generator, device=self.device)
+        return torch.rand(shape_arg, generator=generator, device=self.device)
 
     def visitExponentialFunc(self, ctx):
         seed_val = yield ctx.expr(0)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 2:
+            shape_arg = (yield ctx.expr(2))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         lambd_val = yield ctx.expr(1)
         lambd = float(lambd_val.item()) if self._is_tensor(lambd_val) else float(lambd_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.empty(self.shape, device=self.device).exponential_(lambd, generator=generator)
+        return torch.empty(shape_arg, device=self.device).exponential_(lambd, generator=generator)
 
     def visitCauchyFunc(self, ctx):
         seed_val = yield ctx.expr(0)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         median_val = yield ctx.expr(1)
         median = float(median_val.item()) if self._is_tensor(median_val) else float(median_val)
         sigma_val = yield ctx.expr(2)
         sigma = float(sigma_val.item()) if self._is_tensor(sigma_val) else float(sigma_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.empty(self.shape, device=self.device).cauchy_(median, sigma, generator=generator)
+        return torch.empty(shape_arg, device=self.device).cauchy_(median, sigma, generator=generator)
 
     def visitLogNormalFunc(self, ctx):
         seed_val = yield ctx.expr(0)
@@ -1787,26 +1800,35 @@ class UnifiedMathVisitor(MathExprVisitor):
         mean = float(mean_val.item()) if self._is_tensor(mean_val) else float(mean_val)
         std_val = yield ctx.expr(2)
         std = float(std_val.item()) if self._is_tensor(std_val) else float(std_val)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        return torch.empty(self.shape, device=self.device).log_normal_(mean, std, generator=generator)
+        return torch.empty(shape_arg, device=self.device).log_normal_(mean, std, generator=generator)
 
     def visitBernoulliFunc(self, ctx):
         seed_val = yield ctx.expr(0)
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         p = yield ctx.expr(1)
         generator = torch.Generator(device=self.device).manual_seed(seed)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 2:
+            shape_arg = (yield ctx.expr(2))
         if self._is_tensor(p):
             return torch.bernoulli(p, generator=generator).to(device=self.device)
-        return torch.bernoulli(torch.full(self.shape, p, device=self.device), generator=generator)
+        return torch.bernoulli(torch.full(shape_arg, p, device=self.device), generator=generator)
 
     def visitPoissonFunc(self, ctx):
         seed_val = yield ctx.expr(0)
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         lam = yield ctx.expr(1)
         generator = torch.Generator(device=self.device).manual_seed(seed)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 2:
+            shape_arg = (yield ctx.expr(2))
         if self._is_tensor(lam):
             return torch.poisson(lam, generator=generator).to(device=self.device)
-        return torch.poisson(torch.full(self.shape, lam, device=self.device), generator=generator)
+        return torch.poisson(torch.full(shape_arg, lam, device=self.device), generator=generator)
 
     def visitNvlFunc(self, ctx):
         v = yield ctx.expr(0)

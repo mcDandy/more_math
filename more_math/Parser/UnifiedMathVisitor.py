@@ -1752,7 +1752,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Unknown function: {func_name}")
 
     def visitNoiseFunc(self,ctx):
-        seed_val = yield ctx.expr()
+        seed_val = yield ctx.expr(0)
         shape_arg = self.shape;
         if len(ctx.expr()) > 1:
             shape_arg = (yield ctx.expr(1))

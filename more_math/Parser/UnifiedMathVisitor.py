@@ -205,90 +205,44 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitIndexExp(self, ctx):
         val = (yield ctx.indexExpr())
-        index_args = []
-        for e in ctx.expr():
-            index_args.append((yield e))
+        array = (yield ctx.expr())
+        shape = (val.shape if self._is_tensor(val) else (len(val),))
+        t = []
+        raw_index_nodes = ctx.expr()
 
+        indices = []
+        for node in raw_index_nodes:
+            # Každý uzel indexu musíme vyhodnotit, abychom dostali číslo/tensor
+            idx_val = (yield node)
+
+            # Převedeme na int (včetně ošetření tensoru)
+            if self._is_tensor(idx_val):
+                if idx_val.numel() == 1:
+                    indices.append(int(idx_val.flatten()[0].item()))
+                else:
+                    raise ValueError(f"Index must be a scalar, not {idx_val.shape}")
+            else:
+                indices.append(int(idx_val))
+        array = self._promote_to_tensor(indices).flatten().long()
+        val = self._promote_to_tensor(val).flatten()
+
+        stride = shape[:len(array)]
+        v = 1
+        offset = 0
+        for i in range(len(stride)):
+            idx = int(array[i].item())
+            if idx < 0 or idx >= stride[i]:
+                error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
+                raise ValueError(f"{error_prefix} Index {idx} out of bounds for dimension {i} with size {stride[i]}")
+            offset += idx * v
+            v *= stride[i]
+        t = val[offset:offset+(val.numel()//v)]
+        if t.numel() == 1:
+            return t.item()
+        return t.reshape(shape[len(array):]).contiguous()
         error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
 
-        if self._is_tensor(val):
-            # Selection (tensor[list/tensor])
-            if len(index_args) == 1 and (self._is_list(index_args[0]) or self._is_tensor(index_args[0])):
-                idx = index_args[0]
-                if self._is_tensor(idx):
-                    idx = idx.flatten().tolist()
-
-                # Explicit bounds check for selection
-                max_idx = val.shape[0]
-                for i in idx:
-                    if i < -max_idx or i >= max_idx:
-                        raise IndexError(f"{error_prefix} Index {int(i)} out of bounds for tensor of size {max_idx}")
-
-                flat_indices = [int(i + max_idx if i < 0 else i) for i in idx]
-                idx_tensor = torch.tensor(flat_indices, device=self.device, dtype=torch.long)
-                x = torch.index_select(val, 0, idx_tensor).contiguous()
-                if x.numel() == 1 and x.ndim == 0:
-                    return x.item()
-                return x
-
-            # Multi-dimensional indexing
-            torch_indices = []
-            if len(index_args) > val.ndim:
-                raise IndexError(f"{error_prefix} Too many indices for tensor of dimension {val.ndim}")
-
-            for i, idx in enumerate(index_args):
-                dim_size = val.shape[i]
-                if self._is_list(idx) or self._is_tensor(idx):
-                    t_idx = torch.tensor(idx, device=self.device, dtype=torch.long) if self._is_list(idx) else idx.long()
-                    # Bounds check for list/tensor indices in multi-dim
-                    if torch.any(t_idx < -dim_size) or torch.any(t_idx >= dim_size):
-                        # Find the first offending index for the error message
-                        offender = t_idx[(t_idx < -dim_size) | (t_idx >= dim_size)][0].item()
-                        raise IndexError(f"{error_prefix} Index {int(offender)} out of bounds for dimension {i} with size {dim_size}")
-                    torch_indices.append(t_idx)
-                else:
-                    # Scalar index
-                    if idx < -dim_size or idx >= dim_size:
-                        raise IndexError(f"{error_prefix} Index {int(idx)} out of bounds for dimension {i} with size {dim_size}")
-                    torch_indices.append(int(idx))
-
-            res = val[tuple(torch_indices)]
-            if isinstance(res, torch.Tensor):
-                if res.numel() == 1 and res.ndim == 0:
-                    return float(res.item())
-                return res.contiguous()
-            return float(res)
-
-        elif self._is_list(val):
-            # Multi-level or selection indexing for lists
-            curr = val
-            for i, idx in enumerate(index_args):
-                if not self._is_list(curr):
-                    raise TypeError(f"{error_prefix} Cannot index into non-list object at level {i}")
-
-                list_len = len(curr)
-                if self._is_list(idx) or self._is_tensor(idx):
-                    # List selection (only supported as the LAST index for now, or if it's the only one)
-                    if i != len(index_args) - 1:
-                        raise TypeError(f"{error_prefix} List selection only supported at the final indexing level")
-
-                    if self._is_tensor(idx):
-                        idx = idx.flatten().tolist()
-
-                    for slice_idx in idx:
-                        if slice_idx < -list_len or slice_idx >= list_len:
-                            raise IndexError(f"{error_prefix} Index {int(slice_idx)} out of bounds for list of length {list_len}")
-
-                    return [curr[int(j + list_len if j < 0 else j)] for j in idx]
-                else:
-                    # Single index
-                    if idx < -list_len or idx >= list_len:
-                        raise IndexError(f"{error_prefix} Index {int(idx)} out of bounds for list of length {list_len}")
-                    curr = curr[int(idx + list_len if idx < 0 else idx)]
-
-            return curr
-        else:
-            raise ValueError(f"{error_prefix} Indexing only supported on tensors and lists (found {type(val).__name__})")
+        raise ValueError(f"{error_prefix} Indexing only supported on tensors and lists (found {type(val).__name__})")
 
     def visitToAtom(self, ctx):
         return (yield ctx.atom())

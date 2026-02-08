@@ -1754,7 +1754,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitNoiseFunc(self,ctx):
         seed_val = yield ctx.expr()
         shape_arg = self.shape;
-        if len(ctx.expr(0)) > 1:
+        if len(ctx.expr()) > 1:
             shape_arg = (yield ctx.expr(1))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)

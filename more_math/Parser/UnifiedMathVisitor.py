@@ -880,7 +880,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             res = torch.min(torch.stack(torch.broadcast_tensors(*promoted)))
 
         if self._is_tensor(res) and res.numel() == 1:
-            return float(res.item())
+            return res.item()
         return res
 
     def visitSMaxFunc(self, ctx):
@@ -893,7 +893,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return args[0]
             if self._is_list(args[0]):
                 return max(args[0])  # max of list
-            return float(torch.max(args[0]).item())  # Global max of single tensor
+            return torch.max(args[0]).item()  # Global max of single tensor
 
         # Multiple args
         if all(not self._is_tensor(x) and not self._is_list(x) for x in args):

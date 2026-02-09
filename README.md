@@ -10,7 +10,8 @@ Adds math nodes for numbers and types which do not need it. I got inspired by wa
 1. Clone this repository into `ComfyUI/custom_nodes`.
 1. open command prompt/terminal/bash in your comfy folder
 1. activate environment `./venv/Scripts/activate`
-1. install antlr `pip install -U antlr4-python3-runtime==4.13.2`
+1. go to more_math folder `cd ./custom_nodes/more_math/`
+1. install requirements `pip install -r requirements.txt`
 1. Restart ComfyUI.
 
 You can also get the node from comfy manager under the name of More math.
@@ -50,7 +51,7 @@ You can also get the node from comfy manager under the name of More math.
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
-- Indexing: `x[i]` or `x[i, j, ...]` - Selects items along the batch dimension (dim 0) or with that position in list. Supports multiple indices (e.g. `a[0, 2]`) and negative indexing (python style).
+- Indexing: `x[i]` or `x[i, j, ...]` - Selects a sublist (if index count < number of dimensions) or value at position.
 - Lists: `[v1, v2, ...]` (Vector math supported, mostly usefull in `conv` and `permute`)
   - You can also use lists to do math with input tensor (image, noise, conditioing, latent, audio) which results in batched output as long as batch size is different to list size.
   - print_shape(a) = torch.Shape[1,1024,1024,3]; b = a*[0,0.2,-0.3]; print_shape(b) = torch.Shape[3,1024,1024,3]
@@ -107,7 +108,7 @@ You can also get the node from comfy manager under the name of More math.
 - `cubic_ease(a, b, t)` or `cubic`: In-Out Cubic interpolation between `a` and `b`.
 - `sine_ease(a, b, t)` or `sine`: In-Out Sine interpolation between `a` and `b`.
 - `elastic_ease(a, b, t)` or `elastic`: In-Out Elastic interpolation between `a` and `b`.
-- `lerp(a, b, w)`: Linear interpolation: `a + (b - a) * w`.
+- `lerp(a, b, t)`: Linear interpolation: `a + (b - a) * w`.
 
 ### Aggregates & Tensor Operations
 
@@ -163,7 +164,7 @@ You can also get the node from comfy manager under the name of More math.
 ### FFT (Tensor Only)
 
 - `fft(x)`: Fast Fourier Transform (Time to Frequency).
-- `ifft(x)`: Inverse Fast Fourier Transform (Frequency to Time).
+- `ifft(x)` or `ifft(x, shape)`: Inverse Fast Fourier Transform (Frequency to Time), optional shape argument.
 - `angle(x)`: Returns the element-wise angle (phase) of the complex tensor.
 
 ### Utility
@@ -179,13 +180,14 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Random Distributions
 
-- `random_normal(seed)` or `randn(seed)` or `noise(seed)`: generates a random tensor with normal distribution (var=1, mean=0).
-- `random_uniform(seed)` or `rand(seed)`: generates a random tensor with uniform distribution [0, 1).
-- `random_exponential(seed, lambda)` or `rande`: generates a random tensor with exponential distribution.
-- `random_cauchy(seed, median, sigma)` or `randc`: generates a random tensor with Cauchy distribution.
-- `random_log_normal(seed, mean, std)` or `randln`: generates a random tensor with log-normal distribution.
-- `random_bernoulli(seed, p)` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor.
-- `random_poisson(seed, lambda)` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
+Generates random noise with default shape of aither first input or maximum of input sizes, depending on node setting.
+- `random_normal(seed,[shape])` or `randn` or `noise`: generates a random tensor with normal distribution (var=1, mean=0).
+- `random_uniform(seed,[shape])` or `rand`: generates a random tensor with uniform distribution [0, 1).
+- `random_exponential(seed, lambda,[shape])` or `rande`: generates a random tensor with exponential distribution.
+- `random_cauchy(seed, median, sigma,[shape])` or `randc`: generates a random tensor with Cauchy distribution.
+- `random_log_normal(seed, mean, std,[shape])` or `randln`: generates a random tensor with log-normal distribution.
+- `random_bernoulli(seed, p,[shape])` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor. If p is tensor, shape is ignored.
+- `random_poisson(seed, lambda,[shape])` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
 
 ### Stack
 

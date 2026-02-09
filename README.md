@@ -2,7 +2,7 @@
 
 Adds math nodes for numbers and types which do not need it. I got inspired by was_extras node.
 
-## WARNING This node is not compatible to ComfyUI-Impact-Pack and ComfyUI-Ovi which forces older antlr version
+## WARNING This node is not compatible to ComfyUI-Impact-Pack and ComfyUI-Ovi which forces older antlr version via omegaconf
 
 ## Quickstart
 

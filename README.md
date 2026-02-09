@@ -27,7 +27,7 @@ You can also get the node from comfy manager under the name of More math.
   - **Scalar Filling**: If the assigned value has only 1 element (scalar, 1-element list/tensor), it fills the entire selected slice.
   - **Rank Matching**: Automatically squeezes leading ones from the value to match the rank of the target slice (e.g., assigning a 4D tensor with `dim0=1` to a 3D slice).
 - Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. `if`/`else`/`while` do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
-- Support for stack. Stack survives between field evaluations but not between nodes or end of node execution.
+- Support for stack. Stack survives between field evaluations and can be passed around using stack connection.
   - Usefull in GuiderMath node to store variables between steps.
 - comments `#...` and `/*...*/`
 

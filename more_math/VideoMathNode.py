@@ -33,12 +33,12 @@ class VideoMathNode(io.ComfyNode):
                     options=["do nothing","error","tile", "pad"],
                     display_name="on size mismatch",
                     default="error",
-                    tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
+                    tooltip="How to handle mismatched video lengths. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
-                io.Conditioning.Output(),
+                io.Video.Output(),
                 MrmthStack.Output(),
             ],
         )

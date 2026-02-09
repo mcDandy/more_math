@@ -119,6 +119,8 @@ You can also get the node from comfy manager under the name of More math.
 - `mean(x)`: Mean value of all elements.
 - `std(x)`: Standard deviation of all elements.
 - `var(x)`: Variance of all elements.
+- `median(x)`: Median value of all elements.
+- `mode(x)`: Mode (most common value) of all elements.
 - `quartile(x, k)`: Returns the k-th quartile (k=0 for min, 1 for 25th, 2 for 50th, 3 for 75th, 4 for max).
 - `percentile(x, p)`: Returns the p-th percentile (p is 0-100).
 - `quantile(x, q)`: Returns the q-th quantile (q is 0-1).
@@ -128,13 +130,14 @@ You can also get the node from comfy manager under the name of More math.
 - `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for complex numbers)
 - `topk_ind(x, k)` or `topk_indices`: Returns the **indices** of the top K largest values in the flattened tensor.
 - `botk_ind(x, k)` or `botk_indices`: Returns the **indices** of the bottom K smallest values in the flattened tensor.
+- `sort(x)`: Sorts elements in ascending order along the last dimension.
+- `argsort(x)` or `argsort(x, descending)`: Returns the **indices** that would sort the tensor/list. Optional second parameter for descending order.
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
 - `snorm(x)`: The same as |x| for tensors.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
 - `cossim(a, b)`: Computes cosine similarity between a and b along last dimension.
 - `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
 - `cov(x, y)`: Compute covariance between x and y.
-- `sort(x)`: Sorts elements in ascending order along the last dimension.
 - `append(a, b)`: Appends `b` to `a`. If inputs are lists, it concatenates them. If inputs are tensors, it concatenates them along dim 0.
 - `any(x)`: Returns 1.0 if any element in `x` is non-zero (True), else 0.0.
 - `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.

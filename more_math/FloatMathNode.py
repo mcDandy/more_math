@@ -10,6 +10,8 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
 from .Stack import MrmthStack
+import copy
+
 
 
 class FloatMathNode(io.ComfyNode):
@@ -84,7 +86,7 @@ class FloatMathNode(io.ComfyNode):
         variables["x"] = V.get("V5", 0.0)
         variables["y"] = V.get("V6", 0.0)
         variables["z"] = V.get("V7", 0.0)
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
 
         # Populate all V inputs
         for k, val in V.items():
@@ -98,7 +100,6 @@ class FloatMathNode(io.ComfyNode):
 
         tree = parse_expr(FloatFunc);
         # scalar execution
-        # UnifiedMathVisitor expects variables and a shape. Shape [1] for scalar?
         visitor = UnifiedMathVisitor(variables, [1],state_storage=stack)
         result = visitor.visit(tree)
         # Result might be float or tensor(scalar)

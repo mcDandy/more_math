@@ -7,6 +7,8 @@ from .Parser.MathExprParser import MathExprParser
 import re
 import torch
 from .Stack import MrmthStack
+import copy
+
 
 class ImageMathNode(io.ComfyNode):
     """
@@ -86,7 +88,7 @@ class ImageMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
 
         tensors = [V[k] for k in tensor_keys]
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
 
         # Normalize all tensors together to find the common target shape
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
@@ -154,7 +156,7 @@ class ImageMathNode(io.ComfyNode):
         visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=stack)
         result = visitor.visit(tree)
         result = as_tensor(result, ae.shape)
-        
+
         if batching and batching > 0:
             res = torch.split(result, batching, dim=0)
             res_list = []

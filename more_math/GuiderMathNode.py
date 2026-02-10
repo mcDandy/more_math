@@ -20,6 +20,7 @@ import comfy.utils
 import comfy.hooks
 import comfy.samplers
 from .Stack import MrmthStack
+import copy
 
 
 class GuiderMathNode(io.ComfyNode):
@@ -83,7 +84,7 @@ class GuiderMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, V, F, Expression,Expression1,stack={}):
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
         return (MathGuider(V, F, Expression,Expression1),stack)
 
 

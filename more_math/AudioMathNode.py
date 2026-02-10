@@ -16,6 +16,7 @@ from .Parser.MathExprParser import MathExprParser
 import re
 import torch
 from .Stack import MrmthStack
+import copy
 
 class AudioMathNode(io.ComfyNode):
     """
@@ -91,7 +92,7 @@ class AudioMathNode(io.ComfyNode):
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, dict) and "waveform" in v]
         if not tensor_keys:
              raise ValueError("At least one audio input is required.")
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
         waveforms = {k: V[k]["waveform"] for k in tensor_keys}
         sample_rates = {k + "sr": V[k].get("sample_rate", 44100) for k in tensor_keys}
 
@@ -154,7 +155,7 @@ class AudioMathNode(io.ComfyNode):
         visitor = UnifiedMathVisitor(variables, a_w.shape,a_w.device,state_storage=stack)
         result = visitor.visit(tree)
         result = as_tensor(result, a_w.shape)
-        
+
         if batching and batching > 0:
             res = torch.split(result, batching, dim=0)
             res_list = []

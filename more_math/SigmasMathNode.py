@@ -6,6 +6,7 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
 from .Stack import MrmthStack
+import copy
 
 class SigmasMathNode(io.ComfyNode):
     """
@@ -87,7 +88,7 @@ class SigmasMathNode(io.ComfyNode):
 
         if ref_image is None:
              raise ValueError("At least one input is required.")
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
         a = V.get("V0")
         b = V.get("V1")
         c = V.get("V2")

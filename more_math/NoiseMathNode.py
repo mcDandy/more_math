@@ -6,6 +6,7 @@ from .Parser.MathExprLexer import MathExprLexer
 import re
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from .Stack import MrmthStack
+import copy
 
 class NoiseMathNode(io.ComfyNode):
     """
@@ -74,8 +75,8 @@ class NoiseMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, Noise, V,F,stack={}):
-        stack = stack.deepcopy() if stack is not None else {}
-        return (NoiseExecutor(V,F, Noise,stack),)
+        stack = copy.deepcopy(stack) if stack is not None else {}
+        return (NoiseExecutor(V,F, Noise,stack),stack)
 
 
 class NoiseExecutor:

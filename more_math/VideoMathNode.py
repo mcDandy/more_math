@@ -6,6 +6,7 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
 from .Stack import MrmthStack
+import copy
 
 class VideoMathNode(io.ComfyNode):
     """
@@ -95,7 +96,7 @@ class VideoMathNode(io.ComfyNode):
         # Use first normalized tensor to establish the reference shape
         ref_tensor = normalized_tensors[0]
         common_shape = ref_tensor.shape
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
 
         # Setup legacy variables a, b, c, d
         ae = V_norm.get("V0", make_zero_like(ref_tensor))

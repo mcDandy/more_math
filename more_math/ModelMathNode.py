@@ -5,6 +5,7 @@ from .Parser.MathExprLexer import MathExprLexer
 from .Parser.MathExprParser import MathExprParser
 import re
 from .Stack import MrmthStack
+import copy
 
 class ModelMathNode(io.ComfyNode):
     """
@@ -76,7 +77,7 @@ class ModelMathNode(io.ComfyNode):
     def execute(cls, V, F, Expression, length_mismatch="tile",stack={}) -> io.NodeOutput:
         # Determine reference model for cloning
         a = V.get("V0")
-        stack = stack.deepcopy() if stack is not None else {}
+        stack = copy.deepcopy(stack) if stack is not None else {}
 
         if a is None:
             # Try finding first valid model

@@ -100,6 +100,8 @@ You can also get the node from comfy manager under the name of More math.
 - `gelu(x)`: Gaussian Error Linear Unit.
 - `softplus(x)`: Softplus function (log(1 + e^x)).
 - `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
+- `softmax(x, dim)`: Softmax normalization along specified dimension (converts to probabilities).
+- `softmin(x, dim)`: Softmin normalization along specified dimension (inverse softmax).
 
 ### Interpolation
 
@@ -133,6 +135,9 @@ You can also get the node from comfy manager under the name of More math.
 - `botk_ind(x, k)` or `botk_indices`: Returns the **indices** of the bottom K smallest values in the flattened tensor.
 - `sort(x)`: Sorts elements in ascending order along the last dimension.
 - `argsort(x)` or `argsort(x, descending)`: Returns the **indices** that would sort the tensor/list. Optional second parameter for descending order.
+- `argmin(x)`: Returns the **index** of the minimum value in the flattened tensor/list.
+- `argmax(x)`: Returns the **index** of the maximum value in the flattened tensor/list.
+- `unique(x)`: Returns **unique elements** from tensor/list in sorted order.
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
 - `snorm(x)`: The same as |x| for tensors.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
@@ -144,6 +149,8 @@ You can also get the node from comfy manager under the name of More math.
 - `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.
 - `cumsum(x)`: Returns the cumulative sum of elements along the batch dimension (dim 0).
 - `cumprod(x)`: Returns the cumulative product of elements along the batch dimension (dim 0).
+- `tensor(shape,value)`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero.
+- `flatten(value)`: Flattens a tensor to 1D. If input is list, it flattens nested lists into a single list.
 
 ### Advanced Tensor Operations
 
@@ -155,14 +162,14 @@ You can also get the node from comfy manager under the name of More math.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 - `get_value(tensor, position)`: Retrieves a value from a tensor at the specified N-dimensional position (provided as a list or tensor). Uses the formula `pos0*strides[0] + pos1*strides[1] + ...` to find the linear index.
 - `crop(tensor, position, size)`: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
-
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
 - `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
 - `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two or spatial dimensions (toggleable by optional parameter) - default use last 2 dimensions.
 - `edge(x)`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
 - `batch_shuffle(tensor, indices)` or `shuffle` or `select`: Reorders or gathers slices along the 0th dimension of a tensor based on a list of indices. (e.g., `shuffle(V0, [0, 0, 1])` repeats the first frame twice and then the second).
-- `tensor([shape],value)` Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero.
-- `
+- `matmul(a, b)`: Matrix multiplication. For 1D vectors, performs dot product. For 2D+ tensors, performs standard matrix multiplication following NumPy rules.
+- `cross(a, b)`: Computes the cross product (vector product) of two 3D vectors. Both inputs must have last dimension = 3. Returns a vector perpendicular to both inputs.
+
 
 ### FFT (Tensor Only)
 
@@ -218,7 +225,8 @@ Generates random noise with default shape of aither first input or maximum of in
   - `w`, `x`, `y`, `z`
 - **INSIDE IFFT**
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
-  - `K` or `frequency` – isotropic frequency (Euclidean norm of indices, iFFT only)
+  - `F` or `frequency_count` � frequency count (freq domain, iFFT only)
+  - `K` or `frequency` � isotropic frequency (Euclidean norm of indices, iFFT only)
   - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
   - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
 - **IMAGE and LATENT**:
@@ -241,15 +249,16 @@ Generates random noise with default shape of aither first input or maximum of in
   - `N` or `channel_count` - count of channels
   - `C` or `channel` - channel of audio
   - `S` or `sample` – current audio sample
+  - `S` or `sample` � current audio sample
   - `T` or `sample_count` - audio lenght in samples
-  - `R` or `sample_rate` – sample rate
+  - `R` or `sample_rate` � sample rate
 
 - **VIDEO**
   - refer to `IMAGE and LATENT` for visual part (but `batch` is `frame` and `batch_count` is `frame_count`)
   - refer to `AUDIO` for sound part
 - **NOISE**
   - refer to `IMAGE and LATENT` for most variables
-  - `I` or `input_latent` – latent used as input to generate noise before noise is generated into it
+  - `I` or `input_latent` � latent used as input to generate noise before noise is generated into it
 - **GUIDER**
   - refer to `IMAGE and LATENT`
   - `sigma` - current sigma value

@@ -141,9 +141,14 @@ func1:
 	| CLEAR LPAREN expr RPAREN					# ClearFunc
 	| HAS LPAREN expr RPAREN					# HasFunc
 	| GET LPAREN expr RPAREN					# GetFunc
-	| ARGSORT LPAREN expr (COMMA expr)? RPAREN	# ArgsortFunc;
+	| ARGSORT LPAREN expr (COMMA expr)? RPAREN	# ArgsortFunc
+	| ARGMIN LPAREN expr RPAREN					# ArgminFunc
+	| ARGMAX LPAREN expr RPAREN					# ArgmaxFunc
+	| SOFTMAX LPAREN expr RPAREN					# SoftmaxFunc
+	| SOFTMIN LPAREN expr RPAREN					# SoftminFunc
+	| UNIQUE LPAREN expr RPAREN					# UniqueFunc
+	| FLATTEN LPAREN expr RPAREN				# FlattenFunc;
 
-// Two-argument functions Two-argument functions
 func2:
 	POWE LPAREN expr COMMA expr RPAREN						# PowFunc
 	| ATAN2 LPAREN expr COMMA expr RPAREN					# Atan2Func
@@ -167,7 +172,9 @@ func2:
 	| PUSH LPAREN expr COMMA expr RPAREN					# PushFunc
 	| GET_VALUE LPAREN expr COMMA expr RPAREN				# GetValueFunc
 	| TENSOR LPAREN indexExpr (COMMA expr)? RPAREN			# EmptyTensorFunc
-	| PAD LPAREN expr COMMA expr RPAREN						# PadFunc;
+	| PAD LPAREN expr COMMA expr RPAREN						# PadFunc
+	| CROSS LPAREN expr COMMA expr RPAREN					# CrossFunc
+	| MATMUL LPAREN expr COMMA expr RPAREN					# MatmulFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -322,6 +329,15 @@ PAD: 'pad';
 ARGSORT: 'argsort';
 FOR: 'for';
 IN: 'in';
+
+ARGMIN: 'argmin' | 'arg_min';
+ARGMAX: 'argmax' | 'arg_max';
+UNIQUE: 'unique';
+SOFTMAX: 'softmax';
+SOFTMIN: 'softmin';
+FLATTEN: 'flatten';
+CROSS: 'cross' | 'cross_product';
+MATMUL: 'matmul' | 'matrix_multiply' | 'mat_mul';
 
 TIMESTAMP: 'timestamp' | 'now';
 NONE: 'None' | 'none' | 'NULL' | 'null';

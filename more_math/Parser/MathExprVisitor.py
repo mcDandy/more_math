@@ -259,8 +259,8 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#FuncOptExp.
-    def visitFuncOptExp(self, ctx:MathExprParser.FuncOptExpContext):
+    # Visit a parse tree produced by MathExprParser#FuncNoiseExp.
+    def visitFuncNoiseExp(self, ctx:MathExprParser.FuncNoiseExpContext):
         return self.visitChildren(ctx)
 
 
@@ -579,6 +579,36 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ArgminFunc.
+    def visitArgminFunc(self, ctx:MathExprParser.ArgminFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ArgmaxFunc.
+    def visitArgmaxFunc(self, ctx:MathExprParser.ArgmaxFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SoftmaxFunc.
+    def visitSoftmaxFunc(self, ctx:MathExprParser.SoftmaxFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SoftminFunc.
+    def visitSoftminFunc(self, ctx:MathExprParser.SoftminFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#UniqueFunc.
+    def visitUniqueFunc(self, ctx:MathExprParser.UniqueFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FlattenFunc.
+    def visitFlattenFunc(self, ctx:MathExprParser.FlattenFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -694,6 +724,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#CrossFunc.
+    def visitCrossFunc(self, ctx:MathExprParser.CrossFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MatmulFunc.
+    def visitMatmulFunc(self, ctx:MathExprParser.MatmulFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
@@ -741,6 +781,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#CropFunc.
     def visitCropFunc(self, ctx:MathExprParser.CropFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#sifftFunc.
+    def visitSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -796,11 +841,6 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ReshapeFunc.
     def visitReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#sifftFunc.
-    def visitSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
         return self.visitChildren(ctx)
 
 

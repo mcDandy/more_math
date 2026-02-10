@@ -2037,3 +2037,56 @@ class UnifiedMathVisitor(MathExprVisitor):
             shape = [int(float(shape_val))]
 
         return torch.full(shape, value, device=self.device)
+
+    def visitSoftmaxFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        return F.softmax(val.float())
+
+    def visitSoftminFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        return F.softmax(-val.float())
+
+    def visitArgminFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_tensor(val):
+            return torch.argmin(val.flatten())
+        if self._is_list(val):
+            return float(val.index(min(val)))
+        return 0.0
+
+    def visitArgmaxFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_tensor(val):
+            return torch.argmax(val.flatten())
+        if self._is_list(val):
+            return float(val.index(max(val)))
+        return 0.0
+
+    def visitUniqueFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_tensor(val):
+            unique_vals, _ = torch.unique(val.flatten(), return_counts=False, sorted=True)
+            return unique_vals
+        if self._is_list(val):
+            return sorted(list(set(val)))
+        return val
+
+    def visitFlattenFunc(self, ctx):
+        val = (yield ctx.expr())
+        if self._is_tensor(val):
+            return val.flatten()
+
+        if self._is_list(val):
+            return self._flatten_list(val)
+
+        return val
+
+    def _flatten_list(self, lst):
+        """Recursivly flatten list"""
+        result = []
+        for item in lst:
+            if self._is_list(item):
+                result.extend(self._flatten_list(item))
+            else:
+                result.append(item)
+        return result

@@ -225,8 +225,8 @@ Generates random noise with default shape of aither first input or maximum of in
   - `w`, `x`, `y`, `z`
 - **INSIDE IFFT**
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
-  - `F` or `frequency_count` � frequency count (freq domain, iFFT only)
-  - `K` or `frequency` � isotropic frequency (Euclidean norm of indices, iFFT only)
+  - `F` or `frequency_count` - frequency count (freq domain, iFFT only)
+  - `K` or `frequency` - isotropic frequency (Euclidean norm of indices, iFFT only)
   - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
   - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
 - **IMAGE and LATENT**:
@@ -249,16 +249,16 @@ Generates random noise with default shape of aither first input or maximum of in
   - `N` or `channel_count` - count of channels
   - `C` or `channel` - channel of audio
   - `S` or `sample` – current audio sample
-  - `S` or `sample` � current audio sample
+  - `S` or `sample` - current audio sample
   - `T` or `sample_count` - audio lenght in samples
-  - `R` or `sample_rate` � sample rate
+  - `R` or `sample_rate` - sample rate
 
 - **VIDEO**
   - refer to `IMAGE and LATENT` for visual part (but `batch` is `frame` and `batch_count` is `frame_count`)
   - refer to `AUDIO` for sound part
 - **NOISE**
   - refer to `IMAGE and LATENT` for most variables
-  - `I` or `input_latent` � latent used as input to generate noise before noise is generated into it
+  - `I` or `input_latent` - latent used as input to generate noise before noise is generated into it
 - **GUIDER**
   - refer to `IMAGE and LATENT`
   - `sigma` - current sigma value

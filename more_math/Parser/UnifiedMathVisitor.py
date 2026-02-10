@@ -2090,3 +2090,35 @@ class UnifiedMathVisitor(MathExprVisitor):
             else:
                 result.append(item)
         return result
+
+    def visitCrossFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+
+        try:
+            # Cross product requires vectors with 3-component last dimension (supports broadcasting)
+            if a.ndim < 1 or b.ndim < 1:
+                raise ValueError("Cross product requires at least 1D tensors")
+
+            if a.shape[-1] != 3 or b.shape[-1] != 3:
+                raise ValueError("Cross product requires last dimension size = 3")
+
+            return torch.cross(a, b, dim=-1)
+        except ValueError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: cross({a.shape}, {b.shape}): {str(e)}"
+            raise ValueError(error_msg)
+
+    def visitMatmulFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+
+        try:
+            if a.ndim < 1 or b.ndim < 1:
+                raise ValueError("matmul requires tensors with at least 1 dimension")
+            return torch.matmul(a, b)
+        except RuntimeError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: matmul({a.shape}, {b.shape}): Incompatible shapes for matrix multiplication - {str(e)}"
+            raise ValueError(error_msg)
+        except ValueError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: matmul({a.shape}, {b.shape}): {str(e)}"
+            raise ValueError(error_msg)

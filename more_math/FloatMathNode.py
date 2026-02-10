@@ -84,6 +84,7 @@ class FloatMathNode(io.ComfyNode):
         variables["x"] = V.get("V5", 0.0)
         variables["y"] = V.get("V6", 0.0)
         variables["z"] = V.get("V7", 0.0)
+        stack = stack.deepcopy() if stack is not None else {}
 
         # Populate all V inputs
         for k, val in V.items():

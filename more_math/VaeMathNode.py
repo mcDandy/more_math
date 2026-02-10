@@ -83,6 +83,7 @@ class VAEMathNode(io.ComfyNode):
                       break
         if a is None:
              raise ValueError("At least one input VAE is required.")
+        stack = stack.deepcopy() if stack is not None else {}
 
 
         # Prepare VAE patchers for calculation

@@ -75,6 +75,7 @@ class CLIPMathNode(io.ComfyNode):
     def execute(cls, V, F, Expression, length_mismatch="tile",stack={}) -> io.NodeOutput:
         # Determine reference CLIP
         a = V.get("V0")
+        stack = stack.deepcopy() if stack is not None else {}
         if a is None:
              for m in V.values():
                  if m is not None:

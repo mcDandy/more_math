@@ -74,6 +74,7 @@ class NoiseMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, Noise, V,F,stack={}):
+        stack = stack.deepcopy() if stack is not None else {}
         return (NoiseExecutor(V,F, Noise,stack),)
 
 

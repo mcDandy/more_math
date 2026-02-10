@@ -87,7 +87,7 @@ class SigmasMathNode(io.ComfyNode):
 
         if ref_image is None:
              raise ValueError("At least one input is required.")
-
+        stack = stack.deepcopy() if stack is not None else {}
         a = V.get("V0")
         b = V.get("V1")
         c = V.get("V2")

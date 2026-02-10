@@ -100,6 +100,7 @@ class LatentMathNode(io.ComfyNode):
 
         if ref_latent is None:
              raise ValueError("At least one input is required.")
+        stack = stack.deepcopy() if stack is not None else {}
 
         # Identify if any input is a NestedTensor and track original sizes for restoration
         stacked = False

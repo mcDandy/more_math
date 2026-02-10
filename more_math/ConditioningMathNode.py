@@ -90,6 +90,7 @@ class ConditioningMathNode(io.ComfyNode):
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
+        stack = stack.deepcopy() if stack is not None else {}
 
         # Extract tensors and pooled outputs
         tensors = {}

@@ -76,6 +76,8 @@ class ModelMathNode(io.ComfyNode):
     def execute(cls, V, F, Expression, length_mismatch="tile",stack={}) -> io.NodeOutput:
         # Determine reference model for cloning
         a = V.get("V0")
+        stack = stack.deepcopy() if stack is not None else {}
+
         if a is None:
             # Try finding first valid model
             for m in V.values():

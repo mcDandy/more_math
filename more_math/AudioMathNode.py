@@ -91,7 +91,7 @@ class AudioMathNode(io.ComfyNode):
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, dict) and "waveform" in v]
         if not tensor_keys:
              raise ValueError("At least one audio input is required.")
-
+        stack = stack.deepcopy() if stack is not None else {}
         waveforms = {k: V[k]["waveform"] for k in tensor_keys}
         sample_rates = {k + "sr": V[k].get("sample_rate", 44100) for k in tensor_keys}
 

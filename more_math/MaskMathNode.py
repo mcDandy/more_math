@@ -85,7 +85,7 @@ class MaskMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
 
         tensors = [V[k] for k in tensor_keys]
-
+        stack = stack.deepcopy() if stack is not None else {}
         # Normalize all tensors together
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
         V_norm = dict(zip(tensor_keys, normalized_tensors))

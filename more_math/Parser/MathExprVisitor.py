@@ -609,6 +609,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#MotionMaskFunc.
+    def visitMotionMaskFunc(self, ctx:MathExprParser.MotionMaskFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FlowToImageFunc.
+    def visitFlowToImageFunc(self, ctx:MathExprParser.FlowToImageFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -731,6 +741,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#MatmulFunc.
     def visitMatmulFunc(self, ctx:MathExprParser.MatmulFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FlowApplyFunc.
+    def visitFlowApplyFunc(self, ctx:MathExprParser.FlowApplyFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RifeFunc.
+    def visitRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
         return self.visitChildren(ctx)
 
 

@@ -3,6 +3,7 @@ import torch
 import math
 import inspect
 import torch.nn.functional as F
+from . import optical_flow_utils as ofu
 from antlr4 import TerminalNode
 from .MathExprVisitor import MathExprVisitor
 from ..helper_functions import generate_dim_variables
@@ -84,7 +85,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             return last_result.value
         return last_result
     def _is_tensor(self, val):
-        return isinstance(val, torch.Tensor)
+        return isinstance(val, torch.Tensor) or getattr(val, "is_nested", False)
 
     def _is_list(self, val):
         return isinstance(val, (list, tuple))
@@ -896,8 +897,15 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitPermuteFunc(self, ctx):
         tsr = self._promote_to_tensor((yield ctx.expr(0)))
         dims = (yield ctx.expr(1))
+
+        # Ensure dims is a list of integers
         if isinstance(dims, torch.Tensor):
             dims = dims.flatten().long().tolist()
+        elif isinstance(dims, (list, tuple)):
+            dims = [int(0.5 + float(d)) for d in dims] # Round floats to safe ints
+        elif isinstance(dims, (int, float)):
+            dims = [int(0.5 + float(dims))]
+
         return tsr.permute(*dims)
 
     def visitReshapeFunc(self, ctx):
@@ -1170,6 +1178,35 @@ class UnifiedMathVisitor(MathExprVisitor):
         a = self._promote_to_tensor((yield ctx.expr(0))).float()
         b = self._promote_to_tensor((yield ctx.expr(1))).float()
         return F.cosine_similarity(a, b, dim=-1)
+
+    def visitRifeFunc(self, ctx):
+        img1 = self._promote_to_tensor((yield ctx.expr(0)))
+        img2 = self._promote_to_tensor((yield ctx.expr(1)))
+        tiling_size = 0
+        iterations = 12
+        multi_scale = False
+
+        if len(ctx.expr()) >= 3:
+            tiling_size = float((yield ctx.expr(2)))
+        if len(ctx.expr()) >= 4:
+            iterations = int((yield ctx.expr(3)))
+        if len(ctx.expr()) >= 5:
+            multi_scale = bool((yield ctx.expr(4)))
+
+        return ofu.get_optical_flow(img1, img2, tiling_size, iterations, multi_scale)
+
+    def visitMotionMaskFunc(self, ctx):
+        flow = self._promote_to_tensor((yield ctx.expr()))
+        return ofu.calculate_occlusion_mask(flow)
+
+    def visitFlowToImageFunc(self, ctx):
+        flow = self._promote_to_tensor((yield ctx.expr()))
+        return ofu.flow_to_image(flow)
+
+    def visitFlowApplyFunc(self, ctx):
+        image = self._promote_to_tensor((yield ctx.expr(0)))
+        flow = self._promote_to_tensor((yield ctx.expr(1)))
+        return ofu.apply_flow(image, flow)
 
     def visitFlipFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0)))

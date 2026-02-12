@@ -144,10 +144,12 @@ func1:
 	| ARGSORT LPAREN expr (COMMA expr)? RPAREN	# ArgsortFunc
 	| ARGMIN LPAREN expr RPAREN					# ArgminFunc
 	| ARGMAX LPAREN expr RPAREN					# ArgmaxFunc
-	| SOFTMAX LPAREN expr RPAREN					# SoftmaxFunc
-	| SOFTMIN LPAREN expr RPAREN					# SoftminFunc
+	| SOFTMAX LPAREN expr RPAREN				# SoftmaxFunc
+	| SOFTMIN LPAREN expr RPAREN				# SoftminFunc
 	| UNIQUE LPAREN expr RPAREN					# UniqueFunc
-	| FLATTEN LPAREN expr RPAREN				# FlattenFunc;
+	| FLATTEN LPAREN expr RPAREN				# FlattenFunc
+	| MOTION_MASK LPAREN expr RPAREN			# MotionMaskFunc
+	| FLOW_TO_IMAGE LPAREN expr RPAREN			# FlowToImageFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN						# PowFunc
@@ -174,7 +176,11 @@ func2:
 	| TENSOR LPAREN indexExpr (COMMA expr)? RPAREN			# EmptyTensorFunc
 	| PAD LPAREN expr COMMA expr RPAREN						# PadFunc
 	| CROSS LPAREN expr COMMA expr RPAREN					# CrossFunc
-	| MATMUL LPAREN expr COMMA expr RPAREN					# MatmulFunc;
+	| MATMUL LPAREN expr COMMA expr RPAREN					# MatmulFunc
+	| FLOW_APPLY LPAREN expr COMMA expr RPAREN				# FlowApplyFunc
+	| RIFE LPAREN expr COMMA expr (
+		COMMA expr (COMMA expr (COMMA expr)?)?
+	)? RPAREN # RifeFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN			# ClampFunc
@@ -343,6 +349,10 @@ TIMESTAMP: 'timestamp' | 'now';
 NONE: 'None' | 'none' | 'NULL' | 'null';
 BREAK: 'break';
 CONTINUE: 'continue';
+RIFE: 'rife';
+MOTION_MASK: 'motion_mask';
+FLOW_TO_IMAGE: 'flow_to_image' | 'flow_view';
+FLOW_APPLY: 'flow_apply' | 'apply_flow';
 
 TENSOR: 'tensor';
 

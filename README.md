@@ -170,6 +170,24 @@ You can also get the node from comfy manager under the name of More math.
 - `matmul(a, b)`: Matrix multiplication. For 1D vectors, performs dot product. For 2D+ tensors, performs standard matrix multiplication following NumPy rules.
 - `cross(a, b)`: Computes the cross product (vector product) of two 3D vectors. Both inputs must have last dimension = 3. Returns a vector perpendicular to both inputs.
 
+### Optical Flow
+
+- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: Calculates optical flow from `img1` to `img2` using RAFT.
+  - `img1`, `img2`: Images or video frames [B, H, W, C].
+  - `tiling_size`: (Optional) Size of tiles for high-res images. Default is `0` (auto-tile if > 2MPx). Supports fractions (e.g., `0.5`).
+  - `iterations`: (Optional) Number of flow updates (default: 12).
+  - `multi_scale`: (Optional) Whether to use a global pass for large movements (default: false (0)).
+  - **Returns**: Flow vectors [B, H, W, 2].
+- `motion_mask(flow)`: Generates an occlusion/motion mask from optical flow vectors.
+  - `flow`: Flow vectors [B, H, W, 2].
+  - **Returns**: Mask [B, H, W] in range [0, 1].
+- `flow_to_image(flow)` or `flow_view(flow)`: Converts flow vectors to an RGB image for visualization.
+  - `flow`: Flow vectors [B, H, W, 2].
+  - **Returns**: RGB image [B, H, W, 3].
+- `flow_apply(image, flow)` or `apply_flow(image, flow)`: Warps an image using optical flow vectors.
+  - `image`: Image [B, H, W, C].
+  - `flow`: Flow vectors [B, H, W, 2] from `rife()`.
+  - **Returns**: Warped image [B, H, W, C].
 
 ### FFT (Tensor Only)
 
@@ -191,6 +209,7 @@ You can also get the node from comfy manager under the name of More math.
 ### Random Distributions
 
 Generates random noise with default shape of aither first input or maximum of input sizes, depending on node setting.
+
 - `random_normal(seed,[shape])` or `randn` or `noise`: generates a random tensor with normal distribution (var=1, mean=0).
 - `random_uniform(seed,[shape])` or `rand`: generates a random tensor with uniform distribution [0, 1).
 - `random_exponential(seed, lambda,[shape])` or `rande`: generates a random tensor with exponential distribution.

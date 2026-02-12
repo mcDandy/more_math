@@ -1088,6 +1088,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#MotionMaskFunc.
+    def enterMotionMaskFunc(self, ctx:MathExprParser.MotionMaskFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MotionMaskFunc.
+    def exitMotionMaskFunc(self, ctx:MathExprParser.MotionMaskFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowToImageFunc.
+    def enterFlowToImageFunc(self, ctx:MathExprParser.FlowToImageFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowToImageFunc.
+    def exitFlowToImageFunc(self, ctx:MathExprParser.FlowToImageFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -1310,6 +1328,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#MatmulFunc.
     def exitMatmulFunc(self, ctx:MathExprParser.MatmulFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowApplyFunc.
+    def enterFlowApplyFunc(self, ctx:MathExprParser.FlowApplyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowApplyFunc.
+    def exitFlowApplyFunc(self, ctx:MathExprParser.FlowApplyFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RifeFunc.
+    def enterRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RifeFunc.
+    def exitRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
         pass
 
 

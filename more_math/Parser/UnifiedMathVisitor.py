@@ -2232,7 +2232,36 @@ class UnifiedMathVisitor(MathExprVisitor):
         # Handle tensor operations
         if self._is_tensor(a) or self._is_tensor(b):
             if torch_op:
-                return torch_op(a, b).contiguous()
+                # View tensors as integers if needed (bitwise ops require integer types)
+                original_dtype_a = None
+                original_dtype_b = None
+                
+                if self._is_tensor(a):
+                    original_dtype_a = a.dtype
+                    if a.dtype not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                        # View as integer, don't convert values
+                        elem_size = a.element_size()
+                        view_dtype = self._get_bitwise_view_dtype(elem_size)
+                        a = a.view(view_dtype)
+                
+                if self._is_tensor(b):
+                    original_dtype_b = b.dtype
+                    if b.dtype not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                        # View as integer, don't convert values
+                        elem_size = b.element_size()
+                        view_dtype = self._get_bitwise_view_dtype(elem_size)
+                        b = b.view(view_dtype)
+                
+                result = torch_op(a, b).contiguous()
+                
+                # View back to original dtype if we viewed a as non-integer
+                if original_dtype_a is not None and original_dtype_a not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                    result = result.view(original_dtype_a)
+                # View back to original dtype if we viewed b as non-integer (and didn't already view from a)
+                elif original_dtype_b is not None and original_dtype_b not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                    result = result.view(original_dtype_b)
+                
+                return result.contiguous()
             return scalar_op(a, b)
 
         return scalar_op(a, b)

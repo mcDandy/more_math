@@ -308,17 +308,17 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitMulExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.shiftExpr()
         return self._bin_op(a, b, torch.mul, lambda a, b: a * b)
 
     def visitDivExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.shiftExpr()
         return self._bin_op(a, b, torch.div, lambda a, b: a / b)
 
     def visitModExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.shiftExpr()
         return self._bin_op(a, b, torch.remainder, lambda a, b: a % b)
 
     def visitPowExp(self, ctx):

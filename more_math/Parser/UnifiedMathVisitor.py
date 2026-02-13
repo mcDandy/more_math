@@ -7,6 +7,7 @@ from . import optical_flow_utils as ofu
 from antlr4 import TerminalNode
 from .MathExprVisitor import MathExprVisitor
 from ..helper_functions import generate_dim_variables
+import struct
 
 
 class ReturnSignal:
@@ -737,9 +738,10 @@ class UnifiedMathVisitor(MathExprVisitor):
              # Basic safety fallback if dims don't match, though robust logic might handle slices properly if we truncate?
              # Let's enforce or just take first N?
              # For robustness, we'll assume user provides correct dims or we raise error?
-             # Given "lists described in get_value" implies stricter checking.
-             if len(p_l) != inp.ndim: raise ValueError(f"{ctx.start.line}:{ctx.start.column}: crop: position dim {len(p_l)} != input dim {inp.ndim}")
-             if len(s_l) != inp.ndim: raise ValueError(f"{ctx.start.line}:{ctx.start.column}: crop: size dim {len(s_l)} != input dim {inp.ndim}")
+             given_p = len(p_l)
+             given_s = len(s_l)
+             if len(p_l) != inp.ndim: raise ValueError(f"{ctx.start.line}:{ctx.start.column}: crop: position dim {given_p} != input dim {inp.ndim}")
+             if len(s_l) != inp.ndim: raise ValueError(f"{ctx.start.line}:{ctx.start.column}: crop: size dim {given_s} != input dim {inp.ndim}")
 
         out_tensor = torch.zeros(tuple(s_l), dtype=inp.dtype, device=inp.device)
 
@@ -2159,3 +2161,51 @@ class UnifiedMathVisitor(MathExprVisitor):
         except ValueError as e:
             error_msg = f"{ctx.start.line}:{ctx.start.column}: matmul({a.shape}, {b.shape}): {str(e)}"
             raise ValueError(error_msg)
+
+    def visitBitAndFunc(self, ctx):
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_and(x, y), lambda x, y: x & y)
+
+    def visitBitXorFunc(self, ctx):
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_xor(x, y), lambda x, y: x ^ y)
+
+    def visitBitOrFunc(self, ctx):
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_or(x, y), lambda x, y: x | y)
+
+    def visitBitNotFunc(self, ctx):
+        v = (yield ctx.expr())
+        return self._bitwise_not(v)
+
+    def _bitwise_not(self, v):
+        """Unary bitwise NOT handling for tensors, lists and scalars."""
+        if self._is_tensor(v):
+            t = self._promote_to_tensor(v)
+            elem_size = t.element_size() if hasattr(t, 'element_size') else 4
+            view_dtype = torch.int64 if elem_size == 8 else torch.int32
+            bits = t.view(view_dtype)
+            res_bits = torch.bitwise_not(bits)
+            return res_bits.view(t.dtype)
+
+        if self._is_list(v):
+            return [self._bitwise_not(x) for x in v]
+
+        # Scalar
+        if isinstance(v, int):
+            return ~v
+
+        # For floats or other scalars, operate on bit pattern
+        fmt = 'd' if isinstance(v, float) else 'q'
+        width = struct.calcsize(fmt) * 8
+        bit_fmt = 'Q'
+        a_bits = struct.unpack(bit_fmt, struct.pack(fmt, v))[0]
+        mask = (1 << width) - 1
+        res_bits = (~a_bits) & mask
+        try:
+            return struct.unpack(fmt, struct.pack(bit_fmt, res_bits))[0]
+        except struct.error:
+            return int(res_bits)

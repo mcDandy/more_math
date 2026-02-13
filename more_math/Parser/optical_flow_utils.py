@@ -13,11 +13,12 @@ def get_raft_model(device):
         _raft_model = raft_large(weights=weights, progress=False).to(device).eval()
     return _raft_model
 
-def warp(x, flow):
+def warp(x, flow, padding_mode='reflection'):
     """
     Warps an image or tensor using the given flow.
     x: [B, C, H, W]
     flow: [B, 2, H, W] (flow in pixels)
+    padding_mode: passed to F.grid_sample (e.g. 'zeros' for occlusion detection)
     """
     b, c, h, w = x.shape
     device = flow.device # Use flow device as the master device
@@ -40,9 +41,9 @@ def warp(x, flow):
     v_grid_x = 2.0 * v_grid[:, 0, :, :] / max(w - 1, 1) - 1.0
     v_grid_y = 2.0 * v_grid[:, 1, :, :] / max(h - 1, 1) - 1.0
     
-    v_grid = torch.stack((v_grid_x, v_grid_y), dim=3) # [B, H, W, 2]
+    v_grid = torch.stack((v_grid_x, v_grid_y), dim=3) # [B, H, W, 2] with (x, y)
     
-    return F.grid_sample(x, v_grid, mode='bilinear', padding_mode='reflection', align_corners=True)
+    return F.grid_sample(x, v_grid, mode='bilinear', padding_mode=padding_mode, align_corners=True)
 
 def preprocess_image(img, device):
     """
@@ -172,29 +173,32 @@ def calculate_occlusion_mask(flow):
     """
     Calculates a disocclusion mask: pixels revealed by motion that have no
     valid source data (e.g. background uncovered when an object moves away).
-    
-    flow: [B, H, W, 2]
+
+    flow: [B, H, W, 2] or [H, W, 2]
     Returns: [B, H, W] mask (1.0 = disoccluded/revealed, 0.0 = valid)
     """
-    if flow.ndim == 3:
+    was_single = (flow.ndim == 3)
+    if was_single:
         flow = flow.unsqueeze(0)
-    
+
+    # sanitize flow
+    flow = torch.nan_to_num(flow, nan=0.0, posinf=0.0, neginf=0.0)
+
     b, h, w, _ = flow.shape
     device = flow.device
-    
+
     # [B, H, W, 2] -> [B, 2, H, W] for warp()
     flow_nchw = flow.movedim(-1, 1)
-    
+
     # Warp a solid-ones image with the flow.
-    # Where the warped result < 1.0, those pixels sampled from outside the
-    # image boundary or from a region that moved away -> disoccluded.
+    # Use zero padding so samples from outside are 0, making disocclusions visible
     ones = torch.ones((b, 1, h, w), device=device)
-    warped_ones = warp(ones, flow_nchw)  # [B, 1, H, W]
-    
+    warped_ones = warp(ones, flow_nchw, padding_mode='zeros')  # [B, 1, H, W]
+
     # Pixels that are < threshold are disoccluded
     mask = 1.0 - warped_ones.squeeze(1).clamp(0.0, 1.0)  # [B, H, W]
-    
-    return mask
+
+    return mask.squeeze(0) if was_single else mask
 
 def apply_flow(image, flow):
     """
@@ -303,35 +307,3 @@ def _tiled_flow(model, img1, img2, tiling_size, iterations):
             weights[:, :, y:y+t_h, x:x+t_w] += layer_mask
             
     return output_flow / torch.clamp(weights, min=1e-6)
-
-def calculate_occlusion_mask(flow):
-    """
-    Calculates occlusion mask using flow divergence.
-    flow: [B, H, W, 2]
-    Returns: [B, H, W] mask (1.0 = occluded)
-    """
-    b, h, w, _ = flow.shape
-    device = flow.device
-    
-    # [B, H, W, 2] -> [B, 2, H, W]
-    u = flow[..., 0]
-    v = flow[..., 1]
-    
-    # Gradient of flow
-    du_dx = torch.zeros_like(u)
-    du_dx[:, :, 1:-1] = (u[:, :, 2:] - u[:, :, :-2]) / 2.0
-    
-    dv_dy = torch.zeros_like(v)
-    dv_dy[:, 1:-1, :] = (v[:, 2:, :] - v[:, :-2, :]) / 2.0
-    
-    # Divergence
-    div = du_dx + dv_dy
-    
-    # Occlusion heuristic: negative divergence indicates compression (potential occlusion)
-    # and positive divergence indicates expansion.
-    # We take the absolute divergence and threshold it.
-    mask = torch.abs(div)
-    
-    # Normalize to 0-1
-    mask = (mask - mask.min()) / (mask.max() - mask.min() + 1e-6)
-    return mask

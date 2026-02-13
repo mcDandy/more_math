@@ -125,10 +125,10 @@ null
 'motion_mask'
 null
 null
-'band'
-'bor'
-'xor'
-'bnot'
+null
+null
+null
+null
 null
 'tensor'
 '+'

@@ -508,12 +508,12 @@ class MathExprParser ( Parser ):
                      "<INVALID>", "'unique'", "'softmax'", "'softmin'", 
                      "'flatten'", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "'break'", "'continue'", "'rife'", "'motion_mask'", 
-                     "<INVALID>", "<INVALID>", "'band'", "'bor'", "'xor'", 
-                     "'bnot'", "<INVALID>", "'tensor'", "'+'", "'-'", "'*'", 
-                     "'/'", "'%'", "'^'", "'<<'", "'>>'", "'>='", "'>'", 
-                     "'<='", "'<'", "'=='", "'='", "'!='", "'|'", "'('", 
-                     "')'", "','", "';'", "'->'", "'['", "']'", "'?'", "':'", 
-                     "'{'", "'}'" ]
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "'tensor'", 
+                     "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", "'<<'", "'>>'", 
+                     "'>='", "'>'", "'<='", "'<'", "'=='", "'='", "'!='", 
+                     "'|'", "'('", "')'", "','", "';'", "'->'", "'['", "']'", 
+                     "'?'", "':'", "'{'", "'}'" ]
 
     symbolicNames = [ "<INVALID>", "SIN", "COS", "TAN", "ASIN", "ACOS", 
                       "ATAN", "ATAN2", "SINH", "COSH", "TANH", "ASINH", 

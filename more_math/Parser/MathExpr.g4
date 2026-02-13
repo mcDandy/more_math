@@ -365,10 +365,10 @@ FLOW_TO_IMAGE: 'flow_to_image' | 'flow_view';
 FLOW_APPLY: 'flow_apply' | 'apply_flow';
 
 // Bitwise textual operators (now used as function names)
-BAND: 'band';
-BOR: 'bor';
-XOR: 'xor';
-BNOT: 'bnot';
+BAND: 'band'|'bitwise_and';
+BOR: 'bor'|'bitwise_or';
+XOR: 'bxor'|'bitwise_xor';
+BNOT: 'bnot'|'bitwise_not';
 BITCOUNT: 'bitcount' | 'popcount' | 'popcnt';
 
 TENSOR: 'tensor';

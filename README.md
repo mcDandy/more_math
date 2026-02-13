@@ -231,7 +231,7 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 #### Bitwise Functions
 - `band(a, b)` or `bitwise_and(a, b)`: Bitwise AND. Returns bits set in both operands.
 - `bor(a, b)` or `bitwise_or(a, b)`: Bitwise OR. Returns bits set in either operand.
-- `xor(a, b)` or `bitwise_xor(a, b)`: Bitwise XOR. Returns bits set in exactly one operand.
+- `bxor(a, b)` or `bitwise_xor(a, b)`: Bitwise XOR. Returns bits set in exactly one operand.
 - `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
 - `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
 

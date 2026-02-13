@@ -51,6 +51,7 @@ You can also get the node from comfy manager under the name of More math.
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
+- Bitwise Shifts: `<<`, `>>` (left shift, right shift)
 - Indexing: `x[i]` or `x[i, j, ...]` - Selects a sublist (if index count < number of dimensions) or value at position.
 - Lists: `[v1, v2, ...]` (Vector math supported, mostly usefull in `conv` and `permute`)
   - You can also use lists to do math with input tensor (image, noise, conditioing, latent, audio) which results in batched output as long as batch size is different to list size.
@@ -81,7 +82,7 @@ You can also get the node from comfy manager under the name of More math.
 - `gamma(x)`: Gamma function.
 - `dist(x1, y1, x2, y2)` or `distance`: Euclidean distance between points (x1, y1) and (x2, y2).
 - `clamp(x, min, max)`: Constrains x to be between min and max.
-- `step(x, edge)`: Returns 1.0 if x >= edge, else 0.0.
+- `step(x, edge)`: Returns 1.0 if x ≥ edge, else 0.0.
 
 ### Trigonometric
 
@@ -131,7 +132,7 @@ You can also get the node from comfy manager under the name of More math.
 - `moment(x, a, k)`: Returns the k-th moment of x centered around a.
 - `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for complex numbers).
 - `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for complex numbers)
-- `topk_ind(x, k)` or `topk_indices`: Returns the **indices** of the top K largest values in the flattened tensor.
+- `topk_ind(x, k)` or `topk_indices: Returns the **indices** of the top K largest values in the flattened tensor.
 - `botk_ind(x, k)` or `botk_indices`: Returns the **indices** of the bottom K smallest values in the flattened tensor.
 - `sort(x)`: Sorts elements in ascending order along the last dimension.
 - `argsort(x)` or `argsort(x, descending)`: Returns the **indices** that would sort the tensor/list. Optional second parameter for descending order.
@@ -217,6 +218,44 @@ Generates random noise with default shape of aither first input or maximum of in
 - `random_log_normal(seed, mean, std,[shape])` or `randln`: generates a random tensor with log-normal distribution.
 - `random_bernoulli(seed, p,[shape])` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor. If p is tensor, shape is ignored.
 - `random_poisson(seed, lambda,[shape])` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
+
+### Bitwise Operations
+
+Bitwise operations work with scalars, tensors, and lists, preserving bit patterns (especially important for floats where bit patterns are preserved, not values converted).
+
+#### Shift Operators
+- `a << b`: Left shift operator. Shifts bits of `a` left by `b` positions.
+- `a >> b`: Right shift operator. Shifts bits of `a` right by `b` positions.
+
+**Examples**:
+```
+5 << 2          # Returns: 20 (0b0101 << 2 = 0b10100)
+20 >> 2         # Returns: 5 (0b10100 >> 2 = 0b0101)
+[1, 2, 4] << 1  # Returns: [2, 4, 8]
+```
+
+#### Bitwise Functions
+- `band(a, b)` or `bitwise_and(a, b)`: Bitwise AND. Returns bits set in both operands.
+- `bor(a, b)` or `bitwise_or(a, b)`: Bitwise OR. Returns bits set in either operand.
+- `xor(a, b)` or `bitwise_xor(a, b)`: Bitwise XOR. Returns bits set in exactly one operand.
+- `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
+- `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
+
+**Examples**:
+```
+band(5, 3)      # Returns: 1 (0b0101 & 0b0011 = 0b0001)
+bor(5, 3)       # Returns: 7 (0b0101 | 0b0011 = 0b0111)
+xor(5, 3)       # Returns: 6 (0b0101 ^ 0b0011 = 0b0110)
+bnot(5)         # Returns: inverted bit pattern
+bitcount(5)     # Returns: 2.0 (0b0101 has 2 set bits)
+bitcount(15)    # Returns: 4.0 (0b1111 has 4 set bits)
+```
+
+**Bit Pattern Preservation**:
+- **Integers**: Direct bitwise operations
+- **Floats**: Bit patterns are preserved using `struct` module (pack float→int, operate, unpack int→float)
+- **Tensors**: Uses `.view()` to reinterpret bytes without value conversion
+- **Lists**: Element-wise operations applied to each element
 
 ### Stack
 

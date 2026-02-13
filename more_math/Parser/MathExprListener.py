@@ -296,6 +296,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#ToShift.
+    def enterToShift(self, ctx:MathExprParser.ToShiftContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToShift.
+    def exitToShift(self, ctx:MathExprParser.ToShiftContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#MulExp.
     def enterMulExp(self, ctx:MathExprParser.MulExpContext):
         pass
@@ -320,6 +329,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#DivExp.
     def exitDivExp(self, ctx:MathExprParser.DivExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RShiftExp.
+    def enterRShiftExp(self, ctx:MathExprParser.RShiftExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RShiftExp.
+    def exitRShiftExp(self, ctx:MathExprParser.RShiftExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LShiftExp.
+    def enterLShiftExp(self, ctx:MathExprParser.LShiftExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LShiftExp.
+    def exitLShiftExp(self, ctx:MathExprParser.LShiftExpContext):
         pass
 
 
@@ -1112,6 +1139,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#BitNotFunc.
     def exitBitNotFunc(self, ctx:MathExprParser.BitNotFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitCountFunc.
+    def enterBitCountFunc(self, ctx:MathExprParser.BitCountFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitCountFunc.
+    def exitBitCountFunc(self, ctx:MathExprParser.BitCountFuncContext):
         pass
 
 

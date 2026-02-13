@@ -113,15 +113,15 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         # one of them is a list and one is tensor
         if self._is_tensor(a) and self._is_list(b):
-             if(a.shape[0]==len(b)):
-                A = torch.split(a,1)
+            if a.shape[0] == len(b):
+                A = torch.split(a, 1)
                 results = [self._bin_op(x.squeeze(0), y, torch_op, scalar_op) for x, y in zip(A, b)]
                 # Ensure all results are tensors
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
-             results = [self._bin_op(a, x, torch_op, scalar_op) for x in b]
-             results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
-             return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+            results = [self._bin_op(a, x, torch_op, scalar_op) for x in b]
+            results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+            return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
         if self._is_list(a) and self._is_tensor(b):
             if b.shape[0] == len(a):
                 B = torch.split(b, 1)
@@ -2172,6 +2172,19 @@ class UnifiedMathVisitor(MathExprVisitor):
             error_msg = f"{ctx.start.line}:{ctx.start.column}: matmul({a.shape}, {b.shape}): {str(e)}"
             raise ValueError(error_msg)
 
+    def visitToShift(self, ctx):
+        return (yield ctx.shiftExpr())
+
+    def visitLShiftExp(self, ctx):
+        a = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
+        return self._bitwise_op(a, b, torch.bitwise_left_shift, self._scalar_bitwise_lshift)
+
+    def visitRShiftExp(self, ctx):
+        a = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
+        return self._bitwise_op(a, b, torch.bitwise_right_shift, self._scalar_bitwise_rshift)
+
     def visitBitAndFunc(self, ctx):
         a = (yield ctx.expr(0))
         b = (yield ctx.expr(1))
@@ -2190,6 +2203,10 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitBitNotFunc(self, ctx):
         v = (yield ctx.expr())
         return self._bitwise_not(v)
+
+    def visitBitCountFunc(self, ctx):
+        v = (yield ctx.expr())
+        return self._bitwise_popcount(v)
 
     def _bitwise_op(self, a, b, torch_op, scalar_op):
         """Binary bitwise operation handler supporting tensors, lists, and scalars."""
@@ -2309,3 +2326,65 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.int64
         else:
             return torch.int32
+
+    def _bitwise_popcount(self, v):
+        """Count the number of set bits (1s) in the binary representation."""
+        if self._is_tensor(v):
+            v_t = self._promote_to_tensor(v).flatten().long()
+            # Use numpy's bin and count for efficiency
+            counts = torch.tensor([bin(int(x) & 0xFFFFFFFFFFFFFFFF).count('1') for x in v_t.tolist()], 
+                                 dtype=torch.float32, device=v_t.device)
+            if counts.numel() == 1:
+                return float(counts.item())
+            return counts
+        
+        if self._is_list(v):
+            return [self._bitwise_popcount(x) for x in v]
+        
+        # Scalar - count set bits
+        v_int = int(v)
+        return float(bin(v_int & 0xFFFFFFFFFFFFFFFF).count('1'))
+
+    def _scalar_bitwise_lshift(self, a, b):
+        """Scalar left shift with bit-pattern preservation for floats."""
+        b_int = int(b)
+        
+        # If a is already an int, just do the shift
+        if isinstance(a, int):
+            return a << b_int
+        
+        # For floats, preserve bit pattern
+        if isinstance(a, float):
+            fmt = 'd'  # double (64-bit)
+            bit_fmt = 'Q'  # unsigned long long
+            a_bits = struct.unpack(bit_fmt, struct.pack(fmt, a))[0]
+            result_bits = (a_bits << b_int) & ((1 << 64) - 1)  # Mask to 64 bits
+            try:
+                return struct.unpack(fmt, struct.pack(bit_fmt, result_bits))[0]
+            except struct.error:
+                return float(result_bits & ((1 << 53) - 1))  # Return mantissa if error
+        
+        # Fallback for other types
+        return int(a) << b_int
+
+    def _scalar_bitwise_rshift(self, a, b):
+        """Scalar right shift with bit-pattern preservation for floats."""
+        b_int = int(b)
+        
+        # If a is already an int, just do the shift
+        if isinstance(a, int):
+            return a >> b_int
+        
+        # For floats, preserve bit pattern
+        if isinstance(a, float):
+            fmt = 'd'  # double (64-bit)
+            bit_fmt = 'Q'  # unsigned long long
+            a_bits = struct.unpack(bit_fmt, struct.pack(fmt, a))[0]
+            result_bits = a_bits >> b_int
+            try:
+                return struct.unpack(fmt, struct.pack(bit_fmt, result_bits))[0]
+            except struct.error:
+                return float(result_bits)
+        
+        # Fallback for other types
+        return int(a) >> b_int

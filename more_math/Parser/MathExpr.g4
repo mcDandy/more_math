@@ -49,9 +49,14 @@ addExpr:
 	| mulExpr			# ToMul;
 
 mulExpr:
-	mulExpr MULT powExpr	# MulExp
-	| mulExpr DIV powExpr	# DivExp
-	| mulExpr MOD powExpr	# ModExp
+	mulExpr MULT shiftExpr	# MulExp
+	| mulExpr DIV shiftExpr	# DivExp
+	| mulExpr MOD shiftExpr	# ModExp
+	| shiftExpr			# ToShift;
+
+shiftExpr:
+	shiftExpr LSHIFT powExpr	# LShiftExp
+	| shiftExpr RSHIFT powExpr	# RShiftExp
 	| powExpr			# ToPow;
 
 powExpr: unaryExpr POW powExpr # PowExp | unaryExpr # ToUnary;
@@ -150,7 +155,8 @@ func1:
 	| FLATTEN LPAREN expr RPAREN		# FlattenFunc
 	| MOTION_MASK LPAREN expr RPAREN	# MotionMaskFunc
 	| FLOW_TO_IMAGE LPAREN expr RPAREN	# FlowToImageFunc
-	| BNOT LPAREN expr RPAREN		# BitNotFunc;
+	| BNOT LPAREN expr RPAREN		# BitNotFunc
+	| BITCOUNT LPAREN expr RPAREN	# BitCountFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc
@@ -363,6 +369,7 @@ BAND: 'band';
 BOR: 'bor';
 XOR: 'xor';
 BNOT: 'bnot';
+BITCOUNT: 'bitcount' | 'popcount' | 'popcnt';
 
 TENSOR: 'tensor';
 
@@ -372,6 +379,8 @@ MULT: '*';
 DIV: '/';
 MOD: '%';
 POW: '^';
+LSHIFT: '<<';
+RSHIFT: '>>';
 
 GE: '>=';
 GT: '>';

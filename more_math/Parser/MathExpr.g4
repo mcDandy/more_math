@@ -212,18 +212,18 @@ funcN:
 	| SMAX LPAREN expr (COMMA expr)* RPAREN	# SMaxFunc
 	| MAP LPAREN expr (COMMA expr)+ RPAREN	# MapFunc
 	| EZCONV LPAREN expr (COMMA expr)+ RPAREN	# EzConvFunc
-	| CONV LPAREN expr (COMMA expr)+ RPERN	# ConvFunc
-	| PERM LPAREN expr COMMA expr RPERN	# PermuteFunc
-	| RESHAPE LPAREN expr COMMA expr RPERN	# ReshapeFunc;
+	| CONV LPAREN expr (COMMA expr)+ RPAREN	# ConvFunc
+	| PERM LPAREN expr COMMA expr RPAREN	# PermuteFunc
+	| RESHAPE LPAREN expr COMMA expr RPAREN	# ReshapeFunc;
 
 funcNoise:
-	NOISE LPAREN expr (COMMA expr)? RPERN				# NoiseFunc
-	| RAND LPAREN expr (COMMA expr)? RPERN				# RandFunc
-	| EXPONENTIAL LPAREN expr COMMA expr (COMMA expr)? RPERN	# ExponentialFunc
-	| BERNOULLI LPAREN expr COMMA expr (COMMA expr)? RPERN	# BernoulliFunc
-	| POISSON LPAREN expr COMMA expr (COMMA expr)? RPERN		# PoissonFunc
-	| CAUCHY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPERN	# CauchyFunc
-	| LOGNORMAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPERN	# LogNormalFunc;
+	NOISE LPAREN expr (COMMA expr)? RPAREN				# NoiseFunc
+	| RAND LPAREN expr (COMMA expr)? RPAREN				# RandFunc
+	| EXPONENTIAL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# ExponentialFunc
+	| BERNOULLI LPAREN expr COMMA expr (COMMA expr)? RPAREN	# BernoulliFunc
+	| POISSON LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PoissonFunc
+	| CAUCHY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# CauchyFunc
+	| LOGNORMAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LogNormalFunc;
 
 // LEXER RULES
 
@@ -378,7 +378,7 @@ GT: '>';
 LE: '<=';
 LT: '<';
 EQ: '==';
-EQUEALS: '=',
+EQUEALS: '=';
 NE: '!=';
 PIPE: '|';
 LPAREN: '(';

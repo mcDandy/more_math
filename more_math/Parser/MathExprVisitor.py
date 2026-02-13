@@ -619,6 +619,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BitNotFunc.
+    def visitBitNotFunc(self, ctx:MathExprParser.BitNotFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -751,6 +756,21 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#RifeFunc.
     def visitRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BitAndFunc.
+    def visitBitAndFunc(self, ctx:MathExprParser.BitAndFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BitXorFunc.
+    def visitBitXorFunc(self, ctx:MathExprParser.BitXorFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BitOrFunc.
+    def visitBitOrFunc(self, ctx:MathExprParser.BitOrFuncContext):
         return self.visitChildren(ctx)
 
 

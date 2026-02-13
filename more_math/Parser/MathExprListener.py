@@ -1106,6 +1106,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#BitNotFunc.
+    def enterBitNotFunc(self, ctx:MathExprParser.BitNotFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitNotFunc.
+    def exitBitNotFunc(self, ctx:MathExprParser.BitNotFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -1346,6 +1355,33 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#RifeFunc.
     def exitRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitAndFunc.
+    def enterBitAndFunc(self, ctx:MathExprParser.BitAndFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitAndFunc.
+    def exitBitAndFunc(self, ctx:MathExprParser.BitAndFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitXorFunc.
+    def enterBitXorFunc(self, ctx:MathExprParser.BitXorFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitXorFunc.
+    def exitBitXorFunc(self, ctx:MathExprParser.BitXorFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitOrFunc.
+    def enterBitOrFunc(self, ctx:MathExprParser.BitOrFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitOrFunc.
+    def exitBitOrFunc(self, ctx:MathExprParser.BitOrFuncContext):
         pass
 
 

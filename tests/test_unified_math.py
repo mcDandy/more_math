@@ -273,8 +273,13 @@ def test_quartil():
     t = torch.tensor(l, dtype=torch.float32)
     vars["t"] = t
 
-    assert torch.allclose(parse_and_visit("quartile(t, 2)", vars), torch.tensor(5.0))
-    assert torch.allclose(parse_and_visit("quartile(t, 1)", vars), torch.tensor(2.5))
+    res_q2 = parse_and_visit("quartile(t, 2)", vars)
+    if not isinstance(res_q2, torch.Tensor): res_q2 = torch.tensor(res_q2)
+    assert torch.allclose(res_q2, torch.tensor(5.0))
+
+    res_q1 = parse_and_visit("quartile(t, 1)", vars)
+    if not isinstance(res_q1, torch.Tensor): res_q1 = torch.tensor(res_q1)
+    assert torch.allclose(res_q1, torch.tensor(2.5))
 
     # Float inputs for quartil should be cast to int, so 0.5 -> 0 -> Min
     # verifying strict behavior or fallback
@@ -290,7 +295,10 @@ def test_percentile():
     # Percentile (0 - 100)
     assert parse_and_visit("percentile(l, 50)", vars) == 5.0 # Median
     assert parse_and_visit("percentile(l, 25)", vars) == 2.5 # Q1
-    assert torch.allclose(parse_and_visit("percentile(t, 75)", vars), torch.tensor(7.5))
+
+    res_p75 = parse_and_visit("percentile(t, 75)", vars)
+    if not isinstance(res_p75, torch.Tensor): res_p75 = torch.tensor(res_p75)
+    assert torch.allclose(res_p75, torch.tensor(7.5))
 
     # Aliases
     assert parse_and_visit("prcnt(l, 50)", vars) == 5.0

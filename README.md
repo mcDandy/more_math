@@ -227,12 +227,6 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 - `a << b`: Left shift operator. Shifts bits of `a` left by `b` positions.
 - `a >> b`: Right shift operator. Shifts bits of `a` right by `b` positions.
 
-**Examples**:
-```
-5 << 2          # Returns: 20 (0b0101 << 2 = 0b10100)
-20 >> 2         # Returns: 5 (0b10100 >> 2 = 0b0101)
-[1, 2, 4] << 1  # Returns: [2, 4, 8]
-```
 
 #### Bitwise Functions
 - `band(a, b)` or `bitwise_and(a, b)`: Bitwise AND. Returns bits set in both operands.
@@ -241,14 +235,6 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 - `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
 - `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
 
-**Examples**:
-```
-band(5, 3)      # Returns: 1 (0b0101 & 0b0011 = 0b0001)
-bor(5, 3)       # Returns: 7 (0b0101 | 0b0011 = 0b0111)
-xor(5, 3)       # Returns: 6 (0b0101 ^ 0b0011 = 0b0110)
-bnot(5)         # Returns: inverted bit pattern
-bitcount(5)     # Returns: 2.0 (0b0101 has 2 set bits)
-bitcount(15)    # Returns: 4.0 (0b1111 has 4 set bits)
 ```
 
 **Bit Pattern Preservation**:

@@ -923,8 +923,15 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitReshapeFunc(self, ctx):
         tsr = self._promote_to_tensor((yield ctx.expr(0)))
         new_shape = (yield ctx.expr(1))
+        
+        # Ensure new_shape is a list of integers
         if isinstance(new_shape, torch.Tensor):
             new_shape = new_shape.flatten().long().tolist()
+        elif isinstance(new_shape, (list, tuple)):
+            new_shape = [int(float(d)) for d in new_shape]
+        elif isinstance(new_shape, (int, float)):
+            new_shape = [int(float(new_shape))]
+        
         return tsr.reshape(*new_shape)
 
     def visitPrintShapeFunc(self, ctx):

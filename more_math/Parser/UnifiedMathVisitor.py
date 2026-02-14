@@ -1850,6 +1850,100 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.poisson(lam, generator=generator).to(device=self.device)
         return torch.poisson(torch.full(shape_arg, lam, device=self.device), generator=generator)
 
+    def visitGammaDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        shape_val = yield ctx.expr(1)
+        shape_param = float(shape_val.item()) if self._is_tensor(shape_val) else float(shape_val)
+        scale_val = yield ctx.expr(2)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.Gamma(shape_param, 1.0 / scale)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
+    def visitBetaDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        alpha_val = yield ctx.expr(1)
+        alpha = float(alpha_val.item()) if self._is_tensor(alpha_val) else float(alpha_val)
+        beta_val = yield ctx.expr(2)
+        beta = float(beta_val.item()) if self._is_tensor(beta_val) else float(beta_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.Beta(alpha, beta)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
+    def visitLaplaceDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        loc_val = yield ctx.expr(1)
+        loc = float(loc_val.item()) if self._is_tensor(loc_val) else float(loc_val)
+        scale_val = yield ctx.expr(2)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.Laplace(loc, scale)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
+    def visitGumbelDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        loc_val = yield ctx.expr(1)
+        loc = float(loc_val.item()) if self._is_tensor(loc_val) else float(loc_val)
+        scale_val = yield ctx.expr(2)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.Gumbel(loc, scale)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
+    def visitWeibullDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+        concentration_val = yield ctx.expr(2)
+        concentration = float(concentration_val.item()) if self._is_tensor(concentration_val) else float(concentration_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.Weibull(scale, concentration)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
+    def visitChi2DistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        df_val = yield ctx.expr(1)
+        df = float(df_val.item()) if self._is_tensor(df_val) else float(df_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 2:
+            shape_arg = (yield ctx.expr(2))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.Chi2(df)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
+    def visitStudentTDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        df_val = yield ctx.expr(1)
+        df = float(df_val.item()) if self._is_tensor(df_val) else float(df_val)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 2:
+            shape_arg = (yield ctx.expr(2))
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        dist = torch.distributions.StudentT(df)
+        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+
     def visitNvlFunc(self, ctx):
         v = yield ctx.expr(0)
         v1 = yield ctx.expr(1)
@@ -2004,12 +2098,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
 
             kh = kernel.view(1, kernel_size)
-            x_h = self._apply_conv_internal(x, kh, [kernel_size, 1], 2)
+            x_h = this._apply_conv_internal(x, kh, [kernel_size, 1], 2)
 
             kv = kernel.view(kernel_size, 1)
-            return self._apply_conv_internal(x_h, kv, [1, kernel_size], 2)
+            return this._apply_conv_internal(x_h, kv, [1, kernel_size], 2)
 
-        return self._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
+        return this._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
 
     def visitDistFunc(self, ctx):
         x1 = yield ctx.expr(0)

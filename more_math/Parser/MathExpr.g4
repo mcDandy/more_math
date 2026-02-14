@@ -229,7 +229,14 @@ funcNoise:
 	| BERNOULLI LPAREN expr COMMA expr (COMMA expr)? RPAREN	# BernoulliFunc
 	| POISSON LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PoissonFunc
 	| CAUCHY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# CauchyFunc
-	| LOGNORMAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LogNormalFunc;
+	| LOGNORMAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LogNormalFunc
+	| GAMMADIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# GammaDistFunc
+	| BETADIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# BetaDistFunc
+	| LAPLACEDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LaplaceDistFunc
+	| GUMBELDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# GumbelDistFunc
+	| WEIBULLDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# WeibullDistFunc
+	| CHI2DIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# Chi2DistFunc
+	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc;
 
 // LEXER RULES
 
@@ -331,47 +338,13 @@ EXPONENTIAL: 'rande' | 'random_exponential';
 LOGNORMAL: 'randln' | 'random_log_normal';
 BERNOULLI: 'randb' | 'random_bernoulli';
 POISSON: 'randp' | 'random_poisson';
-
-COSSIM: 'cossim';
-FLIP: 'flip';
-COV: 'cov';
-SORT: 'sort';
-COUNT: 'count' | 'length' | 'cnt';
-APPEND: 'append';
-GET_VALUE: 'get_value';
-BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle' | 'select';
-CROP: 'crop';
-PAD: 'pad';
-ARGSORT: 'argsort';
-FOR: 'for';
-IN: 'in';
-
-ARGMIN: 'argmin' | 'arg_min';
-ARGMAX: 'argmax' | 'arg_max';
-UNIQUE: 'unique';
-SOFTMAX: 'softmax';
-SOFTMIN: 'softmin';
-FLATTEN: 'flatten';
-CROSS: 'cross' | 'cross_product';
-MATMUL: 'matmul' | 'matrix_multiply' | 'mat_mul';
-
-TIMESTAMP: 'timestamp' | 'now';
-NONE: 'None' | 'none' | 'NULL' | 'null';
-BREAK: 'break';
-CONTINUE: 'continue';
-RIFE: 'rife';
-MOTION_MASK: 'motion_mask';
-FLOW_TO_IMAGE: 'flow_to_image' | 'flow_view';
-FLOW_APPLY: 'flow_apply' | 'apply_flow';
-
-// Bitwise textual operators (now used as function names)
-BAND: 'band'|'bitwise_and';
-BOR: 'bor'|'bitwise_or';
-XOR: 'bxor'|'bitwise_xor';
-BNOT: 'bnot'|'bitwise_not';
-BITCOUNT: 'bitcount' | 'popcount' | 'popcnt';
-
-TENSOR: 'tensor';
+GAMMADIST: 'randg' | 'random_gamma';
+BETADIST: 'randbeta' | 'random_beta';
+LAPLACEDIST: 'randl' | 'random_laplace';
+GUMBELDIST: 'randgumbel' | 'random_gumbel';
+WEIBULLDIST: 'randw' | 'random_weibull';
+CHI2DIST: 'randchi2' | 'random_chi2';
+STUDENTTDIST: 'randt' | 'random_studentt';
 
 PLUS: '+';
 MINUS: '-';

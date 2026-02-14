@@ -939,5 +939,40 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#GammaDistFunc.
+    def visitGammaDistFunc(self, ctx:MathExprParser.GammaDistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BetaDistFunc.
+    def visitBetaDistFunc(self, ctx:MathExprParser.BetaDistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LaplaceDistFunc.
+    def visitLaplaceDistFunc(self, ctx:MathExprParser.LaplaceDistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GumbelDistFunc.
+    def visitGumbelDistFunc(self, ctx:MathExprParser.GumbelDistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#WeibullDistFunc.
+    def visitWeibullDistFunc(self, ctx:MathExprParser.WeibullDistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Chi2DistFunc.
+    def visitChi2DistFunc(self, ctx:MathExprParser.Chi2DistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#StudentTDistFunc.
+    def visitStudentTDistFunc(self, ctx:MathExprParser.StudentTDistFuncContext):
+        return self.visitChildren(ctx)
+
+
 
 del MathExprParser

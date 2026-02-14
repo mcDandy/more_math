@@ -928,7 +928,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         if isinstance(new_shape, torch.Tensor):
             new_shape = new_shape.flatten().long().tolist()
         elif isinstance(new_shape, (list, tuple)):
-            new_shape = [int(float(d)) for d in new_shape]
+            result = []
+            for d in new_shape:
+                if self._is_tensor(d):
+                    # Handle tensor elements in list
+                    if d.numel() == 1:
+                        result.append(int(d.item()))
+                    else:
+                        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reshape expects scalar dimensions, got tensor with shape {d.shape}")
+                else:
+                    result.append(int(float(d)))
+            new_shape = result
         elif isinstance(new_shape, (int, float)):
             new_shape = [int(float(new_shape))]
         

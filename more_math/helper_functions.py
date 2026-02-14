@@ -65,7 +65,7 @@ def generate_dim_variables(tensor: torch.Tensor):
     variables = {}
     for dim, size in enumerate(tensor.shape):
         variables[f"D{dim}"] = getIndexTensorAlongDim(tensor, dim)
-        variables[f"S{dim}"] = torch.full(tensor.shape, fill_value=size, dtype=torch.float32, device=tensor.device)
+        variables[f"S{dim}"] = float(size)  # Scalar size, not tensor
     return variables
 
 

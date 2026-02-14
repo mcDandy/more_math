@@ -923,7 +923,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitReshapeFunc(self, ctx):
         tsr = self._promote_to_tensor((yield ctx.expr(0)))
         new_shape = (yield ctx.expr(1))
-        
+
         # Ensure new_shape is a list of integers
         if isinstance(new_shape, torch.Tensor):
             new_shape = new_shape.flatten().long().tolist()
@@ -941,7 +941,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             new_shape = result
         elif isinstance(new_shape, (int, float)):
             new_shape = [int(float(new_shape))]
-        
+
         return tsr.reshape(*new_shape)
 
     def visitPrintShapeFunc(self, ctx):
@@ -1860,9 +1860,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
-        generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.Gamma(shape_param, 1.0 / scale)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        
+        # Use torch.distributions.Gamma which internally handles the generator properly via torch.manual_seed
+        # We set the random state temporarily
+        old_state = torch.get_rng_state()
+        try:
+            torch.manual_seed(seed)
+            dist = torch.distributions.Gamma(shape_param, 1.0 / scale)
+            result = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            return result.to(device=self.device)
+        finally:
+            torch.set_rng_state(old_state)
 
     def visitBetaDistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
@@ -1874,40 +1882,47 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
-        generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.Beta(alpha, beta)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        
+        old_state = torch.get_rng_state()
+        try:
+            torch.manual_seed(seed)
+            dist = torch.distributions.Beta(alpha, beta)
+            result = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            return result.to(device=self.device)
+        finally:
+            torch.set_rng_state(old_state)
 
     def visitLaplaceDistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         loc_val = yield ctx.expr(1)
         loc = float(loc_val.item()) if self._is_tensor(loc_val) else float(loc_val)
         scale_val = yield ctx.expr(2)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
-        shape_arg = self.shape
-        if len(ctx.expr()) > 3:
-            shape_arg = (yield ctx.expr(3))
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.Laplace(loc, scale)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        return loc - scale * torch.sign(torch.empty(shape_arg, device=self.device).uniform_(-1, 1, generator=generator)) * torch.log(torch.empty(shape_arg, device=self.device).uniform_(0, 1, generator=generator).clamp(min=1e-10))
 
     def visitGumbelDistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         loc_val = yield ctx.expr(1)
         loc = float(loc_val.item()) if self._is_tensor(loc_val) else float(loc_val)
         scale_val = yield ctx.expr(2)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
-        shape_arg = self.shape
-        if len(ctx.expr()) > 3:
-            shape_arg = (yield ctx.expr(3))
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.Gumbel(loc, scale)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        return loc - scale * torch.log(-torch.log(torch.empty(shape_arg, device=self.device).uniform_(0, 1, generator=generator).clamp(min=1e-10)) + 1e-10)
 
     def visitWeibullDistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
+        shape_arg = self.shape;
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         scale_val = yield ctx.expr(1)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
@@ -1916,9 +1931,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        
+        # Implement Weibull using generator-aware uniform: scale * (-log(u))^(1/concentration)
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.Weibull(scale, concentration)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        u = torch.rand(shape_arg, generator=generator, device=self.device)
+        return scale * torch.pow(-torch.log(u + 1e-10), 1.0 / concentration)
 
     def visitChi2DistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
@@ -1928,9 +1945,16 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
-        generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.Chi2(df)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        
+        # Chi-squared is Gamma(df/2, 2)
+        old_state = torch.get_rng_state()
+        try:
+            torch.manual_seed(seed)
+            dist = torch.distributions.Gamma(df / 2.0, 0.5)
+            result = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            return result.to(device=self.device)
+        finally:
+            torch.set_rng_state(old_state)
 
     def visitStudentTDistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
@@ -1940,9 +1964,22 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
+        
+        # Student's t using normal and chi-squared: Z / sqrt(V/df) where Z~N(0,1) and V~Chi2(df)
         generator = torch.Generator(device=self.device).manual_seed(seed)
-        dist = torch.distributions.StudentT(df)
-        return dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg])).to(device=self.device)
+        z = torch.randn(shape_arg, generator=generator, device=self.device)
+        
+        # Generate chi-squared using the same seed + 1 to maintain determinism but different samples
+        old_state = torch.get_rng_state()
+        try:
+            torch.manual_seed(seed + 1)
+            dist = torch.distributions.Gamma(df / 2.0, 0.5)
+            v = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            v = v.to(device=self.device)
+        finally:
+            torch.set_rng_state(old_state)
+        
+        return z / torch.sqrt(v / df)
 
     def visitNvlFunc(self, ctx):
         v = yield ctx.expr(0)
@@ -2098,12 +2135,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
 
             kh = kernel.view(1, kernel_size)
-            x_h = this._apply_conv_internal(x, kh, [kernel_size, 1], 2)
+            x_h = self._apply_conv_internal(x, kh, [kernel_size, 1], 2)
 
             kv = kernel.view(kernel_size, 1)
-            return this._apply_conv_internal(x_h, kv, [1, kernel_size], 2)
+            return self._apply_conv_internal(x_h, kv, [1, kernel_size], 2)
 
-        return this._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
+        return self._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
 
     def visitDistFunc(self, ctx):
         x1 = yield ctx.expr(0)
@@ -2363,7 +2400,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 # View tensors as integers if needed (bitwise ops require integer types)
                 original_dtype_a = None
                 original_dtype_b = None
-                
+
                 if self._is_tensor(a):
                     original_dtype_a = a.dtype
                     if a.dtype not in [torch.int8, torch.int16, torch.int32, torch.int64]:
@@ -2371,7 +2408,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                         elem_size = a.element_size()
                         view_dtype = self._get_bitwise_view_dtype(elem_size)
                         a = a.view(view_dtype)
-                
+
                 if self._is_tensor(b):
                     original_dtype_b = b.dtype
                     if b.dtype not in [torch.int8, torch.int16, torch.int32, torch.int64]:
@@ -2379,16 +2416,16 @@ class UnifiedMathVisitor(MathExprVisitor):
                         elem_size = b.element_size()
                         view_dtype = self._get_bitwise_view_dtype(elem_size)
                         b = b.view(view_dtype)
-                
+
                 result = torch_op(a, b).contiguous()
-                
+
                 # View back to original dtype if we viewed a as non-integer
                 if original_dtype_a is not None and original_dtype_a not in [torch.int8, torch.int16, torch.int32, torch.int64]:
                     result = result.view(original_dtype_a)
                 # View back to original dtype if we viewed b as non-integer (and didn't already view from a)
                 elif original_dtype_b is not None and original_dtype_b not in [torch.int8, torch.int16, torch.int32, torch.int64]:
                     result = result.view(original_dtype_b)
-                
+
                 return result.contiguous()
             return scalar_op(a, b)
 
@@ -2401,7 +2438,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             elem_size = t.element_size() if hasattr(t, 'element_size') else 4
             view_dtype = self._get_bitwise_view_dtype(elem_size)
             original_dtype = t.dtype
-            
+
             bits = t.view(view_dtype)
             res_bits = torch.bitwise_not(bits)
             return res_bits.view(original_dtype).contiguous()
@@ -2448,10 +2485,10 @@ class UnifiedMathVisitor(MathExprVisitor):
             if counts.numel() == 1:
                 return float(counts.item())
             return counts
-        
+
         if self._is_list(v):
             return [self._bitwise_popcount(x) for x in v]
-        
+
         # Scalar - count set bits
         v_int = int(v)
         return float(bin(v_int & 0xFFFFFFFFFFFFFFFF).count('1'))
@@ -2459,11 +2496,11 @@ class UnifiedMathVisitor(MathExprVisitor):
     def _scalar_bitwise_lshift(self, a, b):
         """Scalar left shift with bit-pattern preservation for floats."""
         b_int = int(b)
-        
+
         # If a is already an int, just do the shift
         if isinstance(a, int):
             return a << b_int
-        
+
         # For floats, preserve bit pattern
         if isinstance(a, float):
             fmt = 'd'  # double (64-bit)
@@ -2474,18 +2511,18 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return struct.unpack(fmt, struct.pack(bit_fmt, result_bits))[0]
             except struct.error:
                 return float(result_bits & ((1 << 53) - 1))  # Return mantissa if error
-        
+
         # Fallback for other types
         return int(a) << b_int
 
     def _scalar_bitwise_rshift(self, a, b):
         """Scalar right shift with bit-pattern preservation for floats."""
         b_int = int(b)
-        
+
         # If a is already an int, just do the shift
         if isinstance(a, int):
             return a >> b_int
-        
+
         # For floats, preserve bit pattern
         if isinstance(a, float):
             fmt = 'd'  # double (64-bit)
@@ -2496,6 +2533,6 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return struct.unpack(fmt, struct.pack(bit_fmt, result_bits))[0]
             except struct.error:
                 return float(result_bits)
-        
+
         # Fallback for other types
         return int(a) >> b_int

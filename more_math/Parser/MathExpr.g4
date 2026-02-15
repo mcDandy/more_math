@@ -181,14 +181,12 @@ func2:
 	| BATCH_SHUFFLE LPAREN expr COMMA expr RPAREN	# BatchShuffleFunc
 	| PUSH LPAREN expr COMMA expr RPAREN		# PushFunc
 	| GET_VALUE LPAREN expr COMMA expr RPAREN	# GetValueFunc
-	| TENSOR LPAREN indexExpr (COMMA expr)? RPAREN	# EmptyTensorFunc
+	| TENSOR LPAREN indexExpr (COMMA expr (COMMA expr)? )? RPAREN	# EmptyTensorFunc
 	| PAD LPAREN expr COMMA expr RPAREN		# PadFunc
 	| CROSS LPAREN expr COMMA expr RPAREN		# CrossFunc
 	| MATMUL LPAREN expr COMMA expr RPAREN		# MatmulFunc
 	| FLOW_APPLY LPAREN expr COMMA expr RPAREN	# FlowApplyFunc
-	| RIFE LPAREN expr COMMA expr (
-		COMMA expr (COMMA expr (COMMA expr)?)?
-	)? RPAREN # RifeFunc
+	| RIFE LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN # RifeFunc
 	| BAND LPAREN expr COMMA expr RPAREN		# BitAndFunc
 	| XOR LPAREN expr COMMA expr RPAREN		# BitXorFunc
 	| BOR LPAREN expr COMMA expr RPAREN		# BitOrFunc;

@@ -2375,7 +2375,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitShapeFunc(self, ctx):
         val = (yield ctx.expr())
         if self._is_tensor(val):
-            return val.shape.to(self.device)
+            return torch.tensor(list(val.shape), dtype=torch.long, device=self.device)
         elif self._is_list(val):
             return torch.tensor([len(val)], dtype=torch.long, device=self.device)
         else:

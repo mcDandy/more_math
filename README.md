@@ -152,6 +152,7 @@ You can also get the node from comfy manager under the name of More math.
 - `cumprod(x)`: Returns the cumulative product of elements along the batch dimension (dim 0).
 - `tensor(shape,value)`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero.
 - `flatten(value)`: Flattens a tensor to 1D. If input is list, it flattens nested lists into a single list.
+- `shape(value)` : Returns the shape of a tensor as a tensor. If input is a list, returns lenght of the list as 1 value tensor. For numbers it returns empty tensor.
 
 ### Advanced Tensor Operations
 

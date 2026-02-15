@@ -156,7 +156,8 @@ func1:
 	| MOTION_MASK LPAREN expr RPAREN	# MotionMaskFunc
 	| FLOW_TO_IMAGE LPAREN expr RPAREN	# FlowToImageFunc
 	| BNOT LPAREN expr RPAREN		# BitNotFunc
-	| BITCOUNT LPAREN expr RPAREN	# BitCountFunc;
+	| BITCOUNT LPAREN expr RPAREN	# BitCountFunc
+	| SHAPE LPAREN expr RPAREN		# ShapeFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc
@@ -335,6 +336,7 @@ MATMUL: 'matmul';
 RIFE: 'rife';
 BNOT: 'bnot' | 'bitwise_not';
 BITCOUNT: 'bitcount' | 'popcount' | 'popcnt';
+SHAPE: 'shape';
 BAND: 'band' | 'bitwise_and';
 XOR: 'bxor' | 'bitwise_xor';
 BOR: 'bor' | 'bitwise_or';

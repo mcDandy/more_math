@@ -234,7 +234,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 indices.append(torch.tensor(idx_val, dtype=torch.long, device=self.device))
             else:
                 indices.append(int(idx_val))
-        
+
         # Use standard PyTorch/list indexing
         if self._is_tensor(val):
             idx_tuple = tuple(indices)
@@ -252,7 +252,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     idx = int(idx.item())
                 current = current[idx]
             return current
-        
+
         error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
         raise ValueError(f"{error_prefix} Indexing only supported on tensors and lists (found {type(val).__name__})")
 
@@ -1878,7 +1878,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
-        
+
         # Use torch.distributions.Gamma which internally handles the generator properly via torch.manual_seed
         # We set the random state temporarily
         old_state = torch.get_rng_state()
@@ -1900,7 +1900,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
-        
+
         old_state = torch.get_rng_state()
         try:
             torch.manual_seed(seed)
@@ -1949,7 +1949,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
-        
+
         # Implement Weibull using generator-aware uniform: scale * (-log(u))^(1/concentration)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         u = torch.rand(shape_arg, generator=generator, device=self.device)
@@ -1963,7 +1963,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
-        
+
         # Chi-squared is Gamma(df/2, 2)
         old_state = torch.get_rng_state()
         try:
@@ -1982,11 +1982,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
-        
+
         # Student's t using normal and chi-squared: Z / sqrt(V/df) where Z~N(0,1) and V~Chi2(df)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         z = torch.randn(shape_arg, generator=generator, device=self.device)
-        
+
         # Generate chi-squared using the same seed + 1 to maintain determinism but different samples
         old_state = torch.get_rng_state()
         try:
@@ -1996,7 +1996,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             v = v.to(device=self.device)
         finally:
             torch.set_rng_state(old_state)
-        
+
         return z / torch.sqrt(v / df)
 
     def visitNvlFunc(self, ctx):
@@ -2372,6 +2372,15 @@ class UnifiedMathVisitor(MathExprVisitor):
         v = (yield ctx.expr())
         return self._bitwise_popcount(v)
 
+    def visitShapeFunc(self, ctx):
+        val = (yield ctx.expr())
+        if self._is_tensor(val):
+            return val.shape.to(self.device)
+        elif self._is_list(val):
+            return torch.tensor([len(val)], dtype=torch.long, device=self.device)
+        else:
+            return torch.tensor([], dtype=torch.long, device=self.device)
+
     def _bitwise_op(self, a, b, torch_op, scalar_op):
         """Binary bitwise operation handler supporting tensors, lists, and scalars."""
         if self._is_tensor(a) and a.numel() == 1:
@@ -2496,7 +2505,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(v):
             v_t = self._promote_to_tensor(v).flatten().long()
             # Use numpy's bin and count for efficiency
-            counts = torch.tensor([bin(int(x) & 0xFFFFFFFFFFFFFFFF).count('1') for x in v_t.tolist()], 
+            counts = torch.tensor([bin(int(x) & 0xFFFFFFFFFFFFFFFF).count('1') for x in v_t.tolist()],
                                  dtype=torch.float32, device=v_t.device)
             if counts.numel() == 1:
                 return float(counts.item())

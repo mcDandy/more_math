@@ -1,4 +1,3 @@
-
 import torch
 import sys
 import os
@@ -40,13 +39,19 @@ def test_std():
     t = torch.tensor([1.0, 5.0]) # mean=3, var=((2^2 + 2^2)/1) = 8. std = sqrt(8)=2.828...
     vars = {"t": t, "l": [1.0, 5.0]}
 
-    assert math.isclose(parse_and_visit("std(t)", vars).item(), math.sqrt(8), rel_tol=1e-5)
+    res_t = parse_and_visit("std(t)", vars)
+    # Result might be float or tensor with .item()
+    val_t = res_t.item() if hasattr(res_t, 'item') else res_t
+    assert math.isclose(val_t, math.sqrt(8), rel_tol=1e-5)
     assert math.isclose(parse_and_visit("std(l)", vars), math.sqrt(8), rel_tol=1e-5)
 
 def test_var():
     t = torch.tensor([1.0, 5.0]) 
     vars = {"t": t, "l": [1.0, 5.0]}
-    assert math.isclose(parse_and_visit("var(t)", vars).item(), 8.0, rel_tol=1e-5)
+    res_t = parse_and_visit("var(t)", vars)
+    # Result might be float or tensor with .item()
+    val_t = res_t.item() if hasattr(res_t, 'item') else res_t
+    assert math.isclose(val_t, 8.0, rel_tol=1e-5)
     assert math.isclose(parse_and_visit("var(l)", vars), 8.0, rel_tol=1e-5)
 
 def test_dot():

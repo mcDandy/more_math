@@ -40,7 +40,7 @@ def test_conditioning_math_node_initialization():
 
 
 def test_conditioning_math_node_metadata():
-    assert ConditioningMathNode.RETURN_TYPES == ["CONDITIONING"]
+    assert ConditioningMathNode.RETURN_TYPES == ["CONDITIONING", "STACK"]
     assert ConditioningMathNode.FUNCTION == "EXECUTE_NORMALIZED"
     assert ConditioningMathNode.CATEGORY == "More math"
 
@@ -51,7 +51,7 @@ def test_latent_math_node_initialization():
 
 
 def test_latent_math_node_metadata():
-    assert LatentMathNode.RETURN_TYPES == ["LATENT"]
+    assert LatentMathNode.RETURN_TYPES == ["LATENT", "STACK"]
     assert LatentMathNode.FUNCTION == "EXECUTE_NORMALIZED"
     assert LatentMathNode.CATEGORY == "More math"
 
@@ -62,7 +62,7 @@ def test_image_math_node_initialization():
 
 
 def test_image_math_node_metadata():
-    assert ImageMathNode.RETURN_TYPES == ["IMAGE"]
+    assert ImageMathNode.RETURN_TYPES == ["IMAGE", "STACK"]
     assert ImageMathNode.FUNCTION == "EXECUTE_NORMALIZED"
     assert ImageMathNode.CATEGORY == "More math"
 
@@ -77,19 +77,17 @@ def test_fft_invertibility():
     input_tensor = torch.randn(1, 4, 32, 32, dtype=torch.float32)
     input_dict = {"samples": input_tensor}
     # Execute ifft(fft(a))
-    # Execute ifft(fft(a))
-    # Execute ifft(fft(a))
     input_V = {"V0": input_dict}
-    result = LatentMathNode.execute(Expression="ifft(fft(a))", V=input_V, F={})
-    output_tensor = result[0]["samples"]
+    result_list, stack = LatentMathNode.execute(Expression="ifft(fft(a))", V=input_V, F={}, batching=0)
+    output_tensor = result_list[0]["samples"]
     assert torch.allclose(input_tensor, output_tensor, atol=1e-5), f"Max difference: {(input_tensor - output_tensor).abs().max()}"
 
 
 def test_image_fft_dims():
     # Image input is (Batch, Height, Width, Channel)
     input_tensor = torch.randn(1, 32, 32, 3, dtype=torch.float32)
-    result = ImageMathNode.execute(Expression="ifft(fft(a))", V={"V0": input_tensor}, F={})
-    output_tensor = result[0]
+    result_list, stack = ImageMathNode.execute(Expression="ifft(fft(a))", V={"V0": input_tensor}, F={}, batching=0)
+    output_tensor = result_list[0]
     assert input_tensor.shape == output_tensor.shape
     assert torch.allclose(input_tensor, output_tensor, atol=1e-5), (
         f"Image FFT round trip failed. Max diff: {(input_tensor - output_tensor).abs().max()}"
@@ -105,21 +103,24 @@ def test_latent_lerp():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
     l_b = {"samples": torch.full((1, 4, 32, 32), 10.0)}
-    res_lerp = node.execute(Expression="lerp(a, b, 0.5)", V={"V0": l_a, "V1": l_b}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="lerp(a, b, 0.5)", V={"V0": l_a, "V1": l_b}, F={}, batching=0)
+    res_lerp = result_list[0]["samples"]
     assert torch.allclose(res_lerp, torch.full_like(res_lerp, 5.0))
 
 
 def test_latent_step_true():
     node = LatentMathNode()
     # step(x, edge) where x=0.8, edge=0.5 -> 1
-    res_step = node.execute(Expression="step(a, 0.5)", V={"V0": {"samples": torch.full((1, 1, 1, 1), 0.8)}}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="step(a, 0.5)", V={"V0": {"samples": torch.full((1, 1, 1, 1), 0.8)}}, F={}, batching=0)
+    res_step = result_list[0]["samples"]
     assert torch.allclose(res_step, torch.ones_like(res_step))
 
 
 def test_latent_step_false():
     node = LatentMathNode()
     # step(x, edge) where x=0.2, edge=0.5 -> 0
-    res_step2 = node.execute(Expression="step(a, 0.5)", V={"V0": {"samples": torch.full((1, 1, 1, 1), 0.2)}}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="step(a, 0.5)", V={"V0": {"samples": torch.full((1, 1, 1, 1), 0.2)}}, F={}, batching=0)
+    res_step2 = result_list[0]["samples"]
     assert torch.allclose(res_step2, torch.zeros_like(res_step2))
 
 
@@ -128,7 +129,8 @@ def test_latent_swap():
     t_lat = torch.tensor([0.0, 10.0, 20.0, 30.0]).view(1, 4, 1, 1)
     # Swap channels 0 and 3 -> 30, 10, 20, 0
     l_swap = {"samples": t_lat}
-    res_swap = node.execute(Expression="swap(a, 1, 0, 3)", V={"V0": l_swap}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="swap(a, 1, 0, 3)", V={"V0": l_swap}, F={}, batching=0)
+    res_swap = result_list[0]["samples"]
     expected = torch.tensor([30.0, 10.0, 20.0, 0.0]).view(1, 4, 1, 1)
     assert torch.allclose(res_swap, expected)
 
@@ -136,21 +138,24 @@ def test_latent_swap():
 def test_latent_relu():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res_relu = node.execute(Expression="relu(-5.0)", V={"V0": l_a}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="relu(-5.0)", V={"V0": l_a}, F={}, batching=0)
+    res_relu = result_list[0]["samples"]
     assert torch.allclose(res_relu, torch.zeros_like(res_relu))
 
 
 def test_latent_sign():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res_sign = node.execute(Expression="sign(-5.0)", V={"V0": l_a}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="sign(-5.0)", V={"V0": l_a}, F={}, batching=0)
+    res_sign = result_list[0]["samples"]
     assert torch.allclose(res_sign, torch.full_like(res_sign, -1.0))
 
 
 def test_latent_fract():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res_fract = node.execute(Expression="fract(1.5)", V={"V0": l_a}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="fract(1.5)", V={"V0": l_a}, F={}, batching=0)
+    res_fract = result_list[0]["samples"]
     assert torch.allclose(res_fract, torch.full_like(res_fract, 0.5))
 
 
@@ -228,21 +233,24 @@ def test_float_gelu():
 def test_latent_smoothstep():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute(Expression="smoothstep(0.5, 0, 1)", V={"V0": l_a}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="smoothstep(0.5, 0, 1)", V={"V0": l_a}, F={}, batching=0)
+    res = result_list[0]["samples"]
     assert torch.allclose(res, torch.full_like(res, 0.5))
 
 
 def test_latent_softplus():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute(Expression="softplus(0.0)", V={"V0": l_a}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="softplus(0.0)", V={"V0": l_a}, F={}, batching=0)
+    res = result_list[0]["samples"]
     assert torch.allclose(res, torch.full_like(res, 0.69314718))
 
 
 def test_latent_gelu():
     node = LatentMathNode()
     l_a = {"samples": torch.zeros(1, 4, 32, 32)}
-    res = node.execute(Expression="gelu(0.0)", V={"V0": l_a}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="gelu(0.0)", V={"V0": l_a}, F={}, batching=0)
+    res = result_list[0]["samples"]
     assert torch.allclose(res, torch.zeros_like(res))
 
 
@@ -255,7 +263,8 @@ def test_image_lerp():
     node = ImageMathNode()
     img_red = torch.tensor([1.0, 0.0, 0.0]).view(1, 1, 1, 3)
     img_blue = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 1, 3)
-    res_blend = node.execute(Expression="lerp(a, b, 0.5)", V={"V0": img_red, "V1": img_blue}, F={})[0]
+    result_list, stack = node.execute(Expression="lerp(a, b, 0.5)", V={"V0": img_red, "V1": img_blue}, F={})
+    res_blend = result_list[0]
     expected = torch.tensor([0.5, 0.0, 0.5]).view(1, 1, 1, 3)
     assert torch.allclose(res_blend, expected)
 
@@ -264,7 +273,8 @@ def test_image_swap():
     node = ImageMathNode()
     img_red = torch.tensor([1.0, 0.0, 0.0]).view(1, 1, 1, 3)
     img_blue = torch.tensor([0.0, 0.0, 1.0]).view(1, 1, 1, 3)
-    res_swap = node.execute(Expression="swap(a, 3, 0, 2)", V={"V0": img_red}, F={})[0]
+    result_list, stack = node.execute(Expression="swap(a, 3, 0, 2)", V={"V0": img_red}, F={})
+    res_swap = result_list[0]
     assert torch.allclose(res_swap, img_blue)
 
 
@@ -278,7 +288,8 @@ def test_audio_math_basic():
     waveform = torch.randn(1, 1, 1024)
     audio = {"waveform": waveform, "sample_rate": 44100}
     # result = a * 2.0
-    res = node.execute(Expression="a * 2.0", V={"V0": audio}, F={})[0]
+    result_list, stack = node.execute(Expression="a * 2.0", V={"V0": audio}, F={})
+    res = result_list[0]
     assert isinstance(res, dict)
     assert "waveform" in res
     assert res["sample_rate"] == 44100
@@ -313,7 +324,8 @@ def test_5d_tensors_identity():
     node = LatentMathNode()
     samples = torch.randn(1, 5, 4, 32, 32)
     l_in = {"samples": samples}
-    res = node.execute(Expression="a * 1.0", V={"V0": l_in}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="a * 1.0", V={"V0": l_in}, F={}, batching=0)
+    res = result_list[0]["samples"]
     assert res.shape == (1, 5, 4, 32, 32)
     assert torch.allclose(res, samples)
 
@@ -323,7 +335,8 @@ def test_5d_tensors_variable_T():
     samples = torch.randn(1, 5, 4, 32, 32)
     l_in = {"samples": samples}
     # In 5D, T maps to dim -4 (size 5)
-    res_t = node.execute(Expression="a + T", V={"V0": l_in}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="a + T", V={"V0": l_in}, F={}, batching=0)
+    res_t = result_list[0]["samples"]
     assert torch.allclose(res_t, samples + 5.0)
 
 
@@ -331,7 +344,8 @@ def test_5d_tensors_fft():
     node = LatentMathNode()
     samples = torch.randn(1, 5, 4, 32, 32)
     l_in = {"samples": samples}
-    res_fft = node.execute(Expression="ifft(fft(a))", V={"V0": l_in}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="ifft(fft(a))", V={"V0": l_in}, F={}, batching=0)
+    res_fft = result_list[0]["samples"]
     assert torch.allclose(res_fft, samples, atol=1e-5)
 
 
@@ -404,7 +418,8 @@ def test_nested_tensor_support():
     nt_in = NestedTensor([t1, t2])
     l_in = {"samples": nt_in}
 
-    res_lat = node.execute(Expression="a + 1.0", V={"V0": l_in}, F={})[0]["samples"]
+    result_list, stack = node.execute(Expression="a + 1.0", V={"V0": l_in}, F={}, batching=0)
+    res_lat = result_list[0]["samples"]
 
     assert getattr(res_lat, "is_nested", False)
     res_list = res_lat.unbind()

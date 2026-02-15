@@ -94,7 +94,7 @@ def test_nd_tensor_query():
     assert res[1, 1, 1] == 50.0
 
 def test_large_tensor_fallback():
-    # Test that the fallback doesn't crash (we can't easily verify it *fell back* 
+    # Test that the fallback doesn't crash (we can't easily verify it *fell back*
     # but we can verify it works on larger ones)
     # Using 1M for speed in regular tests, but enough to trust the logic
     size = 1_000_000
@@ -104,7 +104,8 @@ def test_large_tensor_fallback():
     # Simple median
     res = parse_and_visit("quantile(t, 0.5)", vars)
     # torch.quantile(t, 0.5) should be very close to t.median()
-    assert math.isclose(res.item(), t.median().item(), abs_tol=1e-3)
+    res_val = res.item() if hasattr(res, 'item') else res
+    assert math.isclose(res_val, t.median().item(), abs_tol=1e-3)
 
 def test_list_query():
     # percentile(t, [0, 10, 20]) -> returns a list of results

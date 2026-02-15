@@ -217,43 +217,43 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitIndexExp(self, ctx):
         val = (yield ctx.indexExpr())
-        array = (yield ctx.expr())
-        shape = (val.shape if self._is_tensor(val) else (len(val),))
-        t = []
         raw_index_nodes = ctx.expr()
 
         indices = []
         for node in raw_index_nodes:
-            # Každý uzel indexu musíme vyhodnotit, abychom dostali číslo/tensor
             idx_val = (yield node)
 
-            # Převedeme na int (včetně ošetření tensoru)
             if self._is_tensor(idx_val):
                 if idx_val.numel() == 1:
                     indices.append(int(idx_val.flatten()[0].item()))
                 else:
-                    raise ValueError(f"Index must be a scalar, not {idx_val.shape}")
+                    # Fancy indexing with tensor
+                    indices.append(idx_val.long())
+            elif self._is_list(idx_val):
+                # Fancy indexing with list - convert to tensor
+                indices.append(torch.tensor(idx_val, dtype=torch.long, device=self.device))
             else:
                 indices.append(int(idx_val))
-        array = self._promote_to_tensor(indices).flatten().long()
-        val = self._promote_to_tensor(val).flatten()
-
-        stride = shape[:len(array)]
-        v = 1
-        offset = 0
-        for i in range(len(stride)):
-            idx = int(array[i].item())
-            if idx < 0 or idx >= stride[i]:
-                error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
-                raise ValueError(f"{error_prefix} Index {idx} out of bounds for dimension {i} with size {stride[i]}")
-            offset += idx * v
-            v *= stride[i]
-        t = val[offset:offset+(val.numel()//v)]
-        if t.numel() == 1:
-            return t.item()
-        return t.reshape(shape[len(array):]).contiguous()
+        
+        # Use standard PyTorch/list indexing
+        if self._is_tensor(val):
+            idx_tuple = tuple(indices)
+            result = val[idx_tuple]
+            if self._is_tensor(result):
+                if result.numel() == 1:
+                    return result.item()
+                return result.contiguous()
+            return result
+        elif self._is_list(val):
+            # Navigate through nested lists
+            current = val
+            for idx in indices:
+                if isinstance(idx, torch.Tensor):
+                    idx = int(idx.item())
+                current = current[idx]
+            return current
+        
         error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
-
         raise ValueError(f"{error_prefix} Indexing only supported on tensors and lists (found {type(val).__name__})")
 
     def visitToAtom(self, ctx):
@@ -996,7 +996,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             k_sq_sum = k_sq_sum + k_val**2
 
         self.variables["K"] = torch.sqrt(k_sq_sum)
-        self.variables["frequency"] = self.variables["K"]
+        self.variables["frequency"] = self_variables["K"]
 
         if "Kx" in self.variables:
             self.variables["frequency_count"] = self.variables.get("Fx", 1.0)
@@ -1065,7 +1065,16 @@ class UnifiedMathVisitor(MathExprVisitor):
             variance = sum((x - mean) ** 2 for x in val) / (len(val) - 1)
             return math.sqrt(variance)
 
-        return self._reduction_op((yield ctx.expr()), lambda x: torch.std(x.float()), list_std)
+        val = (yield ctx.expr())
+        if self._is_tensor(val):
+            res = torch.std(val.float())
+            if self._is_tensor(res) and res.numel() == 1:
+                return float(res.item())
+            return res
+        elif self._is_list(val):
+            return list_std(val)
+        else:
+            return val
 
     def visitVarFunc(self, ctx):
         def list_var(val):
@@ -1074,7 +1083,16 @@ class UnifiedMathVisitor(MathExprVisitor):
             mean = sum(val) / len(val)
             return sum((x - mean) ** 2 for x in val) / (len(val) - 1)
 
-        return self._reduction_op((yield ctx.expr()), lambda x: torch.var(x.float()), list_var)
+        val = (yield ctx.expr())
+        if self._is_tensor(val):
+            res = torch.var(val.float())
+            if self._is_tensor(res) and res.numel() == 1:
+                return float(res.item())
+            return res
+        elif self._is_list(val):
+            return list_var(val)
+        else:
+            return val
 
     def _manual_quantile(self, val, q):
         """Fallback implementation using sort for when torch.quantile fails on large tensors."""
@@ -1163,7 +1181,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         p_raw = (yield ctx.expr(1))
 
         if self._is_tensor(p_raw):
-            # p is 0-100. q = p / 100
             # p is 0-100. q = p / 100
             return self._quartile_helper(val, p_raw.float() / 100.0)
         if self._is_list(p_raw):
@@ -1383,14 +1400,15 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         pads = []
         for k in kernel_sizes:
-            p_total = k - 1
-            p_low = k // 2
+            p_total = int(k) - 1
+            p_low = int(k) // 2
             p_high = p_total - p_low
             pads.extend([p_low, p_high])
 
         padded_input = torch.nn.functional.pad(conv_input, tuple(pads), mode="constant", value=0)
 
-        actual_kernel_sizes = kernel_sizes[::-1]
+        # Ensure kernel_sizes are integers for tensor operations
+        actual_kernel_sizes = [int(k) for k in kernel_sizes[::-1]]
 
         if kernel_val.numel() == 1:
             kernel_val = kernel_val.expand(tuple(actual_kernel_sizes))
@@ -2133,7 +2151,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             kernel = torch.exp(-coords**2 / (2 * sigma**2))
             kernel = kernel / kernel.sum()
 
-
             kh = kernel.view(1, kernel_size)
             x_h = self._apply_conv_internal(x, kh, [kernel_size, 1], 2)
 
@@ -2238,7 +2255,6 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitSoftmaxFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))
         return F.softmax(val.float())
-
     def visitSoftminFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))
         return F.softmax(-val.float())

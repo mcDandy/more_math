@@ -2240,7 +2240,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return ContinueSignal()
 
     def visitEmptyTensorFunc(self, ctx):
-        value = (yield ctx.expr()) if ctx.expr() else 0.0
+        value = (yield ctx.expr(0)) if ctx.expr(0) else 0.0
+        type = (yield ctx.expr(1)).dtype if ctx.expr(1) else None
         shape_val = yield ctx.indexExpr()
 
         if self._is_tensor(shape_val):
@@ -2250,7 +2251,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             shape = [int(float(shape_val))]
 
-        return torch.full(shape, value, device=self.device)
+        return torch.full(shape, value, device=self.device,dtype=type)
 
     def visitSoftmaxFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))

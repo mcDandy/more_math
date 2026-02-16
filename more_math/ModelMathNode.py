@@ -6,6 +6,9 @@ from .Parser.MathExprParser import MathExprParser
 import re
 from .Stack import MrmthStack
 import copy
+import comfy.utils
+from .modelLikeCommon import calculate_patches_autogrow
+
 
 class ModelMathNode(io.ComfyNode):
     """
@@ -88,12 +91,13 @@ class ModelMathNode(io.ComfyNode):
         if a is None:
             raise ValueError("At least one input model is required.")
 
+        layer_count = V.get("V0").model.state_dict().__len__() if hasattr(V.get("V0"), "model") and hasattr(V.get("V0").model, "state_dict") else 0
+        pbar = comfy.utils.ProgressBar(layer_count)
 
-        from .modelLikeCommon import calculate_patches_autogrow
 
 
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-        patches = calculate_patches_autogrow(Expression, V=V, F=F, mapping=aliases,stack=stack)
+        patches = calculate_patches_autogrow(Expression, V=V, F=F,pbar=pbar, mapping=aliases,stack=stack)
 
         out_model = a.clone()
         if patches:

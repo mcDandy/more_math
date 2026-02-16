@@ -6,6 +6,7 @@ from .Parser.MathExprParser import MathExprParser
 import re
 from .Stack import MrmthStack
 import copy
+import comfy.utils
 
 
 
@@ -95,12 +96,11 @@ class CLIPMathNode(io.ComfyNode):
         # Call autogrow patch calculation
         from .modelLikeCommon import calculate_patches_autogrow
 
-        # Populate aliases map for backward compatibility in expressions (users might still use a/b/c/d/w/x/y/z)
-        # a=V0, b=V1, etc created by us or expected by user?
-        # The prompt says aliases are supported in check_lazy_status. Variables map in helper handles logic.
+        layer_count = V.get("V0").model.state_dict().__len__() if hasattr(V.get("V0"), "model") and hasattr(V.get("V0").model, "state_dict") else 0
+        pbar = comfy.utils.ProgressBar(layer_count)
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 
-        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F, mapping=aliases,stack=stack)
+        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F,pbar=pbar, mapping=aliases,stack=stack)
 
         out_clip = a.clone()
         if patches:

@@ -1,13 +1,14 @@
 from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
+import comfy.utils
 
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Legacy calculate_patches for backward compatibility."""
     return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"})
 
-def calculate_patches_autogrow(Expr, V, F, mapping=None,stack = []):
+def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
@@ -53,6 +54,9 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None,stack = []):
 
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
     # Just skip for utility or use if substantial.
+    all_keys_list = list(all_keys)
+    layer_count = len(all_keys_list)
+    for layer_idx, key in enumerate(all_keys_list):
 
     for key in all_keys:
         variables = {}
@@ -65,6 +69,11 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None,stack = []):
         for alias, target in mapping.items():
             if target in F:
                 variables[alias] = F[target] if F[target] is not None else 0.0
+
+        variables["L"] = float(layer_idx)
+        variables["layer"] = float(layer_idx)
+        variables["LC"] = float(layer_count)
+        variables["layer_count"] = float(layer_count)
 
         # Inject weights for this key from V models
         valid_key = False
@@ -130,5 +139,6 @@ def calculate_patches_autogrow(Expr, V, F, mapping=None,stack = []):
         if not torch.all(diff == 0):
             patches[key] = (diff,)
 
+        pbar.update(1)
 
     return patches

@@ -2565,3 +2565,207 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         # Fallback for other types
         return int(a) >> b_int
+
+    def visitPerlinFunc(self, ctx):
+        """perlin(seed, scale, [octaves], [offset], [shape])
+        Perlin noise with smooth gradients - supports arbitrary dimensions.
+        """
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+
+        octaves = 1
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            oct_val = yield ctx.expr(expr_idx)
+            octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
+            expr_idx += 1
+
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+
+        # Optional shape parameter
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+        
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+
+        grids = torch.meshgrid(
+            *[
+                torch.arange(s, dtype=torch.float32, device=self.device)
+                + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+                for i, s in enumerate(shape)
+            ],
+            indexing='ij'
+        )
+
+        noise = NoiseUtils.perlin_noise_nd(grids, scale, seed, self.device)
+
+        if octaves > 1:
+            result = noise
+            amplitude = 0.5
+            frequency = 2.0
+            for oct in range(octaves - 1):
+                scaled_grids = tuple(g * frequency for g in grids)
+                octave_noise = NoiseUtils.perlin_noise_nd(scaled_grids, scale / frequency, seed + oct, self.device)
+                result = result + octave_noise * amplitude
+                amplitude *= 0.5
+                frequency *= 2.0
+            noise = result / (2 - 2**(-octaves))
+
+        return noise
+
+    def visitCellularFunc(self, ctx):
+        """cellular(seed, scale, [jitter], [offset], [shape])
+        Cellular/Voronoi noise - supports arbitrary dimensions.
+        """
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+
+        jitter = 0.5
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            jitter_val = yield ctx.expr(expr_idx)
+            jitter = float(jitter_val.item()) if self._is_tensor(jitter_val) else float(jitter_val)
+            jitter = max(0.0, min(1.0, jitter))
+            expr_idx += 1
+
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+
+        # Optional shape parameter
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+        
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+
+        grids = torch.meshgrid(
+            *[
+                torch.arange(s, dtype=torch.float32, device=self.device)
+                + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+                for i, s in enumerate(shape)
+            ],
+            indexing='ij'
+        )
+
+        noise = NoiseUtils.cellular_noise_nd(grids, scale, jitter, seed, self.device)
+        return noise
+
+    def visitPlasmaFunc(self, ctx):
+        """plasma(seed, scale, [octaves], [offset], [shape])
+        Plasma/Turbulence noise - chaotic high-frequency patterns.
+        """
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+
+        octaves = 1
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            oct_val = yield ctx.expr(expr_idx)
+            octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
+            expr_idx += 1
+
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+
+        # Optional shape parameter
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+        
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+
+        grids = torch.meshgrid(
+            *[
+                torch.arange(s, dtype=torch.float32, device=self.device)
+                + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+                for i, s in enumerate(shape)
+            ],
+            indexing='ij'
+        )
+        
+        # Call perlin_noise_nd with all coordinate grids
+        noise = NoiseUtils.plasma_noise_nd(grids, scale, seed, self.device)
+
+        # Apply octaves (fBm-like composition)
+        if octaves > 1:
+            result = noise
+            amplitude = 0.5
+            frequency = 2.0
+            for oct in range(octaves - 1):
+                scaled_grids = tuple(g * frequency for g in grids)
+                octave_noise = NoiseUtils.plasma_noise_nd(scaled_grids, scale / frequency, seed + oct, self.device)
+                result = result + octave_noise * amplitude
+                amplitude *= 0.5
+                frequency *= 2.0
+            noise = result / (2 - 2**(-octaves))
+
+        return noise
+

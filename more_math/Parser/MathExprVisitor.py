@@ -979,5 +979,20 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#PerlinFunc.
+    def visitPerlinFunc(self, ctx:MathExprParser.PerlinFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CellularFunc.
+    def visitCellularFunc(self, ctx:MathExprParser.CellularFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PlasmaFunc.
+    def visitPlasmaFunc(self, ctx:MathExprParser.PlasmaFuncContext):
+        return self.visitChildren(ctx)
+
+
 
 del MathExprParser

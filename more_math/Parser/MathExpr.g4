@@ -235,7 +235,10 @@ funcNoise:
 	| GUMBELDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# GumbelDistFunc
 	| WEIBULLDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# WeibullDistFunc
 	| CHI2DIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# Chi2DistFunc
-	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc;
+	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc
+	| PERLIN LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PerlinFunc
+	| CELLULAR LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# CellularFunc
+	| PLASMA LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PlasmaFunc;
 
 // LEXER RULES
 
@@ -380,6 +383,9 @@ GUMBELDIST: 'randgumbel' | 'random_gumbel';
 WEIBULLDIST: 'randw' | 'random_weibull';
 CHI2DIST: 'randchi2' | 'random_chi2';
 STUDENTTDIST: 'randt' | 'random_studentt';
+PERLIN: 'perlin' | 'perlin_noise';
+CELLULAR: 'cellular' | 'voronoi' | 'worley' | 'cellular_noise';
+PLASMA: 'plasma' | 'turbulence' | 'plasma_noise';
 
 PLUS: '+';
 MINUS: '-';

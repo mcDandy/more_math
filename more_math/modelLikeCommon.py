@@ -1,7 +1,6 @@
 from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
-import comfy.utils
 
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):

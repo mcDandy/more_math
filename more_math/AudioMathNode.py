@@ -35,7 +35,7 @@ class AudioMathNode(io.ComfyNode):
             category="More math",
             display_name="Audio math",
             inputs=[
-                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Audio.Input("values"), prefix="V", min=1, max=50)),
+                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Audio.Input("values", optional=True), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input audio"),
                 io.Combo.Input(
@@ -60,31 +60,111 @@ class AudioMathNode(io.ComfyNode):
         input_stream = InputStream(Expression)
         lexer = MathExprLexer(input_stream)
         stream = CommonTokenStream(lexer)
-        stream.fill()
+        parser = MathExprParser(stream)
+
+        try:
+            tree = parser.start()
+        except:
+            # Fallback to simple token scanning if parse fails
+            return cls._fallback_lazy_check(Expression, V, F)
 
         # Support aliases
-        aliases_img = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
-        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
+        aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3",
+                   "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 
-        needed = []
-        needed1 = []
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
-            var_name = token.text
+        assigned_vars = set()
+        needed_vars = set()
 
-            if re.match(r"[VF][0-9]+", var_name):
-                needed.append(var_name)
-            elif var_name in aliases_img:
-                needed.append(aliases_img[var_name])
-            elif var_name in aliases_flt:
-                needed.append(aliases_flt[var_name])
-        for v in needed:
-            if v.startswith("V"):
-                if v not in V or V[v] is None:
-                    needed1.append(v)
-            elif v.startswith("F"):
-                if v not in F or F[v] is None:
-                    needed1.append(v)
-        return needed1
+        # Process all top-level statements
+        for child in tree.children:
+            if not hasattr(child, 'getRuleIndex'):
+                continue
+
+            rule_name = parser.ruleNames[child.getRuleIndex()] if child.getRuleIndex() < len(parser.ruleNames) else None
+
+            # Process function definitions: scan for reads but ignore writes
+            if rule_name == 'funcDef':
+                func_params = set()
+                if child.paramList():
+                    for param in child.paramList().VARIABLE():
+                        func_params.add(param.getText())
+
+                cls._collect_reads_only(child, needed_vars, assigned_vars, func_params)
+
+            # Top-level assignments
+            elif rule_name == 'varDef':
+                var_name = child.VARIABLE().getText()
+                cls._collect_vars_from_node(child, needed_vars, assigned_vars, set())
+                assigned_vars.add(var_name)
+
+            # Track other top-level statements
+            else:
+                cls._collect_vars_from_node(child, needed_vars, assigned_vars, set())
+
+        # Normalize variable names through aliases
+        needed = set()
+        for var in needed_vars:
+            norm = aliases.get(var, var)
+            if var == "V":
+                needed.add(V.Keys())
+            if var == "F":
+                needed.add(F.Keys())
+            if re.match(r"[VF][0-9]+", norm):
+                needed.add(norm)
+
+        return needed
+
+    @classmethod
+    def _collect_reads_only(cls, node, needed_vars, assigned_vars, shadowed_vars):
+        if node is None:
+            return
+
+        node_type = type(node).__name__
+
+        if node_type == 'VariableExpContext':
+            var_name = node.VARIABLE().getText()
+            if var_name in shadowed_vars:
+                return
+            if var_name not in assigned_vars:
+                needed_vars.add(var_name)
+            return
+
+        if node_type == 'FunctionDefContext':
+            return
+
+        if node_type == 'VarDefContext':
+            for expr in node.expr():
+                cls._collect_reads_only(expr, needed_vars, assigned_vars, shadowed_vars)
+            return
+
+        for i in range(node.getChildCount()):
+            cls._collect_reads_only(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
+
+    @classmethod
+    def _collect_vars_from_node(cls, node, needed_vars, assigned_vars, shadowed_vars):
+        """Recursively collect variable reads from an AST node"""
+        if node is None:
+            return
+
+        node_type = type(node).__name__
+
+        # Found a variable read
+        if node_type == 'VariableExpContext':
+            var_name = node.VARIABLE().getText()
+            # Skip if shadowed
+            if var_name in shadowed_vars:
+                return
+            if var_name not in assigned_vars:
+                needed_vars.add(var_name)
+            return
+
+        # Skip
+        if node_type == 'FunctionDefContext':
+            return
+
+        # Recursively visit children
+        for i in range(node.getChildCount()):
+            cls._collect_vars_from_node(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
 
     @classmethod
     def execute(cls, V, F, Expression, length_mismatch="tile",batching=0,stack={}):

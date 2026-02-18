@@ -667,10 +667,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         val = (yield ctx.expr(0))
         min_v = (yield ctx.expr(1))
         max_v = (yield ctx.expr(2))
+        
+        if self._is_list(val):
+            min_scalar = float(min_v.flatten()[0].item()) if self._is_tensor(min_v) else min_v
+            max_scalar = float(max_v.flatten()[0].item()) if self._is_tensor(max_v) else max_v
+            return [max(min(x, max_scalar), min_scalar) for x in val]
         if any(self._is_tensor(x) for x in [val, min_v, max_v]):
             return torch.clamp(self._promote_to_tensor(val), self._promote_to_tensor(min_v), self._promote_to_tensor(max_v))
-        if self._is_list(val):
-            return [max(min(x, max_v), min_v) for x in val]  # TODO: what if min_v or max_v is list
         return max(min(val, max_v), min_v)
 
     def visitLerpFunc(self, ctx):

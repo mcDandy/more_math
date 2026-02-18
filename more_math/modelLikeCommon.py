@@ -58,7 +58,6 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
     layer_count = len(all_keys_list)
     for layer_idx, key in enumerate(all_keys_list):
 
-    for key in all_keys:
         variables = {}
 
         # Populate F variables (constants for all keys)

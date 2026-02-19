@@ -106,9 +106,9 @@ class AudioMathNode(io.ComfyNode):
         for var in needed_vars:
             norm = aliases.get(var, var)
             if var == "V":
-                needed.add(V.Keys())
+                needed.update(V.keys()) 
             if var == "F":
-                needed.add(F.Keys())
+                needed.update(F.keys())
             if re.match(r"[VF][0-9]+", norm):
                 needed.add(norm)
 

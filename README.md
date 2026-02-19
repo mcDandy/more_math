@@ -227,6 +227,12 @@ Generates random noise with default shape of aither first input or maximum of in
 - `random_chi2(seed, df,[shape])` or `randchi2`: generates a random tensor with Chi-squared distribution. Degrees of freedom `df` controls the shape. Sum of squared normal distributions.
 - `random_studentt(seed, df,[shape])` or `randt`: generates a random tensor with Student's t distribution. Has heavier tails than normal distribution, useful for robust noise. As `df` increases, approaches normal distribution.
 
+### Noise Generation
+
+- `perlin(seed, scale, [octaves,[offset, [shape]]])` or `perlin_noise`: generates Perlin noise. `scale` controls the frequency of the noise, `octaves` adds additional layers of noise,  `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
+- `plasma(seed, scale, [octaves,[offset, [shape]]])` or `turbulence` or `plasma_noise`: generates Plasma noise. Same parameters as perlin noise.
+- `voronoi(seed, scale, [shape])` or `voronoi_noise`: generates Voronoi noise. `scale` controls the density of the points, `shape` controls the output shape (default is determined by node inputs and settings).
+
 ### Bitwise Operations
 
 Bitwise operations work with scalars, tensors, and lists, preserving bit patterns (especially important for floats where bit patterns are preserved, not values converted).

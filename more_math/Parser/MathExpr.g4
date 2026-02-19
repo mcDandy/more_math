@@ -385,7 +385,7 @@ WEIBULLDIST: 'randw' | 'random_weibull';
 CHI2DIST: 'randchi2' | 'random_chi2';
 STUDENTTDIST: 'randt' | 'random_studentt';
 PERLIN: 'perlin' | 'perlin_noise';
-CELLULAR: 'cellular' | 'voronoi' | 'worley' | 'cellular_noise';
+CELLULAR: 'cellular' | 'voronoi' | 'worley' | 'cellular_noise'|'voronoi_noise';
 PLASMA: 'plasma' | 'turbulence' | 'plasma_noise';
 
 PLUS: '+';

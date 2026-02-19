@@ -7,6 +7,7 @@ from . import optical_flow_utils as ofu
 from antlr4 import TerminalNode
 from .MathExprVisitor import MathExprVisitor
 from ..helper_functions import generate_dim_variables
+from ..noise_utils import NoiseUtils
 import struct
 
 
@@ -115,7 +116,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(a) and self._is_list(b):
             if a.shape[0] == len(b):
                 A = torch.split(a, 1)
-                results = [self._bin_op(x.squeeze(0), y, torch_op, scalar_op) for x, y in zip(A, b)]
+                results = [self._bin_op(x, y, torch_op, scalar_op) for x, y in zip(A, b)]
                 # Ensure all results are tensors
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
@@ -125,7 +126,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(a) and self._is_tensor(b):
             if b.shape[0] == len(a):
                 B = torch.split(b, 1)
-                results = [self._bin_op(x, y.squeeze(0), torch_op, scalar_op) for x, y in zip(a, B)]
+                results = [self._bin_op(x, y, torch_op, scalar_op) for x, y in zip(a, B)]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
             results = [self._bin_op(x, b, torch_op, scalar_op) for x in a]
@@ -2397,7 +2398,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(a) and self._is_list(b):
             if a.shape[0] == len(b):
                 A = torch.split(a, 1)
-                results = [self._bitwise_op(x.squeeze(0), y, torch_op, scalar_op) for x, y in zip(A, b)]
+                results = [self._bitwise_op(x, y, torch_op, scalar_op) for x, y in zip(A, b)]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
             results = [self._bitwise_op(a, x, torch_op, scalar_op) for x in b]
@@ -2406,7 +2407,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(a) and self._is_tensor(b):
             if b.shape[0] == len(a):
                 B = torch.split(b, 1)
-                results = [self._bitwise_op(x, y.squeeze(0), torch_op, scalar_op) for x, y in zip(a, B)]
+                results = [self._bitwise_op(x, y, torch_op, scalar_op) for x, y in zip(a, B)]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
             results = [self._bitwise_op(x, b, torch_op, scalar_op) for x in a]

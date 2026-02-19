@@ -331,6 +331,7 @@ FLOW_APPLY: 'flow_apply';
 BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle';
 MOTION_MASK: 'motion_mask';
 FLOW_TO_IMAGE: 'flow_to_image';
+OVERLAY: 'overlay';
 PAD: 'pad';
 CROSS: 'cross';
 MATMUL: 'matmul';
@@ -367,7 +368,7 @@ UNIQUE: 'unique';
 FLIP: 'flip';
 COV: 'cov';
 CROP: 'crop';
-NONE: 'none';
+NONE: 'none'|'None'|'null'|'NULL';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';

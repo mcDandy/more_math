@@ -22,21 +22,26 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
     if F is None: F = {}
     if mapping is None: mapping = {}
 
-    # Collect all unique keys from all models
-    all_keys = set()
+    # Collect all unique keys from all models, preserving order from first model
+    all_keys_list = []  # Preserves order
+    seen_keys = set()   # Fast O(1) duplicate checking
+
     models = [v for v in V.values() if v is not None]
     if not models:
         return {}
 
     for m in models:
         if hasattr(m, "model") and hasattr(m.model, "state_dict"):
-             all_keys.update(m.model.state_dict().keys())
+            sd_keys = m.model.state_dict().keys()
         elif hasattr(m, "state_dict"): # VAE might have state_dict directly?
-             all_keys.update(m.state_dict().keys())
-        elif hasattr(m, "patches"): # Mock object or raw patcher
-             # If it's just a patcher without underlying model access?
-             # Usually patcher.model.state_dict() is the way.
-             pass
+            sd_keys = m.state_dict().keys()
+        else:
+            sd_keys = []
+
+        for key in sd_keys:
+            if key not in seen_keys:
+                seen_keys.add(key)
+                all_keys_list.append(key)
 
     # Function to get weight from a valid object
     def get_weight(obj, key):
@@ -53,12 +58,11 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
 
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
     # Just skip for utility or use if substantial.
-    all_keys_list = list(all_keys)
     layer_count = len(all_keys_list)
     for layer_idx, key in enumerate(all_keys_list):
 
         variables = {}
-
+        print(key)
         # Populate F variables (constants for all keys)
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0

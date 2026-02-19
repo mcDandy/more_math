@@ -2205,7 +2205,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             self._state_storage[slot] = []
         value = yield ctx.expr(1)
         self._state_storage[slot].append(value)
-        print(self._state_storage.keys())
         return value
 
     def visitPopFunc(self, ctx):
@@ -2218,7 +2217,6 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitClearFunc(self, ctx):
         self._ensure_dict_storage()
         slot = int((yield ctx.expr()))
-        print(self._state_storage.keys())
         if slot in self._state_storage:
             self._state_storage[slot] = []
         return None

@@ -2779,9 +2779,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         elif self._is_list(pad_val):
             pad = [int(x) for x in pad_val]
         else:
-            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pad amount must be a list or tensor of integers")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pad amount must be a list or tensor.")
+
         if len(pad) % 2 != 0:
-            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pad amount list must have an even number of elements")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pad amount list must have an even number of elements.")
 
         reversed_pad = []
         for i in range(len(pad) - 1, 0, -2):

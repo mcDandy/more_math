@@ -27,6 +27,8 @@ from .AudioToSpectrogramNode import AudioToSpectrogram
 from .NoiseMathNode import NoiseMathNode
 from .AudioMathNode import AudioMathNode
 
+from .ScriptTextWindow import ScriptTextInput
+
 from comfy_api.latest import ComfyExtension, io
 
 
@@ -166,6 +168,7 @@ class MoreMathExtension(ComfyExtension):
             GuiderMathNode,
             NoiseMathNode,
             AudioMathNode,
+            ScriptTextInput
         ]
 
 

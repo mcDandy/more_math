@@ -8,7 +8,7 @@ class ScriptTextInput(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ScriptInput",
             category="More math",
-            display_name="Script input",
+            display_name="STEW",
             inputs=[
                 io.String.Input(id="script", multiline=True),
             ],

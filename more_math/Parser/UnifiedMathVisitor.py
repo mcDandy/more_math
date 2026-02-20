@@ -1000,7 +1000,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             k_sq_sum = k_sq_sum + k_val**2
 
         self.variables["K"] = torch.sqrt(k_sq_sum)
-        self.variables["frequency"] = self_variables["K"]
+        self.variables["frequency"] = self.variables["K"]
 
         if "Kx" in self.variables:
             self.variables["frequency_count"] = self.variables.get("Fx", 1.0)

@@ -2788,3 +2788,52 @@ class UnifiedMathVisitor(MathExprVisitor):
         for i in range(len(pad) - 1, 0, -2):
             reversed_pad.extend([pad[i-1], pad[i]])
         return F.pad(val, reversed_pad)
+
+    def visitOverlayFunc(self, ctx):
+        base = self._promote_to_tensor((yield ctx.expr(0)))
+        overlay = self._promote_to_tensor((yield ctx.expr(1)))
+        offset = yield ctx.expr(2)
+        
+        # Convert offset to list of ints
+        if self._is_tensor(offset):
+            offset = [int(x) for x in offset.flatten().tolist()]
+        elif self._is_list(offset):
+            offset = [int(x) for x in offset]
+        else:
+            offset = [int(offset)]
+        
+        # Ensure offset matches base dimensions
+        if len(offset) != base.ndim:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Offset dimensions {len(offset)} must match base dimensions {base.ndim}")
+        
+        # Calculate crop and paste regions
+        crop_slices = []
+        paste_slices = []
+        
+        for i in range(base.ndim):
+            off = offset[i]
+            overlay_size = overlay.shape[i]
+            base_size = base.shape[i]
+            
+            # Determine overlay crop region (what part of overlay to use)
+            crop_start = max(0, -off)  # Crop from overlay if offset is negative
+            crop_end = min(overlay_size, base_size - off)  # Crop if overlay extends beyond base
+            
+            # Determine base paste region (where to place overlay in base)
+            paste_start = max(0, off)  # Start position in base
+            paste_end = min(base_size, off + overlay_size)  # End position in base
+            
+            crop_slices.append(slice(crop_start, crop_end))
+            paste_slices.append(slice(paste_start, paste_end))
+        
+        # Crop overlay to fit
+        cropped_overlay = overlay[tuple(crop_slices)]
+        
+        # Create result by cloning base and pasting overlay
+        result = base.clone()
+        result[tuple(paste_slices)] = cropped_overlay
+        
+        return result
+
+
+

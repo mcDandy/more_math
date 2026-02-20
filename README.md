@@ -116,7 +116,7 @@ You can also get the node from comfy manager under the name of More math.
 ### Aggregates & Tensor Operations
 
 - `tmin(x, y)`: Element-wise minimum of x and y.
-- `tmax(x, y)`: Element-wise maximum of x and y.
+- `tmax(x, y): Element-wise maximum of x and y.
 - `smin(x, ...)`: Scalar minimum. Returns the single smallest value across all input tensors/values.
 - `smax(x, ...)`: Scalar maximum. Returns the single largest value across all input tensors/values.
 - `sum(x)`: Sum of all elements.
@@ -153,7 +153,8 @@ You can also get the node from comfy manager under the name of More math.
 - `tensor(shape,value)`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero.
 - `flatten(value)`: Flattens a tensor to 1D. If input is list, it flattens nested lists into a single list.
 - `shape(value)` : Returns the shape of a tensor as a tensor. If input is a list, returns lenght of the list as 1 value tensor. For numbers it returns empty tensor.
-
+- `overlay(base, overlay, offset)`: Replaces a rectangular region of `base` with `overlay` starting at `offset`. Areas outside the base tensor are ignored. Overlay is cropped if it extends beyond the base tensor.
+- 
 ### Advanced Tensor Operations
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
@@ -231,7 +232,7 @@ Generates random noise with default shape of aither first input or maximum of in
 
 - `perlin(seed, scale, [octaves,[offset, [shape]]])` or `perlin_noise`: generates Perlin noise. `scale` controls the frequency of the noise, `octaves` adds additional layers of noise,  `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
 - `plasma(seed, scale, [octaves,[offset, [shape]]])` or `turbulence` or `plasma_noise`: generates Plasma noise. Same parameters as perlin noise.
-- `voronoi(seed, scale, [shape])` or `voronoi_noise`: generates Voronoi noise. `scale` controls the density of the points, `shape` controls the output shape (default is determined by node inputs and settings).
+- `voronoi(seed, scale, [jitter], [offset], [shape])` or `voronoi_noise`: generates Voronoi noise. `scale` controls the frequency of the noise, `jitter` adds randomness to the cell boundaries, `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
 
 ### Bitwise Operations
 
@@ -249,13 +250,7 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 - `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
 - `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
 
-```
 
-**Bit Pattern Preservation**:
-- **Integers**: Direct bitwise operations
-- **Floats**: Bit patterns are preserved using `struct` module (pack float→int, operate, unpack int→float)
-- **Tensors**: Uses `.view()` to reinterpret bytes without value conversion
-- **Lists**: Element-wise operations applied to each element
 
 ### Stack
 
@@ -293,7 +288,7 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
   - `Y` - position Y in image. 0 is in top left
   - `W` or `width` - width of image. y/width = 1
   - `H` or `height`- height of image. x/height = 1
-  - `B` or 'batch' - position in batch
+  - `B` or `batch` - position in batch
   - `T` or `batch_count` - number of batches
   - `N` or `channel_count` - count of channels
 - **IMAGE KERNEL**:

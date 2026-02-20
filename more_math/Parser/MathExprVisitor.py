@@ -854,6 +854,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#OverlayFunc.
+    def visitOverlayFunc(self, ctx:MathExprParser.OverlayFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SwapFunc.
     def visitSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         return self.visitChildren(ctx)

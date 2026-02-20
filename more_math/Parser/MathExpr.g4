@@ -202,7 +202,8 @@ func3:
 	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN	# CropFunc
-	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# sifftFunc;
+	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# sifftFunc
+	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc;
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc

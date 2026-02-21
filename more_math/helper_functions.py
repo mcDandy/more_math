@@ -235,7 +235,7 @@ def get_f_variable(f_dict):
     except Exception:
         return None, len(ordered_values)
 
-def _collect_reads_only(cls, node, needed_vars, assigned_vars, shadowed_vars):
+def _collect_reads_only( node, needed_vars, assigned_vars, shadowed_vars):
     if node is None:
         return
 
@@ -260,7 +260,7 @@ def _collect_reads_only(cls, node, needed_vars, assigned_vars, shadowed_vars):
     for i in range(node.getChildCount()):
         cls._collect_reads_only(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
 
-def _collect_vars_from_node(cls, node, needed_vars, assigned_vars, shadowed_vars):
+def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
     """Recursively collect variable reads from an AST node"""
     if node is None:
         return

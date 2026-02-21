@@ -1,5 +1,7 @@
 from comfy_api.latest import io
 import torch
+from .helper_functions import parse_expr
+from .ParseTree import MrmthParseTree
 
 class ScriptTextInput(io.ComfyNode):
 
@@ -13,10 +15,11 @@ class ScriptTextInput(io.ComfyNode):
                 io.String.Input(id="script", multiline=True),
             ],
             outputs=[
-                io.String.Output()
+                MrmthParseTree.Output()
             ],
         )
 
     @classmethod
     def execute(cls, script):
-        return (script,)
+        expr = parse_expr(script)
+        return (expr,)

@@ -1,3 +1,4 @@
+from tokenize import String
 from .helper_functions import (
     generate_dim_variables,
     parse_expr,
@@ -17,6 +18,7 @@ import re
 import torch
 from .Stack import MrmthStack
 import copy
+from .ParseTree import MrmthParseTree
 
 class AudioMathNode(io.ComfyNode):
     """
@@ -37,7 +39,11 @@ class AudioMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Audio.Input("values", optional=True), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input audio"),
+                io.MultiType.Input(
+                    io.String.Input("Expression", default="", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="3D model file or path string",
+                ),
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["do nothing","error","tile", "pad"],
@@ -56,17 +62,14 @@ class AudioMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,stack={}):
-
-        input_stream = InputStream(Expression)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = MathExprParser(stream)
-
-        try:
-            tree = parser.start()
-        except:
-            # Fallback to simple token scanning if parse fails
-            return cls._fallback_lazy_check(Expression, V, F)
+        tree = None
+        parser = None
+        if isinstance(Expression,str):
+            tree = parse_expr(Expression)
+            parser = tree.parser
+        else:
+            tree = Expression
+            parser = tree.parser
 
         # Support aliases
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3",
@@ -106,7 +109,7 @@ class AudioMathNode(io.ComfyNode):
         for var in needed_vars:
             norm = aliases.get(var, var)
             if var == "V":
-                needed.update(V.keys()) 
+                needed.update(V.keys())
             if var == "F":
                 needed.update(F.keys())
             if re.match(r"[VF][0-9]+", norm):
@@ -231,7 +234,11 @@ class AudioMathNode(io.ComfyNode):
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
 
-        tree = parse_expr(Expression);
+        tree = None
+        if isinstance(Expression,str):
+            tree = parse_expr(Expression)
+        else:
+            tree = Expression
         visitor = UnifiedMathVisitor(variables, a_w.shape,a_w.device,state_storage=stack)
         result = visitor.visit(tree)
         result = as_tensor(result, a_w.shape)

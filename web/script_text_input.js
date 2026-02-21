@@ -302,18 +302,17 @@ function attachLineNumbers(widget) {
 
     gutter.style.fontFamily = inputStyle.fontFamily;
     gutter.style.fontSize = inputStyle.fontSize;
-    gutter.style.lineHeight = `${lineHeightPx}px`;
+    gutter.style.lineHeight = inputStyle.lineHeight;
     gutter.style.paddingTop = inputStyle.paddingTop;
     gutter.style.paddingBottom = inputStyle.paddingBottom;
-
-    gutterContent.style.paddingTop = inputStyle.paddingTop;
-    gutterContent.style.paddingBottom = inputStyle.paddingBottom;
-    gutterContent.style.boxSizing = "border-box";
 
     syntaxLayer.style.fontFamily = inputStyle.fontFamily;
     syntaxLayer.style.fontSize = inputStyle.fontSize;
     syntaxLayer.style.lineHeight = inputStyle.lineHeight;
     syntaxLayer.style.padding = `${inputStyle.paddingTop} ${inputStyle.paddingRight} ${inputStyle.paddingBottom} ${inputStyle.paddingLeft}`;
+    syntaxLayer.style.width = "100%";
+    syntaxLayer.style.boxSizing = "border-box";
+    syntaxLayer.style.overflowY = "hidden";
 
     inputEl.style.background = overlayBackground;
     inputEl.style.color = "transparent";
@@ -321,23 +320,65 @@ function attachLineNumbers(widget) {
 
     const updateNumbers = () => {
         const rawLines = inputEl.value.split("\n");
-        const paddingTop = parseFloat(inputStyle.paddingTop) || 0;
-        const paddingBottom = parseFloat(inputStyle.paddingBottom) || 0;
         const textLineCount = Math.max(1, rawLines.length);
-        const lineCount = textLineCount;
-        gutterContent.textContent = Array.from({ length: lineCount }, (_, i) => String(i + 1)).join("\n");
-        gutterContent.style.height = `${lineCount * lineHeightPx + paddingTop + paddingBottom}px`;
-        gutter.style.height = `${editorContainer.clientHeight}px`;
-
-        const maxTranslate = Math.max(0, gutterContent.offsetHeight - gutter.clientHeight);
-        const translate = Math.min(inputEl.scrollTop, maxTranslate);
-        gutterContent.style.transform = `translateY(${-translate}px)`;
+        
+        const gutterLines = [];
+        
+        // Sync syntaxLayer width to match inputEl's actual content width
+        const scrollbarWidth = inputEl.offsetWidth - inputEl.clientWidth;
+        syntaxLayer.style.width = `calc(100% - ${scrollbarWidth}px)`;
+        
+        // Create a temporary clone
+        const measureClone = syntaxLayer.cloneNode(false);
+        measureClone.style.position = "absolute";
+        measureClone.style.visibility = "hidden";
+        measureClone.style.width = syntaxLayer.style.width;
+        measureClone.style.height = "auto";
+        syntaxLayer.parentElement.appendChild(measureClone);
+        
+        // Build content with simple marker at start of each line
+        let html = "";
+        for (let i = 0; i < textLineCount; i++) {
+            html += `<span class="lm" data-ln="${i}"></span>`;
+            html += renderHighlight(rawLines[i] || " ");
+            if (i < textLineCount - 1) {
+                html += "\n";
+            }
+        }
+        measureClone.innerHTML = html;
+        
+        // Simply read offsetTop of each marker
+        const totalHeight = measureClone.offsetHeight;
+        
+        for (let i = 0; i < textLineCount; i++) {
+            const marker = measureClone.querySelector(`[data-ln="${i}"]`);
+            const nextMarker = i < textLineCount - 1 ? measureClone.querySelector(`[data-ln="${i + 1}"]`) : null;
+            
+            const currentY = marker ? marker.offsetTop : i * lineHeightPx;
+            const nextY = nextMarker ? nextMarker.offsetTop : totalHeight;
+            
+            const heightDiff = nextY - currentY;
+            const visualLines = Math.max(1, Math.round(heightDiff / lineHeightPx));
+            
+            gutterLines.push(String(i + 1));
+            
+            for (let j = 1; j < visualLines; j++) {
+                gutterLines.push(" ");
+            }
+        }
+        
+        measureClone.remove();
+        
+        gutterContent.textContent = gutterLines.join("\n");
+        
+        gutter.style.height = `${inputEl.clientHeight}px`;
+        gutterContent.style.transform = `translateY(${-inputEl.scrollTop}px)`;
     };
 
     const updateHighlight = () => {
         const sourceText = inputEl.value.endsWith("\n") ? `${inputEl.value} ` : inputEl.value;
         const highlighted = renderHighlight(sourceText);
-        syntaxLayer.innerHTML = highlighted || "\n";
+        syntaxLayer.innerHTML = highlighted;
         syntaxLayer.scrollTop = inputEl.scrollTop;
         syntaxLayer.scrollLeft = inputEl.scrollLeft;
     };
@@ -402,6 +443,7 @@ function attachLineNumbers(widget) {
         updateNumbers();
         updateHighlight();
     });
+    
     return true;
 }
 

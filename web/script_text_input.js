@@ -147,7 +147,7 @@ function ensureStyles() {
         .mrmth-editor-container {
             position: relative;
             flex: 1;
-            min-height: 120px;
+            min-height: 30px;
             overflow: hidden;
         }
         .mrmth-line-input {
@@ -262,9 +262,6 @@ function attachLineNumbers(widget) {
     const baseBackground = inputStyle.backgroundColor || "rgba(0, 0, 0, 0.1)";
     const overlayBackground = applyAlpha(baseBackground, 0.1);
 
-    editorContainer.style.height = inputStyle.height;
-    editorContainer.style.minHeight = inputStyle.height;
-    editorContainer.style.background = overlayBackground;
     syntaxLayer.style.height = "100%";
     syntaxLayer.style.background = "transparent";
     inputEl.style.height = "100%";
@@ -325,7 +322,10 @@ function attachLineNumbers(widget) {
     });
 
     if (window.ResizeObserver) {
-        const resizeObserver = new ResizeObserver(() => updateNumbers());
+        const resizeObserver = new ResizeObserver(() => {
+            updateNumbers();
+            updateHighlight();
+        });
         resizeObserver.observe(inputEl);
     }
 

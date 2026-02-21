@@ -339,6 +339,44 @@ function attachLineNumbers(widget) {
         syntaxLayer.scrollLeft = inputEl.scrollLeft;
     };
 
+    const handleBracketAutoClose = (e) => {
+        const key = e.key;
+        if (!OPENING_BRACKETS.has(key)) {
+            return;
+        }
+
+        const selectionStart = inputEl.selectionStart;
+        const selectionEnd = inputEl.selectionEnd;
+        
+        if (selectionStart !== selectionEnd) {
+            return;
+        }
+
+        const text = inputEl.value;
+        const charAfter = text[selectionStart] || '';
+        
+        if (/[a-zA-Z0-9_]/.test(charAfter) || CLOSING_BRACKETS.has(charAfter)) {
+            return;
+        }
+
+        const closingBracket = BRACKET_PAIRS[key];
+        
+        e.preventDefault();
+        
+        const before = text.substring(0, selectionStart);
+        const after = text.substring(selectionStart);
+        inputEl.value = before + key + closingBracket + after;
+        inputEl.selectionStart = inputEl.selectionEnd = selectionStart + 1;
+        
+        updateNumbers();
+        updateHighlight();
+        
+        const event = new Event('input', { bubbles: true });
+        inputEl.dispatchEvent(event);
+    };
+
+    inputEl.addEventListener("keydown", handleBracketAutoClose);
+
     inputEl.addEventListener("input", () => {
         updateNumbers();
         updateHighlight();

@@ -1,7 +1,7 @@
 import { app } from "/scripts/app.js";
 
 const NODE_IDS = new Set(["mrmth_ScriptInput"]);
-const NODE_NAMES = new Set(["Script input", "ScriptTextInput", "STEW"]);
+const NODE_NAMES = new Set(["ScriptTextInput"]);
 const STYLE_ID = "mrmth-script-line-numbers";
 
 const KEYWORDS = new Set(["if", "else", "while", "for", "in", "break", "continue", "return", "none", "None", "null", "NULL"]);
@@ -98,10 +98,16 @@ function isTargetNode(nodeData) {
     if (!nodeData) {
         return false;
     }
-    if (NODE_IDS.has(nodeData.node_id) || NODE_IDS.has(nodeData.name)) {
+    if (NODE_IDS.has(nodeData.node_id)) {
         return true;
     }
-    if (NODE_NAMES.has(nodeData.name) || NODE_NAMES.has(nodeData.display_name)) {
+    if (NODE_IDS.has(nodeData.name)) {
+        return true;
+    }
+    if (NODE_NAMES.has(nodeData.name)) {
+        return true;
+    }
+    if (NODE_NAMES.has(nodeData.display_name)) {
         return true;
     }
     return hasScriptInput(nodeData);
@@ -142,10 +148,11 @@ function ensureStyles() {
             position: relative;
             flex: 1;
             min-height: 120px;
+            overflow: hidden;
         }
         .mrmth-line-input {
             position: relative;
-            z-index: 3;
+            z-index: 2;
             flex: 1;
             width: 100%;
             height: 100%;
@@ -156,9 +163,8 @@ function ensureStyles() {
             word-wrap: break-word;
             resize: none;
             background: transparent;
-            color: rgba(255, 255, 255, 1.0);
-            caret-color: var(--mrmth-caret-color, #ffffff) !important;
-            text-shadow: none;
+            color: transparent;
+            caret-color: #ffffff;
         }
         .mrmth-syntax-layer {
             position: absolute;
@@ -169,8 +175,8 @@ function ensureStyles() {
             white-space: pre-wrap;
             word-wrap: break-word;
             overflow: hidden;
-            color: var(--mrmth-text-color, #e0e0e0);
-            background: transparent;
+            mix-blend-mode: normal;
+            opacity: 1;
         }
         .mrmth-token-comment { color: #7f8c8d; }
         .mrmth-token-number { color: #f39c12; }
@@ -181,6 +187,24 @@ function ensureStyles() {
         .mrmth-token-operator { color: #95a5a6; }
     `;
     document.head.appendChild(style);
+}
+
+function measureLineHeight(inputEl) {
+    const probe = document.createElement("span");
+    const style = getComputedStyle(inputEl);
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.whiteSpace = "pre";
+    probe.style.fontFamily = style.fontFamily;
+    probe.style.fontSize = style.fontSize;
+    probe.style.fontWeight = style.fontWeight;
+    probe.style.fontStyle = style.fontStyle;
+    probe.style.lineHeight = style.lineHeight;
+    probe.textContent = "A";
+    document.body.appendChild(probe);
+    const height = probe.getBoundingClientRect().height;
+    document.body.removeChild(probe);
+    return height;
 }
 
 function attachLineNumbers(widget) {
@@ -222,19 +246,44 @@ function attachLineNumbers(widget) {
     inputEl.dataset.mrmthLineNumbers = "true";
 
     const inputStyle = getComputedStyle(inputEl);
+    const lineHeightPx = measureLineHeight(inputEl);
+
+    const applyAlpha = (color, alpha) => {
+        const rgbaMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
+        if (!rgbaMatch) {
+            return `rgba(0, 0, 0, ${alpha})`;
+        }
+        const r = Number(rgbaMatch[1]);
+        const g = Number(rgbaMatch[2]);
+        const b = Number(rgbaMatch[3]);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    const baseBackground = inputStyle.backgroundColor || "rgba(0, 0, 0, 0.1)";
+    const overlayBackground = applyAlpha(baseBackground, 0.1);
+
+    editorContainer.style.height = inputStyle.height;
     editorContainer.style.minHeight = inputStyle.height;
-    const inputTextColor = inputStyle.color || "#e0e0e0";
+    editorContainer.style.background = overlayBackground;
+    syntaxLayer.style.height = "100%";
+    syntaxLayer.style.background = "transparent";
+    inputEl.style.height = "100%";
+    inputEl.style.background = overlayBackground;
+
+    gutter.style.fontFamily = inputStyle.fontFamily;
+    gutter.style.fontSize = inputStyle.fontSize;
+    gutter.style.lineHeight = `${lineHeightPx}px`;
+    gutter.style.paddingTop = inputStyle.paddingTop;
+    gutter.style.paddingBottom = inputStyle.paddingBottom;
+
     syntaxLayer.style.fontFamily = inputStyle.fontFamily;
     syntaxLayer.style.fontSize = inputStyle.fontSize;
     syntaxLayer.style.lineHeight = inputStyle.lineHeight;
     syntaxLayer.style.padding = `${inputStyle.paddingTop} ${inputStyle.paddingRight} ${inputStyle.paddingBottom} ${inputStyle.paddingLeft}`;
-    syntaxLayer.style.color = inputTextColor;
-    editorContainer.style.setProperty("--mrmth-text-color", inputTextColor);
-    editorContainer.style.setProperty("--mrmth-caret-color", inputTextColor || "#ffffff");
-    inputEl.style.setProperty("caret-color", inputTextColor || "#ffffff", "important");
-    inputEl.style.background = "transparent";
-    inputEl.style.color = "rgba(255, 255, 255, 0.02)";
-    inputEl.style.textShadow = "none";
+
+    inputEl.style.background = overlayBackground;
+    inputEl.style.color = "transparent";
+    inputEl.style.caretColor = "#ffffff";
 
     const updateNumbers = () => {
         const lineCount = Math.max(1, inputEl.value.split("\n").length);
@@ -261,35 +310,31 @@ function attachLineNumbers(widget) {
     });
 
     if (window.ResizeObserver) {
-        const resizeObserver = new ResizeObserver(() => {
-            updateNumbers();
-            updateHighlight();
-        });
+        const resizeObserver = new ResizeObserver(() => updateNumbers());
         resizeObserver.observe(inputEl);
     }
 
-    updateNumbers();
-    updateHighlight();
+    requestAnimationFrame(() => {
+        updateNumbers();
+        updateHighlight();
+    });
     return true;
 }
 
 function attachLineNumbersWithRetry(node) {
     const widget = node.widgets?.find((w) => w.name === "script");
-    if (!widget) {
-        return;
-    }
-
     if (attachLineNumbers(widget)) {
         return;
     }
 
     requestAnimationFrame(() => {
-        attachLineNumbersWithRetry(node);
+        const retryWidget = node.widgets?.find((w) => w.name === "script");
+        attachLineNumbers(retryWidget);
     });
 }
 
 app.registerExtension({
-    name: "mrmth.ScriptTextInput.SyntaxHighlight",
+    name: "mrmth.ScriptTextInput.LineNumbers",
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (!isTargetNode(nodeData)) {
             return;

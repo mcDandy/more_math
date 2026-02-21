@@ -276,6 +276,10 @@ function attachLineNumbers(widget) {
     gutter.style.paddingTop = inputStyle.paddingTop;
     gutter.style.paddingBottom = inputStyle.paddingBottom;
 
+    gutterContent.style.paddingTop = inputStyle.paddingTop;
+    gutterContent.style.paddingBottom = inputStyle.paddingBottom;
+    gutterContent.style.boxSizing = "border-box";
+
     syntaxLayer.style.fontFamily = inputStyle.fontFamily;
     syntaxLayer.style.fontSize = inputStyle.fontSize;
     syntaxLayer.style.lineHeight = inputStyle.lineHeight;
@@ -286,14 +290,25 @@ function attachLineNumbers(widget) {
     inputEl.style.caretColor = "#ffffff";
 
     const updateNumbers = () => {
-        const lineCount = Math.max(1, inputEl.value.split("\n").length);
+        const rawLines = inputEl.value.split("\n");
+        const paddingTop = parseFloat(inputStyle.paddingTop) || 0;
+        const paddingBottom = parseFloat(inputStyle.paddingBottom) || 0;
+        const paddedScrollHeight = Math.max(0, inputEl.scrollHeight - paddingTop - paddingBottom);
+        const textLineCount = Math.max(1, rawLines.length);
+        const visibleLineCount = Math.max(1, Math.ceil(paddedScrollHeight / lineHeightPx));
+        const lineCount = Math.max(textLineCount, visibleLineCount);
         gutterContent.textContent = Array.from({ length: lineCount }, (_, i) => String(i + 1)).join("\n");
+        gutterContent.style.height = `${lineCount * lineHeightPx + paddingTop + paddingBottom}px`;
         gutter.style.height = `${editorContainer.clientHeight}px`;
-        gutterContent.style.transform = `translateY(${-inputEl.scrollTop}px)`;
+
+        const maxTranslate = Math.max(0, gutterContent.offsetHeight - gutter.clientHeight);
+        const translate = Math.min(inputEl.scrollTop, maxTranslate);
+        gutterContent.style.transform = `translateY(${-translate}px)`;
     };
 
     const updateHighlight = () => {
-        const highlighted = renderHighlight(inputEl.value);
+        const sourceText = inputEl.value.endsWith("\n") ? `${inputEl.value} ` : inputEl.value;
+        const highlighted = renderHighlight(sourceText);
         syntaxLayer.innerHTML = highlighted || "\n";
         syntaxLayer.scrollTop = inputEl.scrollTop;
         syntaxLayer.scrollLeft = inputEl.scrollLeft;

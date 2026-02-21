@@ -254,11 +254,11 @@ def _collect_reads_only( node, needed_vars, assigned_vars, shadowed_vars):
 
     if node_type == 'VarDefContext':
         for expr in node.expr():
-            cls._collect_reads_only(expr, needed_vars, assigned_vars, shadowed_vars)
+            _collect_reads_only(expr, needed_vars, assigned_vars, shadowed_vars)
         return
 
     for i in range(node.getChildCount()):
-        cls._collect_reads_only(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
+        _collect_reads_only(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
 
 def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
     """Recursively collect variable reads from an AST node"""
@@ -283,7 +283,7 @@ def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
 
     # Recursively visit children
     for i in range(node.getChildCount()):
-        cls._collect_vars_from_node(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
+        _collect_vars_from_node(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
 
 def checkLazyNew(Expression, V, F):
     tree = None

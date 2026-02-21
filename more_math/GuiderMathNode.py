@@ -1,10 +1,7 @@
 import torch
-import re
-from antlr4 import InputStream, CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.MathExprParser import MathExprParser
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from .helper_functions import (
+    checkLazyNew,
     generate_dim_variables,
     getIndexTensorAlongDim,
     parse_expr,
@@ -20,6 +17,7 @@ import comfy.utils
 import comfy.hooks
 import comfy.samplers
 from .Stack import MrmthStack
+from .ParseTree import MrmthParseTree
 import copy
 
 
@@ -37,8 +35,16 @@ class GuiderMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Guider.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Expression", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step"),
-                io.String.Input(id="Expression1", default="G0*(1-F0)+G1*F0", tooltip="Expression to apply after generation finishes."),
+                io.MultiType.Input(
+                    io.String.Input("Expression", default="G0*(1-F0)+G1*F0", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step",
+                ),
+                io.MultiType.Input(
+                    io.String.Input("Expression1", default="G0*(1-F0)+G1*F0", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression to apply after generation finishes.",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -49,38 +55,10 @@ class GuiderMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, Expression,Expression1, V, F,stack={}):
-        input_stream = InputStream(Expression)
-        input_stream1 = InputStream(Expression1)
-        lexer = MathExprLexer(input_stream)
-        lexer1 = MathExprLexer(input_stream1)
-        stream = CommonTokenStream(lexer)
-        stream1 = CommonTokenStream(lexer1)
-        stream.fill()
-        stream1.fill()
+        d = checkLazyNew(Expression,V,F)
+        b = checkLazyNew(Expression1,V,F)
+        return d|b
 
-        # Support aliases
-        aliases_smp = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
-        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-
-        needed = []
-        needed1 = []
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens+stream1.tokens):
-            var_name = token.text
-            if re.match(r"[VF][0-9]+", var_name):
-                needed.append(var_name)
-            elif var_name in aliases_smp:
-                needed.append(aliases_smp[var_name])
-            elif var_name in aliases_flt:
-                needed.append(aliases_flt[var_name])
-
-        for v in needed:
-            if v.startswith("V"):
-                if v not in V or V[v] is None:
-                    needed1.append(v)
-            elif v.startswith("F"):
-                if v not in F or F[v] is None:
-                    needed1.append(v)
-        return needed1
 
     @classmethod
     def execute(cls, V, F, Expression,Expression1,stack={}):
@@ -93,8 +71,14 @@ class MathGuider:
         self.V = V
         self.F = F
         self.expression = expression
-        self.tree = parse_expr(expression)
-        self.tree1 = parse_expr(expression1)
+        if isinstance(expression,str):
+            self.tree = parse_expr(expression)
+        else:
+            self.tree = expression
+        if isinstance(expression1,str):
+            self.tree1 = parse_expr(expression1)
+        else:
+            self.tree1 = expression1
         self.inner_model = None  # Will be set during sample
         self.sigmas = None
         self.current_step = 0

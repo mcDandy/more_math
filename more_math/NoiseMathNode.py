@@ -1,11 +1,9 @@
-from .helper_functions import generate_dim_variables, as_tensor, parse_expr, getIndexTensorAlongDim, make_zero_like, get_v_variable, get_f_variable
+from .helper_functions import generate_dim_variables, as_tensor, parse_expr, getIndexTensorAlongDim, make_zero_like, get_v_variable, get_f_variable, checkLazyNew
 from comfy_api.latest import io
 import torch
-from .Parser.MathExprParser import MathExprParser,InputStream,CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
-import re
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from .Stack import MrmthStack
+from .ParseTree import MrmthParseTree
 import copy
 
 class NoiseMathNode(io.ComfyNode):
@@ -33,7 +31,11 @@ class NoiseMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Noise.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Noise", default="a*(1-w)+b*w"),
+                io.MultiType.Input(
+                    io.String.Input("Noise", default="a*(1-w)+b*w", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression for noise",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -44,34 +46,7 @@ class NoiseMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, Noise, V, F,stack={}):
-        input_stream = InputStream(Noise)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        stream.fill()
-
-        # Support aliases
-        aliases_smp = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
-        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-
-        needed = []
-        needed1 = []
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
-            var_name = token.text
-            if re.match(r"[VF][0-9]+", var_name):
-                needed.append(var_name)
-            elif var_name in aliases_smp:
-                needed.append(aliases_smp[var_name])
-            elif var_name in aliases_flt:
-                needed.append(aliases_flt[var_name])
-
-        for v in needed:
-            if v.startswith("V"):
-                if v not in V or V[v] is None:
-                    needed1.append(v)
-            elif v.startswith("F"):
-                if v not in F or F[v] is None:
-                    needed1.append(v)
-        return needed1
+        return checkLazyNew(Noise,V,F)
 
     @classmethod
     def execute(cls, Noise, V,F,stack={}):
@@ -83,7 +58,10 @@ class NoiseExecutor:
     def __init__(self, V,F, expr,stack):
         self.V = V
         self.F = F
-        self.tree = parse_expr(expr)
+        if isinstance(expr,str):
+            self.tree = parse_expr(expr)
+        else:
+            self.tree = expr
         self.stack = stack
 
     seed = -1

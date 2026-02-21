@@ -1,11 +1,8 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
-from antlr4 import InputStream, CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.MathExprParser import MathExprParser
-import re
 from .Stack import MrmthStack
+from .ParseTree import MrmthParseTree
 import copy
 
 class VideoMathNode(io.ComfyNode):
@@ -27,8 +24,16 @@ class VideoMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Video.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on tensor part of conditioning"),
-                io.String.Input(id="Expression_pi", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on pooled_input part of conditioning"),
+                io.MultiType.Input(
+                    io.String.Input("Expression", default="I0*(1-F0)+I1*F0", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression to apply on tensor part of conditioning",
+                ),
+                io.MultiType.Input(
+                    io.String.Input("Expression_pi", default="I0*(1-F0)+I1*F0", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression to apply on pooled_input part of conditioning",
+                ),
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["do nothing","error","tile", "pad"],
@@ -46,40 +51,9 @@ class VideoMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile",stack={}):
-
-        input_stream = InputStream(Expression)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        stream.fill()
-
-        input_stream = InputStream(Expression_pi)
-        lexer = MathExprLexer(input_stream)
-        stream1 = CommonTokenStream(lexer)
-        stream1.fill()
-
-        # Support aliases
-        aliases_img = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
-        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-
-        needed = set()
-        needed1 = set()
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens + stream1.tokens):
-            var_name = token.text
-
-            if re.match(r"[VF][0-9]+", var_name):
-                needed.add(var_name)
-            elif var_name in aliases_img:
-                needed.add(aliases_img[var_name])
-            elif var_name in aliases_flt:
-                needed.add(aliases_flt[var_name])
-        for v in needed:
-            if v.startswith("V"):
-                if v not in V or V[v] is None:
-                    needed1.add(v)
-            elif v.startswith("F"):
-                if v not in F or F[v] is None:
-                    needed1.add(v)
-        return needed1
+        d = checkLazyNew(Expression,V,F)
+        b = checkLazyNew(Expression_pi,V,F)
+        return d|b
 
     @classmethod
     def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile",stack={}):
@@ -152,10 +126,14 @@ class VideoMathNode(io.ComfyNode):
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
 
-        tree = parse_expr(Expression);
+        tree = None
+        if isinstance(Expression,str):
+            tree = parse_expr(Expression)
+        else:
+            tree = Expression
         visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=stack)
-        result = visitor.visit(tree)
-        result = as_tensor(result, ae.shape)
+        result_video = visitor.visit(tree)
+        result_video = as_tensor(result_video, ae.shape)
 
 
 
@@ -219,9 +197,13 @@ class VideoMathNode(io.ComfyNode):
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
 
-        tree = parse_expr(Expression);
-        visitor = UnifiedMathVisitor(variables, a_w.shape,state_storage=stack)
-        result1 = visitor.visit(tree)
-        result1 = as_tensor(result, a_w.shape)
+        tree_pi = None
+        if isinstance(Expression_pi,str):
+            tree_pi = parse_expr(Expression_pi)
+        else:
+            tree_pi = Expression_pi
+        visitor = UnifiedMathVisitor(variables, a_w.shape,a_w.device,state_storage=stack)
+        result_waveform = visitor.visit(tree_pi)
+        result_waveform = as_tensor(result_waveform, a_w.shape)
 
-        return ([result,{"waveform":result1,"sample_rate":sample_rate}],stack)
+        return ([result_video,{"waveform":result_waveform,"sample_rate":sample_rate}],stack)

@@ -1,15 +1,12 @@
 from inspect import cleandoc
 import torch
 
-from .helper_functions import parse_expr, get_v_variable
+from .helper_functions import parse_expr, get_v_variable, checkLazyNew
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 
 from comfy_api.latest import io
-from antlr4 import InputStream, CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.MathExprParser import MathExprParser
-import re
 from .Stack import MrmthStack
+from .ParseTree import MrmthParseTree
 import copy
 
 
@@ -31,7 +28,11 @@ class FloatMathNode(io.ComfyNode):
             display_name="Float math",
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Float.Input("values"), prefix="V", min=1, max=50)),
-                io.String.Input(id="FloatFunc", default="a*(1-w)+b*w", tooltip="Expression to use on inputs"),
+                io.MultiType.Input(
+                    io.String.Input("FloatFunc", default="a*(1-w)+b*w", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression to use on inputs",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -44,34 +45,8 @@ class FloatMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, FloatFunc, V,stack={}):
-        input_stream = InputStream(FloatFunc)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        stream.fill()
+            return checkLazyNew(FloatFunc,V,V)
 
-        # Support aliases
-        # Legacy FloatMathNode mapped a,b,c,d,w,x,y,z to V0-V7 roughly?
-        # Actually Step 37 showed explicit mapping:
-        # a->V0, b->V1, c->V2, d->V3, w->V4, x->V5, y->V6, z->V7
-        aliases = {
-            "a": "V0", "b": "V1", "c": "V2", "d": "V3",
-            "w": "V4", "x": "V5", "y": "V6", "z": "V7"
-        }
-
-        needed = []
-        needed1 = []
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
-            var_name = token.text
-
-            if re.match(r"V[0-9]+", var_name):
-                needed.append(var_name)
-            elif var_name in aliases:
-                needed.append(aliases[var_name])
-
-        for v in needed:
-            if v not in V or V[v] is None:
-                needed1.append(v)
-        return needed1
 
     @classmethod
     def execute(cls, FloatFunc, V,stack={}):
@@ -98,7 +73,11 @@ class FloatMathNode(io.ComfyNode):
              variables["Vcnt"] = float(v_cnt)
              variables["V_count"] = float(v_cnt)
 
-        tree = parse_expr(FloatFunc);
+        tree = None
+        if isinstance(FloatFunc,str):
+            tree = parse_expr(FloatFunc)
+        else:
+            tree = FloatFunc
         # scalar execution
         visitor = UnifiedMathVisitor(variables, [1],state_storage=stack)
         result = visitor.visit(tree)

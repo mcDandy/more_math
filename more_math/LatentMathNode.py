@@ -8,16 +8,14 @@ from .helper_functions import (
     normalize_to_common_shape,
     make_zero_like,
     get_v_variable,
-    get_f_variable
+    get_f_variable,
+    checkLazyNew
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
-from antlr4 import InputStream, CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.MathExprParser import MathExprParser
-import re
 from comfy.nested_tensor import NestedTensor
 from .Stack import MrmthStack
+from .ParseTree import MrmthParseTree
 import copy
 
 class LatentMathNode(io.ComfyNode):
@@ -38,7 +36,11 @@ class LatentMathNode(io.ComfyNode):
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Latent.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
-                io.String.Input(id="Expression", default="I0*(1-F0)+I1*F0", tooltip="Expression to apply on input latents"),
+                io.MultiType.Input(
+                    io.String.Input("Expression", default="I0*(1-F0)+I1*F0", multiline=False),
+                    types=[io.String,MrmthParseTree],
+                    tooltip="Expression to apply on input latents",
+                ),
                 io.Combo.Input(
                     id="length_mismatch",
                     options=["do nothing","error","tile", "pad"],
@@ -60,35 +62,7 @@ class LatentMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",stack={}):
-
-        input_stream = InputStream(Expression)
-        lexer = MathExprLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        stream.fill()
-
-        # Support aliases
-        aliases_img = {"a": "V0", "b": "V1", "c": "V2", "d": "V3"}
-        aliases_flt = {"w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-
-        needed = []
-        needed1 = []
-        for token in filter(lambda t: t.type == MathExprParser.VARIABLE, stream.tokens):
-            var_name = token.text
-
-            if re.match(r"[VF][0-9]+", var_name):
-                needed.append(var_name)
-            elif var_name in aliases_img:
-                needed.append(aliases_img[var_name])
-            elif var_name in aliases_flt:
-                needed.append(aliases_flt[var_name])
-        for v in needed:
-            if v.startswith("V"):
-                if v not in V or V[v] is None:
-                    needed1.append(v)
-            elif v.startswith("F"):
-                if v not in F or F[v] is None:
-                    needed1.append(v)
-        return needed1
+        return checkLazyNew(Expression,V,F)
 
     @classmethod
     def execute(cls, V, F, Expression,batching, length_mismatch="tile",stack={}) -> io.NodeOutput:
@@ -148,7 +122,11 @@ class LatentMathNode(io.ComfyNode):
                       raise ValueError(f"Input '{name}' has shape {V[name]['samples'].shape[0]}, expected {ae.shape[0]} to match input.")
 
         # parse expression once
-        tree = parse_expr(Expression)
+        tree = None
+        if isinstance(Expression,str):
+            tree = parse_expr(Expression)
+        else:
+            tree = Expression
 
         ndim = ae.ndim
         batch_dim = 0

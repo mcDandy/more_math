@@ -13,7 +13,7 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
 
     Args:
-        Expr: The math expression string.
+        Expr: The math expression string or parse tree.
         V: Dictionary of input models (Autogrow Input).
         F: Dictionary of input floats (Autogrow Float).
         mapping: Optional dict mapping legacy alias names to V keys (e.g. {"a": "V0"}).
@@ -53,7 +53,11 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
              return sd.get(key, None)
         return None
 
-    tree = parse_expr(Expr)
+    tree = None
+    if isinstance(Expr,str):
+        tree = parse_expr(Expr)
+    else:
+        tree = Expr
     patches = {}
 
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)

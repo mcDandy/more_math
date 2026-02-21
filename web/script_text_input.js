@@ -27,6 +27,9 @@ const FUNCTIONS = new Set([
     "worley", "cellular_noise", "voronoi_noise", "plasma", "turbulence", "plasma_noise"
 ]);
 
+const OPENING_BRACKETS = new Set(['(', '[', '{']);
+const CLOSING_BRACKETS = new Set([')', ']', '}']);
+
 function escapeHtml(value) {
     return value.replace(/[&<>"']/g, (ch) => {
         switch (ch) {
@@ -50,12 +53,26 @@ function tokenize(text) {
     const tokens = [];
     const pattern = /#.*|\/\*[\s\S]*?\*\/|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
     let match;
+    const bracketStack = [];
+    
     while ((match = pattern.exec(text)) !== null) {
         const value = match[0];
         let type = "text";
+        let depth = 0;
+        
         if (value.startsWith("#") || value.startsWith("/*")) {
             type = "comment";
-        } else if (/^[+\-*/%^=<>|?:,;()\[\]{}]|==|!=|>=|<=|<<|>>|->$/.test(value)) {
+        } else if (OPENING_BRACKETS.has(value)) {
+            depth = bracketStack.length;
+            bracketStack.push(value);
+            type = "bracket";
+        } else if (CLOSING_BRACKETS.has(value)) {
+            if (bracketStack.length > 0) {
+                bracketStack.pop();
+            }
+            depth = bracketStack.length;
+            type = "bracket";
+        } else if (/^[+\-*/%^=<>|?:,;]|==|!=|>=|<=|<<|>>|->$/.test(value)) {
             type = "operator";
         } else if (/^(?:\d+\.\d*|\d+|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) {
             type = "number";
@@ -70,7 +87,7 @@ function tokenize(text) {
                 type = "variable";
             }
         }
-        tokens.push({ type, value });
+        tokens.push({ type, value, depth });
     }
     return tokens;
 }
@@ -81,6 +98,10 @@ function renderHighlight(text) {
         .map((token) => {
             if (token.type === "text") {
                 return escapeHtml(token.value);
+            }
+            if (token.type === "bracket") {
+                const depthClass = token.depth % 6;
+                return `<span class="mrmth-token-bracket mrmth-bracket-${depthClass}">${escapeHtml(token.value)}</span>`;
             }
             return `<span class="mrmth-token-${token.type}">${escapeHtml(token.value)}</span>`;
         })
@@ -185,6 +206,13 @@ function ensureStyles() {
         .mrmth-token-function { color: #8e44ad; }
         .mrmth-token-variable { color: #ecf0f1; }
         .mrmth-token-operator { color: #95a5a6; }
+        .mrmth-token-bracket { font-weight: bold; }
+        .mrmth-bracket-0 { color: #ffd700; }
+        .mrmth-bracket-1 { color: #da70d6; }
+        .mrmth-bracket-2 { color: #87cefa; }
+        .mrmth-bracket-3 { color: #98fb98; }
+        .mrmth-bracket-4 { color: #ff6347; }
+        .mrmth-bracket-5 { color: #ffa500; }
     `;
     document.head.appendChild(style);
 }

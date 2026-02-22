@@ -752,8 +752,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         pos_list = yield ctx.expr(1)
         size_list = yield ctx.expr(2)
 
-        inp = self._promote_to_tensor(inp)
-
         def to_int_list(x):
              if self._is_list(x): return [int(v) for v in x]
              if self._is_tensor(x): return x.int().tolist()
@@ -761,6 +759,16 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         p_l = to_int_list(pos_list)
         s_l = to_int_list(size_list)
+
+        # Handle strings
+        if isinstance(inp, str):
+            start = p_l[0] if p_l else 0
+            length = s_l[0] if s_l else len(inp)
+            start = max(0, start)
+            end = min(len(inp), start + length)
+            return inp[start:end]
+
+        inp = self._promote_to_tensor(inp)
 
         if len(p_l) != inp.ndim or len(s_l) != inp.ndim:
              # Basic safety fallback if dims don't match, though robust logic might handle slices properly if we truncate?

@@ -1,9 +1,9 @@
 import antlr4
 from comfy_api.latest import io
 
-@io.comfytype(io_type="PARSER")
+@io.comfytype(io_type="SYNTAX_TREE")
 class MrmthParseTree(io.ComfyTypeIO):
-    Type = antlr4.Parser  # Python type hint
+    Type = antlr4.ParseTreeVisitor  # Python type hint
 
     class Input(io.Input):
         def __init__(self, id: str, **kwargs):

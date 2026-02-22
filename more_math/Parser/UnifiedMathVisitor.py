@@ -208,7 +208,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitStringExp(self, ctx):
        val = yield ctx.STRING().getText()
-
+       val = val[1:-1].replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\').replace('\\"', '"').replace("\\'", "'")
        return val
 
     def visitParenExp(self, ctx):
@@ -310,6 +310,10 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAddExp(self, ctx):
         a = yield ctx.addExpr()
         b = yield ctx.mulExpr()
+
+        if isinstance(a, str) or isinstance(b, str):
+            return str(a) + str(b)
+
         return self._bin_op(a, b, torch.add, lambda a, b: a + b, ctx)
 
     def visitSubExp(self, ctx):

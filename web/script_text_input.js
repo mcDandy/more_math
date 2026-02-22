@@ -56,17 +56,19 @@ function escapeHtml(value) {
 
 function tokenize(text) {
     const tokens = [];
-    const pattern = /#.*|\/\*[\s\S]*?\*\/|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
+    const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
     let match;
     const bracketStack = [];
-    
+
     while ((match = pattern.exec(text)) !== null) {
         const value = match[0];
         let type = "text";
         let depth = 0;
-        
+
         if (value.startsWith("#") || value.startsWith("/*")) {
             type = "comment";
+        } else if (value.startsWith('"') || value.startsWith("'")) {
+            type = "string";
         } else if (OPENING_BRACKETS.has(value)) {
             depth = bracketStack.length;
             bracketStack.push(value);
@@ -211,6 +213,7 @@ function ensureStyles() {
         .mrmth-token-function { color: #8e44ad; }
         .mrmth-token-variable { color: #ecf0f1; }
         .mrmth-token-operator { color: #95a5a6; }
+        .mrmth-token-string { color: #4ea658; }
         .mrmth-token-bracket { font-weight: bold; }
         .mrmth-bracket-0 { color: #ffd700; }
         .mrmth-bracket-1 { color: #da70d6; }
@@ -321,13 +324,13 @@ function attachLineNumbers(widget) {
     const updateNumbers = () => {
         const rawLines = inputEl.value.split("\n");
         const textLineCount = Math.max(1, rawLines.length);
-        
+
         const gutterLines = [];
-        
+
         // Sync syntaxLayer width to match inputEl's actual content width
         const scrollbarWidth = inputEl.offsetWidth - inputEl.clientWidth;
         syntaxLayer.style.width = `calc(100% - ${scrollbarWidth}px)`;
-        
+
         // Create a temporary clone
         const measureClone = syntaxLayer.cloneNode(false);
         measureClone.style.position = "absolute";
@@ -335,7 +338,7 @@ function attachLineNumbers(widget) {
         measureClone.style.width = syntaxLayer.style.width;
         measureClone.style.height = "auto";
         syntaxLayer.parentElement.appendChild(measureClone);
-        
+
         // Build content with simple marker at start of each line
         let html = "";
         for (let i = 0; i < textLineCount; i++) {
@@ -346,31 +349,31 @@ function attachLineNumbers(widget) {
             }
         }
         measureClone.innerHTML = html;
-        
+
         // Simply read offsetTop of each marker
         const totalHeight = measureClone.offsetHeight;
-        
+
         for (let i = 0; i < textLineCount; i++) {
             const marker = measureClone.querySelector(`[data-ln="${i}"]`);
             const nextMarker = i < textLineCount - 1 ? measureClone.querySelector(`[data-ln="${i + 1}"]`) : null;
-            
+
             const currentY = marker ? marker.offsetTop : i * lineHeightPx;
             const nextY = nextMarker ? nextMarker.offsetTop : totalHeight;
-            
+
             const heightDiff = nextY - currentY;
             const visualLines = Math.max(1, Math.round(heightDiff / lineHeightPx));
-            
+
             gutterLines.push(String(i + 1));
-            
+
             for (let j = 1; j < visualLines; j++) {
                 gutterLines.push(" ");
             }
         }
-        
+
         measureClone.remove();
-        
+
         gutterContent.textContent = gutterLines.join("\n");
-        
+
         gutter.style.height = `${inputEl.clientHeight}px`;
         gutterContent.style.transform = `translateY(${-inputEl.scrollTop}px)`;
     };
@@ -391,30 +394,30 @@ function attachLineNumbers(widget) {
 
         const selectionStart = inputEl.selectionStart;
         const selectionEnd = inputEl.selectionEnd;
-        
+
         if (selectionStart !== selectionEnd) {
             return;
         }
 
         const text = inputEl.value;
         const charAfter = text[selectionStart] || '';
-        
+
         if (/[a-zA-Z0-9_]/.test(charAfter) || CLOSING_BRACKETS.has(charAfter)) {
             return;
         }
 
         const closingBracket = BRACKET_PAIRS[key];
-        
+
         e.preventDefault();
-        
+
         const before = text.substring(0, selectionStart);
         const after = text.substring(selectionStart);
         inputEl.value = before + key + closingBracket + after;
         inputEl.selectionStart = inputEl.selectionEnd = selectionStart + 1;
-        
+
         updateNumbers();
         updateHighlight();
-        
+
         const event = new Event('input', { bubbles: true });
         inputEl.dispatchEvent(event);
     };
@@ -443,7 +446,7 @@ function attachLineNumbers(widget) {
         updateNumbers();
         updateHighlight();
     });
-    
+
     return true;
 }
 

@@ -201,6 +201,11 @@ class UnifiedMathVisitor(MathExprVisitor):
             res.append((yield e))
         return res
 
+    def visitStringExp(self, ctx):
+       val = yield ctx.VARIABLE().getText()
+
+       return val
+
     def visitParenExp(self, ctx):
         return (yield ctx.expr())
 
@@ -668,7 +673,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         val = (yield ctx.expr(0))
         min_v = (yield ctx.expr(1))
         max_v = (yield ctx.expr(2))
-        
+
         if self._is_list(val):
             min_scalar = float(min_v.flatten()[0].item()) if self._is_tensor(min_v) else min_v
             max_scalar = float(max_v.flatten()[0].item()) if self._is_tensor(max_v) else max_v
@@ -2604,7 +2609,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if len(shape) == 0:
             return torch.tensor(0.0, device=self.device)
-        
+
         offset_list = None
         if offset is not None:
             if self._is_tensor(offset):
@@ -2676,7 +2681,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if len(shape) == 0:
             return torch.tensor(0.0, device=self.device)
-        
+
         offset_list = None
         if offset is not None:
             if self._is_tensor(offset):
@@ -2734,7 +2739,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if len(shape) == 0:
             return torch.tensor(0.0, device=self.device)
-        
+
         offset_list = None
         if offset is not None:
             if self._is_tensor(offset):
@@ -2752,7 +2757,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             ],
             indexing='ij'
         )
-        
+
         # Call perlin_noise_nd with all coordinate grids
         noise = NoiseUtils.plasma_noise_nd(grids, scale, seed, self.device)
 
@@ -2793,7 +2798,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         base = self._promote_to_tensor((yield ctx.expr(0)))
         overlay = self._promote_to_tensor((yield ctx.expr(1)))
         offset = yield ctx.expr(2)
-        
+
         # Convert offset to list of ints
         if self._is_tensor(offset):
             offset = [int(x) for x in offset.flatten().tolist()]
@@ -2801,38 +2806,38 @@ class UnifiedMathVisitor(MathExprVisitor):
             offset = [int(x) for x in offset]
         else:
             offset = [int(offset)]
-        
+
         # Ensure offset matches base dimensions
         if len(offset) != base.ndim:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Offset dimensions {len(offset)} must match base dimensions {base.ndim}")
-        
+
         # Calculate crop and paste regions
         crop_slices = []
         paste_slices = []
-        
+
         for i in range(base.ndim):
             off = offset[i]
             overlay_size = overlay.shape[i]
             base_size = base.shape[i]
-            
+
             # Determine overlay crop region (what part of overlay to use)
             crop_start = max(0, -off)  # Crop from overlay if offset is negative
             crop_end = min(overlay_size, base_size - off)  # Crop if overlay extends beyond base
-            
+
             # Determine base paste region (where to place overlay in base)
             paste_start = max(0, off)  # Start position in base
             paste_end = min(base_size, off + overlay_size)  # End position in base
-            
+
             crop_slices.append(slice(crop_start, crop_end))
             paste_slices.append(slice(paste_start, paste_end))
-        
+
         # Crop overlay to fit
         cropped_overlay = overlay[tuple(crop_slices)]
-        
+
         # Create result by cloning base and pasting overlay
         result = base.clone()
         result[tuple(paste_slices)] = cropped_overlay
-        
+
         return result
 
 

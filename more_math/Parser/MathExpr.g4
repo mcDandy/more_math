@@ -83,8 +83,9 @@ atom:
 	| VARIABLE						# VariableExp
 	| NUMBER						# NumberExp
 	| CONSTANT					# ConstantExp
+	| STRING					# StringExp
 	| LPAREN expr RPAREN		# ParenExp
-	| PIPE expr PIPE		# AbsExp
+	| PIPE expr PIPE			# AbsExp
 	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
 	| VARIABLE LPAREN exprList? RPAREN	# CallExp
 	| NONE						# NoneExp
@@ -420,6 +421,9 @@ RBRACE: '}';
 
 NUMBER: ([0-9]+ ('.' [0-9]*)? | '.' [0-9]+) ([eE][+-]? [0-9]+)?;
 CONSTANT: ('pi' | 'PI' | 'e' | 'E');
+STRING: '"' (~["\\\r\n] | '\\' .)* '"'
+       | '\'' (~['\\\r\n] | '\\' .)* '\''
+       ;
 VARIABLE: [a-zA-Z_] [a-zA-Z_0-9]*;
 
 SL_COMMENT: '#' ~[\r\n]* -> skip;

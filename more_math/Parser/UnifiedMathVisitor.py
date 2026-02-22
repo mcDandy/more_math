@@ -103,53 +103,58 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.full(t,val,device=self.device)
         return torch.tensor(val, device=self.device)
 
-    def _bin_op(self, a, b, torch_op, scalar_op):
+    def _bin_op(self, a, b, torch_op, scalar_op, ctx):
         """
         Generic binary operation handler.
         """
-        if self._is_tensor(a) and a.numel() == 1:
-            a = float(a.flatten()[0].item())
-        if self._is_tensor(b) and b.numel() == 1:
-            b = float(b.flatten()[0].item())
+        try:
+            if self._is_tensor(a) and a.numel() == 1:
+                a = float(a.flatten()[0].item())
+            if self._is_tensor(b) and b.numel() == 1:
+                b = float(b.flatten()[0].item())
 
-        # one of them is a list and one is tensor
-        if self._is_tensor(a) and self._is_list(b):
-            if a.shape[0] == len(b):
-                A = torch.split(a, 1)
-                results = [self._bin_op(x, y, torch_op, scalar_op) for x, y in zip(A, b)]
-                # Ensure all results are tensors
+            # one of them is a list and one is tensor
+            if self._is_tensor(a) and self._is_list(b):
+                if a.shape[0] == len(b):
+                    A = torch.split(a, 1)
+                    results = [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(A, b)]
+                    # Ensure all results are tensors
+                    results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+                    return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+                results = [self._bin_op(a, x, torch_op, scalar_op, ctx) for x in b]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
-            results = [self._bin_op(a, x, torch_op, scalar_op) for x in b]
-            results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
-            return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
-        if self._is_list(a) and self._is_tensor(b):
-            if b.shape[0] == len(a):
-                B = torch.split(b, 1)
-                results = [self._bin_op(x, y, torch_op, scalar_op) for x, y in zip(a, B)]
+            if self._is_list(a) and self._is_tensor(b):
+                if b.shape[0] == len(a):
+                    B = torch.split(b, 1)
+                    results = [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a, B)]
+                    results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+                    return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+                results = [self._bin_op(x, b, torch_op, scalar_op, ctx) for x in a]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
-            results = [self._bin_op(x, b, torch_op, scalar_op) for x in a]
-            results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
-            return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
 
-        if self._is_list(a) and not self._is_tensor(b):
-            if self._is_list(b):
-                if len(a) != len(b):
-                    raise ValueError("List length mismatch")
-                return [self._bin_op(x, y, torch_op, scalar_op) for x, y in zip(a, b)]
-            return [self._bin_op(x, b, torch_op, scalar_op) for x in a]
+            if self._is_list(a) and not self._is_tensor(b):
+                if self._is_list(b):
+                    if len(a) != len(b):
+                        raise ValueError("List length mismatch")
+                    return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a, b)]
+                return [self._bin_op(x, b, torch_op, scalar_op, ctx) for x in a]
 
-        if not self._is_tensor(a) and self._is_list(b):
-            return [self._bin_op(a, x, torch_op, scalar_op) for x in b]
+            if not self._is_tensor(a) and self._is_list(b):
+                return [self._bin_op(a, x, torch_op, scalar_op, ctx) for x in b]
 
-        # Handle tensor operations
-        if self._is_tensor(a) or self._is_tensor(b):
-            if torch_op:
-                return torch_op(a, b).contiguous()
+            # Handle tensor operations
+            if self._is_tensor(a) or self._is_tensor(b):
+                if torch_op:
+                    return torch_op(a, b).contiguous()
+                return scalar_op(a, b)
+
             return scalar_op(a, b)
+        except (ArithmeticError) as e:
+            error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
+            raise ArithmeticError(f"{error_prefix} {str(e)}")
 
-        return scalar_op(a, b)
 
     def _unary_op(self, a, torch_op, scalar_op):
         if self._is_tensor(a) and a.numel() == 1:
@@ -202,7 +207,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return res
 
     def visitStringExp(self, ctx):
-       val = yield ctx.VARIABLE().getText()
+       val = yield ctx.STRING().getText()
 
        return val
 
@@ -305,65 +310,65 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitAddExp(self, ctx):
         a = yield ctx.addExpr()
         b = yield ctx.mulExpr()
-        return self._bin_op(a, b, torch.add, lambda a, b: a + b)
+        return self._bin_op(a, b, torch.add, lambda a, b: a + b, ctx)
 
     def visitSubExp(self, ctx):
         a = yield ctx.addExpr()
         b = yield ctx.mulExpr()
-        return self._bin_op(a, b, torch.sub, lambda a, b: a - b)
+        return self._bin_op(a, b, torch.sub, lambda a, b: a - b, ctx)
 
     def visitMulExp(self, ctx):
         a = yield ctx.mulExpr()
         b = yield ctx.shiftExpr()
-        return self._bin_op(a, b, torch.mul, lambda a, b: a * b)
+        return self._bin_op(a, b, torch.mul, lambda a, b: a * b, ctx)
 
     def visitDivExp(self, ctx):
         a = yield ctx.mulExpr()
         b = yield ctx.shiftExpr()
-        return self._bin_op(a, b, torch.div, lambda a, b: a / b)
+        return self._bin_op(a, b, torch.div, lambda a, b: a / b, ctx)
 
     def visitModExp(self, ctx):
         a = yield ctx.mulExpr()
         b = yield ctx.shiftExpr()
-        return self._bin_op(a, b, torch.remainder, lambda a, b: a % b)
+        return self._bin_op(a, b, torch.remainder, lambda a, b: a % b, ctx)
 
     def visitPowExp(self, ctx):
         a = yield ctx.unaryExpr()
         b = yield ctx.powExpr()
-        return self._bin_op(a, b, torch.pow, lambda a, b: a ** b)
+        return self._bin_op(a, b, torch.pow, lambda a, b: a ** b, ctx)
 
-    def _bool_op(self, a, b, torch_op, scalar_op):
-        return self._bin_op(a, b, torch_op, scalar_op)
+    def _bool_op(self, a, b, torch_op, scalar_op, ctx=None):
+        return self._bin_op(a, b, torch_op, scalar_op, ctx)
 
     def visitNeExp(self, ctx):
         a = yield ctx.compExpr()
         b = yield ctx.addExpr()
-        return self._bool_op(a, b, torch.ne, lambda a, b: a != b)
+        return self._bool_op(a, b, torch.ne, lambda a, b: a != b, ctx)
 
     def visitEqExp(self, ctx):
         a = yield ctx.compExpr()
         b = yield ctx.addExpr()
-        return self._bool_op(a, b, torch.eq, lambda a, b: a == b)
+        return self._bool_op(a, b, torch.eq, lambda a, b: a == b, ctx)
 
     def visitGtExp(self, ctx):
         a = yield ctx.compExpr()
         b = yield ctx.addExpr()
-        return self._bool_op(a, b, torch.gt, lambda a, b: a > b)
+        return self._bool_op(a, b, torch.gt, lambda a, b: a > b, ctx)
 
     def visitLtExp(self, ctx):
         a = yield ctx.compExpr()
         b = yield ctx.addExpr()
-        return self._bool_op(a, b, torch.lt, lambda a, b: a < b)
+        return self._bool_op(a, b, torch.lt, lambda a, b: a < b, ctx)
 
     def visitGeExp(self, ctx):
         a = yield ctx.compExpr()
         b = yield ctx.addExpr()
-        return self._bool_op(a, b, torch.ge, lambda a, b: a >= b)
+        return self._bool_op(a, b, torch.ge, lambda a, b: a >= b, ctx)
 
     def visitLeExp(self, ctx):
         a = yield ctx.compExpr()
         b = yield ctx.addExpr()
-        return self._bool_op(a, b, torch.le, lambda a, b: a <= b)
+        return self._bool_op(a, b, torch.le, lambda a, b: a <= b, ctx)
 
     def visitToAdd(self, ctx):
         return (yield ctx.addExpr())
@@ -475,7 +480,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitGeluFunc(self, ctx):
         return self._unary_op(
-            (yield ctx.expr()), F.gelu, lambda x: 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * math.pow(x, 3))))
+            (yield ctx.expr()), F.gelu, lambda x: 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * math.pow(x, 3)))),
         )
 
     def visitAnglFunc(self, ctx):
@@ -2424,8 +2429,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             if self._is_list(b):
                 if len(a) != len(b):
                     raise ValueError("List length mismatch in bitwise operation")
-                return [self._bitwise_op(x, y, torch_op, scalar_op) for x, y in zip(a, b)]
-            return [self._bitwise_op(x, b, torch_op, scalar_op) for x in a]
+                return [self._bitwise_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a, b)]
+            return [self._bitwise_op(x, b, torch_op, scalar_op, ctx) for x in a]
 
         if not self._is_tensor(a) and self._is_list(b):
             return [self._bitwise_op(a, x, torch_op, scalar_op) for x in b]
@@ -2466,7 +2471,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             return scalar_op(a, b)
 
         return scalar_op(a, b)
-
     def _bitwise_not(self, v):
         """Unary bitwise NOT handling for tensors, lists and scalars with support for fp16 and int16."""
         if self._is_tensor(v):

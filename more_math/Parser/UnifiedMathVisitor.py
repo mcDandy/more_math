@@ -342,6 +342,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._bin_op(a, b, torch.pow, lambda a, b: a ** b, ctx)
 
     def _bool_op(self, a, b, torch_op, scalar_op, ctx=None):
+        if isinstance(a, str) or isinstance(b, str):
+            a_str = str(a)
+            b_str = str(b)
+            result = scalar_op(a_str, b_str)
+            return float(result)
+
         return self._bin_op(a, b, torch_op, scalar_op, ctx)
 
     def visitNeExp(self, ctx):

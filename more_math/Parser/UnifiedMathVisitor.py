@@ -2817,9 +2817,49 @@ class UnifiedMathVisitor(MathExprVisitor):
         return F.pad(val, reversed_pad)
 
     def visitOverlayFunc(self, ctx):
-        base = self._promote_to_tensor((yield ctx.expr(0)))
-        overlay = self._promote_to_tensor((yield ctx.expr(1)))
-        offset = yield ctx.expr(2)
+        base = yield ctx.expr(0)
+        overlay = yield ctx.expr(1)
+        offset_raw = yield ctx.expr(2)
+
+        if isinstance(base, str):
+            if not isinstance(overlay, str):
+                overlay = str(overlay)
+
+            offset = int(offset_raw) if not self._is_tensor(offset_raw) else int(offset_raw.item())
+            if offset >= len(base):
+                return base
+
+            if offset < 0:
+                overlay = overlay[-offset:]
+                offset = 0
+
+            end = min(len(base), offset + len(overlay))
+            overlay_len = end - offset
+            return base[:offset] + overlay[:overlay_len] + base[end:]
+
+        if self._is_list(base):
+            if not self._is_list(overlay):
+                overlay = [overlay]
+
+            offset = int(offset_raw) if not self._is_tensor(offset_raw) else int(offset_raw.item())
+            if offset >= len(base):
+                return base
+
+            if offset < 0:
+                overlay = overlay[-offset:]
+                offset = 0
+
+            result = list(base)
+            end = min(len(base), offset + len(overlay))
+            for i, val in enumerate(overlay[:end - offset]):
+                result[offset + i] = val
+
+            return result
+
+        # Handle tensors (existing implementation)
+        base = self._promote_to_tensor(base)
+        overlay = self._promote_to_tensor(overlay)
+        offset = offset_raw
 
         # Convert offset to list of ints
         if self._is_tensor(offset):
@@ -2841,6 +2881,9 @@ class UnifiedMathVisitor(MathExprVisitor):
             off = offset[i]
             overlay_size = overlay.shape[i]
             base_size = base.shape[i]
+
+            if off >= base_size:
+                return base  # Overlay outside of base, return original
 
             # Determine overlay crop region (what part of overlay to use)
             crop_start = max(0, -off)  # Crop from overlay if offset is negative

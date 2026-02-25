@@ -59,6 +59,7 @@ function tokenize(text) {
     const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
     let match;
     const bracketStack = [];
+    const depthByType = { '(': 0, '[': 0, '{': 0 };
 
     while ((match = pattern.exec(text)) !== null) {
         const value = match[0];
@@ -70,14 +71,26 @@ function tokenize(text) {
         } else if (value.startsWith('"') || value.startsWith("'")) {
             type = "string";
         } else if (OPENING_BRACKETS.has(value)) {
-            depth = bracketStack.length;
+            depth = depthByType[value];
+            depthByType[value]++;
             bracketStack.push(value);
             type = "bracket";
         } else if (CLOSING_BRACKETS.has(value)) {
             if (bracketStack.length > 0) {
-                bracketStack.pop();
+                const lastOpen = bracketStack[bracketStack.length - 1];
+                if (BRACKET_PAIRS[lastOpen] === value) {
+                    // Use depth of bracket type being closed, before decrement
+                    depth = depthByType[lastOpen] - 1;
+                    depthByType[lastOpen]--;
+                    bracketStack.pop();
+                } else {
+                    // Mismatched closing bracket
+                    depth = 0;
+                }
+            } else {
+                // Unmatched closing bracket
+                depth = 0;
             }
-            depth = bracketStack.length;
             type = "bracket";
         } else if (/^[+\-*/%^=<>|?:,;]|==|!=|>=|<=|<<|>>|->$/.test(value)) {
             type = "operator";
@@ -371,7 +384,7 @@ function attachLineNumbers(widget) {
         }
 
         measureClone.remove();
-
+        
         gutterContent.textContent = gutterLines.join("\n");
 
         gutter.style.height = `${inputEl.clientHeight}px`;
@@ -402,11 +415,14 @@ function attachLineNumbers(widget) {
         const text = inputEl.value;
         const charAfter = text[selectionStart] || '';
 
-        if (/[a-zA-Z0-9_]/.test(charAfter) || CLOSING_BRACKETS.has(charAfter)) {
+        // Only prevent auto-close if the MATCHING closing bracket is after cursor
+        const closingBracket = BRACKET_PAIRS[key];
+        const isMatchingClosingBracket = charAfter === closingBracket;
+
+        // Prevent auto-close if next char is alphanumeric or a matching closing bracket
+        if (/[a-zA-Z0-9_]/.test(charAfter) || isMatchingClosingBracket) {
             return;
         }
-
-        const closingBracket = BRACKET_PAIRS[key];
 
         e.preventDefault();
 

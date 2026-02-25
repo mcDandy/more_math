@@ -275,6 +275,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     return result.item()
                 return result.contiguous()
             return result
+        elif isinstance(val, str):
             current = val
             for idx in indices:
                 if isinstance(idx, torch.Tensor):
@@ -2406,27 +2407,27 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitLShiftExp(self, ctx):
         a = yield ctx.shiftExpr()
         b = yield ctx.powExpr()
-        return self._bitwise_op(a, b, torch.bitwise_left_shift, self._scalar_bitwise_lshift)
+        return self._bitwise_op(a, b, torch.bitwise_left_shift, self._scalar_bitwise_lshift,ctx)
 
     def visitRShiftExp(self, ctx):
         a = yield ctx.shiftExpr()
         b = yield ctx.powExpr()
-        return self._bitwise_op(a, b, torch.bitwise_right_shift, self._scalar_bitwise_rshift)
+        return self._bitwise_op(a, b, torch.bitwise_right_shift, self._scalar_bitwise_rshift,ctx)
 
     def visitBitAndFunc(self, ctx):
         a = (yield ctx.expr(0))
         b = (yield ctx.expr(1))
-        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_and(x, y), lambda x, y: x & y)
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_and(x, y), lambda x, y: x & y,ctx)
 
     def visitBitXorFunc(self, ctx):
         a = (yield ctx.expr(0))
         b = (yield ctx.expr(1))
-        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_xor(x, y), lambda x, y: x ^ y)
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_xor(x, y), lambda x, y: x ^ y,ctx)
 
     def visitBitOrFunc(self, ctx):
         a = (yield ctx.expr(0))
         b = (yield ctx.expr(1))
-        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_or(x, y), lambda x, y: x | y)
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_or(x, y), lambda x, y: x | y,ctx)
 
     def visitBitNotFunc(self, ctx):
         v = (yield ctx.expr())
@@ -2448,7 +2449,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             # Scalar has shape []
             return []
 
-    def _bitwise_op(self, a, b, torch_op, scalar_op):
+    def _bitwise_op(self, a, b, torch_op, scalar_op,ctx):
         """Binary bitwise operation handler supporting tensors, lists, and scalars."""
         if self._is_tensor(a) and a.numel() == 1:
             a = int(a.flatten()[0].item())
@@ -2459,19 +2460,19 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(a) and self._is_list(b):
             if a.shape[0] == len(b):
                 A = torch.split(a, 1)
-                results = [self._bitwise_op(x, y, torch_op, scalar_op) for x, y in zip(A, b)]
+                results = [self._bitwise_op(x, y, torch_op, scalar_op,ctx) for x, y in zip(A, b)]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
-            results = [self._bitwise_op(a, x, torch_op, scalar_op) for x in b]
+            results = [self._bitwise_op(a, x, torch_op, scalar_op,ctx) for x in b]
             results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
             return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
         if self._is_list(a) and self._is_tensor(b):
             if b.shape[0] == len(a):
                 B = torch.split(b, 1)
-                results = [self._bitwise_op(x, y, torch_op, scalar_op) for x, y in zip(a, B)]
+                results = [self._bitwise_op(x, y, torch_op, scalar_op,ctx) for x, y in zip(a, B)]
                 results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
                 return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
-            results = [self._bitwise_op(x, b, torch_op, scalar_op) for x in a]
+            results = [self._bitwise_op(x, b, torch_op, scalar_op,ctx) for x in a]
             results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
             return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
 
@@ -2479,12 +2480,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(a) and not self._is_tensor(b):
             if self._is_list(b):
                 if len(a) != len(b):
-                    raise ValueError("List length mismatch in bitwise operation")
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: List length mismatch in bitwise operation")
                 return [self._bitwise_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a, b)]
             return [self._bitwise_op(x, b, torch_op, scalar_op, ctx) for x in a]
 
         if not self._is_tensor(a) and self._is_list(b):
-            return [self._bitwise_op(a, x, torch_op, scalar_op) for x in b]
+            return [self._bitwise_op(a, x, torch_op, scalar_op,ctx) for x in b]
 
         # Handle tensor operations
         if self._is_tensor(a) or self._is_tensor(b):

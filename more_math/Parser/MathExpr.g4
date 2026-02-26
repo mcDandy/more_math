@@ -123,8 +123,7 @@ func1:
 	| SIGM LPAREN expr RPAREN			# sigmoidFunc
 	| ANGL LPAREN expr RPAREN			# anglFunc
 	| PRNT LPAREN expr RPAREN			# printFunc
-	| FRACT LPAREN expr RPAREN			# FractFunc
-	| RELU LPAREN expr RPAREN			# ReluFunc
+	| FRACT LPAREN expr RPAREN			# ReluFunc
 	| SOFTPLUS LPAREN expr RPAREN		# SoftplusFunc
 	| GELU LPAREN expr RPAREN			# GeluFunc
 	| SIGN LPAREN expr RPAREN			# SignFunc
@@ -158,7 +157,14 @@ func1:
 	| FLOW_TO_IMAGE LPAREN expr RPAREN	# FlowToImageFunc
 	| BNOT LPAREN expr RPAREN		# BitNotFunc
 	| BITCOUNT LPAREN expr RPAREN	# BitCountFunc
-	| SHAPE LPAREN expr RPAREN		# ShapeFunc;
+	| SHAPE LPAREN expr RPAREN		# ShapeFunc
+	| 'upper' LPAREN expr RPAREN # UpperFunc
+    | 'lower' LPAREN expr RPAREN # LowerFunc
+    | 'trim' LPAREN expr RPAREN # TrimFunc
+    | 'dilate' LPAREN expr (COMMA expr)? RPAREN # DilateFunc
+    | 'erode' LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
+    | 'morph_open' LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
+    | 'morph_close' LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc
@@ -190,7 +196,14 @@ func2:
 	| RIFE LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN # RifeFunc
 	| BAND LPAREN expr COMMA expr RPAREN		# BitAndFunc
 	| XOR LPAREN expr COMMA expr RPAREN		# BitXorFunc
-	| BOR LPAREN expr COMMA expr RPAREN		# BitOrFunc;
+	| BOR LPAREN expr COMMA expr RPAREN		# BitOrFunc
+
+    | 'split' '(' expr (',' expr)? ')' # SplitFunc
+    | 'join' '(' expr (',' expr)? ')' # JoinFunc
+    | 'substring' '(' expr ',' expr (',' expr)? ')' # SubstringFunc
+    | 'substr' '(' expr ',' expr (',' expr)? ')' # SubstringFunc
+    | 'find' '(' expr ',' expr ')' # FindFunc
+	| 'replace' '(' expr ',' expr ',' expr ')' # ReplaceFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN	# ClampFunc
@@ -428,4 +441,4 @@ VARIABLE: [a-zA-Z_] [a-zA-Z_0-9]*;
 
 SL_COMMENT: '#' ~[\r\n]* -> skip;
 ML_COMMENT: '/*' .*? '*/' -> skip;
-WS: [ \t\r\n]+ -> skip;
+WS: [ \t\r\n]+ -> skip;WS: [ \t\r\n]+ -> skip;

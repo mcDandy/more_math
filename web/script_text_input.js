@@ -24,7 +24,8 @@ const FUNCTIONS = new Set([
     "random_exponential", "randln", "random_log_normal", "randb", "random_bernoulli", "randp", "random_poisson", "randg",
     "random_gamma", "randbeta", "random_beta", "randl", "random_laplace", "randgumbel", "random_gumbel", "randw",
     "random_weibull", "randchi2", "random_chi2", "randt", "random_studentt", "perlin", "perlin_noise", "cellular", "voronoi",
-    "worley", "cellular_noise", "voronoi_noise", "plasma", "turbulence", "plasma_noise"
+    "worley", "cellular_noise", "voronoi_noise", "plasma", "turbulence", "plasma_noise",
+    "upper", "lower", "split", "join", "substring", "substr", "find", "trim", "replace"
 ]);
 
 const BRACKET_PAIRS = {

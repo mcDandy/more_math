@@ -217,8 +217,8 @@ func3:
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN	# CropFunc
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# sifftFunc
 	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc
-	| RGB_TO_HSV LPAREN expr COMMA expr COMMA expr RPAREN # RgbToHsvFunc
-	| HSV_TO_RGB LPAREN expr COMMA expr COMMA expr RPAREN # HsvToRgbFunc;
+	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # RgbToHsvFunc
+	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc

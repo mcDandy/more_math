@@ -1110,8 +1110,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitCountFunc(self, ctx):
         val = yield ctx.expr()
-        if isinstance(val, str):
-            return float(len(val))
         if self._is_list(val):
             return float(len(val))
         if self._is_tensor(val):
@@ -2180,9 +2178,12 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitEdgeFunc(self, ctx):
         tsr_val = yield ctx.expr(0)
         tsr = self._promote_to_tensor(tsr_val)
+        kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
+        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        
         original_shape = tsr.shape
         tsr = tsr.float()
-
+        
         reshap = False
         if len(ctx.expr()) >= 2:
             reshap_val = yield ctx.expr(1)
@@ -2226,21 +2227,943 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return self._apply_spatial_op(tsr, blur_op, original_shape) if reshap else blur_op(tsr)
 
-    def visitRgbToHsvFunc(self, ctx):
-        r = self._promote_to_tensor((yield ctx.expr(0)))
-        g = self._promote_to_tensor((yield ctx.expr(1)))
-        b = self._promote_to_tensor((yield ctx.expr(2)))
+    def visitDistFunc(self, ctx):
+        x1 = yield ctx.expr(0)
+        y1 = yield ctx.expr(1)
+        x2 = yield ctx.expr(2)
+        y2 = yield ctx.expr(3)
+        res_sq = (x2-x1)**2 + (y2-y1)**2
+        if self._is_tensor(res_sq):
+            return torch.sqrt(res_sq)
+        return math.sqrt(res_sq)
+
+    def visitRemapFunc(self, ctx):
+        v = yield ctx.expr(0)
+        i_min = yield ctx.expr(1)
+        i_max = yield ctx.expr(2)
+        o_min = yield ctx.expr(3)
+        o_max = yield ctx.expr(4)
+        epsilon = 1.0e-10
+        denom = (i_max - i_min)
+        if self._is_tensor(denom):
+            denom = torch.where(denom == 0, torch.fill(denom,epsilon), denom)
+        elif self._is_list(denom):
+            denom = [epsilon if d == 0 else d for d in denom]
+            return [o_min + (vi - i_min) * (o_max - o_min) / di for vi, di in zip(v, denom)]
+        elif denom == 0:
+            denom = epsilon
+
+        return o_min + (v - i_min) * (o_max - o_min) / denom
+
+    def _ensure_dict_storage(self):
+        if not isinstance(self._state_storage, dict):
+             if not self._state_storage:
+                 self._state_storage = {}
+             else:
+                 self._state_storage = {i: v for i, v in enumerate(self._state_storage)}
+
+    def visitPushFunc(self, ctx):
+        self._ensure_dict_storage()
+        f= yield ctx.expr(0)
+        slot = int(f)
+        if slot not in self._state_storage:
+            self._state_storage[slot] = []
+        value = yield ctx.expr(1)
+        self._state_storage[slot].append(value)
+        return value
+
+    def visitPopFunc(self, ctx):
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
+        if slot not in self._state_storage or not self._state_storage[slot]:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pop from empty slot: {slot}")
+        return self._state_storage[slot].pop()
+
+    def visitClearFunc(self, ctx):
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
+        if slot in self._state_storage:
+            self._state_storage[slot] = []
+        return None
+
+    def visitHasFunc(self, ctx):
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
+        return float(slot in self._state_storage and bool(self._state_storage[slot]))
+
+    def visitGetFunc(self, ctx):
+        self._ensure_dict_storage()
+        slot = int((yield ctx.expr()))
+        if slot not in self._state_storage:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Get from empty slot: {slot}")
+        storage_list = self._state_storage[slot]
+        return storage_list[-1] if storage_list else None
+
+    def visitBreakExp(self, ctx):
+        return BreakSignal()
+
+    def visitContinueExp(self, ctx):
+        return ContinueSignal()
+
+    def visitEmptyTensorFunc(self, ctx):
+        value = (yield ctx.expr(0)) if ctx.expr(0) else 0.0
+        type = (yield ctx.expr(1)).dtype if ctx.expr(1) else None
+        shape_val = yield ctx.indexExpr()
+
+        if self._is_tensor(shape_val):
+            shape = shape_val.int().tolist()
+        elif self._is_list(shape_val):
+            shape = [int(float(x)) for x in shape_val]
+        else:
+            shape = [int(float(shape_val))]
+
+        return torch.full(shape, value, device=self.device,dtype=type)
+
+    def visitSoftmaxFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        return F.softmax(val.float())
+    def visitSoftminFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        return F.softmax(-val.float())
+
+    def visitArgminFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_tensor(val):
+            return torch.argmin(val.flatten())
+        if self._is_list(val):
+            return float(val.index(min(val)))
+        return 0.0
+
+    def visitArgmaxFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_tensor(val):
+            return torch.argmax(val.flatten())
+        if self._is_list(val):
+            return float(val.index(max(val)))
+        return 0.0
+
+    def visitUniqueFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_tensor(val):
+            unique_vals, _ = torch.unique(val.flatten(), return_counts=False, sorted=True)
+            return unique_vals
+        if self._is_list(val):
+            return sorted(list(set(val)))
+        return val
+
+    def visitFlattenFunc(self, ctx):
+        val = (yield ctx.expr())
+        if self._is_tensor(val):
+            return val.flatten()
+
+        if self._is_list(val):
+            return self._flatten_list(val)
+
+        return val
+
+    def _flatten_list(self, lst):
+        """Recursivly flatten list"""
+        result = []
+        for item in lst:
+            if self._is_list(item):
+                result.extend(self._flatten_list(item))
+            else:
+                result.append(item)
+        return result
+
+    def visitCrossFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+
+        try:
+            # Cross product requires vectors with 3-component last dimension (supports broadcasting)
+            if a.ndim < 1 or b.ndim < 1:
+                raise ValueError("Cross product requires at least 1D tensors")
+
+            if a.shape[-1] != 3 or b.shape[-1] != 3:
+                raise ValueError("Cross product requires last dimension size = 3")
+
+            return torch.cross(a, b, dim=-1)
+        except ValueError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: cross({a.shape}, {b.shape}): {str(e)}"
+            raise ValueError(error_msg)
+
+    def visitMatmulFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+
+        try:
+            if a.ndim < 1 or b.ndim < 1:
+                raise ValueError("matmul requires tensors with at least 1 dimension")
+            return torch.matmul(a, b)
+        except RuntimeError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: matmul({a.shape}, {b.shape}): Incompatible shapes for matrix multiplication - {str(e)}"
+            raise ValueError(error_msg)
+        except ValueError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: matmul({a.shape}, {b.shape}): {str(e)}"
+            raise ValueError(error_msg)
+
+    def visitToShift(self, ctx):
+        return (yield ctx.shiftExpr())
+
+    def visitLShiftExp(self, ctx):
+        a = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
+        return self._bitwise_op(a, b, torch.bitwise_left_shift, self._scalar_bitwise_lshift,ctx)
+
+    def visitRShiftExp(self, ctx):
+        a = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
+        return self._bitwise_op(a, b, torch.bitwise_right_shift, self._scalar_bitwise_rshift,ctx)
+
+    def visitBitAndFunc(self, ctx):
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_and(x, y), lambda x, y: x & y,ctx)
+
+    def visitBitXorFunc(self, ctx):
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_xor(x, y), lambda x, y: x ^ y,ctx)
+
+    def visitBitOrFunc(self, ctx):
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        return self._bitwise_op(a, b, lambda x, y: torch.bitwise_or(x, y), lambda x, y: x | y,ctx)
+
+    def visitBitNotFunc(self, ctx):
+        v = (yield ctx.expr())
+        return self._bitwise_not(v)
+
+    def visitBitCountFunc(self, ctx):
+        v = (yield ctx.expr())
+        return self._bitwise_popcount(v)
+
+    def visitShapeFunc(self, ctx):
+        val = (yield ctx.expr())
+        if self._is_tensor(val):
+            # Return shape as a 1D tensor of integers
+            return list(val.shape)
+        elif self._is_list(val):
+            # Return list length as a single-element tensor
+            return [len(val)]
+        else:
+            # Scalar has shape []
+            return []
+
+    def _bitwise_op(self, a, b, torch_op, scalar_op,ctx):
+        """Binary bitwise operation handler supporting tensors, lists, and scalars."""
+        if self._is_tensor(a) and a.numel() == 1:
+            a = int(a.flatten()[0].item())
+        if self._is_tensor(b) and b.numel() == 1:
+            b = int(b.flatten()[0].item())
+
+        # Handle tensor-list combinations
+        if self._is_tensor(a) and self._is_list(b):
+            if a.shape[0] == len(b):
+                A = torch.split(a, 1)
+                results = [self._bitwise_op(x, y, torch_op, scalar_op,ctx) for x, y in zip(A, b)]
+                results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+                return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+            results = [self._bitwise_op(a, x, torch_op, scalar_op,ctx) for x in b]
+            results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+            return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+        if self._is_list(a) and self._is_tensor(b):
+            if b.shape[0] == len(a):
+                B = torch.split(b, 1)
+                results = [self._bitwise_op(x, y, torch_op, scalar_op,ctx) for x, y in zip(a, B)]
+                results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+                return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+            results = [self._bitwise_op(x, b, torch_op, scalar_op,ctx) for x in a]
+            results = [self._promote_to_tensor(r) if not self._is_tensor(r) else r for r in results]
+            return torch.cat([r.unsqueeze(0) if r.ndim == 0 else r for r in results], dim=0)
+
+        # Handle list-list and list-scalar combinations
+        if self._is_list(a) and not self._is_tensor(b):
+            if self._is_list(b):
+                if len(a) != len(b):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: List length mismatch in bitwise operation")
+                return [self._bitwise_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a, b)]
+            return [self._bitwise_op(x, b, torch_op, scalar_op, ctx) for x in a]
+
+        if not self._is_tensor(a) and self._is_list(b):
+            return [self._bitwise_op(a, x, torch_op, scalar_op,ctx) for x in b]
+
+        # Handle tensor operations
+        if self._is_tensor(a) or self._is_tensor(b):
+            if torch_op:
+                # View tensors as integers if needed (bitwise ops require integer types)
+                original_dtype_a = None
+                original_dtype_b = None
+
+                if self._is_tensor(a):
+                    original_dtype_a = a.dtype
+                    if a.dtype not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                        # View as integer, don't convert values
+                        elem_size = a.element_size()
+                        view_dtype = self._get_bitwise_view_dtype(elem_size)
+                        a = a.view(view_dtype)
+
+                if self._is_tensor(b):
+                    original_dtype_b = b.dtype
+                    if b.dtype not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                        # View as integer, don't convert values
+                        elem_size = b.element_size()
+                        view_dtype = self._get_bitwise_view_dtype(elem_size)
+                        b = b.view(view_dtype)
+
+                result = torch_op(a, b).contiguous()
+
+                # View back to original dtype if we viewed a as non-integer
+                if original_dtype_a is not None and original_dtype_a not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                    result = result.view(original_dtype_a)
+                # View back to original dtype if we viewed b as non-integer (and didn't already view from a)
+                elif original_dtype_b is not None and original_dtype_b not in [torch.int8, torch.int16, torch.int32, torch.int64]:
+                    result = result.view(original_dtype_b)
+
+                return result.contiguous()
+            return scalar_op(a, b)
+
+        return scalar_op(a, b)
+    def _bitwise_not(self, v):
+        """Unary bitwise NOT handling for tensors, lists and scalars with support for fp16 and int16."""
+        if self._is_tensor(v):
+            t = self._promote_to_tensor(v)
+            elem_size = t.element_size() if hasattr(t, 'element_size') else 4
+            view_dtype = self._get_bitwise_view_dtype(elem_size)
+            original_dtype = t.dtype
+
+            bits = t.view(view_dtype)
+            res_bits = torch.bitwise_not(bits)
+            return res_bits.view(original_dtype).contiguous()
+
+        if self._is_list(v):
+            return [self._bitwise_not(x) for x in v]
+
+        # Scalar
+        if isinstance(v, int):
+            return ~v
+
+        # For floats or other scalars, operate on bit pattern
+        fmt = 'd' if isinstance(v, float) else 'q'
+        width = struct.calcsize(fmt) * 8
+        bit_fmt = 'Q'
+        a_bits = struct.unpack(bit_fmt, struct.pack(fmt, v))[0]
+        mask = (1 << width) - 1
+        res_bits = (~a_bits) & mask
+        try:
+            return struct.unpack(fmt, struct.pack(bit_fmt, res_bits))[0]
+        except struct.error:
+            return int(res_bits)
+
+    def _get_bitwise_view_dtype(self, elem_size):
+        """Get appropriate integer dtype for bitwise operations based on element size."""
+        if elem_size == 1:
+            return torch.int8
+        elif elem_size == 2:
+            return torch.int16
+        elif elem_size == 4:
+            return torch.int32
+        elif elem_size == 8:
+            return torch.int64
+        else:
+            return torch.int32
+
+    def _bitwise_popcount(self, v):
+        """Count the number of set bits (1s) in the binary representation."""
+        if self._is_tensor(v):
+            v_t = self._promote_to_tensor(v).flatten().long()
+            # Use numpy's bin and count for efficiency
+            counts = torch.tensor([bin(int(x) & 0xFFFFFFFFFFFFFFFF).count('1') for x in v_t.tolist()],
+                                 dtype=torch.float32, device=v_t.device)
+            if counts.numel() == 1:
+                return float(counts.item())
+            return counts
+
+        if self._is_list(v):
+            return [self._bitwise_popcount(x) for x in v]
+
+        # Scalar - count set bits
+        v_int = int(v)
+        return float(bin(v_int & 0xFFFFFFFFFFFFFFFF).count('1'))
+
+    def _scalar_bitwise_lshift(self, a, b):
+        """Scalar left shift with bit-pattern preservation for floats."""
+        b_int = int(b)
+
+        # If a is already an int, just do the shift
+        if isinstance(a, int):
+            return a << b_int
+
+        # For floats, preserve bit pattern
+        if isinstance(a, float):
+            fmt = 'd'  # double (64-bit)
+            bit_fmt = 'Q'  # unsigned long long
+            a_bits = struct.unpack(bit_fmt, struct.pack(fmt, a))[0]
+            result_bits = (a_bits << b_int) & ((1 << 64) - 1)  # Mask to 64 bits
+            try:
+                return struct.unpack(fmt, struct.pack(bit_fmt, result_bits))[0]
+            except struct.error:
+                return float(result_bits & ((1 << 53) - 1))  # Return mantissa if error
+
+        # Fallback for other types
+        return int(a) << b_int
+
+    def _scalar_bitwise_rshift(self, a, b):
+        """Scalar right shift with bit-pattern preservation for floats."""
+        b_int = int(b)
+
+        # If a is already an int, just do the shift
+        if isinstance(a, int):
+            return a >> b_int
+
+        # For floats, preserve bit pattern
+        if isinstance(a, float):
+            fmt = 'd'  # double (64-bit)
+            bit_fmt = 'Q'  # unsigned long long
+            a_bits = struct.unpack(bit_fmt, struct.pack(fmt, a))[0]
+            result_bits = a_bits >> b_int
+            try:
+                return struct.unpack(fmt, struct.pack(bit_fmt, result_bits))[0]
+            except struct.error:
+                return float(result_bits)
+
+        # Fallback for other types
+        return int(a) >> b_int
+
+    def visitPerlinFunc(self, ctx):
+        """perlin(seed, scale, [octaves], [offset], [shape])
+        Perlin noise with smooth gradients - supports arbitrary dimensions.
+        """
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+
+        octaves = 1
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            oct_val = yield ctx.expr(expr_idx)
+            octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
+            expr_idx += 1
+
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+
+        # Optional shape parameter
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+
+        grids = torch.meshgrid(
+            *[
+                torch.arange(s, dtype=torch.float32, device=self.device)
+                + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+                for i, s in enumerate(shape)
+            ],
+            indexing='ij'
+        )
+
+        noise = NoiseUtils.perlin_noise_nd(grids, scale, seed, self.device)
+
+        if octaves > 1:
+            result = noise
+            amplitude = 0.5
+            frequency = 2.0
+            for oct in range(octaves - 1):
+                scaled_grids = tuple(g * frequency for g in grids)
+                octave_noise = NoiseUtils.perlin_noise_nd(scaled_grids, scale / frequency, seed + oct, self.device)
+                result = result + octave_noise * amplitude
+                amplitude *= 0.5
+                frequency *= 2.0
+            noise = result / (2 - 2**(-octaves))
+
+        return noise
+
+    def visitCellularFunc(self, ctx):
+        """cellular(seed, scale, [jitter], [offset], [shape])
+        Cellular/Voronoi noise - supports arbitrary dimensions.
+        """
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+
+        jitter = 0.5
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            jitter_val = yield ctx.expr(expr_idx)
+            jitter = float(jitter_val.item()) if self._is_tensor(jitter_val) else float(jitter_val)
+            jitter = max(0.0, min(1.0, jitter))
+            expr_idx += 1
+
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+
+        # Optional shape parameter
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+
+        grids = torch.meshgrid(
+            *[
+                torch.arange(s, dtype=torch.float32, device=self.device)
+                + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+                for i, s in enumerate(shape)
+            ],
+            indexing='ij'
+        )
+
+        noise = NoiseUtils.cellular_noise_nd(grids, scale, jitter, seed, self.device)
+        return noise
+
+    def visitPlasmaFunc(self, ctx):
+        """plasma(seed, scale, [octaves], [offset], [shape])
+        Plasma/Turbulence noise - chaotic high-frequency patterns.
+        """
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+
+        octaves = 1
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            oct_val = yield ctx.expr(expr_idx)
+            octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
+            expr_idx += 1
+
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+
+        # Optional shape parameter
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+
+        grids = torch.meshgrid(
+            *[
+                torch.arange(s, dtype=torch.float32, device=self.device)
+                + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+                for i, s in enumerate(shape)
+            ],
+            indexing='ij'
+        )
+
+        # Call perlin_noise_nd with all coordinate grids
+        noise = NoiseUtils.plasma_noise_nd(grids, scale, seed, self.device)
+
+        # Apply octaves (fBm-like composition)
+        if octaves > 1:
+            result = noise
+            amplitude = 0.5
+            frequency = 2.0
+            for oct in range(octaves - 1):
+                scaled_grids = tuple(g * frequency for g in grids)
+                octave_noise = NoiseUtils.plasma_noise_nd(scaled_grids, scale / frequency, seed + oct, self.device)
+                result = result + octave_noise * amplitude
+                amplitude *= 0.5
+                frequency *= 2.0
+            noise = result / (2 - 2**(-octaves))
+
+        return noise
+
+    def visitPadFunc(self,ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        pad_val = yield ctx.expr(1)
+        if self._is_tensor(pad_val):
+            pad = [int(x) for x in pad_val.flatten().tolist()]
+        elif self._is_list(pad_val):
+            pad = [int(x) for x in pad_val]
+        else:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pad amount must be a list or tensor.")
+
+        if len(pad) % 2 != 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Pad amount list must have an even number of elements.")
+
+        reversed_pad = []
+        for i in range(len(pad) - 1, 0, -2):
+            reversed_pad.extend([pad[i-1], pad[i]])
+        return F.pad(val, reversed_pad)
+
+    def visitOverlayFunc(self, ctx):
+        base = yield ctx.expr(0)
+        overlay = yield ctx.expr(1)
+        offset_raw = yield ctx.expr(2)
+
+        if isinstance(base, str):
+            if not isinstance(overlay, str):
+                overlay = str(overlay)
+
+            offset = int(offset_raw) if not self._is_tensor(offset_raw) else int(offset_raw.item())
+            if offset >= len(base):
+                return base
+
+            if offset < 0:
+                overlay = overlay[-offset:]
+                offset = 0
+
+            end = min(len(base), offset + len(overlay))
+            overlay_len = end - offset
+            return base[:offset] + overlay[:overlay_len] + base[end:]
+
+        if self._is_list(base):
+            if not self._is_list(overlay):
+                overlay = [overlay]
+
+            offset = int(offset_raw) if not self._is_tensor(offset_raw) else int(offset_raw.item())
+            if offset >= len(base):
+                return base
+
+            if offset < 0:
+                overlay = overlay[-offset:]
+                offset = 0
+
+            result = list(base)
+            end = min(len(base), offset + len(overlay))
+            for i, val in enumerate(overlay[:end - offset]):
+                result[offset + i] = val
+
+            return result
+
+        # Handle tensors (existing implementation)
+        base = self._promote_to_tensor(base)
+        overlay = self._promote_to_tensor(overlay)
+        offset = offset_raw
+
+        # Convert offset to list of ints
+        if self._is_tensor(offset):
+            offset = [int(x) for x in offset.flatten().tolist()]
+        elif self._is_list(offset):
+            offset = [int(x) for x in offset]
+        else:
+            offset = [int(offset)]
+
+        # Ensure offset matches base dimensions
+        if len(offset) != base.ndim:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Offset dimensions {len(offset)} must match base dimensions {base.ndim}")
+
+        # Calculate crop and paste regions
+        crop_slices = []
+        paste_slices = []
+
+        for i in range(base.ndim):
+            off = offset[i]
+            overlay_size = overlay.shape[i]
+            base_size = base.shape[i]
+
+            if off >= base_size:
+                return base  # Overlay outside of base, return original
+
+            # Determine overlay crop region (what part of overlay to use)
+            crop_start = max(0, -off)  # Crop from overlay if offset is negative
+            crop_end = min(overlay_size, base_size - off)  # Crop if overlay extends beyond base
+
+            # Determine base paste region (where to place overlay in base)
+            paste_start = max(0, off)  # Start position in base
+            paste_end = min(base_size, off + overlay_size)  # End position in base
+
+            crop_slices.append(slice(crop_start, crop_end))
+            paste_slices.append(slice(paste_start, paste_end))
+
+        # Crop overlay to fit
+        cropped_overlay = overlay[tuple(crop_slices)]
+
+        # Create result by cloning base and pasting overlay
+        result = base.clone()
+        result[tuple(paste_slices)] = cropped_overlay
+
+        return result
+
+    def visitReplaceFunc(self, ctx):
+        val = yield ctx.expr(0)
+        old = yield ctx.expr(1)
+        new = yield ctx.expr(2)
+
+        if isinstance(val, str):
+            return val.replace(str(old), str(new))
+
+        if self._is_list(val):
+            return [new if x == old else x for x in val]
+
+        if self._is_tensor(val):
+            old_t = self._promote_to_tensor(old)
+            new_t = self._promote_to_tensor(new)
+            return torch.where(val == old_t, new_t, val).contiguous()
+
+        return val
+
+    def visitUpperFunc(self, ctx):
+        val = yield ctx.expr()
+        if isinstance(val, str):
+            return val.upper()
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: upper() requires a string argument")
+
+    def visitLowerFunc(self, ctx):
+        val = yield ctx.expr()
+        if isinstance(val, str):
+            return val.lower()
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: lower() requires a string argument")
+
+    def visitSplitFunc(self, ctx):
+        string = yield ctx.expr(0)
+        delimiter = yield ctx.expr(1) if len(ctx.expr()) > 1 else " "
         
-        # Ensure values are in [0, 1]
+        if not isinstance(string, str):
+            string = str(string)
+        if not isinstance(delimiter, str):
+            delimiter = str(delimiter)
+        
+        return string.split(delimiter)
+
+    def visitJoinFunc(self, ctx):
+        items = yield ctx.expr(0)
+        separator = yield ctx.expr(1) if len(ctx.expr()) > 1 else ""
+        
+        if not isinstance(separator, str):
+            separator = str(separator)
+        
+        if self._is_list(items):
+            return separator.join([str(x) for x in items])
+        elif self._is_tensor(items):
+            return separator.join([str(x) for x in items.flatten().tolist()])
+        else:
+            return str(items)
+
+    def visitSubstringFunc(self, ctx):
+        string = yield ctx.expr(0)
+        start = yield ctx.expr(1)
+        length = yield ctx.expr(2) if len(ctx.expr()) > 2 else None
+        
+        if not isinstance(string, str):
+            string = str(string)
+        
+        start_idx = int(start.item()) if self._is_tensor(start) else int(start)
+        
+        if length is not None:
+            length_val = int(length.item()) if self._is_tensor(length) else int(length)
+            return string[start_idx:start_idx + length_val]
+        else:
+            return string[start_idx:]
+
+    def visitFindFunc(self, ctx):
+        string = yield ctx.expr(0)
+        search = yield ctx.expr(1)
+        
+        if not isinstance(string, str):
+            string = str(string)
+        if not isinstance(search, str):
+            search = str(search)
+        
+        return float(string.find(search))
+
+    def visitTrimFunc(self, ctx):
+        val = yield ctx.expr()
+        if isinstance(val, str):
+            return val.strip()
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: trim() requires a string argument")
+
+    def visitDilateFunc(self, ctx):
+        tsr_val = yield ctx.expr(0)
+        tsr = self._promote_to_tensor(tsr_val)
+        kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
+        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        
+        original_shape = tsr.shape
+        tsr = tsr.float()
+        
+        def dilate_op(x):
+            kernel = torch.ones((kernel_size, kernel_size), device=x.device, dtype=x.dtype)
+            kernel = kernel.unsqueeze(0).unsqueeze(0)
+            kernel = kernel.repeat(x.size(1), 1, 1, 1)
+            
+            pad = kernel_size // 2
+            x_padded = F.pad(x, (pad, pad, pad, pad), mode='replicate')
+            
+            result = F.conv2d(x_padded, kernel, padding=0, groups=x.size(1))
+            return torch.clamp(result, 0, 1)
+        
+        return self._apply_spatial_op(tsr, dilate_op, original_shape)
+
+    def visitErodeFunc(self, ctx):
+        tsr_val = yield ctx.expr(0)
+        tsr = self._promote_to_tensor(tsr_val)
+        kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
+        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        
+        original_shape = tsr.shape
+        tsr = tsr.float()
+        
+        def erode_op(x):
+            x_inv = 1.0 - x
+            
+            kernel = torch.ones((kernel_size, kernel_size), device=x.device, dtype=x.dtype)
+            kernel = kernel.unsqueeze(0).unsqueeze(0)
+            kernel = kernel.repeat(x.size(1), 1, 1, 1)
+            
+            pad = kernel_size // 2
+            x_padded = F.pad(x_inv, (pad, pad, pad, pad), mode='replicate')
+            
+            result = F.conv2d(x_padded, kernel, padding=0, groups=x.size(1))
+            
+            return torch.clamp(1.0 - result, 0, 1)
+        
+        return self._apply_spatial_op(tsr, erode_op, original_shape)
+
+    def visitMorphOpenFunc(self, ctx):
+        tsr_val = yield ctx.expr(0)
+        kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
+        
+        eroded = yield from self.visitErodeFunc(ctx)
+        
+        tsr = self._promote_to_tensor(eroded)
+        k_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        original_shape = tsr.shape
+        tsr = tsr.float()
+        
+        def dilate_op(x):
+            kernel = torch.ones((k_size, k_size), device=x.device, dtype=x.dtype)
+            kernel = kernel.unsqueeze(0).unsqueeze(0)
+            kernel = kernel.repeat(x.size(1), 1, 1, 1)
+            
+            pad = k_size // 2
+            x_padded = F.pad(x, (pad, pad, pad, pad), mode='replicate')
+            result = F.conv2d(x_padded, kernel, padding=0, groups=x.size(1))
+            return torch.clamp(result, 0, 1)
+        
+        return self._apply_spatial_op(tsr, dilate_op, original_shape)
+
+    def visitMorphCloseFunc(self, ctx):
+        tsr_val = yield ctx.expr(0)
+        kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
+        
+        dilated = yield from self.visitDilateFunc(ctx)
+        
+        tsr = self._promote_to_tensor(dilated)
+        k_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        original_shape = tsr.shape
+        tsr = tsr.float()
+        
+        def erode_op(x):
+            x_inv = 1.0 - x
+            kernel = torch.ones((k_size, k_size), device=x.device, dtype=x.dtype)
+            kernel = kernel.unsqueeze(0).unsqueeze(0)
+            kernel = kernel.repeat(x.size(1), 1, 1, 1)
+            
+            pad = k_size // 2
+            x_padded = F.pad(x_inv, (pad, pad, pad, pad), mode='replicate')
+            result = F.conv2d(x_padded, kernel, padding=0, groups=x.size(1))
+            return torch.clamp(1.0 - result, 0, 1)
+        
+        return self._apply_spatial_op(tsr, erode_op, original_shape)
+
+    def visitRgbToHsvFunc(self, ctx):
+        num_args = len(ctx.expr())
+        
+        # Determine mode: 1=tensor, 2=tensor+degrees, 3=r,g,b, 4=r,g,b+degrees
+        if num_args == 1 or num_args == 2:
+            # Tensor mode
+            rgb = self._promote_to_tensor((yield ctx.expr(0)))
+            
+            if rgb.shape[-1] != 3:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_hsv expects tensor with last dim=3, got shape {rgb.shape}")
+            
+            r = rgb[..., 0]
+            g = rgb[..., 1]
+            b = rgb[..., 2]
+            
+            use_degrees = False
+            if num_args == 2:
+                degrees_val = yield ctx.expr(1)
+                use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
+        else:
+            # Separate r, g, b mode
+            r = self._promote_to_tensor((yield ctx.expr(0)))
+            g = self._promote_to_tensor((yield ctx.expr(1)))
+            b = self._promote_to_tensor((yield ctx.expr(2)))
+            
+            use_degrees = False
+            if num_args == 4:
+                degrees_val = yield ctx.expr(3)
+                use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
+        
+        # Clamp to [0, 1]
         r = torch.clamp(r, 0, 1)
         g = torch.clamp(g, 0, 1)
         b = torch.clamp(b, 0, 1)
         
+        # RGB to HSV conversion
         max_rgb, _ = torch.max(torch.stack([r, g, b]), dim=0)
         min_rgb, _ = torch.min(torch.stack([r, g, b]), dim=0)
         diff = max_rgb - min_rgb
         
-        # Hue calculation
+        # Hue (in degrees 0-360)
         h = torch.zeros_like(max_rgb)
         
         mask_r = (max_rgb == r) & (diff > 0)
@@ -2252,23 +3175,61 @@ class UnifiedMathVisitor(MathExprVisitor):
         mask_b = (max_rgb == b) & (diff > 0)
         h[mask_b] = (60 * ((r[mask_b] - g[mask_b]) / diff[mask_b]) + 240) % 360
         
+        # Normalize to 0-1 unless degrees mode
+        if not use_degrees:
+            h = h / 360.0
+        
         # Saturation
         s = torch.where(max_rgb > 0, diff / max_rgb, torch.zeros_like(max_rgb))
         
         # Value
         v = max_rgb
         
-        return [h, s, v]
+        # Return format
+        if num_args <= 2:
+            return torch.stack([h, s, v], dim=-1)
+        else:
+            return [h, s, v]
 
     def visitHsvToRgbFunc(self, ctx):
-        h = self._promote_to_tensor((yield ctx.expr(0)))
-        s = self._promote_to_tensor((yield ctx.expr(1)))
-        v = self._promote_to_tensor((yield ctx.expr(2)))
+        num_args = len(ctx.expr())
+        
+        # Determine mode
+        if num_args == 1 or num_args == 2:
+            # Tensor mode
+            hsv = self._promote_to_tensor((yield ctx.expr(0)))
+            
+            if hsv.shape[-1] != 3:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: hsv_to_rgb expects tensor with last dim=3, got shape {hsv.shape}")
+            
+            h = hsv[..., 0]
+            s = hsv[..., 1]
+            v = hsv[..., 2]
+            
+            use_degrees = False
+            if num_args == 2:
+                degrees_val = yield ctx.expr(1)
+                use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
+        else:
+            # Separate h, s, v mode
+            h = self._promote_to_tensor((yield ctx.expr(0)))
+            s = self._promote_to_tensor((yield ctx.expr(1)))
+            v = self._promote_to_tensor((yield ctx.expr(2)))
+            
+            use_degrees = False
+            if num_args == 4:
+                degrees_val = yield ctx.expr(3)
+                use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
+        
+        # Convert normalized hue to degrees if needed
+        if not use_degrees:
+            h = h * 360.0
         
         h = h % 360
         s = torch.clamp(s, 0, 1)
         v = torch.clamp(v, 0, 1)
         
+        # HSV to RGB conversion
         c = v * s
         x = c * (1 - torch.abs((h / 60) % 2 - 1))
         m = v - c
@@ -2301,7 +3262,15 @@ class UnifiedMathVisitor(MathExprVisitor):
         r[mask5] = c[mask5]
         b[mask5] = x[mask5]
         
-        return [r + m, g + m, b + m]
+        r = r + m
+        g = g + m
+        b = b + m
+        
+        # Return format
+        if num_args <= 2:
+            return torch.stack([r, g, b], dim=-1)
+        else:
+            return [r, g, b]
 
 
 

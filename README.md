@@ -279,70 +279,44 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 
 ### Color Space Conversions
 
-- `rgb_to_hsv(r, g, b)`: Converts RGB color (0-1 range) to HSV. Returns `[h, s, v]` where h is in degrees (0-360), s and v are 0-1.
-- `hsv_to_rgb(h, s, v)`: Converts HSV color to RGB (0-1 range). Returns `[r, g, b]`. h is in degrees (0-360), s and v are 0-1.
+- `rgb_to_hsv(r, g, b, [degrees])` or `rgb_to_hsv(rgb_tensor, [degrees])`: Converts RGB color to HSV. 
+  - **3 arguments**: Pass separate r, g, b values (scalars or tensors). Returns `[h, s, v]` list.
+  - **1 argument**: Pass tensor with last dimension = 3 (e.g., `[B, H, W, 3]`). Returns tensor with same shape.
+  - **Optional `degrees` parameter**: Set to 0 (default) for normalized hue 0-1, or 1 for degrees 0-360.
+  - RGB values should be in 0-1 range. S and V are always 0-1.
+  - **Default mode (degrees=0)**: H ∈ [0, 1], S ∈ [0, 1], V ∈ [0, 1] — consistent for math operations
+  - **Degrees mode (degrees=1)**: H ∈ [0, 360], S ∈ [0, 1], V ∈ [0, 1] — traditional color wheel
+  - Examples:
+    - `rgb_to_hsv(image)` → normalized HSV (H in 0-1)
+    - `rgb_to_hsv(image, 1)` → HSV with H in degrees (0-360)
+    - `rgb_to_hsv(0.5, 0.3, 0.8)` → returns `[0.75, 0.625, 0.8]` (normalized)
+    - `rgb_to_hsv(0.5, 0.3, 0.8, 1)` → returns `[270, 0.625, 0.8]` (degrees)
+- `hsv_to_rgb(h, s, v, [degrees])` or `hsv_to_rgb(hsv_tensor, [degrees])`: Converts HSV color to RGB.
+  - **3 arguments**: Pass separate h, s, v values. Returns `[r, g, b]` list.
+  - **1 argument**: Pass tensor with last dimension = 3. Returns tensor with same shape.
+  - **Optional `degrees` parameter**: Set to 0 (default) for normalized hue 0-1, or 1 for degrees 0-360.
+  - **Default mode (degrees=0)**: Expects H ∈ [0, 1], S ∈ [0, 1], V ∈ [0, 1]
+  - **Degrees mode (degrees=1)**: Expects H ∈ [0, 360], S ∈ [0, 1], V ∈ [0, 1]
+  - Returns RGB in 0-1 range.
+  - Examples:
+    - `hsv_to_rgb(hsv_image)` → RGB (assumes H in 0-1)
+    - `hsv_to_rgb(hsv_image, 1)` → RGB (assumes H in 0-360)
+    - `hsv_to_rgb(0.5, 1.0, 1.0)` → cyan `[0, 1, 1]` (H=0.5 = 180° normalized)
+    - `hsv_to_rgb(180, 1.0, 1.0, 1)` → cyan `[0, 1, 1]` (H=180°)
 
-## Variables
+**Color Manipulation Example:**
+```python
+# Increase saturation (normalized mode - default)
+hsv = rgb_to_hsv(V0)           # H in [0,1]
+hsv[..., 1] = hsv[..., 1] * 1.5  # Boost saturation
+result = hsv_to_rgb(hsv)
 
-- **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
-  - `D{N}` - position in n-th dimension of tensor (for example D0, D1, D2, ...)
-  - `S{N}` - size of n-th dimension of tensor (for example S0, S1, S2, ...)
-  - `V{N}` - value input (for example V0, V1, V2, ...) - input type
-  - `V` - list of value inputs
-  - `F{N}` - float input (for example F0, F1, F2, ...) - float type
-  - `F` - list of float inputs
-  - `Fcnt` or `F_count`: Number of float inputs.
-  - `Vcnt` or `V_count`: Number of value inputs.
-  - `depth`: Current recursion depth (0 at top level)
-- **common inputs** (legacy):
-  - `a`, `b`, `c`, `d`
-- **Extra floats** (legacy):
-  - `w`, `x`, `y`, `z`
-- **INSIDE IFFT**
-  - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
-  - `K` or `frequency` - isotropic frequency (Euclidean norm of indices, iFFT only)
-  - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
-  - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
-- **IMAGE and LATENT**:
-  - `C` or `channel` - channel of image
-  - `X` - position X in image. 0 is in top left
-  - `Y` - position Y in image. 0 is in top left
-  - `W` or `width` - width of image. y/width = 1
-  - `H` or `height`- height of image. x/height = 1
-  - `B` or `batch` - position in batch
-  - `T` or `batch_count` - number of batches
-  - `N` or `channel_count` - count of channels
-- **IMAGE KERNEL**:
-  - `kX`, `kY` - position in kernel. Centered at 0.0.
-  - `kW`, `kernel_width` - width of kernel.
-  - `kH`, `kernel_height` - height of kernel.
-  - `kD`, `kernel_depth` - depth of kernel.
+# Shift hue by 180 degrees (normalized)
+hsv = rgb_to_hsv(V0)
+hsv[..., 0] = (hsv[..., 0] + 0.5) % 1.0  # +0.5 = +180° in normalized
+result = hsv_to_rgb(hsv)
 
-- **AUDIO**:
-  - `B` or 'batch' - position in batch
-  - `N` or `channel_count` - count of channels
-  - `C` or `channel` - channel of audio
-  - `S` or `sample` – current audio sample
-  - `T` or `sample_count` - audio lenght in samples
-  - `R` or `sample_rate` - sample rate
-
-- **VIDEO**
-  - refer to `IMAGE and LATENT` for visual part (but `batch` is `frame` and `batch_count` is `frame_count`)
-  - refer to `AUDIO` for sound part
-- **NOISE**
-  - refer to `IMAGE and LATENT` for most variables
-  - `I` or `input_latent` - latent used as input to generate noise before noise is generated into it
-- **GUIDER**
-  - refer to `IMAGE and LATENT`
-  - `sigma` - current sigma value
-  - `seed` - seed used for noise generation
-  - `steps` - total number of sampling steps
-  - `current_step` - current step index (0 to steps)
-  - `sample` - tensor input to guider or output from sampling
-
-- **CONDITIONING, SIGMAS and FLOAT**
-  - no additional variables
-- **MODEL, CLIP and VAE**
-  - `L` or `layer` - a position of layer from beginning of object
-  - `LC` or `layer_count` - a count of layers
-- **Constants**: `e`, `pi`
+# Shift hue by 180 degrees (degrees mode)
+hsv = rgb_to_hsv(V0, 1)
+hsv[..., 0] = (hsv[..., 0] + 180) % 360
+result = hsv_to_rgb(hsv, 1)

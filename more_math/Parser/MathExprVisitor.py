@@ -474,11 +474,6 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#FractFunc.
-    def visitFractFunc(self, ctx:MathExprParser.FractFuncContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MathExprParser#ReluFunc.
     def visitReluFunc(self, ctx:MathExprParser.ReluFuncContext):
         return self.visitChildren(ctx)
@@ -654,6 +649,41 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#UpperFunc.
+    def visitUpperFunc(self, ctx:MathExprParser.UpperFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LowerFunc.
+    def visitLowerFunc(self, ctx:MathExprParser.LowerFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#TrimFunc.
+    def visitTrimFunc(self, ctx:MathExprParser.TrimFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DilateFunc.
+    def visitDilateFunc(self, ctx:MathExprParser.DilateFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ErodeFunc.
+    def visitErodeFunc(self, ctx:MathExprParser.ErodeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MorphOpenFunc.
+    def visitMorphOpenFunc(self, ctx:MathExprParser.MorphOpenFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MorphCloseFunc.
+    def visitMorphCloseFunc(self, ctx:MathExprParser.MorphCloseFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -804,6 +834,31 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#SplitFunc.
+    def visitSplitFunc(self, ctx:MathExprParser.SplitFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#JoinFunc.
+    def visitJoinFunc(self, ctx:MathExprParser.JoinFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SubstringFunc.
+    def visitSubstringFunc(self, ctx:MathExprParser.SubstringFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FindFunc.
+    def visitFindFunc(self, ctx:MathExprParser.FindFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ReplaceFunc.
+    def visitReplaceFunc(self, ctx:MathExprParser.ReplaceFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ClampFunc.
     def visitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         return self.visitChildren(ctx)
@@ -861,6 +916,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#OverlayFunc.
     def visitOverlayFunc(self, ctx:MathExprParser.OverlayFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RgbToHsvFunc.
+    def visitRgbToHsvFunc(self, ctx:MathExprParser.RgbToHsvFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#HsvToRgbFunc.
+    def visitHsvToRgbFunc(self, ctx:MathExprParser.HsvToRgbFuncContext):
         return self.visitChildren(ctx)
 
 

@@ -211,6 +211,55 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Random Distributions
 
+Generates random noise with default shape of aither first input or maximum of input sizes, depending on node setting.
+
+- `random_normal(seed,[shape])` or `randn` or `noise`: generates a random tensor with normal distribution (var=1, mean=0).
+- `random_uniform(seed,[shape])` or `rand`: generates a random tensor with uniform distribution [0, 1).
+- `random_exponential(seed, lambda,[shape])` or `rande`: generates a random tensor with exponential distribution.
+- `random_cauchy(seed, median, sigma,[shape])` or `randc`: generates a random tensor with Cauchy distribution.
+- `random_log_normal(seed, mean, std,[shape])` or `randln`: generates a random tensor with log-normal distribution.
+- `random_bernoulli(seed, p,[shape])` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor. If p is tensor, shape is ignored.
+- `random_poisson(seed, lambda,[shape])` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
+- `random_gamma(seed, shape, scale,[shape])` or `randg`: generates a random tensor with Gamma distribution. Shape parameter (α) controls the shape, scale parameter (θ) controls the scale.
+- `random_beta(seed, alpha, beta,[shape])` or `randbeta`: generates a random tensor with Beta distribution in range [0, 1]. Alpha and beta are shape parameters.
+- `random_laplace(seed, loc, scale,[shape])` or `randl`: generates a random tensor with Laplace (double exponential) distribution. Useful for L1 regularization and robust statistics.
+- `random_gumbel(seed, loc, scale,[shape])` or `randgumbel`: generates a random tensor with Gumbel distribution. Used in Gumbel-softmax trick for neural networks.
+- `random_weibull(seed, scale, concentration,[shape])` or `randw`: generates a random tensor with Weibull distribution. Used in reliability analysis and survival modeling.
+- `random_chi2(seed, df,[shape])` or `randchi2`: generates a random tensor with Chi-squared distribution. Degrees of freedom `df` controls the shape. Sum of squared normal distributions.
+- `random_studentt(seed, df,[shape])` or `randt`: generates a random tensor with Student's t distribution. Has heavier tails than normal distribution, useful for robust noise. As `df` increases, approaches normal distribution.
+
+### Noise Generation
+
+- `perlin(seed, scale, [octaves,[offset, [shape]]])` or `perlin_noise`: generates Perlin noise. `scale` controls the frequency of the noise, `octaves` adds additional layers of noise,  `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
+- `plasma(seed, scale, [octaves,[offset, [shape]]])` or `turbulence` or `plasma_noise`: generates Plasma noise. Same parameters as perlin noise.
+- `voronoi(seed, scale, [jitter], [offset], [shape])` or `voronoi_noise`: generates Voronoi noise. `scale` controls the frequency of the noise, `jitter` adds randomness to the cell boundaries, `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
+
+### Bitwise Operations
+
+Bitwise operations work with scalars, tensors, and lists, preserving bit patterns (especially important for floats where bit patterns are preserved, not values converted).
+
+#### Shift Operators
+- `a << b`: Left shift operator. Shifts bits of `a` left by `b` positions.
+- `a >> b`: Right shift operator. Shifts bits of `a` right by `b` positions.
+
+
+#### Bitwise Functions
+- `band(a, b)` or `bitwise_and(a, b)`: Bitwise AND. Returns bits set in both operands.
+- `bor(a, b)` or `bitwise_or(a, b)`: Bitwise OR. Returns bits set in either operand.
+- `bxor(a, b)` or `bitwise_xor(a, b)`: Bitwise XOR. Returns bits set in exactly one operand.
+- `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
+- `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
+
+
+
+### Stack
+
+- `stack_push(id, value)`: Pushes value to stack with id.
+- `stack_pop(id)`: Pops value from stack with id.
+- `stack_get(id)`: Gets value from stack with id.
+- `stack_clear(id)`: Clears stack with id.
+- `stack_has(id)`: Checks if stack with id exists.
+
 ### String Operations
 
 - `upper(str)`: Converts string to uppercase.
@@ -220,6 +269,18 @@ You can also get the node from comfy manager under the name of More math.
 - `substring(str, start, [length])` or `substr`: Extracts substring starting at `start` position. If length is omitted, extracts to end.
 - `find(str, search)`: Returns position of first occurrence of `search` in `str`, or -1 if not found.
 - `trim(str)`: Removes leading and trailing whitespace from string.
+
+### Morphological Operations (Image Processing)
+
+- `dilate(x, [kernel_size])`: Dilation operation. Expands bright regions. Default kernel_size is 3.
+- `erode(x, [kernel_size])`: Erosion operation. Shrinks bright regions. Default kernel_size is 3.
+- `morph_open(x, [kernel_size])`: Opening operation (erosion followed by dilation). Removes small bright spots.
+- `morph_close(x, [kernel_size])`: Closing operation (dilation followed by erosion). Fills small dark holes.
+
+### Color Space Conversions
+
+- `rgb_to_hsv(r, g, b)`: Converts RGB color (0-1 range) to HSV. Returns `[h, s, v]` where h is in degrees (0-360), s and v are 0-1.
+- `hsv_to_rgb(h, s, v)`: Converts HSV color to RGB (0-1 range). Returns `[r, g, b]`. h is in degrees (0-360), s and v are 0-1.
 
 ## Variables
 
@@ -239,7 +300,6 @@ You can also get the node from comfy manager under the name of More math.
   - `w`, `x`, `y`, `z`
 - **INSIDE IFFT**
   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
-  - `F` or `frequency_count` - frequency count (freq domain, iFFT only)
   - `K` or `frequency` - isotropic frequency (Euclidean norm of indices, iFFT only)
   - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
   - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
@@ -263,7 +323,6 @@ You can also get the node from comfy manager under the name of More math.
   - `N` or `channel_count` - count of channels
   - `C` or `channel` - channel of audio
   - `S` or `sample` – current audio sample
-  - `S` or `sample` - current audio sample
   - `T` or `sample_count` - audio lenght in samples
   - `R` or `sample_rate` - sample rate
 

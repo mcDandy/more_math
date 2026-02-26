@@ -25,7 +25,9 @@ const FUNCTIONS = new Set([
     "random_gamma", "randbeta", "random_beta", "randl", "random_laplace", "randgumbel", "random_gumbel", "randw",
     "random_weibull", "randchi2", "random_chi2", "randt", "random_studentt", "perlin", "perlin_noise", "cellular", "voronoi",
     "worley", "cellular_noise", "voronoi_noise", "plasma", "turbulence", "plasma_noise",
-    "upper", "lower", "split", "join", "substring", "substr", "find", "trim", "replace"
+    "upper", "lower", "split", "join", "substring", "substr", "find", "trim", "replace",
+    "dilate", "erode", "morph_open", "morph_close",
+    "rgb_to_hsv", "hsv_to_rgb"
 ]);
 
 const BRACKET_PAIRS = {

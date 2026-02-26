@@ -158,13 +158,13 @@ func1:
 	| BNOT LPAREN expr RPAREN		# BitNotFunc
 	| BITCOUNT LPAREN expr RPAREN	# BitCountFunc
 	| SHAPE LPAREN expr RPAREN		# ShapeFunc
-	| 'upper' LPAREN expr RPAREN # UpperFunc
-    | 'lower' LPAREN expr RPAREN # LowerFunc
-    | 'trim' LPAREN expr RPAREN # TrimFunc
-    | 'dilate' LPAREN expr (COMMA expr)? RPAREN # DilateFunc
-    | 'erode' LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
-    | 'morph_open' LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
-    | 'morph_close' LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc;
+	| UPPER LPAREN expr RPAREN # UpperFunc
+	| LOWER LPAREN expr RPAREN # LowerFunc
+	| TRIM LPAREN expr RPAREN # TrimFunc
+	| DILATE LPAREN expr (COMMA expr)? RPAREN # DilateFunc
+	| ERODE LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
+	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
+	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc
@@ -197,13 +197,12 @@ func2:
 	| BAND LPAREN expr COMMA expr RPAREN		# BitAndFunc
 	| XOR LPAREN expr COMMA expr RPAREN		# BitXorFunc
 	| BOR LPAREN expr COMMA expr RPAREN		# BitOrFunc
-
-    | 'split' '(' expr (',' expr)? ')' # SplitFunc
-    | 'join' '(' expr (',' expr)? ')' # JoinFunc
-    | 'substring' '(' expr ',' expr (',' expr)? ')' # SubstringFunc
-    | 'substr' '(' expr ',' expr (',' expr)? ')' # SubstringFunc
-    | 'find' '(' expr ',' expr ')' # FindFunc
-	| 'replace' '(' expr ',' expr ',' expr ')' # ReplaceFunc;
+	| SPLIT LPAREN expr (COMMA expr)? RPAREN # SplitFunc
+	| JOIN LPAREN expr (COMMA expr)? RPAREN # JoinFunc
+	| SUBSTRING LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
+	| SUBSTR LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
+	| FIND LPAREN expr COMMA expr RPAREN # FindFunc
+	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN # ReplaceFunc;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN	# ClampFunc
@@ -217,7 +216,10 @@ func3:
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN	# CropFunc
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# sifftFunc
-	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc;
+	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc
+	| RGB_TO_HSV LPAREN expr COMMA expr COMMA expr RPAREN # RgbToHsvFunc
+	| HSV_TO_RGB LPAREN expr COMMA expr COMMA expr RPAREN # HsvToRgbFunc;
+
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
@@ -364,6 +366,22 @@ CLEAR: 'stack_clear';
 HAS: 'stack_has';
 GET: 'stack_get';
 
+UPPER: 'upper';
+LOWER: 'lower';
+TRIM: 'trim';
+SPLIT: 'split';
+JOIN: 'join';
+SUBSTRING: 'substring';
+SUBSTR: 'substr';
+FIND: 'find';
+REPLACE: 'replace';
+DILATE: 'dilate';
+ERODE: 'erode';
+MORPH_OPEN: 'morph_open';
+MORPH_CLOSE: 'morph_close';
+RGB_TO_HSV: 'rgb_to_hsv';
+HSV_TO_RGB: 'hsv_to_rgb';
+
 IF: 'if';
 ELSE: 'else';
 WHILE: 'while';
@@ -441,4 +459,4 @@ VARIABLE: [a-zA-Z_] [a-zA-Z_0-9]*;
 
 SL_COMMENT: '#' ~[\r\n]* -> skip;
 ML_COMMENT: '/*' .*? '*/' -> skip;
-WS: [ \t\r\n]+ -> skip;WS: [ \t\r\n]+ -> skip;
+WS: [ \t\r\n]+ -> skip;

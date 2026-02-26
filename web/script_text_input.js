@@ -173,7 +173,7 @@ function ensureStyles() {
             text-align: right;
             user-select: none;
             color: #9aa0a6;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.4);
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             font-family: monospace;
             font-size: 12px;
@@ -205,7 +205,6 @@ function ensureStyles() {
             resize: none;
             background: transparent;
             color: transparent;
-            caret-color: #ffffff;
         }
         .mrmth-syntax-layer {
             position: absolute;
@@ -308,8 +307,8 @@ function attachLineNumbers(widget) {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     };
 
-    const baseBackground = inputStyle.backgroundColor || "rgba(0, 0, 0, 0.1)";
-    const overlayBackground = applyAlpha(baseBackground, 0.1);
+    const baseBackground = inputStyle.backgroundColor || "rgba(0, 0, 0, 0.4)";
+    const overlayBackground = applyAlpha(baseBackground, 0.4);
 
     syntaxLayer.style.height = "100%";
     syntaxLayer.style.background = "transparent";
@@ -333,6 +332,7 @@ function attachLineNumbers(widget) {
     inputEl.style.background = overlayBackground;
     inputEl.style.color = "transparent";
     inputEl.style.caretColor = "#ffffff";
+    inputEl.style.mixBlendMode = "lighten";
 
     const updateNumbers = () => {
         const rawLines = inputEl.value.split("\n");
@@ -384,7 +384,7 @@ function attachLineNumbers(widget) {
         }
 
         measureClone.remove();
-        
+
         gutterContent.textContent = gutterLines.join("\n");
 
         gutter.style.height = `${inputEl.clientHeight}px`;

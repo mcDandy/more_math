@@ -66,7 +66,6 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
     for layer_idx, key in enumerate(all_keys_list):
 
         variables = {}
-        print(key)
         # Populate F variables (constants for all keys)
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
@@ -80,6 +79,8 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
         variables["layer"] = float(layer_idx)
         variables["LC"] = float(layer_count)
         variables["layer_count"] = float(layer_count)
+        variables["K"] = key
+        variables["key"] = key
 
         # Inject weights for this key from V models
         valid_key = False

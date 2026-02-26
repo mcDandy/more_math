@@ -1011,10 +1011,28 @@ class UnifiedMathVisitor(MathExprVisitor):
         elif isinstance(new_shape, (list, tuple)):
             result = []
             for d in new_shape:
+                # Check if dimension is still a tensor or list (likely wrong variable passed)
+                if self._is_tensor(d) and d.numel() > 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reshape expects scalar dimensions, got tensor with shape {d.shape}. Did you mean to pass a shape list instead of data?")
+                if self._is_list(d) and len(d) > 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reshape expects scalar dimensions, got list with {len(d)} elements. Did you pass a data variable (like V) instead of a shape?")
                 result.append(self._to_int(d, ctx, "reshape"))
             new_shape = result
         elif isinstance(new_shape, (int, float)):
             new_shape = [int(float(new_shape))]
+
+        # Validate shape compatibility
+        original_numel = tsr.numel()
+        target_numel = 1
+        for dim in new_shape:
+            target_numel *= dim
+        
+        if original_numel != target_numel:
+            raise ValueError(
+                f"{ctx.start.line}:{ctx.start.column}: Cannot reshape tensor of size {original_numel} "
+                f"(shape {list(tsr.shape)}) to shape {new_shape} (size {target_numel}). "
+                f"Total elements must match."
+            )
 
         return tsr.reshape(*new_shape)
 

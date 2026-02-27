@@ -161,6 +161,7 @@ func1:
 	| UPPER LPAREN expr RPAREN # UpperFunc
 	| LOWER LPAREN expr RPAREN # LowerFunc
 	| TRIM LPAREN expr RPAREN # TrimFunc
+	| ENTROPY LPAREN expr RPAREN # EntropyFunc
 	| DILATE LPAREN expr (COMMA expr)? RPAREN # DilateFunc
 	| ERODE LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
@@ -181,6 +182,7 @@ func2:
 	| COSSIM LPAREN expr COMMA expr RPAREN		# CossimFunc
 	| FLIP LPAREN expr COMMA expr RPAREN			# FlipFunc
 	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
+	| CORR LPAREN expr COMMA expr RPAREN			# CorrFunc
 	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 	| TOPK_IND LPAREN expr COMMA expr RPAREN		# TopkIndFunc
@@ -400,6 +402,8 @@ SOFTMIN: 'softmin';
 UNIQUE: 'unique';
 FLIP: 'flip';
 COV: 'cov';
+CORR: 'corr' | 'correlation';
+ENTROPY: 'entropy';
 CROP: 'crop';
 NONE: 'none'|'None'|'null'|'NULL';
 

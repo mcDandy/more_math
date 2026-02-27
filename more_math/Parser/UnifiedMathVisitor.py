@@ -1026,7 +1026,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         target_numel = 1
         for dim in new_shape:
             target_numel *= dim
-        
+
         if original_numel != target_numel:
             raise ValueError(
                 f"{ctx.start.line}:{ctx.start.column}: Cannot reshape tensor of size {original_numel} "
@@ -3298,6 +3298,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             return [r, g, b]
 
+    def visitEntropyFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        # Shannon entropy: -sum(p * log(p))
+        p = F.softmax(val.flatten().float(), dim=0)
+        entropy = -torch.sum(p * torch.log(p + 1e-10))
+        return float(entropy.item())
 
+    def visitCorrFunc(self, ctx):
+        x = self._promote_to_tensor((yield ctx.expr(0))).float()
+        y = self._promote_to_tensor((yield ctx.expr(1))).float()
+        # Pearson correlation coefficient
+        vx = x - torch.mean(x)
+        vy = y - torch.mean(y)
+        corr = torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)))
+        return float(corr.item())
 
 

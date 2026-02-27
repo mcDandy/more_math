@@ -28,7 +28,7 @@ class TestMathGuider(unittest.TestCase):
         # Expression: Average V0 and V1
         expr = "V0 * 0.5 + V1 * 0.5"
 
-        math_guider = MathGuider(V, F, expr)
+        math_guider = MathGuider(V, F, expr, expr)  # Add expression1 parameter
 
         # Pseudo input
         x = torch.zeros((1, 4, 16, 16))
@@ -48,7 +48,7 @@ class TestMathGuider(unittest.TestCase):
         # a = V0, w = F0
         expr = "a + w"
 
-        math_guider = MathGuider(V, F, expr)
+        math_guider = MathGuider(V, F, expr, expr)  # Add expression1 parameter
         x = torch.zeros((1, 4, 8, 8))
         sigma = torch.tensor(1.0)
 
@@ -60,7 +60,7 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(1.0)
         V = {"V0": g0}
         F = {}
-        math_guider = MathGuider(V, F, "V0")
+        math_guider = MathGuider(V, F, "V0", "V0")  # Add expression1 parameter
 
         # Check if the property exists and matches g0's patcher
         self.assertIsNotNone(math_guider.model_patcher)
@@ -72,7 +72,7 @@ class TestMathGuider(unittest.TestCase):
         del g0.model_patcher # force remove
         V = {"V0": g0}
         F = {}
-        math_guider = MathGuider(V, F, "V0")
+        math_guider = MathGuider(V, F, "V0", "V0")  # Add expression1 parameter
         self.assertIsNone(math_guider.model_patcher)
 
     def test_math_guider_steps_context(self):
@@ -81,7 +81,8 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(1.0)
         V = {"V0": g0}
 
-        math_guider = MathGuider(V, {}, "current_step / steps")
+        expr = "current_step / steps"
+        math_guider = MathGuider(V, {}, expr, expr)  # Add expression1 parameter
         math_guider.sigmas = sigmas # sets sigmas directly for testing
 
         # Step 0: sigma = 10.0

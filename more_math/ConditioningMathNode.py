@@ -43,7 +43,7 @@ class ConditioningMathNode(io.ComfyNode):
                     default="error",
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
-                io.Int.Input(id="batching"),
+                io.Int.Input(id="batching", default=0),
                 MrmthStack.Input(id="stack",optional=True)
             ],
             outputs=[
@@ -53,14 +53,14 @@ class ConditioningMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F,batching, length_mismatch="tile",stack={}):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0, stack={}):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression_pi,V,F)
         return d|b
 
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi,batching, length_mismatch="tile",stack={}):
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0, stack={}):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
@@ -198,20 +198,20 @@ class ConditioningMathNode(io.ComfyNode):
                 result_tensor = rt_chunks[i] if i < len(rt_chunks) else torch.zeros([1])
                 result_pooled = rp_chunks[i] if i < len(rp_chunks) else torch.zeros([1])
                 base = copy.deepcopy(V["V0"])
-                base[0][0] = result_tensor
-                if len(base[0]) == 1:
-                    base[0].append({"pooled_output": result_pooled})
-                else:
-                    base[0][1]["pooled_output"] = result_pooled
+                # base[0] is a tuple (tensor, dict), need to reconstruct
+                old_dict = base[0][1] if len(base[0]) > 1 else {}
+                new_dict = old_dict.copy()
+                new_dict["pooled_output"] = result_pooled
+                base[0] = (result_tensor, new_dict)
                 res_list.append(base)
         else:
             # Single output (no batching)
             base = copy.deepcopy(V["V0"])
-            base[0][0] = rtensor
-            if len(base[0]) == 1:
-                base[0].append({"pooled_output": rpooled})
-            else:
-                base[0][1]["pooled_output"] = rpooled
+            # base[0] is a tuple (tensor, dict), need to reconstruct
+            old_dict = base[0][1] if len(base[0]) > 1 else {}
+            new_dict = old_dict.copy()
+            new_dict["pooled_output"] = rpooled
+            base[0] = (rtensor, new_dict)
             res_list = [base]
 
         return (res_list,stack)

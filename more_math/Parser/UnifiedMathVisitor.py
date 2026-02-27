@@ -1096,7 +1096,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self.variables = self.variables | generate_dim_variables(k_sq_sum)
 
         try:
-            val = self._promote_to_tensor((yield ctx.expr()))
+            val = self._promote_to_tensor((yield ctx.expr(0)))
             dims = tuple(range(val.ndim))
             return torch.fft.ifftn(val, dim=dims).real
         finally:
@@ -2947,13 +2947,15 @@ class UnifiedMathVisitor(MathExprVisitor):
             if off >= base_size:
                 return base  # Overlay outside of base, return original
 
-            # Determine overlay crop region (what part of overlay to use)
-            crop_start = max(0, -off)  # Crop from overlay if offset is negative
-            crop_end = min(overlay_size, base_size - off)  # Crop if overlay extends beyond base
+            if off < 0:
+                overlay = overlay[-off:]
+                off = 0
 
-            # Determine base paste region (where to place overlay in base)
-            paste_start = max(0, off)  # Start position in base
-            paste_end = min(base_size, off + overlay_size)  # End position in base
+            end = min(base_size, off + overlay_size)
+            paste_start = off
+            paste_end = end
+            crop_start = 0
+            crop_end = paste_end - paste_start
 
             crop_slices.append(slice(crop_start, crop_end))
             paste_slices.append(slice(paste_start, paste_end))

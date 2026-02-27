@@ -474,6 +474,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#FractFunc.
+    def visitFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ReluFunc.
     def visitReluFunc(self, ctx:MathExprParser.ReluFuncContext):
         return self.visitChildren(ctx)
@@ -666,6 +671,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#EntropyFunc.
     def visitEntropyFunc(self, ctx:MathExprParser.EntropyFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SfftFunc.
+    def visitSfftFunc(self, ctx:MathExprParser.SfftFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -919,7 +929,7 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#sifftFunc.
+    # Visit a parse tree produced by MathExprParser#SifftFunc.
     def visitSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
         return self.visitChildren(ctx)
 

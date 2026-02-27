@@ -17,6 +17,14 @@ def test_mixed_dtype_operations():
     print("Testing Mixed Dtype Operations")
     print("=" * 70)
     
+    # Create a dummy context for testing
+    class DummyContext:
+        class Start:
+            line = 0
+            column = 0
+        start = Start()
+    ctx = DummyContext()
+    
     # int8 operations
     print("\n1. INT8 Bitwise Operations:")
     a_int8 = torch.tensor([15, 7, 3], dtype=torch.int8)
@@ -32,9 +40,9 @@ def test_mixed_dtype_operations():
     b_int16 = torch.tensor([15, 31, 7], dtype=torch.int16)
     visitor = UnifiedMathVisitor({"a": a_int16, "b": b_int16})
     
-    result_and = visitor._bitwise_op(a_int16, b_int16, torch.bitwise_and, lambda x, y: x & y)
-    result_or = visitor._bitwise_op(a_int16, b_int16, torch.bitwise_or, lambda x, y: x | y)
-    result_xor = visitor._bitwise_op(a_int16, b_int16, torch.bitwise_xor, lambda x, y: x ^ y)
+    result_and = visitor._bitwise_op(a_int16, b_int16, torch.bitwise_and, lambda x, y: x & y, ctx)
+    result_or = visitor._bitwise_op(a_int16, b_int16, torch.bitwise_or, lambda x, y: x | y, ctx)
+    result_xor = visitor._bitwise_op(a_int16, b_int16, torch.bitwise_xor, lambda x, y: x ^ y, ctx)
     
     print(f"   a:     {a_int16} (dtype={a_int16.dtype})")
     print(f"   b:     {b_int16} (dtype={b_int16.dtype})")
@@ -72,34 +80,42 @@ def test_scalar_list_tensor_combinations():
     print("Testing Scalar/List/Tensor Combinations")
     print("=" * 70)
     
+    # Create a dummy context for testing
+    class DummyContext:
+        class Start:
+            line = 0
+            column = 0
+        start = Start()
+    ctx = DummyContext()
+    
     visitor = UnifiedMathVisitor({})
     
     # Tensor & Tensor
     print("\n1. Tensor & Tensor (int16):")
     a = torch.tensor([7, 14, 21], dtype=torch.int16)
     b = torch.tensor([3, 5, 7], dtype=torch.int16)
-    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y)
+    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
     print(f"   {a} & {b} = {result}")
     
     # Tensor & List
     print("\n2. Tensor & List (mixed):")
     a = torch.tensor([15, 14, 13], dtype=torch.int16)
     b = [7, 3, 1]
-    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y)
+    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
     print(f"   Tensor({a}) & List({b}) = {result}")
     
     # Scalar & List
     print("\n3. Scalar & List:")
     a = 15
     b = [7, 3, 1]
-    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y)
+    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
     print(f"   {a} & {b} = {result}")
     
     # List & List
     print("\n4. List & List:")
     a = [15, 14, 13]
     b = [7, 3, 1]
-    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y)
+    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
     print(f"   {a} & {b} = {result}")
     
     print("\n" + "=" * 70)

@@ -123,7 +123,8 @@ func1:
 	| SIGM LPAREN expr RPAREN			# sigmoidFunc
 	| ANGL LPAREN expr RPAREN			# anglFunc
 	| PRNT LPAREN expr RPAREN			# printFunc
-	| FRACT LPAREN expr RPAREN			# ReluFunc
+	| FRACT LPAREN expr RPAREN			# FractFunc
+	| RELU LPAREN expr RPAREN			# ReluFunc
 	| SOFTPLUS LPAREN expr RPAREN		# SoftplusFunc
 	| GELU LPAREN expr RPAREN			# GeluFunc
 	| SIGN LPAREN expr RPAREN			# SignFunc
@@ -162,6 +163,7 @@ func1:
 	| LOWER LPAREN expr RPAREN # LowerFunc
 	| TRIM LPAREN expr RPAREN # TrimFunc
 	| ENTROPY LPAREN expr RPAREN # EntropyFunc
+	| SFFT LPAREN expr RPAREN # SfftFunc
 	| DILATE LPAREN expr (COMMA expr)? RPAREN # DilateFunc
 	| ERODE LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
@@ -217,7 +219,7 @@ func3:
 	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN	# CropFunc
-	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# sifftFunc
+	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
 	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # RgbToHsvFunc
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc;

@@ -5,9 +5,9 @@ import torch
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Legacy calculate_patches for backward compatibility."""
-    return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"})
+    return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, pbar=None, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"})
 
-def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
+def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
@@ -113,8 +113,14 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
         for alias, target in mapping.items():
             if target in variables:
                 variables[alias] = variables[target]
-            elif target in V: # V exists but key missing
-                 variables[alias] = torch.zeros_like(ref_tensor)
+            elif target in V:
+                # V key exists in input dict but this specific layer key is missing
+                variables[alias] = torch.zeros_like(ref_tensor)
+            else:
+                # Target doesn't exist at all (e.g., V1 not provided)
+                # Check if it's a V-key pattern and zero-fill
+                if target.startswith("V") and target[1:].isdigit():
+                    variables[alias] = torch.zeros_like(ref_tensor)
 
         v_stacked, v_cnt = get_v_variable(variables)
         if v_stacked is not None:
@@ -146,6 +152,7 @@ def calculate_patches_autogrow(Expr, V, F,pbar, mapping=None,stack = []):
         if not torch.all(diff == 0):
             patches[key] = (diff,)
 
-        pbar.update(1)
+        if pbar is not None:
+            pbar.update(1)
 
     return patches

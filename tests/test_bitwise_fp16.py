@@ -48,6 +48,14 @@ def test_bitwise_and_int16():
     """Test bitwise AND operation with int16 tensors."""
     print("Testing bitwise AND with int16...")
     
+    # Create a dummy context for testing
+    class DummyContext:
+        class Start:
+            line = 0
+            column = 0
+        start = Start()
+    ctx = DummyContext()
+    
     a = torch.tensor([7, 14, 21], dtype=torch.int16)
     b = torch.tensor([3, 5, 7], dtype=torch.int16)
     
@@ -55,7 +63,7 @@ def test_bitwise_and_int16():
     visitor = UnifiedMathVisitor(variables)
     
     # Test bitwise AND
-    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y)
+    result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
     print(f"  a: {a}, b: {b}")
     print(f"  bitwise_and result: {result}")
     assert result.dtype in [torch.int16, torch.int32], f"Unexpected dtype {result.dtype}"

@@ -83,7 +83,7 @@ class ImageMathNode(io.ComfyNode):
         if(length_mismatch == "error"):
             for name, tensor in V.items():
                 if tensor is not None and tensor.shape[0] != common_shape[0]:
-                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {common_shape[0]} to match input.")
+                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {common_shape[0]} to match largest input.")
 
         variables = {
             "a": ae, "b": be, "c": ce, "d": de,

@@ -10,7 +10,8 @@ def test_image_mismatch_broadcast_a_longer():
     b = torch.ones((1, 64, 64, 3)) * 0.5
 
     # a + b -> [1+0.5, 1+0.5]
-    result, = ImageMathNode.execute(V={"V0": a, "V1": b}, F={}, Expression="a + b", length_mismatch="tile")
+    result_list, stack = ImageMathNode.execute(V={"V0": a, "V1": b}, F={}, Expression="a + b", length_mismatch="tile")
+    result = result_list[0]
     assert result.shape[0] == 2
     assert torch.allclose(result, torch.ones((2, 64, 64, 3)) * 1.5)
 
@@ -20,7 +21,8 @@ def test_image_mismatch_broadcast_b_longer():
     b = torch.ones((2, 64, 64, 3)) * 0.5
 
     # a + b -> [1+0.5, 1+0.5] (a broadcasted to length 2)
-    result, = ImageMathNode.execute(V={"V0": a, "V1": b}, F={}, Expression="a + b", length_mismatch="tile")
+    result_list, stack = ImageMathNode.execute(V={"V0": a, "V1": b}, F={}, Expression="a + b", length_mismatch="tile")
+    result = result_list[0]
     assert result.shape[0] == 2
     assert torch.allclose(result, torch.ones((2, 64, 64, 3)) * 1.5)
 
@@ -37,7 +39,8 @@ def test_image_mismatch_pad_b_longer():
     b = torch.ones((2, 64, 64, 3)) * 0.5
 
     # a + b -> [1+0.5, 0+0.5] = [1.5, 0.5]
-    result, = ImageMathNode.execute(V={"V0": a, "V1": b}, F={}, Expression="a + b", length_mismatch="pad")
+    result_list, stack = ImageMathNode.execute(V={"V0": a, "V1": b}, F={}, Expression="a + b", length_mismatch="pad")
+    result = result_list[0]
     assert result.shape[0] == 2
     assert torch.allclose(result[0], torch.ones((64, 64, 3)) * 1.5)
     assert torch.allclose(result[1], torch.ones((64, 64, 3)) * 0.5)

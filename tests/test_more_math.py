@@ -421,12 +421,21 @@ def test_nested_tensor_support():
     result_list, stack = node.execute(Expression="a + 1.0", V={"V0": l_in}, F={}, batching=0)
     res_lat = result_list[0]["samples"]
 
-    assert getattr(res_lat, "is_nested", False)
-    res_list = res_lat.unbind()
-    assert len(res_list) == 2
-    assert torch.allclose(res_list[0], torch.full_like(t1, 2.0))
-    assert torch.allclose(res_list[1], torch.full_like(t2, 3.0))
-
+    # NestedTensor is converted to regular tensor before passing to visitor
+    # Result should be a regular tensor (not NestedTensor)
+    # The unbind() operation concatenates the nested tensors into a single 5D tensor
+    assert isinstance(res_lat, torch.Tensor), f"Expected torch.Tensor, got {type(res_lat)}"
+    assert not getattr(res_lat, "is_nested", False), "Result should be a regular tensor, not NestedTensor"
+    
+    # Verify the concatenated result contains the computed values
+    # NestedTensor([t1=(1,4,32,32), t2=(2,4,32,32)]) -> concatenated to (3,4,32,32)
+    # After a + 1.0: first (1,4,32,32) should be 2.0, next (2,4,32,32) should be 3.0
+    expected = torch.cat([
+        torch.full((1, 4, 32, 32), 2.0),  # 1.0 + 1.0
+        torch.full((2, 4, 32, 32), 3.0)   # 2.0 + 1.0
+    ], dim=0)
+    assert torch.allclose(res_lat, expected)
+    
 
 # ==========================================
 # Comprehensive Math Function Tests

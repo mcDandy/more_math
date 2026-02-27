@@ -118,8 +118,10 @@ def test_all_functions():
     assert torch.equal(res_abs_func, torch.abs(tensor_a))
 
     res_abs_exp = eval_tensor_expr("|ta|", variables, (3,))
-    assert torch.is_tensor(res_abs_exp) and res_abs_exp.numel() == 1
-    assert torch.allclose(res_abs_exp, torch.linalg.norm(tensor_a))
+    # |ta| computes the norm/length of tensor (scalar), not element-wise abs
+    assert isinstance(res_abs_exp, float) or (torch.is_tensor(res_abs_exp) and res_abs_exp.numel() == 1)
+    expected_norm = torch.linalg.norm(tensor_a).item()
+    assert abs(float(res_abs_exp) - expected_norm) < 1e-4
 
     check("tnorm(ta)")
     check("snorm(ta)")

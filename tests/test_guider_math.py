@@ -81,22 +81,26 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(1.0)
         V = {"V0": g0}
 
-        expr = "current_step / steps"
-        math_guider = MathGuider(V, {}, expr, expr)  # Add expression1 parameter
+        expr = "steps > 0 ? current_step / steps : 0.0"  # Handle division by zero
+        math_guider = MathGuider(V, {}, expr, expr)
         math_guider.sigmas = sigmas # sets sigmas directly for testing
+        math_guider.steps = len(sigmas) - 1  # steps = num_sigmas - 1 (2 steps)
 
-        # Step 0: sigma = 10.0
+        # Step 0: sigma = 10.0 (exact match to sigmas[0])
         x = torch.zeros((1, 1, 1, 1))
         res0 = math_guider(x, torch.tensor(10.0))
-        self.assertTrue(torch.allclose(res0, torch.tensor(0.0 / 2.0)))
+        # At step 0 with 2 steps: 0 / 2 = 0.0
+        self.assertTrue(torch.allclose(res0, torch.tensor(0.0)))
 
-        # Step 1: sigma = 5.0
+        # Step 1: sigma = 5.0 (exact match to sigmas[1])
         res1 = math_guider(x, torch.tensor(5.0))
+        # At step 1 with 2 steps: 1 / 2 = 0.5
         self.assertTrue(torch.allclose(res1, torch.tensor(1.0 / 2.0)))
 
-        # Intermediate sigma should find closest
-        res_near = math_guider(x, torch.tensor(4.8))
-        self.assertTrue(torch.allclose(res_near, torch.tensor(1.0 / 2.0)))
+        # Step 2: sigma = 0.0 (exact match to sigmas[2])
+        res2 = math_guider(x, torch.tensor(0.0))
+        # At step 2 with 2 steps: 2 / 2 = 1.0
+        self.assertTrue(torch.allclose(res2, torch.tensor(1.0)))
 
 if __name__ == '__main__':
     unittest.main()

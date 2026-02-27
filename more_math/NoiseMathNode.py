@@ -97,12 +97,12 @@ class NoiseExecutor:
             "y": self.F.get("F2", 0.0),
             "z": self.F.get("F3", 0.0),
             "B": B, "batch": B,
-            "X": W, "width": samples.shape[width_dim],
-            "Y": H, "height": samples.shape[height_dim],
+            "X": W, "width": float(samples.shape[width_dim]),
+            "Y": H, "height": float(samples.shape[height_dim]),
             "C": C, "channel": C,
-            "W": samples.shape[width_dim], "H": samples.shape[height_dim], "I": samples,
-            "T": frame_count, "N": samples.shape[channel_dim],
-            "batch_count": samples.shape[batch_dim], "channel_count": samples.shape[channel_dim],
+            "W": float(samples.shape[width_dim]), "H": float(samples.shape[height_dim]), "I": samples,
+            "T": float(frame_count), "N": float(samples.shape[channel_dim]),
+            "batch_count": float(samples.shape[batch_dim]), "channel_count": float(samples.shape[channel_dim]),
             "input_latent": samples,
         } | generate_dim_variables(samples) | vals | self.F
 

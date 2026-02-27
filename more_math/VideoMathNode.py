@@ -33,8 +33,8 @@ class VideoMathNode(io.ComfyNode):
                     io.String.Input("Expression_pi", default="I0*(1-F0)+I1*F0", multiline=False),
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression to apply on pooled_input part of conditioning",
-                ),
-                io.Combo.Input(
+                )
+                , io.Combo.Input(
                     id="length_mismatch",
                     options=["do nothing","error","tile", "pad"],
                     display_name="on size mismatch",
@@ -98,14 +98,14 @@ class VideoMathNode(io.ComfyNode):
             "batch": getIndexTensorAlongDim(ae, 0),
             "C": getIndexTensorAlongDim(ae, 1),
             "channel": getIndexTensorAlongDim(ae, 1),
-            "W": ae.shape[2],
-            "width": ae.shape[2],
-            "H": ae.shape[1],
-            "height": ae.shape[1],
-            "T": ae.shape[0],
-            "batch_count": ae.shape[0],
-            "N": ae.shape[3],
-            "channel_count": ae.shape[3],
+            "W": float(ae.shape[2]),
+            "width": float(ae.shape[2]),
+            "H": float(ae.shape[1]),
+            "height": float(ae.shape[1]),
+            "T": float(ae.shape[0]),
+            "batch_count": float(ae.shape[0]),
+            "N": float(ae.shape[3]),
+            "channel_count": float(ae.shape[3]),
         } | generate_dim_variables(ae)
 
         v_stacked, v_cnt = get_v_variable(V_norm, length_mismatch=length_mismatch)
@@ -177,8 +177,8 @@ class VideoMathNode(io.ComfyNode):
             "R": sample_rate,
             "sample_rate": sample_rate,
             "batch": getIndexTensorAlongDim(a_w, 0),
-            "T": a_w.shape[0],
-            "batch_count": a_w.shape[0],
+            "T": float(a_w.shape[0]),
+            "batch_count": float(a_w.shape[0]),
         } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
 
         v_stacked, v_cnt = get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)

@@ -92,12 +92,12 @@ class MaskMathNode(io.ComfyNode):
             "Y": getIndexTensorAlongDim(ae, 1),
             "B": getIndexTensorAlongDim(ae, 0),
             "batch": getIndexTensorAlongDim(ae, 0),
-            "W": ae.shape[2],
-            "width": ae.shape[2],
-            "H": ae.shape[1],
-            "height": ae.shape[1],
-            "T": ae.shape[0],
-            "batch_count": ae.shape[0],
+            "W": float(ae.shape[2]),
+            "width": float(ae.shape[2]),
+            "H": float(ae.shape[1]),
+            "height": float(ae.shape[1]),
+            "T": float(ae.shape[0]),
+            "batch_count": float(ae.shape[0]),
         } | generate_dim_variables(ae)
 
         v_stacked, v_cnt = get_v_variable(V_norm, length_mismatch=length_mismatch)

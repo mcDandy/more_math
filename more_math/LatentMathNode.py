@@ -151,14 +151,14 @@ class LatentMathNode(io.ComfyNode):
             "batch": getIndexTensorAlongDim(ae, batch_dim),
             "C": getIndexTensorAlongDim(ae, channel_dim),
             "channel": getIndexTensorAlongDim(ae, channel_dim),
-            "W": ae.shape[width_dim],
-            "width": ae.shape[width_dim],
-            "H": ae.shape[height_dim],
-            "height": ae.shape[height_dim],
-            "T": frame_count,
-            "batch_count": ae.shape[batch_dim],
-            "N": ae.shape[channel_dim],
-            "channel_count": ae.shape[channel_dim],
+            "W": float(ae.shape[width_dim]),
+            "width": float(ae.shape[width_dim]),
+            "H": float(ae.shape[height_dim]),
+            "height": float(ae.shape[height_dim]),
+            "T": float(frame_count),
+            "batch_count": float(ae.shape[batch_dim]),
+            "N": float(ae.shape[channel_dim]),
+            "channel_count": float(ae.shape[channel_dim]),
         } | generate_dim_variables(ae)
 
         if time_dim is not None:

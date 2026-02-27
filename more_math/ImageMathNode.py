@@ -97,14 +97,14 @@ class ImageMathNode(io.ComfyNode):
             "batch": getIndexTensorAlongDim(ae, 0),
             "C": getIndexTensorAlongDim(ae, 1),
             "channel": getIndexTensorAlongDim(ae, 1),
-            "W": ae.shape[2],
-            "width": ae.shape[2],
-            "H": ae.shape[1],
-            "height": ae.shape[1],
-            "T": ae.shape[0],
-            "batch_count": ae.shape[0],
-            "N": ae.shape[3],
-            "channel_count": ae.shape[3],
+            "W": float(ae.shape[2]),
+            "width": float(ae.shape[2]),
+            "H": float(ae.shape[1]),
+            "height": float(ae.shape[1]),
+            "T": float(ae.shape[0]),
+            "batch_count": float(ae.shape[0]),
+            "N": float(ae.shape[3]),
+            "channel_count": float(ae.shape[3]),
         } | generate_dim_variables(ae)
 
         # Add all dynamic inputs

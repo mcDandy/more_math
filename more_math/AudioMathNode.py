@@ -111,8 +111,8 @@ class AudioMathNode(io.ComfyNode):
             "R": sample_rate,
             "sample_rate": sample_rate,
             "batch": getIndexTensorAlongDim(a_w, 0),
-            "T": a_w.shape[0],
-            "batch_count": a_w.shape[0],
+            "T": float(a_w.shape[0]),
+            "batch_count": float(a_w.shape[0]),
         } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
 
         v_stacked, v_cnt = get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)

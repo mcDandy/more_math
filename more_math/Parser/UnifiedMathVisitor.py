@@ -2382,12 +2382,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         type = (yield ctx.expr(1)).dtype if ctx.expr(1) else None
         shape_val = yield ctx.indexExpr()
 
-        if self._is_tensor(shape_val):
-            shape = shape_val.int().tolist()
-        elif self._is_list(shape_val):
-            shape = [int(float(x)) for x in shape_val]
-        else:
-            shape = [int(float(shape_val))]
+        shape = [self._to_int(shape_val, ctx, "tensor")]
 
         return torch.full(shape, value, device=self.device,dtype=type)
 
@@ -2544,10 +2539,10 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def _bitwise_op(self, a, b, torch_op, scalar_op,ctx):
         """Binary bitwise operation handler supporting tensors, lists, and scalars."""
-        if self._is_tensor(a) and a.numel() == 1:
-            a = int(a.flatten()[0].item())
-        if self._is_tensor(b) and b.numel() == 1:
-            b = int(b.flatten()[0].item())
+            if self._is_tensor(a) and a.numel() == 1:
+                a = int(a.flatten()[0].item())
+            if self._is_tensor(b) and b.numel() == 1:
+                b = int(b.flatten()[0].item())
 
         # Handle tensor-list combinations
         if self._is_tensor(a) and self._is_list(b):
@@ -3124,12 +3119,13 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitDilateFunc(self, ctx):
         tsr_val = yield ctx.expr(0)
-        tsr = self._promote_to_tensor(tsr_val)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
-        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        tsr = self._promote_to_tensor(tsr_val)
 
         original_shape = tsr.shape
         tsr = tsr.float()
+
+        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
 
         def dilate_op(x):
             kernel = torch.ones((kernel_size, kernel_size), device=x.device, dtype=x.dtype)
@@ -3148,10 +3144,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         tsr_val = yield ctx.expr(0)
         tsr = self._promote_to_tensor(tsr_val)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
-        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+        tsr = self._promote_to_tensor(tsr_val)
 
         original_shape = tsr.shape
         tsr = tsr.float()
+
+        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
 
         def erode_op(x):
             x_inv = 1.0 - x

@@ -1415,6 +1415,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         if num_coords > 3:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: map() supports max 3 mapping functions.")
 
+        # Validate tensor has enough dimensions
+        if tensor.ndim < num_coords:
+            raise ValueError(
+                f"{ctx.start.line}:{ctx.start.column}: map() requires input tensor to have at least {num_coords} dimensions "
+                f"for {num_coords} coordinate function(s), but got tensor with shape {list(tensor.shape)} ({tensor.ndim} dimension(s)). "
+                f"Hint: Use reshape() to add spatial dimensions before mapping."
+            )
+
         spatial_in_shape = tensor.shape[-num_coords:]
         leading_shape = tensor.shape[:-num_coords]
 
@@ -2443,7 +2451,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             if a.ndim < 1 or b.ndim < 1:
                 raise ValueError("Cross product requires at least 1D tensors")
             if a.shape[-1] != 3 or b.shape[-1] != 3:
-                raise ValueError("Cross product requires last dimension size = 3")
+                raise ValueError(f"Cross product requires last dimension size = 3")
 
             # Float8 handling
             float8_dtypes = {

@@ -1415,7 +1415,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         if num_coords > 3:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: map() supports max 3 mapping functions.")
 
-        # Validate tensor has enough dimensions
         if tensor.ndim < num_coords:
             raise ValueError(
                 f"{ctx.start.line}:{ctx.start.column}: map() requires input tensor to have at least {num_coords} dimensions "
@@ -3224,20 +3223,26 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         # Determine mode: 1=tensor, 2=tensor+degrees, 3=r,g,b, 4=r,g,b+degrees
         if num_args == 1 or num_args == 2:
-            # Tensor mode
-            rgb = self._promote_to_tensor((yield ctx.expr(0)))
-
-            if rgb.shape[-1] != 3:
-                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_hsv expects tensor with last dim=3, got shape {rgb.shape}")
-
-            r = rgb[..., 0]
-            g = rgb[..., 1]
-            b = rgb[..., 2]
+            rgb_val = yield ctx.expr(0)
 
             use_degrees = False
             if num_args == 2:
                 degrees_val = yield ctx.expr(1)
                 use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
+
+            if self._is_list(rgb_val):
+                if len(rgb_val) != 3:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_hsv expects 3 values [r, g, b], got {len(rgb_val)}")
+                r = self._promote_to_tensor(rgb_val[0])
+                g = self._promote_to_tensor(rgb_val[1])
+                b = self._promote_to_tensor(rgb_val[2])
+            else:
+                rgb = self._promote_to_tensor(rgb_val)
+                if rgb.shape[-1] != 3:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_hsv expects tensor with last dim=3, got shape {rgb.shape}")
+                r = rgb[..., 0]
+                g = rgb[..., 1]
+                b = rgb[..., 2]
         else:
             # Separate r, g, b mode
             r = self._promote_to_tensor((yield ctx.expr(0)))
@@ -3292,20 +3297,26 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         # Determine mode
         if num_args == 1 or num_args == 2:
-            # Tensor mode
-            hsv = self._promote_to_tensor((yield ctx.expr(0)))
-
-            if hsv.shape[-1] != 3:
-                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: hsv_to_rgb expects tensor with last dim=3, got shape {hsv.shape}")
-
-            h = hsv[..., 0]
-            s = hsv[..., 1]
-            v = hsv[..., 2]
+            hsv_val = yield ctx.expr(0)
 
             use_degrees = False
             if num_args == 2:
                 degrees_val = yield ctx.expr(1)
                 use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
+
+            if self._is_list(hsv_val):
+                if len(hsv_val) != 3:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: hsv_to_rgb expects 3 values [h, s, v], got {len(hsv_val)}")
+                h = self._promote_to_tensor(hsv_val[0])
+                s = self._promote_to_tensor(hsv_val[1])
+                v = self._promote_to_tensor(hsv_val[2])
+            else:
+                hsv = self._promote_to_tensor(hsv_val)
+                if hsv.shape[-1] != 3:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: hsv_to_rgb expects tensor with last dim=3, got shape {hsv.shape}")
+                h = hsv[..., 0]
+                s = hsv[..., 1]
+                v = hsv[..., 2]
         else:
             # Separate h, s, v mode
             h = self._promote_to_tensor((yield ctx.expr(0)))

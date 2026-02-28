@@ -2539,10 +2539,10 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def _bitwise_op(self, a, b, torch_op, scalar_op,ctx):
         """Binary bitwise operation handler supporting tensors, lists, and scalars."""
-            if self._is_tensor(a) and a.numel() == 1:
-                a = int(a.flatten()[0].item())
-            if self._is_tensor(b) and b.numel() == 1:
-                b = int(b.flatten()[0].item())
+        if self._is_tensor(a) and a.numel() == 1:
+            a = int(a.flatten()[0].item())
+        if self._is_tensor(b) and b.numel() == 1:
+            b = int(b.flatten()[0].item())
 
         # Handle tensor-list combinations
         if self._is_tensor(a) and self._is_list(b):

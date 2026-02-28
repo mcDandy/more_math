@@ -2382,7 +2382,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         type = (yield ctx.expr(1)).dtype if ctx.expr(1) else None
         shape_val = yield ctx.indexExpr()
 
-        shape = [self._to_int(shape_val, ctx, "tensor")]
+        if self._is_list(shape_val):
+            shape = [self._to_int(v, ctx, "tensor") for v in shape_val]
+        elif self._is_tensor(shape_val):
+            shape = [self._to_int(v, ctx, "tensor") for v in shape_val.flatten().tolist()]
+        else:
+            shape = [self._to_int(shape_val, ctx, "tensor")]
 
         return torch.full(shape, value, device=self.device,dtype=type)
 

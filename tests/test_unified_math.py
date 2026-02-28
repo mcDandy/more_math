@@ -408,6 +408,24 @@ def test_random_generators():
     assert res_p.shape == (1, 1, 1, 1)
     assert torch.all(res_p >= 0)
 
+
+def test_random_generators_with_list_shape():
+    vars = {}
+
+    res_rand = parse_and_visit("rand(123, [2, 3])", vars)
+    assert isinstance(res_rand, torch.Tensor)
+    assert res_rand.shape == (2, 3)
+
+    res_bernoulli = parse_and_visit("randb(123, 0.5, [2, 3])", vars)
+    assert isinstance(res_bernoulli, torch.Tensor)
+    assert res_bernoulli.shape == (2, 3)
+    assert torch.all((res_bernoulli == 0) | (res_bernoulli == 1))
+
+    res_poisson = parse_and_visit("randp(123, 5.0, [2, 3])", vars)
+    assert isinstance(res_poisson, torch.Tensor)
+    assert res_poisson.shape == (2, 3)
+    assert torch.all(res_poisson >= 0)
+
 def test_recursion_and_depth():
     vars = {}
     # 1. Test recursion depth (100 levels)

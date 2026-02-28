@@ -191,6 +191,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             return int(float(x))
 
+    def _normalize_shape_arg(self, shape_arg, ctx, context_name="random"):
+        if isinstance(shape_arg, torch.Size):
+            dims = list(shape_arg)
+        elif self._is_tensor(shape_arg):
+            if shape_arg.numel() == 1:
+                return (self._to_int(shape_arg, ctx, context_name),)
+            dims = shape_arg.flatten().tolist()
+        elif self._is_list(shape_arg):
+            dims = list(shape_arg)
+        else:
+            return (self._to_int(shape_arg, ctx, context_name),)
+
+        return tuple(self._to_int(d, ctx, context_name) for d in dims)
+
     # ========================
     # Visitors
     # ========================
@@ -1885,6 +1899,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 1:
             shape_arg = (yield ctx.expr(1))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "noise")
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.randn(shape_arg, generator=generator, device=self.device)
@@ -1894,6 +1909,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 1:
             shape_arg = (yield ctx.expr(1))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "rand")
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.rand(shape_arg, generator=generator, device=self.device)
@@ -1903,6 +1919,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "exponential")
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         lambd_val = yield ctx.expr(1)
         lambd = float(lambd_val.item()) if self._is_tensor(lambd_val) else float(lambd_val)
@@ -1914,6 +1931,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "cauchy")
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         median_val = yield ctx.expr(1)
         median = float(median_val.item()) if self._is_tensor(median_val) else float(median_val)
@@ -1932,6 +1950,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "log_normal")
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.empty(shape_arg, device=self.device).log_normal_(mean, std, generator=generator)
 
@@ -1943,6 +1962,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "bernoulli")
         if self._is_tensor(p):
             return torch.bernoulli(p, generator=generator).to(device=self.device)
         return torch.bernoulli(torch.full(shape_arg, p, device=self.device), generator=generator)
@@ -1955,6 +1975,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "poisson")
         if self._is_tensor(lam):
             return torch.poisson(lam, generator=generator).to(device=self.device)
         return torch.poisson(torch.full(shape_arg, lam, device=self.device), generator=generator)
@@ -1969,6 +1990,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "gamma")
 
         # Use torch.distributions.Gamma which internally handles the generator properly via torch.manual_seed
         # We set the random state temporarily
@@ -1976,7 +1998,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         try:
             torch.manual_seed(seed)
             dist = torch.distributions.Gamma(shape_param, 1.0 / scale)
-            result = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            result = dist.sample(torch.Size(shape_arg))
             return result.to(device=self.device)
         finally:
             torch.set_rng_state(old_state)
@@ -1991,12 +2013,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "beta")
 
         old_state = torch.get_rng_state()
         try:
             torch.manual_seed(seed)
             dist = torch.distributions.Beta(alpha, beta)
-            result = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            result = dist.sample(torch.Size(shape_arg))
             return result.to(device=self.device)
         finally:
             torch.set_rng_state(old_state)
@@ -2006,6 +2029,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "laplace")
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         loc_val = yield ctx.expr(1)
         loc = float(loc_val.item()) if self._is_tensor(loc_val) else float(loc_val)
@@ -2019,6 +2043,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape;
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "gumbel")
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         loc_val = yield ctx.expr(1)
         loc = float(loc_val.item()) if self._is_tensor(loc_val) else float(loc_val)
@@ -2040,6 +2065,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
+            shape_arg = self._normalize_shape_arg(shape_arg, ctx, "weibull")
 
         # Implement Weibull using generator-aware uniform: scale * (-log(u))^(1/concentration)
         generator = torch.Generator(device=self.device).manual_seed(seed)
@@ -2054,13 +2080,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "chi2")
 
         # Chi-squared is Gamma(df/2, 2)
         old_state = torch.get_rng_state()
         try:
             torch.manual_seed(seed)
             dist = torch.distributions.Gamma(df / 2.0, 0.5)
-            result = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            result = dist.sample(torch.Size(shape_arg))
             return result.to(device=self.device)
         finally:
             torch.set_rng_state(old_state)
@@ -2073,6 +2100,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 2:
             shape_arg = (yield ctx.expr(2))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "student_t")
 
         # Student's t using normal and chi-squared: Z / sqrt(V/df) where Z~N(0,1) and V~Chi2(df)
         generator = torch.Generator(device=self.device).manual_seed(seed)
@@ -2083,7 +2111,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         try:
             torch.manual_seed(seed + 1)
             dist = torch.distributions.Gamma(df / 2.0, 0.5)
-            v = dist.sample(shape_arg if isinstance(shape_arg, torch.Size) else torch.Size(shape_arg) if isinstance(shape_arg, (list, tuple)) else torch.Size([shape_arg]))
+            v = dist.sample(torch.Size(shape_arg))
             v = v.to(device=self.device)
         finally:
             torch.set_rng_state(old_state)
@@ -2398,21 +2426,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return result
 
     def visitCrossFunc(self, ctx):
-        a = self._promote_to_tensor((yield ctx.expr(0)))
-        b = self._promote_to_tensor((yield ctx.expr(1)))
-
-        try:
-            # Cross product requires vectors with 3-component last dimension (supports broadcasting)
-            if a.ndim < 1 or b.ndim < 1:
-                raise ValueError("Cross product requires at least 1D tensors")
-
-            if a.shape[-1] != 3 or b.shape[-1] != 3:
-                raise ValueError("Cross product requires last dimension size = 3")
-
-            return torch.cross(a, b, dim=-1)
-        except ValueError as e:
-            error_msg = f"{ctx.start.line}:{ctx.start.column}: cross({a.shape}, {b.shape}): {str(e)}"
-            raise ValueError(error_msg)
+        a = self._promote_to_tensor((yield ctx.expr(0))).float()
+        b = self._promote_to_tensor((yield ctx.expr(1))).float()
+        return F.cosine_similarity(a, b, dim=-1)
 
     def visitMatmulFunc(self, ctx):
         a = self._promote_to_tensor((yield ctx.expr(0)))

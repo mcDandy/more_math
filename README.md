@@ -145,6 +145,8 @@ You can also get the node from comfy manager under the name of More math.
 - `cossim(a, b)`: Computes cosine similarity between a and b along last dimension.
 - `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
 - `cov(x, y)`: Compute covariance between x and y.
+- `corr(x, y)` or `correlation`: Compute Pearson correlation coefficient between x and y. Returns a value in range [-1, 1] indicating the strength and direction of linear relationship.
+- `entropy(x)`: Compute Shannon entropy of a tensor. Measures the amount of uncertainty or information content in the data.
 - `append(a, b)`: Appends `b` to `a`. If inputs are lists, it concatenates them. If inputs are tensors, it concatenates them along dim 0.
 - `any(x)`: Returns 1.0 if any element in `x` is non-zero (True), else 0.0.
 - `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.

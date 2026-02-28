@@ -1327,9 +1327,19 @@ class UnifiedMathVisitor(MathExprVisitor):
         return sorted_val
 
     def visitCossimFunc(self, ctx):
-        a = self._promote_to_tensor((yield ctx.expr(0))).float()
-        b = self._promote_to_tensor((yield ctx.expr(1))).float()
-        return F.cosine_similarity(a, b, dim=-1)
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+
+        try:
+            if a.ndim < 1 or b.ndim < 1:
+                raise ValueError("cosine similarity requires tensors with at least 1 dimension")
+            return F.cosine_similarity(a.float(), b.float(), dim=-1)
+        except RuntimeError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: cossim({a.shape}, {b.shape}): Incompatible shapes for cosine similarity - {str(e)}"
+            raise ValueError(error_msg)
+        except ValueError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: cossim({a.shape}, {b.shape}): {str(e)}"
+            raise ValueError(error_msg)
 
     def visitRifeFunc(self, ctx):
         img1 = self._promote_to_tensor((yield ctx.expr(0)))
@@ -2426,9 +2436,40 @@ class UnifiedMathVisitor(MathExprVisitor):
         return result
 
     def visitCrossFunc(self, ctx):
-        a = self._promote_to_tensor((yield ctx.expr(0))).float()
-        b = self._promote_to_tensor((yield ctx.expr(1))).float()
-        return F.cosine_similarity(a, b, dim=-1)
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+
+        try:
+            if a.ndim < 1 or b.ndim < 1:
+                raise ValueError("Cross product requires at least 1D tensors")
+            if a.shape[-1] != 3 or b.shape[-1] != 3:
+                raise ValueError("Cross product requires last dimension size = 3")
+
+            # Float8 handling
+            float8_dtypes = {
+                getattr(torch, "float8_e4m3fn", None),
+                getattr(torch, "float8_e4m3fnuz", None),
+                getattr(torch, "float8_e5m2", None),
+                getattr(torch, "float8_e5m2fnuz", None),
+            }
+            float8_dtypes.discard(None)
+
+            out_dtype = a.dtype if a.dtype == b.dtype else None
+            a_work = a
+            b_work = b
+            if a.dtype in float8_dtypes or b.dtype in float8_dtypes:
+                a_work = a.float()
+                b_work = b.float()
+
+            res = torch.cross(a_work, b_work, dim=-1)
+
+            if out_dtype in float8_dtypes:
+                res = res.to(out_dtype)
+
+            return res
+        except ValueError as e:
+            error_msg = f"{ctx.start.line}:{ctx.start.column}: cross({a.shape}, {b.shape}): {str(e)}"
+            raise ValueError(error_msg)
 
     def visitMatmulFunc(self, ctx):
         a = self._promote_to_tensor((yield ctx.expr(0)))

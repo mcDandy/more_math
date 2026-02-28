@@ -605,6 +605,23 @@ def test_entropy_and_correlation_edge_cases():
     corr_tiny = parse_and_visit("corr(tiny_x, tiny_y)", vars)
     assert abs(corr_tiny - 1.0) < 1e-5
 
+def test_cross_and_cossim():
+    vars = {
+        "x": torch.tensor([1.0, 0.0, 0.0]),
+        "y": torch.tensor([0.0, 1.0, 0.0]),
+        "z": torch.tensor([0.0, 0.0, 1.0]),
+    }
+
+    cross_xy = parse_and_visit("cross(x, y)", vars)
+    assert isinstance(cross_xy, torch.Tensor)
+    assert torch.allclose(cross_xy, vars["z"])
+
+    sim_ortho = parse_and_visit("cossim(x, y)", vars)
+    assert torch.allclose(sim_ortho, torch.tensor(0.0))
+
+    sim_same = parse_and_visit("cossim(x, x)", vars)
+    assert torch.allclose(sim_same, torch.tensor(1.0))
+
 if __name__ == "__main__":
     try:
         test_scalar_ops()
@@ -630,6 +647,7 @@ if __name__ == "__main__":
         test_entropy()
         test_correlation()
         test_entropy_and_correlation_edge_cases()
+        test_cross_and_cossim()
         print("All UnifiedMathVisitor tests passed!")
 
 

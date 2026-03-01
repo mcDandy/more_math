@@ -3384,7 +3384,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         # Shannon entropy: -sum(p * log(p))
         p = F.softmax(val.flatten().float(), dim=0)
         entropy = -torch.sum(p * torch.log(p + 1e-10))
-        return float(entropy.item())
+        return entropy.item()
 
     def visitCorrFunc(self, ctx):
         x = self._promote_to_tensor((yield ctx.expr(0))).float()
@@ -3393,6 +3393,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         vx = x - torch.mean(x)
         vy = y - torch.mean(y)
         corr = torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)))
-        return float(corr.item())
+        return corr.item()
 
 

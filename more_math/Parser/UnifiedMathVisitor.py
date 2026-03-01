@@ -1153,9 +1153,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(val):
             return float(len(val))
         if self._is_tensor(val):
-            if val.ndim == 0:
-                return 1.0
-            return float(val.size(0))
+            return val.numel()
         return 1.0
 
     def visitMeanFunc(self, ctx):

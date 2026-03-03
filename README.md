@@ -101,7 +101,7 @@ You can also get the node from comfy manager under the name of More math.
 - `gelu(x)`: Gaussian Error Linear Unit.
 - `softplus(x)`: Softplus function (log(1 + e^x)).
 - `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
-- `softmax(x, dim)`: Softmax normalization along specified dimension (converts to probabilities).
+- `softmax(x, dim)`: Softmax normalization along last dimension (converts to probabilities).
 - `softmin(x, dim)`: Softmin normalization along specified dimension (inverse softmax).
 
 ### Interpolation
@@ -152,10 +152,11 @@ You can also get the node from comfy manager under the name of More math.
 - `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.
 - `cumsum(x)`: Returns the cumulative sum of elements along the batch dimension (dim 0).
 - `cumprod(x)`: Returns the cumulative product of elements along the batch dimension (dim 0).
-- `tensor(shape,value)`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero.
+- `tensor(shape,[value,[type]])`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero. Type expacts a tensor from which it copies dtype, if omittend it defaults to float32.
 - `flatten(value)`: Flattens a tensor to 1D. If input is list, it flattens nested lists into a single list.
-- `shape(value)` : Returns the shape of a tensor as a tensor. If input is a list, returns lenght of the list as 1 value tensor. For numbers it returns empty tensor.
+- `shape(value)` : Returns the shape of a tensor as a list. If input is a list, returns lenght of the list as 1 value tensor. For numbers it returns empty list.
 - `overlay(base, overlay, offset)`: Replaces a rectangular region of `base` with `overlay` starting at `offset`. Areas outside the base tensor are ignored. Overlay is cropped if it extends beyond the base tensor.
+- `pad(tensor, padding)`: Pads a tensor with specified padding (pair for each dimension). For example, `[1,2,0,0]` adds 1 element before and 2 elements after in the first dimension, and no padding in the second dimension.
 - 
 ### Advanced Tensor Operations
 
@@ -169,11 +170,19 @@ You can also get the node from comfy manager under the name of More math.
 - `crop(tensor, position, size)`: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
 - `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
-- `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two or spatial dimensions (toggleable by optional parameter) - default use last 2 dimensions.
-- `edge(x)`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
 - `batch_shuffle(tensor, indices)` or `shuffle` or `select`: Reorders or gathers slices along the 0th dimension of a tensor based on a list of indices. (e.g., `shuffle(V0, [0, 0, 1])` repeats the first frame twice and then the second).
 - `matmul(a, b)`: Matrix multiplication. For 1D vectors, performs dot product. For 2D+ tensors, performs standard matrix multiplication following NumPy rules.
 - `cross(a, b)`: Computes the cross product (vector product) of two 3D vectors. Both inputs must have last dimension = 3. Returns a vector perpendicular to both inputs.
+
+### Image
+
+- `blur(x, sigma[,auto_convert])` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two or spatial dimensions (toggleable by optional parameter) - default use last 2 dimensions.
+- `edge(x,[kernel_size[,auto_convert]]`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
+- `dilate(x, [kernel_size])`: Dilation operation. Expands bright regions. Default kernel_size is 3.
+- `erode(x, [kernel_size])`: Erosion operation. Shrinks bright regions. Default kernel_size is 3.
+- `morph_open(x, [kernel_size])`: Opening operation (erosion followed by dilation). Removes small bright spots.
+- `morph_close(x, [kernel_size])`: Closing operation (dilation followed by erosion). Fills small dark holes.
+
 
 ### Optical Flow
 
@@ -244,14 +253,13 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 - `a << b`: Left shift operator. Shifts bits of `a` left by `b` positions.
 - `a >> b`: Right shift operator. Shifts bits of `a` right by `b` positions.
 
-
 #### Bitwise Functions
+
 - `band(a, b)` or `bitwise_and(a, b)`: Bitwise AND. Returns bits set in both operands.
 - `bor(a, b)` or `bitwise_or(a, b)`: Bitwise OR. Returns bits set in either operand.
 - `bxor(a, b)` or `bitwise_xor(a, b)`: Bitwise XOR. Returns bits set in exactly one operand.
 - `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
 - `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
-
 
 
 ### Stack
@@ -270,14 +278,8 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 - `join(list, [separator])`: Joins list elements into a string. Default separator is empty string.
 - `substring(str, start, [length])` or `substr`: Extracts substring starting at `start` position. If length is omitted, extracts to end.
 - `find(str, search)`: Returns position of first occurrence of `search` in `str`, or -1 if not found.
+- `replace(str, search, replacement)`: Replaces all occurrences of `search` in `str` with `replacement`. Is compatible with string, list and tensor.
 - `trim(str)`: Removes leading and trailing whitespace from string.
-
-### Morphological Operations (Image Processing)
-
-- `dilate(x, [kernel_size])`: Dilation operation. Expands bright regions. Default kernel_size is 3.
-- `erode(x, [kernel_size])`: Erosion operation. Shrinks bright regions. Default kernel_size is 3.
-- `morph_open(x, [kernel_size])`: Opening operation (erosion followed by dilation). Removes small bright spots.
-- `morph_close(x, [kernel_size])`: Closing operation (dilation followed by erosion). Fills small dark holes.
 
 ### Color Space Conversions
 

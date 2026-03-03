@@ -24,15 +24,15 @@ class TestIndexing(unittest.TestCase):
     def test_tensor_indexing(self):
         v = torch.randn(4, 4)
         variables = {'v': v}
-        
+
         # Single index
         res = self.evaluate('v[0];', variables)
         self.assertTrue(torch.allclose(res, v[0]))
-        
+
         # Tuple index
         res = self.evaluate('v[1, 2];', variables)
         self.assertEqual(res, float(v[1, 2]))
-        
+
         # List selection
         res = self.evaluate('v[[0, 2]];', variables)
         self.assertTrue(torch.allclose(res, v[[0, 2]]))
@@ -40,19 +40,19 @@ class TestIndexing(unittest.TestCase):
     def test_list_indexing(self):
         l = [10, 20, 30, 40]
         variables = {'l': l}
-        
+
         # Single index
         res = self.evaluate('l[0];', variables)
         self.assertEqual(res, 10)
-        
+
         # Negative index
         res = self.evaluate('l[-1];', variables)
         self.assertEqual(res, 40)
-        
+
         # List selection
         res = self.evaluate('l[[0, 2]];', variables)
         self.assertEqual(res, [10, 30])
-        
+
         # Nested list indexing
         nl = [[1, 2], [3, 4]]
         variables['nl'] = nl

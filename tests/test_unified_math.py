@@ -493,7 +493,7 @@ def test_new_loop_features():
 def test_entropy():
     """Test entropy function for information entropy calculation."""
     vars = {}
-    
+
     # 1. Test uniform distribution (maximum entropy)
     # Uniform probabilities should have high entropy
     uniform = torch.ones(4) / 4.0  # [0.25, 0.25, 0.25, 0.25]
@@ -502,7 +502,7 @@ def test_entropy():
     assert isinstance(entropy_uniform, float)
     # For uniform distribution of 4 elements: H = -sum(0.25 * log(0.25)) = log(4) ≈ 1.386
     assert 1.3 < entropy_uniform < 1.5
-    
+
     # 2. Test deterministic distribution (minimum entropy)
     # One probability is 1, others are 0 -> entropy should be near 0
     deterministic = torch.tensor([1000.0, -1000.0, -1000.0, -1000.0])  # After softmax: ~[1, 0, 0, 0]
@@ -510,14 +510,14 @@ def test_entropy():
     entropy_det = parse_and_visit("entropy(deterministic)", vars)
     assert isinstance(entropy_det, float)
     assert entropy_det < 0.1  # Near zero entropy
-    
+
     # 3. Test with different tensor sizes
     small = torch.randn(8)
     vars["small"] = small
     entropy_small = parse_and_visit("entropy(small)", vars)
     assert isinstance(entropy_small, float)
     assert entropy_small > 0  # Should be positive
-    
+
     # 4. Test that entropy is always non-negative
     random_vals = torch.randn(100)
     vars["random_vals"] = random_vals
@@ -527,7 +527,7 @@ def test_entropy():
 def test_correlation():
     """Test correlation (Pearson correlation coefficient) function."""
     vars = {}
-    
+
     # 1. Perfect positive correlation
     x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     y = torch.tensor([2.0, 4.0, 6.0, 8.0, 10.0])  # y = 2*x
@@ -536,18 +536,18 @@ def test_correlation():
     corr_perfect = parse_and_visit("corr(x, y)", vars)
     assert isinstance(corr_perfect, float)
     assert abs(corr_perfect - 1.0) < 1e-5  # Should be very close to 1
-    
+
     # Test with alias
     corr_alias = parse_and_visit("correlation(x, y)", vars)
     assert abs(corr_alias - 1.0) < 1e-5
-    
+
     # 2. Perfect negative correlation
     z = torch.tensor([10.0, 8.0, 6.0, 4.0, 2.0])  # Decreasing
     vars["z"] = z
     corr_negative = parse_and_visit("corr(x, z)", vars)
     assert isinstance(corr_negative, float)
     assert abs(corr_negative - (-1.0)) < 1e-5  # Should be very close to -1
-    
+
     # 3. No correlation (orthogonal)
     a = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     b = torch.tensor([1.0, -1.0, 1.0, -1.0, 1.0])  # Oscillating
@@ -556,11 +556,11 @@ def test_correlation():
     corr_none = parse_and_visit("corr(a, b)", vars)
     assert isinstance(corr_none, float)
     assert abs(corr_none) < 0.5  # Low correlation
-    
+
     # 4. Test with same tensor (should be 1.0)
     corr_self = parse_and_visit("corr(x, x)", vars)
     assert abs(corr_self - 1.0) < 1e-5
-    
+
     # 5. Test with flattened 2D tensors
     t1 = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
     t2 = torch.tensor([[1.5, 3.0], [4.5, 6.0]])  # Scaled version
@@ -569,7 +569,7 @@ def test_correlation():
     corr_2d = parse_and_visit("corr(t1, t2)", vars)
     assert isinstance(corr_2d, float)
     assert abs(corr_2d - 1.0) < 1e-5  # Linear relationship
-    
+
     # 6. Test correlation is symmetric
     corr_xy = parse_and_visit("corr(x, y)", vars)
     corr_yx = parse_and_visit("corr(y, x)", vars)
@@ -578,14 +578,14 @@ def test_correlation():
 def test_entropy_and_correlation_edge_cases():
     """Test edge cases for entropy and correlation."""
     vars = {}
-    
+
     # 1. Entropy with constant values (after softmax becomes uniform)
     constant = torch.ones(10)
     vars["constant"] = constant
     entropy_const = parse_and_visit("entropy(constant)", vars)
     # All equal logits -> uniform distribution after softmax -> log(10) ≈ 2.302
     assert 2.2 < entropy_const < 2.4
-    
+
     # 2. Correlation with constant values (undefined, but should handle gracefully)
     const_a = torch.ones(5) * 3.0
     const_b = torch.ones(5) * 5.0
@@ -596,7 +596,7 @@ def test_entropy_and_correlation_edge_cases():
     corr_const = parse_and_visit("corr(const_a, const_b)", vars)
     # Check that it doesn't crash and returns a float
     assert isinstance(corr_const, float)
-    
+
     # 3. Small tensors
     tiny_x = torch.tensor([1.0, 2.0])
     tiny_y = torch.tensor([2.0, 4.0])

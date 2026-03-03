@@ -426,7 +426,7 @@ def test_nested_tensor_support():
     # The unbind() operation concatenates the nested tensors into a single 5D tensor
     assert isinstance(res_lat, torch.Tensor), f"Expected torch.Tensor, got {type(res_lat)}"
     assert not getattr(res_lat, "is_nested", False), "Result should be a regular tensor, not NestedTensor"
-    
+
     # Verify the concatenated result contains the computed values
     # NestedTensor([t1=(1,4,32,32), t2=(2,4,32,32)]) -> concatenated to (3,4,32,32)
     # After a + 1.0: first (1,4,32,32) should be 2.0, next (2,4,32,32) should be 3.0
@@ -435,7 +435,7 @@ def test_nested_tensor_support():
         torch.full((2, 4, 32, 32), 3.0)   # 2.0 + 1.0
     ], dim=0)
     assert torch.allclose(res_lat, expected)
-    
+
 
 # ==========================================
 # Comprehensive Math Function Tests
@@ -525,7 +525,7 @@ def test_advanced_activations():
 def test_text_upper():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'upper("hello")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -536,7 +536,7 @@ def test_text_upper():
 def test_text_lower():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'lower("HELLO")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -547,7 +547,7 @@ def test_text_lower():
 def test_text_trim():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'trim("  hello world  ")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -558,7 +558,7 @@ def test_text_trim():
 def test_text_split():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'split("a,b,c", ",")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -569,7 +569,7 @@ def test_text_split():
 def test_text_join():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'join(["a", "b", "c"], "-")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -580,7 +580,7 @@ def test_text_join():
 def test_text_substring():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'substring("hello world", 0, 5)'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -591,7 +591,7 @@ def test_text_substring():
 def test_text_find():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'find("hello world", "world")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -602,7 +602,7 @@ def test_text_find():
 def test_text_replace():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     expr = 'replace("hello world", "world", "python")'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({}, (1,))
@@ -617,14 +617,14 @@ def test_text_replace():
 def test_crop_basic():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     # Create a 4x4 tensor
     input_tensor = torch.ones((4, 4))
     expr = 'crop(a, [1, 1], [2, 2])'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({"a": input_tensor}, input_tensor.shape)
     result = visitor.visit(tree)
-    
+
     # Result should be 2x2
     assert result.shape == (2, 2)
     assert torch.all(result == 1.0)
@@ -633,14 +633,14 @@ def test_crop_basic():
 def test_crop_3d():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     # Create a 4x4x4 tensor
     input_tensor = torch.ones((4, 4, 4)) * 2.0
     expr = 'crop(a, [0, 0, 0], [2, 2, 2])'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({"a": input_tensor}, input_tensor.shape)
     result = visitor.visit(tree)
-    
+
     # Result should be 2x2x2
     assert result.shape == (2, 2, 2)
     assert torch.all(result == 2.0)
@@ -649,14 +649,14 @@ def test_crop_3d():
 def test_crop_with_offset():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
     from more_math.helper_functions import parse_expr
-    
+
     # Create a 6x6 tensor with different values
     input_tensor = torch.arange(36).reshape((6, 6)).float()
     expr = 'crop(a, [2, 2], [2, 2])'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({"a": input_tensor}, input_tensor.shape)
     result = visitor.visit(tree)
-    
+
     # Result should be 2x2
     assert result.shape == (2, 2)
     # Values should be from the cropped region

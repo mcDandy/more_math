@@ -11,7 +11,7 @@ from comfy.nested_tensor import NestedTensor
 
 def test_permute_and_apply():
     print("\n--- Testing Permute and Flow Apply ---")
-    
+
     # 1. Test Permute on NestedTensor
     print("Testing NestedTensor.permute...")
     nt = NestedTensor([torch.randn(1, 256, 256, 3) for _ in range(2)])
@@ -34,7 +34,7 @@ def test_permute_and_apply():
     img = torch.randn(1, 128, 128, 3)
     flow = torch.zeros(1, 128, 128, 2) # Zero flow should be identity
     flow[..., 0] = 10.0 # Shift 10px right
-    
+
     try:
         warped = ofu.apply_flow(img, flow)
         print(f"Warped shape: {warped.shape}")

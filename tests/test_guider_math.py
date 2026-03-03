@@ -107,17 +107,17 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(1.0)
         V = {"V0": g0}
         F = {}
-        
+
         # Create a guider with crop expression
         # Input shape is (1, 4, 4, 4) = (batch, channel, height, width)
         # crop(a, [0, 1, 1, 1], [1, 2, 2, 2]) extracts 2x2x2 region
         expr = "crop(a, [0, 1, 1, 1], [1, 2, 2, 2])"
         math_guider = MathGuider(V, F, expr, expr)
-        
+
         # Input: 4D tensor (batch, channel, height, width)
         x = torch.ones((1, 4, 4, 4))
         sigma = torch.tensor(1.0)
-        
+
         result = math_guider(x, sigma)
         # Result should be (1, 2, 2, 2)
         self.assertEqual(result.shape, (1, 2, 2, 2))
@@ -128,14 +128,14 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(5.0)  # guider returns tensor of 5.0s
         V = {"V0": g0}
         F = {}
-        
+
         # Simple numeric expression
         expr = "a * 2"
         math_guider = MathGuider(V, F, expr, expr)
-        
+
         x = torch.ones((1, 4, 4, 4))
         sigma = torch.tensor(1.0)
-        
+
         result = math_guider(x, sigma)
         # Expression evaluates to a * 2 where a is the guider output (5.0)
         # So result = 5.0 * 2 = 10.0
@@ -147,14 +147,14 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(3.0)  # guider returns tensor of 3.0s
         V = {"V0": g0}
         F = {}
-        
+
         # crop with 4D parameters for 4D input (batch, channel, height, width)
         expr = "crop(a, [0, 0, 0, 0], [1, 2, 2, 2])"
         math_guider = MathGuider(V, F, expr, expr)
-        
+
         x = torch.ones((1, 4, 4, 4))
         sigma = torch.tensor(1.0)
-        
+
         result = math_guider(x, sigma)
         # Result shape should be (1, 2, 2, 2)
         self.assertEqual(result.shape, (1, 2, 2, 2))

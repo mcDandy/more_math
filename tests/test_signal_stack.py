@@ -73,14 +73,14 @@ def test_all():
         t = torch.randn(5, 10)
         assert parse_and_visit("count(t)", {"t": t}) == 5.0
         assert parse_and_visit("count(42)", {}) == 1.0
-        
+
         # 6. Tensor Function
         log("Test 6 (Tensor): creation")
         t_empty = parse_and_visit("tensor([2, 3], 1.5)", {})
         assert t_empty.shape == (2, 3)
         assert torch.all(t_empty == 1.5)
         log(f"Test 6 (Tensor): shape={t_empty.shape}, value={t_empty[0,0]}")
-        
+
         # 7. Batch Shuffle Function
         log("Test 7 (Shuffle): reordering")
         t_base = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]) # 3x2

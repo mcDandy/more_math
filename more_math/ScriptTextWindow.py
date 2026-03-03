@@ -1,5 +1,4 @@
 from comfy_api.latest import io
-import torch
 from .helper_functions import parse_expr
 from .ParseTree import MrmthParseTree
 

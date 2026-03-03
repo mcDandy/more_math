@@ -16,7 +16,7 @@ def test_conditioning_token_mismatch_padding():
     # tokens 0-76: 1 + 0.5 = 1.5
     # tokens 77-153: 0 + 0.5 = 0.5
     result_list, stack = ConditioningMathNode.execute(V={"V0": ca, "V1": cb}, F={}, Expression="a + b", Expression_pi="a + b", length_mismatch="pad")
-    
+
     # result_list[0] is a list: [(tensor, dict), ...]
     # Get the first conditioning tuple
     cond_tuple = result_list[0][0]

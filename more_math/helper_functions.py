@@ -294,40 +294,40 @@ def checkLazyNew(Expression, V, F):
     else:
         tree = Expression
         parser = tree.parser
-    
+
     # Support aliases
     aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3",
                "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-    
+
     assigned_vars = set()
     needed_vars = set()
-    
+
     # Process all top-level statements
     for child in tree.children:
         if not hasattr(child, 'getRuleIndex'):
             continue
-    
+
         rule_name = parser.ruleNames[child.getRuleIndex()] if child.getRuleIndex() < len(parser.ruleNames) else None
-    
+
         # Process function definitions: scan for reads but ignore writes
         if rule_name == 'funcDef':
             func_params = set()
             if child.paramList():
                 for param in child.paramList().VARIABLE():
                     func_params.add(param.getText())
-    
+
             _collect_reads_only(child, needed_vars, assigned_vars, func_params)
-    
+
         # Top-level assignments
         elif rule_name == 'varDef':
             var_name = child.VARIABLE().getText()
             _collect_vars_from_node(child, needed_vars, assigned_vars, set())
             assigned_vars.add(var_name)
-    
+
         # Track other top-level statements
         else:
             _collect_vars_from_node(child, needed_vars, assigned_vars, set())
-    
+
     # Normalize variable names through aliases
     needed = set()
     for var in needed_vars:
@@ -338,5 +338,5 @@ def checkLazyNew(Expression, V, F):
             needed.update(F.keys())
         if re.match(r"[VF][0-9]+", norm):
             needed.add(norm)
-    
+
     return needed

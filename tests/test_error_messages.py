@@ -1,6 +1,5 @@
 import sys
 import os
-import torch
 
 # Ensure we can import the module
 _here = os.path.abspath(os.path.dirname(__file__))
@@ -97,7 +96,7 @@ def run_tests():
             print(f"  FAILED: {e}")
             import traceback
             traceback.print_exc()
-    
+
     print(f"\n{passed}/{len(tests)} tests passed.")
     if passed < len(tests):
         sys.exit(1)

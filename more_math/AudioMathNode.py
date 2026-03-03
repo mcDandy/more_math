@@ -1,4 +1,3 @@
-from tokenize import String
 from .helper_functions import (
     generate_dim_variables,
     parse_expr,
@@ -12,9 +11,6 @@ from .helper_functions import (
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
-from antlr4 import InputStream, CommonTokenStream
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.MathExprParser import MathExprParser
 import torch
 from .Stack import MrmthStack
 import copy

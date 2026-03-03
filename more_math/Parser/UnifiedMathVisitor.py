@@ -2448,7 +2448,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             if a.ndim < 1 or b.ndim < 1:
                 raise ValueError("Cross product requires at least 1D tensors")
             if a.shape[-1] != 3 or b.shape[-1] != 3:
-                raise ValueError(f"Cross product requires last dimension size = 3")
+                raise ValueError("Cross product requires last dimension size = 3")
 
             # Float8 handling
             float8_dtypes = {

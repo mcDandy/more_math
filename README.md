@@ -31,6 +31,7 @@ You can also get the node from comfy manager under the name of More math.
 - Support for stack. Stack survives between field evaluations and can be passed around using stack connection.
   - Usefull in GuiderMath node to store variables between steps.
 - comments `#...` and `/*...*/`
+- In places which expact only tensors you can use lists of lists.
 
 ### Control Flow Statements
 
@@ -162,10 +163,6 @@ You can also get the node from comfy manager under the name of More math.
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
   - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor. Rest uses identity mapping.
-- `ezconvolution(tensor, kw, [kh], [kd], k_expr)` or `ezconv`: Applies a convolution to `tensor`. Automatically permutes tensor to try to make it work with various inputs without the need to permute manually.
-  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
-- `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects standard PyTorch layout `(Batch, Channel, Spatial...)`.
-  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 - `get_value(tensor, position)`: Retrieves a value from a tensor at the specified N-dimensional position (provided as a list or tensor). Uses the formula `pos0*strides[0] + pos1*strides[1] + ...` to find the linear index.
 - `crop(tensor, position, size)`: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
 - `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
@@ -176,8 +173,15 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Image
 
-- `blur(x, sigma[,auto_convert])` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two or spatial dimensions (toggleable by optional parameter) - default use last 2 dimensions.
+- `blur(x, sigma[,auto_convert])` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two dimensions (auto_convert is 0 or omitted) or attempts to use correct spatial dimensions if auto_convert is 1.
 - `edge(x,[kernel_size[,auto_convert]]`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
+- `ezconvolution(tensor, kw, [kh], [kd], k_expr)` or `ezconv`: Applies a convolution to `tensor`. Automatically permutes tensor to try to make it work with various inputs without the need to permute manually.
+  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
+- `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects layout `(Batch, Channel, Spatial...)`.
+  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
+  - 
+## Mask
+
 - `dilate(x, [kernel_size])`: Dilation operation. Expands bright regions. Default kernel_size is 3.
 - `erode(x, [kernel_size])`: Erosion operation. Shrinks bright regions. Default kernel_size is 3.
 - `morph_open(x, [kernel_size])`: Opening operation (erosion followed by dilation). Removes small bright spots.
@@ -278,7 +282,7 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 - `join(list, [separator])`: Joins list elements into a string. Default separator is empty string.
 - `substring(str, start, [length])` or `substr`: Extracts substring starting at `start` position. If length is omitted, extracts to end.
 - `find(str, search)`: Returns position of first occurrence of `search` in `str`, or -1 if not found.
-- `replace(str, search, replacement)`: Replaces all occurrences of `search` in `str` with `replacement`. Is compatible with string, list and tensor.
+- `replace(str, search, replacement)`: Replaces all occurrences of `search` in `str` with `replacement`. Is compatible with string, list and tensor. If `str` is a list or tensor, it replaces all occurrences of `search` value with `replacement` value. For tensors the search and replacement values must have aither 1 value in dimension or the same as input tensor.
 - `trim(str)`: Removes leading and trailing whitespace from string.
 
 ### Color Space Conversions

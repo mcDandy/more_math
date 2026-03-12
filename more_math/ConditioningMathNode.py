@@ -108,7 +108,7 @@ class ConditioningMathNode(io.ComfyNode):
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
             "B": getIndexTensorAlongDim(a, 0),
             "batch": getIndexTensorAlongDim(a, 0),
-            "T": a.shape[1],
+            "T": a.shape[0],
             "batch_count": a.shape[0],
         } | generate_dim_variables(a) | V_norm_tensors
 

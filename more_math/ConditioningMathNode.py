@@ -172,15 +172,18 @@ class ConditioningMathNode(io.ComfyNode):
         for k, val in F.items():
             variables_pi[k] = val if val is not None else 0.0
 
-        # Execute Expression_pi (Pooled Output)
-        tree_pi = None
-        if isinstance(Expression_pi,str):
-            tree_pi = parse_expr(Expression_pi)
+        # Execute Expression_pi 
+        if valid_pooled_keys:
+            tree_pi = None
+            if isinstance(Expression_pi,str):
+                tree_pi = parse_expr(Expression_pi)
+            else:
+                tree_pi = Expression_pi
+            visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape,a_p.device, state_storage=stack)
+            rpooled_raw = visitor_pi.visit(tree_pi)
+            rpooled = as_tensor(rpooled_raw, a_p.shape)
         else:
-            tree_pi = Expression_pi
-        visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape,a_p.device, state_storage=stack)
-        rpooled_raw = visitor_pi.visit(tree_pi)
-        rpooled = as_tensor(rpooled_raw, a_p.shape)
+            rpooled = torch.tensor([])
 
 
         if rtensor is None:

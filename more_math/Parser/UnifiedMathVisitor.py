@@ -3393,4 +3393,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         corr = torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)))
         return corr.item()
 
+    def visitConcatFunc(self,ctx):
+        lenght = len(ctx.expr()-1)
+        dim = yield ctx.expr(lenght)
+        res = self._promote_to_tensor((yield ctx.expr(0)))
+        for i in range(1,lenght):
+            res = torch.cat(res,self._promote_to_tensor((yield ctx.expr(i))),dim=dim)
+
+        return res
+
+
 

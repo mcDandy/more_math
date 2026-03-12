@@ -108,7 +108,7 @@ class ConditioningMathNode(io.ComfyNode):
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
             "B": getIndexTensorAlongDim(a, 0),
             "batch": getIndexTensorAlongDim(a, 0),
-            "T": a.shape[0],
+            "T": a.shape[1],
             "batch_count": a.shape[0],
         } | generate_dim_variables(a) | V_norm_tensors
 
@@ -126,8 +126,9 @@ class ConditioningMathNode(io.ComfyNode):
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
-
+        
         # Execute Expression (Main Tensor)
+        rtensor = None
         tree = None
         if isinstance(Expression,str):
             tree = parse_expr(Expression)
@@ -172,7 +173,8 @@ class ConditioningMathNode(io.ComfyNode):
         for k, val in F.items():
             variables_pi[k] = val if val is not None else 0.0
 
-        # Execute Expression_pi 
+        # Execute Expression_pi
+        rpooled = None 
         if valid_pooled_keys:
             tree_pi = None
             if isinstance(Expression_pi,str):
@@ -182,8 +184,6 @@ class ConditioningMathNode(io.ComfyNode):
             visitor_pi = UnifiedMathVisitor(variables_pi, a_p.shape,a_p.device, state_storage=stack)
             rpooled_raw = visitor_pi.visit(tree_pi)
             rpooled = as_tensor(rpooled_raw, a_p.shape)
-        else:
-            rpooled = torch.tensor([])
 
 
         if rtensor is None:

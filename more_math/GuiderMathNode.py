@@ -84,6 +84,7 @@ class MathGuider:
         self.current_step = 0
         self.steps = 0
         self.stck = stack
+        print(stack)
 
     @property
     def model_patcher(self):
@@ -102,7 +103,7 @@ class MathGuider:
                 g_results[k] = torch.zeros_like(x)
 
         eval_samples, variables = self.setVars(x, sigma, seed, g_results)
-
+        print(self.stack)
         visitor = UnifiedMathVisitor(variables, eval_samples.shape,eval_samples.device,state_storage=self.stck)
         result_tensor = visitor.visit(self.tree)
         self.current_step = self.current_step + 1;

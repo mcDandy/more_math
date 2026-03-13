@@ -103,7 +103,7 @@ class MathGuider:
                 g_results[k] = torch.zeros_like(x)
 
         eval_samples, variables = self.setVars(x, sigma, seed, g_results)
-        print(self.stack)
+        print(self.stck)
         visitor = UnifiedMathVisitor(variables, eval_samples.shape,eval_samples.device,state_storage=self.stck)
         result_tensor = visitor.visit(self.tree)
         self.current_step = self.current_step + 1;
@@ -181,7 +181,6 @@ class MathGuider:
         self.steps = len(sigmas)
         if sigmas.shape[-1] == 0:
             return latent_image
-        self.stck = {}
         active_guiders = [g for g in self.V.values() if g is not None]
         if not active_guiders:
             return latent_image

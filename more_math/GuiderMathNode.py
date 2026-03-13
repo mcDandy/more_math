@@ -67,7 +67,7 @@ class GuiderMathNode(io.ComfyNode):
 
 
 class MathGuider:
-    def __init__(self, V, F, expression,expression1,stack={}):
+    def __init__(self, V, F, expression,expression1,stack):
         self.V = V
         self.F = F
         self.expression = expression

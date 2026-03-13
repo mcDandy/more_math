@@ -63,7 +63,7 @@ class GuiderMathNode(io.ComfyNode):
     @classmethod
     def execute(cls, V, F, Expression,Expression1,stack={}):
         stack = copy.deepcopy(stack) if stack is not None else {}
-        return (MathGuider(V, F, Expression,Expression1),stack)
+        return (MathGuider(V, F, Expression,Expression1,stack),stack)
 
 
 class MathGuider:

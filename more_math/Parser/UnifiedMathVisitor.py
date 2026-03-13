@@ -3284,11 +3284,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         # Value
         v = max_rgb
 
-        # Return format
-        if num_args <= 2:
-            return torch.stack([h, s, v], dim=-1)
-        else:
-            return [h, s, v]
+        return torch.stack([h, s, v], dim=-1)
 
     def visitHsvToRgbFunc(self, ctx):
         num_args = len(ctx.expr())
@@ -3371,11 +3367,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         g = g + m
         b = b + m
 
-        # Return format
-        if num_args <= 2:
-            return torch.stack([r, g, b], dim=-1)
-        else:
-            return [r, g, b]
+        return torch.stack([r, g, b], dim=-1)
+
 
     def visitEntropyFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))

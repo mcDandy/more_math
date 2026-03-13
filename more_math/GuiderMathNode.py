@@ -36,12 +36,12 @@ class GuiderMathNode(io.ComfyNode):
                 io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Guider.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.MultiType.Input(
-                    io.String.Input("Expression", default="G0*(1-F0)+G1*F0", multiline=False),
+                    io.String.Input("Expression", default="V0", multiline=False),
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression to apply on input guiders. Aliases: a=G0, b=G1, c=G2, d=G3, w=F0, x=F1, y=F2, z=F3. Context: steps, current_step",
                 ),
                 io.MultiType.Input(
-                    io.String.Input("Expression1", default="G0*(1-F0)+G1*F0", multiline=False),
+                    io.String.Input("Expression1", default="sample", multiline=False),
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression to apply after generation finishes.",
                 ),
@@ -243,6 +243,8 @@ class MathGuider:
                 output = sampler.sample(self, sigmas, extra_args, callback, noise, latent_image, denoise_mask, disable_pbar)
 
                 eval_samples, variables = self.setVars(output, 0.0, seed, None)
+                variables["noise"] = noise
+                variables["previous_sample"] = latent_image
                 visitor = UnifiedMathVisitor(variables, eval_samples.shape,state_storage=self.stck)
                 output = visitor.visit(self.tree1)
 

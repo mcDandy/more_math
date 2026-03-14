@@ -84,5 +84,4 @@ class FloatMathNode(io.ComfyNode):
         # Result might be float or tensor(scalar)
         if torch.is_tensor(result):
              result = result[0].item()
-        print(stack)
         return (float(result),stack)

@@ -170,7 +170,10 @@ function ensureStyles() {
             display: flex;
             align-items: stretch;
             width: 100%;
+            height: 100%; 
+            min-height: 100%; 
             gap: 0;
+            overflow: hidden;
         }
         .mrmth-line-numbers {
             padding: 6px 8px;
@@ -293,6 +296,9 @@ function attachLineNumbers(widget) {
     wrapper.appendChild(editorContainer);
     editorContainer.appendChild(syntaxLayer);
     editorContainer.appendChild(inputEl);
+
+    wrapper.style.height = "100%"; 
+    parent.style.height = "100%";
 
     inputEl.classList.add("mrmth-line-input");
     inputEl.dataset.mrmthLineNumbers = "true";

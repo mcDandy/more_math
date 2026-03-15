@@ -234,13 +234,14 @@ func5:
 
 // N-argument functions
 funcN:
-	SMIN LPAREN expr (COMMA expr)* RPAREN	# SMinFunc
-	| SMAX LPAREN expr (COMMA expr)* RPAREN	# SMaxFunc
-	| MAP LPAREN expr (COMMA expr)+ RPAREN	# MapFunc
+	SMIN LPAREN expr (COMMA expr)* RPAREN		# SMinFunc
+	| SMAX LPAREN expr (COMMA expr)* RPAREN		# SMaxFunc
+	| MAP LPAREN expr (COMMA expr)+ RPAREN		# MapFunc
 	| EZCONV LPAREN expr (COMMA expr)+ RPAREN	# EzConvFunc
-	| CONV LPAREN expr (COMMA expr)+ RPAREN	# ConvFunc
-	| PERM LPAREN expr COMMA expr RPAREN	# PermuteFunc
-	| RESHAPE LPAREN expr COMMA expr RPAREN	# ReshapeFunc;
+	| CONV LPAREN expr (COMMA expr)+ RPAREN		# ConvFunc
+	| PERM LPAREN expr COMMA expr RPAREN		# PermuteFunc
+	| RESHAPE LPAREN expr COMMA expr RPAREN		# ReshapeFunc
+	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc;
 
 funcNoise:
 	NOISE LPAREN expr (COMMA expr)? RPAREN				# NoiseFunc
@@ -369,6 +370,7 @@ POP: 'stack_pop';
 CLEAR: 'stack_clear';
 HAS: 'stack_has';
 GET: 'stack_get';
+CONCAT: 'cat'|'concat'|'concatenate';
 
 UPPER: 'upper';
 LOWER: 'lower';

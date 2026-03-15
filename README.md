@@ -158,7 +158,8 @@ You can also get the node from comfy manager under the name of More math.
 - `shape(value)` : Returns the shape of a tensor as a list. If input is a list, returns lenght of the list as 1 value tensor. For numbers it returns empty list.
 - `overlay(base, overlay, offset)`: Replaces a rectangular region of `base` with `overlay` starting at `offset`. Areas outside the base tensor are ignored. Overlay is cropped if it extends beyond the base tensor.
 - `pad(tensor, padding)`: Pads a tensor with specified padding (pair for each dimension). For example, `[1,2,0,0]` adds 1 element before and 2 elements after in the first dimension, and no padding in the second dimension.
-- 
+- `concatenate(tensor1, tensor2, dim)` or `concat` or `cat`: Concatenates two tensors along specified dimension. It things of everything as tensor.
+
 ### Advanced Tensor Operations
 
 - `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.

@@ -3386,14 +3386,25 @@ class UnifiedMathVisitor(MathExprVisitor):
         corr = torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)))
         return corr.item()
 
-    def visitConcatFunc(self,ctx):
-        lenght = len(ctx.expr()-1)
-        dim = yield ctx.expr(lenght)
-        res = self._promote_to_tensor((yield ctx.expr(0)))
-        for i in range(1,lenght):
-            res = torch.cat(res,self._promote_to_tensor((yield ctx.expr(i))),dim=dim)
+    def visitConcatFunc(self, ctx):
+        exprs = ctx.expr()
+        items = []
+        for i in range(len(exprs) - 1):
+            items.append((yield exprs[i]))
+        
+        dim_val = yield exprs[-1]
+        if any(isinstance(x, str) for x in items):
+            return "".join(str(items))
 
-        return res
+        if all(self._is_list(x) for x in items):
+            res = []
+            for x in items:
+                res.extend(list(x))
+            return res
+
+        tensors = [self._promote_to_tensor(x) for x in items]
+        d = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)        
+        return torch.cat(tensors, dim=d)
 
 
 

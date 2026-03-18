@@ -3252,11 +3252,6 @@ class UnifiedMathVisitor(MathExprVisitor):
                 degrees_val = yield ctx.expr(3)
                 use_degrees = bool(degrees_val.item() if self._is_tensor(degrees_val) else degrees_val)
 
-        # Clamp to [0, 1]
-        r = torch.clamp(r, 0, 1)
-        g = torch.clamp(g, 0, 1)
-        b = torch.clamp(b, 0, 1)
-
         # RGB to HSV conversion
         max_rgb, _ = torch.max(torch.stack([r, g, b]), dim=0)
         min_rgb, _ = torch.min(torch.stack([r, g, b]), dim=0)
@@ -3327,8 +3322,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             h = h * 360.0
 
         h = h % 360
-        s = torch.clamp(s, 0, 1)
-        v = torch.clamp(v, 0, 1)
 
         # HSV to RGB conversion
         c = v * s

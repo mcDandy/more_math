@@ -167,7 +167,9 @@ func1:
 	| DILATE LPAREN expr (COMMA expr)? RPAREN # DilateFunc
 	| ERODE LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
-	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc;
+	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc
+	| INT LPAREN expr RPAREN    # IntFunc;
+	| FLOAT LPAREN expr RPAREN    # FloatFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc
@@ -371,6 +373,8 @@ CLEAR: 'stack_clear';
 HAS: 'stack_has';
 GET: 'stack_get';
 CONCAT: 'cat'|'concat'|'concatenate';
+INT: 'int';
+FLOAT: 'float';
 
 UPPER: 'upper';
 LOWER: 'lower';

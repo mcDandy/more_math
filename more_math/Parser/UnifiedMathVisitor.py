@@ -3399,5 +3399,38 @@ class UnifiedMathVisitor(MathExprVisitor):
         d = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)        
         return torch.cat(tensors, dim=d)
 
+    def visitIntFunc(self, ctx):
+        val = yield ctx.expr()
+        def as_int(ctx,val):
+            if self._is_tensor(val):
+                return val.to(torch.int32).contiguous()
+            
+            if self._is_list(val):
+                return [as_int(ctx,x) for x in val]
+            
+            if isinstance(val, str):
+                return int(float(val))
+            
+            if val is None:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Cannot convert None to a number")
+            
+            return int(float(val))
+        return as_int(ctx,val)
 
-
+    def visitFloatFunc(self, ctx):
+        val = yield ctx.expr()
+        def as_float(ctx,val):
+            if self._is_tensor(val):
+                return val.to(torch.float).contiguous()
+            
+            if self._is_list(val):
+                return [as_float(ctx,x) for x in val]
+            
+            if isinstance(val, str):
+                return float(val)
+            
+            if val is None:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Cannot convert None to a number")
+            
+            return float(val)
+        return as_float(ctx,val)

@@ -10,7 +10,6 @@ from .ParseTree import MrmthParseTree
 import copy
 
 
-
 class FloatMathNode(io.ComfyNode):
     """
     This node enables the use of math expressions on Floats.
@@ -27,13 +26,20 @@ class FloatMathNode(io.ComfyNode):
             category="More math",
             display_name="Float math",
             inputs=[
-                io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Float.Input("values"), prefix="V", min=1, max=50)),
+                io.Autogrow.Input(
+                    id="V",
+                    template=io.Autogrow.TemplatePrefix(
+                        io.Float.Input("values"), prefix="V", min=1, max=50
+                    ),
+                ),
                 io.MultiType.Input(
                     io.String.Input("FloatFunc", default="a*(1-w)+b*w", multiline=False),
-                    types=[io.String,MrmthParseTree],
+                    types=[io.String, MrmthParseTree],
                     tooltip="Expression to use on inputs",
                 ),
-                MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
+                MrmthStack.Input(
+                    id="stack", tooltip="Access stack between nodes", optional=True
+                ),
             ],
             outputs=[
                 io.Float.Output(),
@@ -61,7 +67,6 @@ class FloatMathNode(io.ComfyNode):
         variables["x"] = V.get("V5", 0.0)
         variables["y"] = V.get("V6", 0.0)
         variables["z"] = V.get("V7", 0.0)
-        stack = copy.deepcopy(stack) if stack is not None else {}
 
         # Populate all V inputs
         for k, val in V.items():
@@ -69,18 +74,19 @@ class FloatMathNode(io.ComfyNode):
 
         v_stacked, v_cnt = get_v_variable(variables)
         if v_stacked is not None:
-             variables["V"] = v_stacked
-             variables["Vcnt"] = float(v_cnt)
-             variables["V_count"] = float(v_cnt)
+            variables["V"] = v_stacked
+            variables["Vcnt"] = float(v_cnt)
+            variables["V_count"] = float(v_cnt)
 
         tree = None
-        if isinstance(FloatFunc,str):
+        if isinstance(FloatFunc, str):
             tree = parse_expr(FloatFunc)
         else:
             tree = FloatFunc
         # scalar execution
         visitor = UnifiedMathVisitor(variables, [1],state_storage=stack)
         result = visitor.visit(tree)
+
         # Result might be float or tensor(scalar)
         if torch.is_tensor(result):
              result = result[0].item()

@@ -37,6 +37,14 @@ class FloatMathNode(io.ComfyNode):
                     types=[io.String, MrmthParseTree],
                     tooltip="Expression to use on inputs",
                 ),
+                io.Bool.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading for changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(
                     id="stack", tooltip="Access stack between nodes", optional=True
                 ),
@@ -51,11 +59,13 @@ class FloatMathNode(io.ComfyNode):
 
     @classmethod
     def check_lazy_status(cls, FloatFunc, V,stack={}):
-            return checkLazyNew(FloatFunc,V,V)
-
+    def check_lazy_status(cls, FloatFunc, V, remember_stack=False, stack={}):
+        # remember_stack ani stack nemění lazy logiku
 
     @classmethod
     def execute(cls, FloatFunc, V,stack={}):
+    def execute(cls, FloatFunc, V, remember_stack=False, stack={}):
+        work_stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
         variables = {}
         # Populate aliases
@@ -84,10 +94,11 @@ class FloatMathNode(io.ComfyNode):
         else:
             tree = FloatFunc
         # scalar execution
-        visitor = UnifiedMathVisitor(variables, [1],state_storage=stack)
+        visitor = UnifiedMathVisitor(variables, [1], state_storage=work_stack)
         result = visitor.visit(tree)
 
         # Result might be float or tensor(scalar)
         if torch.is_tensor(result):
-             result = result[0].item()
         return (float(result),stack)
+        returned_stack = work_stack if remember_stack else copy.deepcopy(work_stack)
+        return (float(result), returned_stack)

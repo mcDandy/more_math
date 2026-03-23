@@ -42,7 +42,7 @@ class FloatMathNode(io.ComfyNode):
                     default=False,
                     display_name="Remember stack across batch",
                     tooltip=(
-                        "If enabled, stack is copied at output leading for changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
                     ),
                 ),
                 MrmthStack.Input(
@@ -58,12 +58,11 @@ class FloatMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, FloatFunc, V,stack={}):
     def check_lazy_status(cls, FloatFunc, V, remember_stack=False, stack={}):
         # remember_stack ani stack nemění lazy logiku
+        return checkLazyNew(FloatFunc, V, V)
 
     @classmethod
-    def execute(cls, FloatFunc, V,stack={}):
     def execute(cls, FloatFunc, V, remember_stack=False, stack={}):
         work_stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
@@ -99,6 +98,6 @@ class FloatMathNode(io.ComfyNode):
 
         # Result might be float or tensor(scalar)
         if torch.is_tensor(result):
-        return (float(result),stack)
+            result = result.flatten()[0].item()
         returned_stack = work_stack if remember_stack else copy.deepcopy(work_stack)
         return (float(result), returned_stack)

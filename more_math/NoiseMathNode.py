@@ -36,7 +36,7 @@ class NoiseMathNode(io.ComfyNode):
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression for noise",
                 ),
-                io.Bool.Input(
+                io.Boolean.Input(
                     id="remember_stack",
                     default=False,
                     display_name="Remember stack across batch",

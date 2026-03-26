@@ -39,7 +39,7 @@ class MaskMathNode(io.ComfyNode):
                     tooltip="How to handle mismatched mask batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
                 io.Int.Input(id="batching", default=0),
-                io.Bool.Input(
+                io.Boolean.Input(
                     id="remember_stack",
                     default=False,
                     display_name="Remember stack across batch",

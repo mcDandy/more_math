@@ -37,7 +37,7 @@ class FloatMathNode(io.ComfyNode):
                     types=[io.String, MrmthParseTree],
                     tooltip="Expression to use on inputs",
                 ),
-                io.Bool.Input(
+                io.Boolean.Input(
                     id="remember_stack",
                     default=False,
                     display_name="Remember stack across batch",

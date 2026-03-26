@@ -36,7 +36,7 @@ class StringMathNode(io.ComfyNode):
                     tooltip="3D model file or path string",
                 ),
                 io.Int.Input(id="batching", default=0),
-                io.Bool.Input(
+                io.Boolean.Input(
                     id="remember_stack",
                     default=False,
                     display_name="Remember stack across batch",

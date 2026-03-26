@@ -65,10 +65,6 @@ def preprocess_image(img, device):
     # Scale to [0, 255] as RAFT transforms usually expect this
     img = img * 255.0
 
-    # Use official transform if possible
-    weights = Raft_Large_Weights.DEFAULT
-    transform = weights.transforms()
-
     # The transform expects [0, 255] and returns normalized [-1, 1]
     # It takes (img1, img2) but we can use it for one or just follow its logic
     # Actually, let's just follow the logic: 2 * (img / 255.0) - 1.0

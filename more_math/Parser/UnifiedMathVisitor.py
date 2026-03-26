@@ -3170,7 +3170,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._apply_spatial_op(tsr, erode_op, original_shape)
 
     def visitMorphOpenFunc(self, ctx):
-        tsr_val = yield ctx.expr(0)
+        yield ctx.expr(0)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
 
         eroded = yield from self.visitErodeFunc(ctx)
@@ -3193,7 +3193,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._apply_spatial_op(tsr, dilate_op, original_shape)
 
     def visitMorphCloseFunc(self, ctx):
-        tsr_val = yield ctx.expr(0)
+        yield ctx.expr(0)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
 
         dilated = yield from self.visitDilateFunc(ctx)
@@ -3384,7 +3384,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         items = []
         for i in range(len(exprs) - 1):
             items.append((yield exprs[i]))
-        
+
         dim_val = yield exprs[-1]
         if any(isinstance(x, str) for x in items):
             return "".join(str(items))
@@ -3404,16 +3404,16 @@ class UnifiedMathVisitor(MathExprVisitor):
         def as_int(ctx,val):
             if self._is_tensor(val):
                 return val.to(torch.int32).contiguous()
-            
+
             if self._is_list(val):
                 return [as_int(ctx,x) for x in val]
-            
+
             if isinstance(val, str):
                 return int(float(val))
-            
+
             if val is None:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Cannot convert None to a number")
-            
+
             return int(float(val))
         return as_int(ctx,val)
 
@@ -3422,15 +3422,15 @@ class UnifiedMathVisitor(MathExprVisitor):
         def as_float(ctx,val):
             if self._is_tensor(val):
                 return val.to(torch.float).contiguous()
-            
+
             if self._is_list(val):
                 return [as_float(ctx,x) for x in val]
-            
+
             if isinstance(val, str):
                 return float(val)
-            
+
             if val is None:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Cannot convert None to a number")
-            
+
             return float(val)
         return as_float(ctx,val)

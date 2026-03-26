@@ -165,15 +165,12 @@ class NoiseUtils:
         Uses interpolated noise for smooth results.
         coords_input: tuple of coordinate tensors
         """
-        ndim = len(coords_input)
         result = torch.zeros_like(coords_input[0])
         amplitude = 1.0
         frequency = 1.0
         max_amplitude = 0.0
 
         for octave in range(4):
-            # Scale coordinates by frequency and base scale
-            scaled_coords = tuple((c / scale) * frequency for c in coords_input)
 
             # Use Perlin-like interpolation for smooth plasma
             noise_octave = NoiseUtils.perlin_noise_nd(

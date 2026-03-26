@@ -134,7 +134,7 @@ class ConditioningMathNode(io.ComfyNode):
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
-        
+
         # Execute Expression (Main Tensor)
         rtensor = None
         tree = None

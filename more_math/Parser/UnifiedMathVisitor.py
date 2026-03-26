@@ -3448,3 +3448,27 @@ class UnifiedMathVisitor(MathExprVisitor):
         b = val & 0xFF
         if self._is_tensor(val): return torch.stack([r.to(torch.float)/256, g.to(torch.float)/256, b.to(torch.float)/256], dim=-1).contiguous()
         return [r/256, g/256, b/256]
+
+    def visitRgb_to_int(self,ctx):
+        if len(ctx.expr()) == 1:
+            rgb_val = yield ctx.expr(0)
+            if self._is_tensor(rgb_val):
+                if rgb_val.shape[-1] != 3:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_int expects tensor with last dim=3, got shape {rgb_val.shape}")
+                r = (rgb_val[..., 0] * 256).clamp(0, 255).to(torch.int32)
+                g = (rgb_val[..., 1] * 256).clamp(0, 255).to(torch.int32)
+                b = (rgb_val[..., 2] * 256).clamp(0, 255).to(torch.int32)
+                return ((r << 16) | (g << 8) | b).contiguous()
+            if(self._is_list(rgb_val)):
+                if len(rgb_val) != 3:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_int expects 3 values [r, g, b], got {len(rgb_val)}")
+                else: return math.clamp(int(rgb_val[0]*256),0,255) << 16 | math.clamp(int(rgb_val[1]*256),0,255) << 8 | math.clamp(int(rgb_val[2]*256),0,255)
+        r = yield ctx.expr(0)
+        g = yield ctx.expr(1)
+        b = yield ctx.expr(2)
+        if self._is_tensor(r) or self._is_tensor(g) or self._is_tensor(b):
+            r = (self._promote_to_tensor(r) * 256).clamp(0, 255).to(torch.int32)
+            g = (self._promote_to_tensor(g) * 256).clamp(0, 255).to(torch.int32)
+            b = (self._promote_to_tensor(b) * 256).clamp(0, 255).to(torch.int32)
+            return ((r << 16) | (g << 8) | b).contiguous()
+       return math.clamp(int(r*256),0,255) << 16 | math.clamp(int(g*256),0,255) << 8 | math.clamp(int(b*256),0,255)

@@ -1,10 +1,5 @@
 from .helper_functions import (
-    generate_dim_variables,
     parse_expr,
-    getIndexTensorAlongDim,
-    as_tensor,
-    normalize_to_common_shape,
-    make_zero_like,
     get_v_variable,
     get_f_variable,
     checkLazyNew

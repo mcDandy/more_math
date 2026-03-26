@@ -3170,7 +3170,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._apply_spatial_op(tsr, erode_op, original_shape)
 
     def visitMorphOpenFunc(self, ctx):
-        yield ctx.expr(0)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
 
         eroded = yield from self.visitErodeFunc(ctx)
@@ -3193,7 +3192,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._apply_spatial_op(tsr, dilate_op, original_shape)
 
     def visitMorphCloseFunc(self, ctx):
-        yield ctx.expr(0)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
 
         dilated = yield from self.visitDilateFunc(ctx)

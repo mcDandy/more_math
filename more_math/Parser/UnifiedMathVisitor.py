@@ -3471,4 +3471,4 @@ class UnifiedMathVisitor(MathExprVisitor):
             g = (self._promote_to_tensor(g) * 256).clamp(0, 255).to(torch.int32)
             b = (self._promote_to_tensor(b) * 256).clamp(0, 255).to(torch.int32)
             return ((r << 16) | (g << 8) | b).contiguous()
-       return math.clamp(int(r*256),0,255) << 16 | math.clamp(int(g*256),0,255) << 8 | math.clamp(int(b*256),0,255)
+        return math.clamp(int(r*256),0,255) << 16 | math.clamp(int(g*256),0,255) << 8 | math.clamp(int(b*256),0,255)

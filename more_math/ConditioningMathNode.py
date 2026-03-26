@@ -43,6 +43,14 @@ class ConditioningMathNode(io.ComfyNode):
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
                 io.Int.Input(id="batching", default=0),
+                io.Bool.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(id="stack",optional=True)
             ],
             outputs=[
@@ -52,19 +60,19 @@ class ConditioningMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0, stack={}):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0,remember_stack=False, stack={}):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression_pi,V,F)
         return d|b
 
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0, stack={}):
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0,remember_stack=False, stack={}):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
-        stack = copy.deepcopy(stack) if stack is not None else {}
+        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
         # Extract tensors and pooled outputs
         tensors = {}
@@ -216,4 +224,5 @@ class ConditioningMathNode(io.ComfyNode):
             base[0] = (rtensor, new_dict)
             res_list = [base]
 
+        stack = stack if remember_stack else copy.deepcopy(stack)
         return (res_list,stack)

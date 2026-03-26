@@ -49,6 +49,14 @@ class LatentMathNode(io.ComfyNode):
                     tooltip="How to handle mismatched latent batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
                 io.Int.Input(id="batching"),
+                io.Bool.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -61,11 +69,11 @@ class LatentMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",stack={}):
+    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",remember_stack=False,stack={}):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression,batching, length_mismatch="tile",stack={}) -> io.NodeOutput:
+    def execute(cls, V, F, Expression,batching, length_mismatch="tile",remember_stack=False,stack={}) -> io.NodeOutput:
         # Determine reference latent
         ref_latent = None
         for lat in V.values():
@@ -75,7 +83,7 @@ class LatentMathNode(io.ComfyNode):
 
         if ref_latent is None:
              raise ValueError("At least one input is required.")
-        stack = copy.deepcopy(stack) if stack is not None else {}
+        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
         # Identify if any input is a NestedTensor and track original sizes for restoration
         stacked = False
@@ -206,7 +214,9 @@ class LatentMathNode(io.ComfyNode):
                 else:
                     rl["samples"] = result_t
                 results1.append(rl)
+                stack = stack if remember_stack else copy.deepcopy(stack)
             return (results1,stack)
         rl = result_latent.copy()
         rl["samples"] = result_t
+        stack = stack if remember_stack else copy.deepcopy(stack)
         return ([rl],stack)

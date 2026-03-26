@@ -36,6 +36,14 @@ class NoiseMathNode(io.ComfyNode):
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression for noise",
                 ),
+                io.Bool.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -45,13 +53,15 @@ class NoiseMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Noise, V, F,stack={}):
+    def check_lazy_status(cls, Noise, V, F,remember_stack=False,stack={}):
         return checkLazyNew(Noise,V,F)
 
     @classmethod
-    def execute(cls, Noise, V,F,stack={}):
-        stack = copy.deepcopy(stack) if stack is not None else {}
-        return (NoiseExecutor(V,F, Noise,stack),stack)
+    def execute(cls, Noise, V,F,remember_stack=False,stack={}):
+        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        executer = NoiseExecutor(V,F, Noise,stack)
+        stack = stack if remember_stack else copy.deepcopy(stack)
+        return (executer,stack)
 
 
 class NoiseExecutor:

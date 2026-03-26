@@ -32,7 +32,7 @@ class CLIPMathNode(io.ComfyNode):
                     options=["do nothing","error","tile", "pad"],
                     display_name="on size mismatch",
                     default="error",
-                    tooltip="How to handle mismatched layer counts. For models, this usually defaults to broadcast (zero for missing layers)."
+                    tooltip="How to handle mismatched layer counts."
                 ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],

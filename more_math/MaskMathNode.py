@@ -39,6 +39,14 @@ class MaskMathNode(io.ComfyNode):
                     tooltip="How to handle mismatched mask batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
                 io.Int.Input(id="batching", default=0),
+                io.Bool.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -48,18 +56,18 @@ class MaskMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,stack={}):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",batching=0,stack={}):
+    def execute(cls, V, F, Expression, length_mismatch="tile",batching=0,remember_stack=False,stack={}):
         # Identify all present tensors and their keys
         tensor_keys = [k for k, v in V.items() if v is not None]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
 
         tensors = [V[k] for k in tensor_keys]
-        stack = copy.deepcopy(stack) if stack is not None else {}
+        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
         # Normalize all tensors together
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
         V_norm = dict(zip(tensor_keys, normalized_tensors))
@@ -132,6 +140,8 @@ class MaskMathNode(io.ComfyNode):
             res_list = []
             for result_chunk in res:
                 res_list.append(result_chunk)
+                stack = stack if remember_stack else copy.deepcopy(stack)
             return (res_list, stack)
         else:
+            stack = stack if remember_stack else copy.deepcopy(stack)
             return ([result], stack)

@@ -39,6 +39,14 @@ class ImageMathNode(io.ComfyNode):
                     tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
                 io.Int.Input(id="batching", default=0),
+                io.Bool.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -48,11 +56,11 @@ class ImageMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,stack={}):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="error",batching=0,stack={}):
+    def execute(cls, V, F, Expression, length_mismatch="error",batching=0,remember_stack=False,stack={}):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Identify all present tensors and their keys
@@ -61,7 +69,7 @@ class ImageMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
 
         tensors = [V[k] for k in tensor_keys]
-        stack = copy.deepcopy(stack) if stack is not None else {}
+        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
         # Normalize all tensors together to find the common target shape
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
@@ -139,6 +147,8 @@ class ImageMathNode(io.ComfyNode):
             res_list = []
             for result_chunk in res:
                 res_list.append(result_chunk)
+            stack = stack if remember_stack else copy.deepcopy(stack)
             return (res_list, stack)
         else:
+            stack = stack if remember_stack else copy.deepcopy(stack)
             return ([result], stack)

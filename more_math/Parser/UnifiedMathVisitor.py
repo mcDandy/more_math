@@ -3432,3 +3432,19 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             return float(val)
         return as_float(ctx,val)
+
+    def visitInt_to_rgb(self,ctx):
+        val = (yield ctx.expr())
+        return i2rgb(val)
+
+    def i2rgb(self,val):
+        if self._is_list(val):
+            t = []
+            for v in val:
+                t.append(i2rgb(v))
+            return t
+        r = (val >> 16) & 0xFF
+        g = (val >> 8) & 0xFF
+        b = val & 0xFF
+        if self._is_tensor(val): return torch.stack([r.to(torch.float)/256, g.to(torch.float)/256, b.to(torch.float)/256], dim=-1).contiguous()
+        return [r/256, g/256, b/256]

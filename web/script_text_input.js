@@ -20,7 +20,7 @@ const FUNCTIONS = new Set([
     "bnot", "bitwise_not", "bitcount", "popcount", "popcnt", "shape", "band", "bitwise_and", "bxor", "bitwise_xor",
     "bor", "bitwise_or", "tensor", "stack_push", "stack_pop", "stack_clear", "stack_has", "stack_get", "timestamp",
     "sort", "argsort", "argmin", "argmax", "softmax", "softmin", "unique", "flip", "cov", "corr", "correlation", "entropy",
-    "crop", "cat", "concatenate", "concat", 
+    "crop", "cat", "concatenate", "concat", "float","int",
     "noise", "randn", "random_normal", "rand", "randu", "random_uniform", "randc", "random_cauchy", "rande",
     "random_exponential", "randln", "random_log_normal", "randb", "random_bernoulli", "randp", "random_poisson", "randg",
     "random_gamma", "randbeta", "random_beta", "randl", "random_laplace", "randgumbel", "random_gumbel", "randw",
@@ -28,7 +28,7 @@ const FUNCTIONS = new Set([
     "worley", "cellular_noise", "voronoi_noise", "plasma", "turbulence", "plasma_noise",
     "upper", "lower", "split", "join", "substring", "substr", "find", "trim", "replace",
     "dilate", "erode", "morph_open", "morph_close",
-    "rgb_to_hsv", "hsv_to_rgb"
+    "rgb_to_hsv", "hsv_to_rgb", "int_to_rgb", "rgb_to_int"
 ]);
 
 const BRACKET_PAIRS = {

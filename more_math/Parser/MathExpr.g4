@@ -208,7 +208,10 @@ func2:
 	| SUBSTRING LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
 	| SUBSTR LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
 	| FIND LPAREN expr COMMA expr RPAREN # FindFunc
-	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN # ReplaceFunc;
+	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN # ReplaceFunc
+	| INT_TO_RGB LPAREN expr RPAREN                # Int_to_rgbFunc
+	| RGB_TO_INT LPAREN expr ( COMMA expr COMMA expr)? RPAREN # Rgb_to_intFunc
+	;
 
 func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN	# ClampFunc
@@ -391,6 +394,8 @@ MORPH_OPEN: 'morph_open';
 MORPH_CLOSE: 'morph_close';
 RGB_TO_HSV: 'rgb_to_hsv';
 HSV_TO_RGB: 'hsv_to_rgb';
+INT_TO_RGB: 'int_to_rgb';
+RGB_TO_INT: 'rgb_to_int';
 
 IF: 'if';
 ELSE: 'else';

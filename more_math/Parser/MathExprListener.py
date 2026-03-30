@@ -1250,6 +1250,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#IntFunc.
+    def enterIntFunc(self, ctx:MathExprParser.IntFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IntFunc.
+    def exitIntFunc(self, ctx:MathExprParser.IntFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FloatFunc.
+    def enterFloatFunc(self, ctx:MathExprParser.FloatFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FloatFunc.
+    def exitFloatFunc(self, ctx:MathExprParser.FloatFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -1571,6 +1589,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ReplaceFunc.
     def exitReplaceFunc(self, ctx:MathExprParser.ReplaceFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Int_to_rgbFunc.
+    def enterInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Int_to_rgbFunc.
+    def exitInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Rgb_to_intFunc.
+    def enterRgb_to_intFunc(self, ctx:MathExprParser.Rgb_to_intFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Rgb_to_intFunc.
+    def exitRgb_to_intFunc(self, ctx:MathExprParser.Rgb_to_intFuncContext):
         pass
 
 

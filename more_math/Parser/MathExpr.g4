@@ -168,7 +168,7 @@ func1:
 	| ERODE LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
 	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc
-	| INT LPAREN expr RPAREN    # IntFunc;
+	| INT LPAREN expr RPAREN    # IntFunc
 	| FLOAT LPAREN expr RPAREN    # FloatFunc;
 
 func2:

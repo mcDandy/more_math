@@ -699,6 +699,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#IntFunc.
+    def visitIntFunc(self, ctx:MathExprParser.IntFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FloatFunc.
+    def visitFloatFunc(self, ctx:MathExprParser.FloatFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -876,6 +886,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ReplaceFunc.
     def visitReplaceFunc(self, ctx:MathExprParser.ReplaceFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Int_to_rgbFunc.
+    def visitInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Rgb_to_intFunc.
+    def visitRgb_to_intFunc(self, ctx:MathExprParser.Rgb_to_intFuncContext):
         return self.visitChildren(ctx)
 
 

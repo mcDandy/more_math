@@ -121,16 +121,16 @@ You can also get the node from comfy manager under the name of More math.
 - `smin(x, ...)`: Scalar minimum. Returns the single smallest value across all input tensors/values.
 - `smax(x, ...)`: Scalar maximum. Returns the single largest value across all input tensors/values.
 - `sum(x)`: Sum of all elements. Returns scalar float for tensors or Python's sum() result for lists.
-- `mean(x)`: Mean value of all elements.
-- `std(x)`: Standard deviation of all elements.
-- `var(x)`: Variance of all elements.
-- `median(x)`: Median value of all elements.
-- `mode(x)`: Mode (most common value) of all elements.
-- `quartile(x, k)`: Returns the k-th quartile (k=0 for min, 1 for 25th, 2 for 50th, 3 for 75th, 4 for max).
-- `percentile(x, p)`: Returns the p-th percentile (p is 0-100).
-- `quantile(x, q)`: Returns the q-th quantile (q is 0-1).
+	- `mean(x)`: Mean value of all elements. Returns scalar float for tensors or list value for lists.
+- `std(x)`: Standard deviation of all elements. Returns scalar float for tensors or list value for lists.
+- `var(x)`: Variance of all elements. Returns scalar float for tensors or list value for lists.
+- `median(x)`: Median value of all elements. Returns scalar float for tensors or list value for lists.
+- `mode(x)`: Mode (most common value) of all elements. Returns scalar float for tensors or list value for lists.
+- `quartile(x, k)`: Returns the k-th quartile (k=0 for min, 1 for 25th, 2 for 50th, 3 for 75th, 4 for max). Returns scalar float for tensors or list value for lists.
+- `percentile(x, p)`: Returns the p-th percentile (p is 0-100). Returns scalar float for tensors or list value for lists.
+- `quantile(x, q)`: Returns the q-th quantile (q is 0-1). Returns scalar float for tensors or list value for lists.
 - `dot(a, b)`: Dot product of two tensors (flattens inputs to 1D) or lists.
-- `moment(x, a, k)`: Returns the k-th moment of x centered around a.
+- `moment(x, a, k)`: Returns the k-th moment of x centered around a. Returns scalar float for tensors or list value for lists.
 - `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for complex numbers).
 - `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for complex numbers)
 - `topk_ind(x, k)` or `topk_indices: Returns the **indices** of the top K largest values in the flattened tensor.
@@ -139,24 +139,24 @@ You can also get the node from comfy manager under the name of More math.
 - `argsort(x)` or `argsort(x, descending)`: Returns the **indices** that would sort the tensor/list. Optional second parameter for descending order.
 - `argmin(x)`: Returns the **index** of the minimum value in the flattened tensor/list.
 - `argmax(x)`: Returns the **index** of the maximum value in the flattened tensor/list.
-- `unique(x)`: Returns **unique elements** from tensor/list in sorted order.
+- `unique(x)`: Returns **unique elements** from tensor/list in sorted order. Returns tensor for tensor input, list for list input.
 - `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
 - `snorm(x)`: The same as |x| for tensors.
 - `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
 - `cossim(a, b)`: Computes cosine similarity between a and b along last dimension.
 - `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
 - `cov(x, y)`: Compute covariance between x and y.
-- `corr(x, y)` or `correlation`: Compute Pearson correlation coefficient between x and y. Returns a value in range [-1, 1] indicating the strength and direction of linear relationship.
-- `entropy(x)`: Compute Shannon entropy of a tensor (in nats). Measures the amount of uncertainty or information content in the data.
-- `append(a, b)`: Appends `b` to `a`. If inputs are lists, it concatenates them. If inputs are tensors, it concatenates them along dim 0.
+- `corr(x, y)` or `correlation`: Compute Pearson correlation coefficient between x and y. Returns a value in range [-1, 1] indicating the strength and direction of linear relationship. Returns scalar float for tensors or list value for lists.
+- `entropy(x)`: Compute Shannon entropy of a tensor (in nats). Measures the amount of uncertainty or information content in the data. Returns scalar float for tensors or list value for lists.
+- `append(a, b)`: Appends `b` to `a`. Returns tensor if any input is tensor (concatenated along dim 0), otherwise returns concatenated list.
 - `any(x)`: Returns 1.0 if any element in `x` is non-zero (True), else 0.0.
 - `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.
 - `cumsum(x)`: Returns the cumulative sum of elements along the batch dimension (dim 0).
 - `cumprod(x)`: Returns the cumulative product of elements along the batch dimension (dim 0).
 - `tensor(shape,[value,[type]])`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero. Type expacts a tensor from which it copies dtype, if omittend it defaults to float32.
 - `flatten(value)`: Flattens a tensor to 1D. If input is list, it flattens nested lists into a single list.
-- `shape(value)` : Returns the shape of a tensor as a list. If input is a list, returns lenght of the list as 1 value tensor. For numbers it returns empty list.
-- `overlay(base, overlay, offset)`: Replaces a rectangular region of `base` with `overlay` starting at `offset`. Areas outside the base tensor are ignored. Overlay is cropped if it extends beyond the base tensor.
+- `shape(value)`: Returns the shape of a tensor **as a list**. If input is a list, returns its length as a single-element list. For scalars returns empty list.
+- `overlay(base, overlay, offset)`: Replaces a region of `base` with `overlay` starting at `offset`. Works with strings (substring replacement), lists (element replacement), and tensors (region replacement). Areas outside the base are ignored.
 - `pad(tensor, padding)`: Pads a tensor with specified padding (pair for each dimension). For example, `[1,2,0,0]` adds 1 element before and 2 elements after in the first dimension, and no padding in the second dimension.
 - `concatenate(tensor1, tensor2, dim)` or `concat` or `cat`: Concatenates two tensors along specified dimension. It things of everything as tensor.
 

@@ -38,7 +38,7 @@ Repository = "https://github.com/mcDandy/more_math.git"
 [tool.comfy]
 PublisherId = "mkdaniel"
 DisplayName = "More Math"
-Icon = "./icon.png"
+Icon = "https://raw.githubusercontent.com/mcDandy/more_math/60c026ecc2cd5f7600e82d87afbe795747e52890/icon.png"
 
 
 [tool.setuptools.package-data]

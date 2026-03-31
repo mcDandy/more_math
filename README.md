@@ -120,7 +120,7 @@ You can also get the node from comfy manager under the name of More math.
 - `tmax(x, y)`: Element-wise maximum of x and y.
 - `smin(x, ...)`: Scalar minimum. Returns the single smallest value across all input tensors/values.
 - `smax(x, ...)`: Scalar maximum. Returns the single largest value across all input tensors/values.
-- `sum(x)`: Sum of all elements.
+- `sum(x)`: Sum of all elements. Returns scalar float for tensors or Python's sum() result for lists.
 - `mean(x)`: Mean value of all elements.
 - `std(x)`: Standard deviation of all elements.
 - `var(x)`: Variance of all elements.
@@ -224,6 +224,8 @@ You can also get the node from comfy manager under the name of More math.
 - `remap(v, i_min, i_max, o_min, o_max)`: Remaps value `v` from input range `[i_min, i_max]` to output range `[o_min, o_max]`.
 - `timestamp()` or `now`: Returns current UNIX timestamp (precision to microseconds, can be different on other systems)
 - `count(x)` or `length(x)` or `cnt(x)`: Returns the length of a list, string, or the count of values in tensor.
+- `int(x)`: Converts tensor/list/scalar to int32 type. If input is a tensor, returns int32 tensor; if a list, recursively converts elements; if a scalar, returns integer.
+- `float(x)`: Converts tensor/list/scalar to float type. If input is a tensor, returns float tensor; if a list, recursively converts elements; if a scalar, returns float.
 
 ### Random Distributions
 
@@ -290,6 +292,14 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 
 - `rgb_to_hsv(r, g, b, [degrees])` or `rgb_to_hsv(rgb_tensor, [degrees])`: Converts RGB color to HSV. 
 - `hsv_to_rgb(h, s, v, [degrees])` or `hsv_to_rgb(hsv_tensor, [degrees])`: Converts HSV color to RGB.
+- `int_to_rgb(value)`: Converts a 32-bit integer (format 0xRRGGBB) to RGB values. 
+  - Input: Integer (scalar, tensor, or list)
+  - Output: [r, g, b] with values in [0, 1]. For tensors, **adds last dimension=3** (e.g., scalar → [r,g,b] list, tensor [B,H,W] → [B,H,W,3]).
+
+- `rgb_to_int(r, g, b)` or `rgb_to_int(rgb_tensor)`: Converts RGB to 32-bit integer (format 0xRRGGBB).
+  - Mode 1 (tensor): Input tensor with shape [..., 3] → Output integer tensor with shape [...] (**removes last dimension**)
+  - Mode 2 (separate args): Three r,g,b values/tensors → Output integer (same shape as inputs)
+  - Mode 3 (list): [r, g, b] → Output scalar integer
 
 ## Variables
 

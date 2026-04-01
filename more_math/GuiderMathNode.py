@@ -45,6 +45,14 @@ class GuiderMathNode(io.ComfyNode):
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression to apply after generation finishes.",
                 ),
+                io.Boolean.Input(
+                    id="remember_stack",
+                    default=False,
+                    display_name="Remember stack across batch",
+                    tooltip=(
+                        "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
+                    ),
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -54,16 +62,18 @@ class GuiderMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression1, V, F,stack={}):
+    def check_lazy_status(cls, Expression,Expression1, V, F,remember_stack=True,stack={}):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression1,V,F)
         return d|b
 
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression1, stack=None):
-        stack_copy = stack if stack is not None else {}
-        return (MathGuider(V, F, Expression, Expression1, stack_copy), copy.deepcopy(stack_copy))
+    def execute(cls, V, F, Expression, Expression1,remember_stack = True, stack=None):
+        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        guider = MathGuider(V, F, Expression, Expression1, stack);
+        stack = stack if remember_stack else copy.deepcopy(stack)
+        return (guider, stack)
 
 
 class MathGuider:

@@ -374,58 +374,79 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 
 ## SelectiveGuiderMathNode (hooking)
 
-`layer_x` is always a **0-based index relative to the selected target stream**, not a global model layer index.
+Adds support for hooking into specific layers/blocks of the model during guided diffusion.
 
-- `hook_target = attn2` -> `layer_x=0` means the first `attn2` block
-- `hook_target = attn1` -> `layer_x=0` means the first `attn1` block
-- `hook_target = dit_block` -> `layer_x=0` means the first DiT block
+Current implementation details:
 
-### Position modes
+- `hook_target` is currently hardcoded to `all` in code.
+- `hook_when` is currently set but not used for filtering.
+- `layer_x` is used as direct index match (`idx == layer_x`) for current hook context.
 
-- `before_all`: first block of the selected target stream
-- `after_all`: last block of the selected target stream
-- `before_x`: all blocks with index `< x`
-- `just_before_x`: block just before `x`
-- `just_after_x`: block `x`
-- `after_x`: blocks after `x`
+### Side behavior (positive / negative)
 
-### General notes
+When guider has `original_conds`, hooks are attached separately for:
 
-- `layer_x < 0` uses indexing from the end (`-1` = last block of the selected target stream).
-- In `all_targets` mode, `before_all/after_all` is ambiguous across different streams (`attn1`, `attn2`, `dit`), so those modes are intended for `single_target`.
+- `positive`
+- `negative`
+
+Runtime variables expose side information:
+
+- `cond_side`: `"positive" | "negative" | "mixed" | "unknown"`
+- `cond_index`: `0 | 1 | -1`
+- `is_positive`: `1.0` or `0.0`
+- `is_negative`: `1.0` or `0.0`
 
 ### Variables available in `Expression`
 
-Always available (in all hook contexts):
+Always available:
+
 - `inp` / `sample`: current tensor passed to the hook
 - `F0..Fn`, `F`: float inputs from the node
 - dimension helpers from `generate_dim_variables` (for example `D0`, `S0`, ...)
 - `hook_kind`
+- `hook_domain`
+- `attn_kind`
+- `is_dit`
+- `is_attn1`
+- `is_attn2`
 - `block_name`
 - `layer_key`
-- `layer_id` / `i`
+- `layer_id` / `layer` / `i`
 - `total_blocks`
 - `has_qkv`
 - `q`, `k`, `v`
 - `heads`
 - `dim_head`
+- `cond_side`
+- `cond_index`
+- `is_positive`
+- `is_negative`
 
 ### Context-specific meaning
 
-Attention hooks (`attn1`, `attn2`):
+Attention hooks:
+
+- `hook_domain = "attention"`
+- `hook_kind` / `attn_kind` is resolved as `attn1`, `attn2`, or `attn_unknown`
 - `has_qkv = 1`
 - `q`, `k`, `v` are real attention tensors
 - `block_name` is usually `input` / `middle` / `output`
-- `layer_key` format: `<block_name>.<attn_name>.<index>`
+- `layer_key` format: `<block_name>.<index>.<attn_kind>`
 
-DiT hook (`dit_block`):
+DiT hook:
+
+- `hook_domain = "diffusion"`
+- `hook_kind = "dit_block"`
+- `attn_kind = "none"`
+- `is_dit = 1`, `is_attn1 = 0`, `is_attn2 = 0`
 - `has_qkv = 0`
-- `q`, `k`, `v` are fallback placeholders (do not represent attention tensors)
-- `block_name` is DiT block type (for example `double_block` / `single_block`, depending on model data)
+- `q`, `k`, `v` are fallback placeholders
+- `block_name` is DiT block type (`double_block` / `single_block`)
 - `layer_key` format: `dit.<block_name>.<index>`
 
-### Recommended guard pattern
+### Recommended guard patterns
 
-Use `has_qkv` before doing attention-specific math:
-
-- Example: `has_qkv ? <qkv_logic> : inp`
+- Attention-only logic: `is_attn1 ? <logic_for_attn1> : inp`
+- Attention-only logic: `is_attn2 ? <logic_for_attn2> : inp`
+- DiT-only logic: `is_dit ? <logic_for_dit> : inp`
+- Generic split: `hook_domain == "attention" ? <attn_logic> : <diffusion_logic>`

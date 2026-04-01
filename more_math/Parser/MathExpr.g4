@@ -138,36 +138,36 @@ func1:
 	| ANY LPAREN expr RPAREN			# AnyFunc
 	| ALL LPAREN expr RPAREN			# AllFunc
 	| EDGE LPAREN expr (COMMA expr)? RPAREN	# EdgeFunc
-	| MEDIAN LPAREN expr RPAREN		# MedianFunc
+	| MEDIAN LPAREN expr RPAREN			# MedianFunc
 	| MODE LPAREN expr RPAREN			# ModeFunc
-	| CUMSUM LPAREN expr RPAREN		# CumsumFunc
-	| COUNT LPAREN expr RPAREN		# CountFunc
+	| CUMSUM LPAREN expr RPAREN			# CumsumFunc
+	| COUNT LPAREN expr RPAREN			# CountFunc
 	| CUMPROD LPAREN expr RPAREN		# CumprodFunc
 	| POP LPAREN expr RPAREN			# PopFunc
-	| CLEAR LPAREN expr RPAREN		# ClearFunc
+	| CLEAR LPAREN expr RPAREN			# ClearFunc
 	| HAS LPAREN expr RPAREN			# HasFunc
 	| GET LPAREN expr RPAREN			# GetFunc
 	| ARGSORT LPAREN expr (COMMA expr)? RPAREN	# ArgsortFunc
-	| ARGMIN LPAREN expr RPAREN		# ArgminFunc
-	| ARGMAX LPAREN expr RPAREN		# ArgmaxFunc
+	| ARGMIN LPAREN expr RPAREN			# ArgminFunc
+	| ARGMAX LPAREN expr RPAREN			# ArgmaxFunc
 	| SOFTMAX LPAREN expr RPAREN		# SoftmaxFunc
 	| SOFTMIN LPAREN expr RPAREN		# SoftminFunc
-	| UNIQUE LPAREN expr RPAREN		# UniqueFunc
+	| UNIQUE LPAREN expr RPAREN			# UniqueFunc
 	| FLATTEN LPAREN expr RPAREN		# FlattenFunc
 	| MOTION_MASK LPAREN expr RPAREN	# MotionMaskFunc
 	| FLOW_TO_IMAGE LPAREN expr RPAREN	# FlowToImageFunc
-	| BNOT LPAREN expr RPAREN		# BitNotFunc
-	| BITCOUNT LPAREN expr RPAREN	# BitCountFunc
-	| SHAPE LPAREN expr RPAREN		# ShapeFunc
-	| UPPER LPAREN expr RPAREN # UpperFunc
-	| LOWER LPAREN expr RPAREN # LowerFunc
-	| TRIM LPAREN expr RPAREN # TrimFunc
-	| ENTROPY LPAREN expr RPAREN # EntropyFunc
-	| SFFT LPAREN expr RPAREN # SfftFunc
-	| DILATE LPAREN expr (COMMA expr)? RPAREN # DilateFunc
-	| ERODE LPAREN expr (COMMA expr)? RPAREN # ErodeFunc
-	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN # MorphOpenFunc
-	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN # MorphCloseFunc
+	| BNOT LPAREN expr RPAREN			# BitNotFunc
+	| BITCOUNT LPAREN expr RPAREN		# BitCountFunc
+	| SHAPE LPAREN expr RPAREN			# ShapeFunc
+	| UPPER LPAREN expr RPAREN			# UpperFunc
+	| LOWER LPAREN expr RPAREN			# LowerFunc
+	| TRIM LPAREN expr RPAREN			# TrimFunc
+	| ENTROPY LPAREN expr RPAREN		# EntropyFunc
+	| SFFT LPAREN expr RPAREN			# SfftFunc
+	| DILATE LPAREN expr (COMMA expr)? RPAREN	# DilateFunc
+	| ERODE LPAREN expr (COMMA expr)? RPAREN	# ErodeFunc
+	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN	# MorphOpenFunc
+	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN	# MorphCloseFunc
 	| INT LPAREN expr RPAREN    # IntFunc
 	| FLOAT LPAREN expr RPAREN    # FloatFunc;
 
@@ -318,7 +318,6 @@ SOFTPLUS: 'softplus';
 GELU: 'gelu';
 SIGN: 'sign';
 MAP: 'map';
-ROLL: 'roll';
 EZCONV: 'ezconvolution' | 'ezconv';
 CONV: 'convolution' | 'conv';
 SWAP: 'swap';
@@ -339,6 +338,7 @@ PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
+
 ANY: 'any';
 ALL: 'all';
 EDGE: 'edge';

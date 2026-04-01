@@ -104,6 +104,8 @@ You can also get the node from comfy manager under the name of More math.
 - `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
 - `softmax(x, dim)`: Softmax normalization along last dimension (converts to probabilities).
 - `softmin(x, dim)`: Softmin normalization along specified dimension (inverse softmax).
+- `erf(x)`: Error function.
+- `erfinv(x)`: Inverse error function.
 
 ### Interpolation
 

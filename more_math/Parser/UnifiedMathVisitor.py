@@ -3511,5 +3511,15 @@ class UnifiedMathVisitor(MathExprVisitor):
             dim = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)
         
         return torch.roll(x, shifts=shift, dims=dim)
+
+    def visitErfFunc(self, ctx):
+        """erf(x) - error function"""
+        x = self._promote_to_tensor((yield ctx.expr()))
+        return torch.erf(x)
+
+    def visitErfinvFunc(self, ctx):
+        """erfinv(x) - inverse error function"""
+        x = self._promote_to_tensor((yield ctx.expr()))
+        return torch.erfinv(x)
     
     

@@ -12,7 +12,7 @@ const FUNCTIONS = new Set([
     "round", "gamma", "pow", "sigm", "clamp", "fft", "ifft", "angle", "print", "print_shape", "pshp", "nvl",
     "nan_to_num", "lerp", "step", "smoothstep", "fract", "relu", "softplus", "gelu", "sign", "map", "ezconvolution",
     "ezconv", "convolution", "conv", "swap", "permute", "perm", "reshape", "rshp", "range", "topk", "botk", "pinv",
-    "sum", "mean", "std", "var", "quartile", "quartil", "percentile", "prcnt", "quantile", "dot", "moment", "any",
+    "sum", "mean", "std", "var", "quartile", "quartil", "percentile", "prcnt", "quantile", "dot", "moment","erf","erfinv", "any",
     "all", "edge", "blur", "gaussian", "median", "mode", "cumsum", "cumprod", "topk_ind", "topk_indices", "botk_ind",
     "botk_indices", "cubic_ease", "cubic", "elastic_ease", "elastic", "sine_ease", "sine", "smootherstep", "dist",
     "distance", "remap", "cossim", "cosine_similarity", "count", "cnt", "length", "flatten", "append", "get_value",

@@ -152,6 +152,8 @@ func1:
 	| ARGMAX LPAREN expr RPAREN			# ArgmaxFunc
 	| SOFTMAX LPAREN expr RPAREN		# SoftmaxFunc
 	| SOFTMIN LPAREN expr RPAREN		# SoftminFunc
+	| ERF LPAREN expr RPAREN			# ErfFunc
+	| ERFINV LPAREN expr RPAREN			# ErfinvFunc
 	| UNIQUE LPAREN expr RPAREN			# UniqueFunc
 	| FLATTEN LPAREN expr RPAREN		# FlattenFunc
 	| MOTION_MASK LPAREN expr RPAREN	# MotionMaskFunc
@@ -338,6 +340,8 @@ PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
+ERF: 'erf';
+ERFINV: 'erfinv';
 
 ANY: 'any';
 ALL: 'all';

@@ -371,9 +371,10 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
   - `LC` or `layer_count` - a count of layers
   - `K` or `key` - a string key for layer (for example "conv1.weight" or "blocks.5.attn.q_proj.weight")
 - **Constants**: `e`, `pi`
+
 ## SelectiveGuiderMathNode (hooking)
 
-`layer_x` is always a **0-based index relative to the selected target**, not a global model layer index.
+`layer_x` is always a **0-based index relative to the selected target stream**, not a global model layer index.
 
 - `hook_target = attn2` -> `layer_x=0` means the first `attn2` block
 - `hook_target = attn1` -> `layer_x=0` means the first `attn1` block
@@ -381,41 +382,50 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
 
 ### Position modes
 
-- `before_all`: first block of the selected target
-- `after_all`: last block of the selected target
+- `before_all`: first block of the selected target stream
+- `after_all`: last block of the selected target stream
 - `before_x`: all blocks with index `< x`
 - `just_before_x`: block just before `x`
 - `just_after_x`: block `x`
 - `after_x`: blocks after `x`
 
-### Notes
+### General notes
 
-- `layer_x < 0` uses indexing from the end (`-1` = last block of the selected target).
+- `layer_x < 0` uses indexing from the end (`-1` = last block of the selected target stream).
 - In `all_targets` mode, `before_all/after_all` is ambiguous across different streams (`attn1`, `attn2`, `dit`), so those modes are intended for `single_target`.
-- `q/k/v` variables are available only in attention hooks (`attn1`, `attn2`), not in `dit_block`.
 
 ### Variables available in `Expression`
 
-Always available:
+Always available (in all hook contexts):
 - `inp` / `sample`: current tensor passed to the hook
 - `F0..Fn`, `F`: float inputs from the node
 - dimension helpers from `generate_dim_variables` (for example `D0`, `S0`, ...)
-
-Available in attention hooks (`attn1`, `attn2`) only:
-- `q`, `k`, `v`
-- `has_qkv` = `1`
-- `block_name` (`input` / `middle` / `output`)
-- `layer_id` / `i`: current block index (relative to selected target stream)
-- `heads`: number of attention heads
-- `dim_head`: attention head dimension
-- `layer_key`: helper key in format `<block_name>.<attn_name>.<index>`
-
-Available in DiT block hook (`dit_block`) only:
-- `hook_kind` = `dit_block`
-- `layer_id`
+- `hook_kind`
 - `block_name`
-- `has_qkv` = `0`
+- `layer_key`
+- `layer_id` / `i`
+- `total_blocks`
+- `has_qkv`
+- `q`, `k`, `v`
+- `heads`
+- `dim_head`
 
-Notes:
-- `q/k/v` are **not** available in `dit_block`.
-- `layer_x` is always relative to the selected target stream (not a global model layer index).
+### Context-specific meaning
+
+Attention hooks (`attn1`, `attn2`):
+- `has_qkv = 1`
+- `q`, `k`, `v` are real attention tensors
+- `block_name` is usually `input` / `middle` / `output`
+- `layer_key` format: `<block_name>.<attn_name>.<index>`
+
+DiT hook (`dit_block`):
+- `has_qkv = 0`
+- `q`, `k`, `v` are fallback placeholders (do not represent attention tensors)
+- `block_name` is DiT block type (for example `double_block` / `single_block`, depending on model data)
+- `layer_key` format: `dit.<block_name>.<index>`
+
+### Recommended guard pattern
+
+Use `has_qkv` before doing attention-specific math:
+
+- Example: `has_qkv ? <qkv_logic> : inp`

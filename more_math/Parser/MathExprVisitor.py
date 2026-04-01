@@ -619,6 +619,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ErfFunc.
+    def visitErfFunc(self, ctx:MathExprParser.ErfFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ErfinvFunc.
+    def visitErfinvFunc(self, ctx:MathExprParser.ErfinvFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#UniqueFunc.
     def visitUniqueFunc(self, ctx:MathExprParser.UniqueFuncContext):
         return self.visitChildren(ctx)
@@ -786,6 +796,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#AppendFunc.
     def visitAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PermuteFunc.
+    def visitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -959,6 +974,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#LinspaceFunc.
+    def visitLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RollFunc.
+    def visitRollFunc(self, ctx:MathExprParser.RollFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#RgbToHsvFunc.
     def visitRgbToHsvFunc(self, ctx:MathExprParser.RgbToHsvFuncContext):
         return self.visitChildren(ctx)
@@ -976,6 +1001,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#NvlFunc.
     def visitNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ĹogspaceFunc.
+    def visitĹogspaceFunc(self, ctx:MathExprParser.ĹogspaceFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -1011,11 +1041,6 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ConvFunc.
     def visitConvFunc(self, ctx:MathExprParser.ConvFuncContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#PermuteFunc.
-    def visitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         return self.visitChildren(ctx)
 
 

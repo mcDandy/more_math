@@ -1106,6 +1106,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#ErfFunc.
+    def enterErfFunc(self, ctx:MathExprParser.ErfFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ErfFunc.
+    def exitErfFunc(self, ctx:MathExprParser.ErfFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ErfinvFunc.
+    def enterErfinvFunc(self, ctx:MathExprParser.ErfinvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ErfinvFunc.
+    def exitErfinvFunc(self, ctx:MathExprParser.ErfinvFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#UniqueFunc.
     def enterUniqueFunc(self, ctx:MathExprParser.UniqueFuncContext):
         pass
@@ -1409,6 +1427,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#AppendFunc.
     def exitAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PermuteFunc.
+    def enterPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PermuteFunc.
+    def exitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         pass
 
 
@@ -1718,6 +1745,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#LinspaceFunc.
+    def enterLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LinspaceFunc.
+    def exitLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RollFunc.
+    def enterRollFunc(self, ctx:MathExprParser.RollFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RollFunc.
+    def exitRollFunc(self, ctx:MathExprParser.RollFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#RgbToHsvFunc.
     def enterRgbToHsvFunc(self, ctx:MathExprParser.RgbToHsvFuncContext):
         pass
@@ -1751,6 +1796,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#NvlFunc.
     def exitNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ĹogspaceFunc.
+    def enterĹogspaceFunc(self, ctx:MathExprParser.ĹogspaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ĹogspaceFunc.
+    def exitĹogspaceFunc(self, ctx:MathExprParser.ĹogspaceFuncContext):
         pass
 
 
@@ -1814,15 +1868,6 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ConvFunc.
     def exitConvFunc(self, ctx:MathExprParser.ConvFuncContext):
-        pass
-
-
-    # Enter a parse tree produced by MathExprParser#PermuteFunc.
-    def enterPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
-        pass
-
-    # Exit a parse tree produced by MathExprParser#PermuteFunc.
-    def exitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         pass
 
 

@@ -381,6 +381,7 @@ Current implementation details:
 - `hook_target` is currently hardcoded to `all` in code.
 - `hook_when` is currently set but not used for filtering.
 - `layer_x` is used as direct index match (`idx == layer_x`) for current hook context.
+- For guiders with `original_conds`, base conditions are restored before reattaching hooks to avoid hook accumulation across reruns/interrupted runs.
 
 ### Side behavior (positive / negative)
 
@@ -396,57 +397,46 @@ Runtime variables expose side information:
 - `is_positive`: `1.0` or `0.0`
 - `is_negative`: `1.0` or `0.0`
 
-### Variables available in `Expression`
+### Variable reference (`SelectiveGuiderMathNode`)
 
-Always available:
+The following variables are available in `Expression`.
 
-- `inp` / `sample`: current tensor passed to the hook
-- `F0..Fn`, `F`: float inputs from the node
-- dimension helpers from `generate_dim_variables` (for example `D0`, `S0`, ...)
-- `hook_kind`
-- `hook_domain`
-- `attn_kind`
-- `is_dit`
-- `is_attn1`
-- `is_attn2`
-- `block_name`
-- `layer_key`
-- `layer_id` / `layer` / `i`
-- `total_blocks`
-- `has_qkv`
-- `q`, `k`, `v`
-- `heads`
-- `dim_head`
-- `cond_side`
-- `cond_index`
-- `is_positive`
-- `is_negative`
+| Variable | Type | Description |
+|---|---|---|
+| `inp` | tensor | Current tensor received by the active hook. |
+| `sample` | tensor | Alias of `inp`. |
+| `F0..Fn` | float/tensor | Individual float inputs from the node. |
+| `F` | list/tensor | Collection of all float inputs. |
+| `D0..Dn` | tensor | Per-dimension index tensors from `generate_dim_variables`. |
+| `S0..Sn` | float | Per-dimension sizes from `generate_dim_variables`. |
+| `hook_kind` | string | Active hook identifier: `attn1`, `attn2`, `attn_unknown`, `dit_block`, `unet_block`, or `unknown`. |
+| `hook_domain` | string | High-level domain: `attention`, `diffusion`, or `unknown`. |
+| `attn_kind` | string | Attention kind: `attn1`, `attn2`, `attn_unknown`, or `none` outside attention hooks. |
+| `transformer_index` | float | Attention sub-block index inside a UNet block (`-1` if unavailable). |
+| `is_attn1` | float (0/1) | `1` when current hook is `attn1`, else `0`. |
+| `is_attn2` | float (0/1) | `1` when current hook is `attn2`, else `0`. |
+| `is_dit` | float (0/1) | `1` when current hook is DiT block hook, else `0`. |
+| `is_unet_block` | float (0/1) | `1` when current hook is UNet block hook, else `0`. |
+| `block_name` | string | Block/stage name (`input`, `middle`, `output`, DiT block type, etc.). |
+| `layer_id` | float | Numeric block/layer id used by current hook context. |
+| `layer` | float | Alias of `layer_id`. |
+| `i` | float | Alias of `layer_id`. |
+| `layer_key` | string | Composite identifier for debug/filtering (for example `output.6.attn2.0` or `unet.input.2`). |
+| `total_blocks` | float | Total blocks in stream if available, otherwise `-1`. |
+| `has_qkv` | float (0/1) | `1` in attention hooks where `q/k/v` are valid; `0` in diffusion/block hooks. |
+| `q` | tensor | Query tensor in attention hooks; fallback placeholder otherwise. |
+| `k` | tensor | Key tensor in attention hooks; fallback placeholder otherwise. |
+| `v` | tensor | Value tensor in attention hooks; fallback placeholder otherwise. |
+| `heads` | float | Number of attention heads (attention hooks only, else `0`). |
+| `dim_head` | float | Per-head channel size (`q.shape[-1] / heads`) when available. |
+| `cond_side` | string | CFG side: `positive`, `negative`, `mixed`, or `unknown`. |
+| `cond_index` | float | CFG side index: `0` (positive), `1` (negative), `-1` (mixed/unknown). |
+| `is_positive` | float (0/1) | `1` for positive conditioning pass, else `0`. |
+| `is_negative` | float (0/1) | `1` for negative conditioning pass, else `0`. |
 
-### Context-specific meaning
+#### Practical notes
 
-Attention hooks:
-
-- `hook_domain = "attention"`
-- `hook_kind` / `attn_kind` is resolved as `attn1`, `attn2`, or `attn_unknown`
-- `has_qkv = 1`
-- `q`, `k`, `v` are real attention tensors
-- `block_name` is usually `input` / `middle` / `output`
-- `layer_key` format: `<block_name>.<index>.<attn_kind>`
-
-DiT hook:
-
-- `hook_domain = "diffusion"`
-- `hook_kind = "dit_block"`
-- `attn_kind = "none"`
-- `is_dit = 1`, `is_attn1 = 0`, `is_attn2 = 0`
-- `has_qkv = 0`
-- `q`, `k`, `v` are fallback placeholders
-- `block_name` is DiT block type (`double_block` / `single_block`)
-- `layer_key` format: `dit.<block_name>.<index>`
-
-### Recommended guard patterns
-
-- Attention-only logic: `is_attn1 ? <logic_for_attn1> : inp`
-- Attention-only logic: `is_attn2 ? <logic_for_attn2> : inp`
-- DiT-only logic: `is_dit ? <logic_for_dit> : inp`
-- Generic split: `hook_domain == "attention" ? <attn_logic> : <diffusion_logic>`
+- On SD1.x, repeated hits on the same `layer_id` are normal in attention because one UNet block can contain multiple transformer sub-blocks.
+- Use `transformer_index` to target exactly one sub-block, for example:  
+  `(attn_kind=="attn2" and transformer_index==0) ? <logic> : inp`
+- For model-agnostic expressions, prefer guard variables: `has_qkv`, `is_dit`, `is_unet_block`, `is_attn1`, `is_attn2`.

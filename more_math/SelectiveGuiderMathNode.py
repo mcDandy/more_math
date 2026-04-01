@@ -35,33 +35,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     io.String.Input("Expression", default="push(0, inp); inp", multiline=False),
                     types=[io.String, MrmthParseTree],
                 ),
-                io.DynamicCombo.Input("hook_mode_cfg", options=[
-                    io.DynamicCombo.Option("single_target", [
-                        io.Combo.Input("hook_target", options=["dit_block", "attn1", "attn2"], default="attn1"),
-                        io.DynamicCombo.Input("hook_pos", options=[
-                            io.DynamicCombo.Option("before_all", []),
-                            io.DynamicCombo.Option("after_all", []),
-                            io.DynamicCombo.Option("relative", [
-                                io.Combo.Input(
-                                    "hook_when",
-                                    options=["before_x", "just_before_x", "just_after_x", "after_x"],
-                                    default="after_x",
-                                ),
-                                io.Int.Input("layer_x", default=0, min=-999, max=999),
-                            ]),
-                        ]),
-                    ]),
-                    io.DynamicCombo.Option("all_targets", [
-                        io.Combo.Input(
-                            "hook_when",
-                            options=["before_x", "just_before_x", "just_after_x", "after_x"],
-                            default="after_x",
-                        ),
-                        io.Int.Input("layer_x", default=0, min=-999, max=999),
-                    ]),
-                ]),
-                io.Boolean.Input(id="remember_stack", default=False),
-                MrmthStack.Input(id="stack", optional=True),
+                io.Int.Input("layer_x", default=0, min=-999, max=999),
             ],
             outputs=[io.Guider.Output(), MrmthStack.Output()],
         )
@@ -72,7 +46,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         V,
         F,
         Expression,
-        hook_mode_cfg={},
+        layer_x=0,
         remember_stack=False,
         stack={},
     ):
@@ -84,43 +58,21 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         V,
         F,
         Expression,
-        hook_mode_cfg,
+        layer_x=0,
         remember_stack=False,
         stack=None,
     ):
         if V is None or not hasattr(V, "model_options"):
             raise ValueError("Vstupní guider musí mít model_options.")
 
-        mode = hook_mode_cfg.get("hook_mode_cfg", "all_targets")
-        if mode == "single_target":
-            hook_target = hook_mode_cfg.get("hook_target", "attn1")
-            hook_pos = hook_mode_cfg.get("hook_pos", "relative")
-            if hook_pos in ("before_all", "after_all"):
-                hook_when = hook_pos
-                layer_x = 0
-            else:
-                hook_when = hook_mode_cfg.get("hook_when", "after_x")
-                layer_x = int(hook_mode_cfg.get("layer_x", 0))
-        else:
-            hook_target = "all"
-            hook_when = hook_mode_cfg.get("hook_when", "after_x")
-            layer_x = int(hook_mode_cfg.get("layer_x", 0))
+        hook_target = "all"
+        hook_when = "just_after_x"
 
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
         tree = parse_expr(Expression) if isinstance(Expression, str) else Expression
 
         MAX_HOOK_INDEX = 999
         hit_flags = {"attn": False, "dit": False}
-        
-        # Lokální stav pro sledování aktuálního timestepu přes všechny volání hooků
-        step_states = {
-            "attn1": {"ts": None, "hit": False},
-            "attn2": {"ts": None, "hit": False},
-            "dit_block": {"ts": None, "hit": False},
-        }
-
-        def is_after_phase() -> bool:
-            return hook_when in ("after_all", "after_x", "just_after_x")
 
         def resolve_x(total_blocks: int | None) -> int:
             x = int(layer_x)
@@ -131,54 +83,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             return x
 
         def match_index(idx: int, total_blocks: int | None, stage: str, topts: dict, hook_kind: str) -> bool:
-            if hook_when == "before_all":
-                ts_val = topts.get("sigmas")
-                try:
-                    if torch.is_tensor(ts_val) and ts_val.numel() > 0:
-                        ts = float(ts_val[0].item())
-                    elif isinstance(ts_val, (list, tuple)) and len(ts_val) > 0:
-                        ts = float(ts_val[0])
-                    else:
-                        ts = float(ts_val)
-                except:
-                    ts = -999.0
-
-                # Zkontroluj, jestli už byl operátor v tomto timestepu a pro daný druh aplikován
-                state = step_states.setdefault(hook_kind, {"ts": None, "hit": False})
-                if state["ts"] != ts:
-                    state["ts"] = ts
-                    state["hit"] = False
-
-                if not state["hit"]:
-                    state["hit"] = True
-                    return True
-                return False
-            
-            if hook_when == "after_all":
-                # U after_all nelze 100% předpovědět finální krok bez plného grafu, pofallbackujeme na indexování
-                if total_blocks is not None:
-                    return idx == (total_blocks - 1)
-                else: 
-                    return stage == "output" and idx >= 8
-
             x = resolve_x(total_blocks)
-            if hook_when == "before_x":
-                return idx < x
-            if hook_when == "just_before_x":
-                return idx == (x - 1 if x > 0 else 0)
-            if hook_when == "just_after_x":
-                return idx == x
-            return idx > x
+            return idx == x
 
         def target_indices():
-            if hook_when in ("before_all", "after_all", "before_x", "after_x"):
-                return range(0, MAX_HOOK_INDEX + 1)
-            if int(layer_x) < 0:
-                return range(0, MAX_HOOK_INDEX + 1)
-            if hook_when == "just_before_x":
-                return [max(0, int(layer_x) - 1)]
-            if hook_when == "just_after_x":
-                return [int(layer_x)]
             return [int(layer_x)]
 
         def side_from_cond_or_uncond(cond_or_uncond):
@@ -260,11 +168,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "is_negative": 1.0 if side == "negative" else 0.0,
                 }
 
-                if not is_after_phase():
-                    args2 = dict(args)
-                    args2["img"] = run_expr(args["img"], meta)
-                    return extra_args["original_block"](args2)
-
                 out = extra_args["original_block"](args)
                 if isinstance(out, dict) and "img" in out:
                     out2 = dict(out)
@@ -330,10 +233,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "is_negative": 1.0 if side == "negative" else 0.0,
                 }
 
-                if not is_after_phase():
-                    q2 = run_expr(q, meta)
-                    return original_attn(q2, k, v, heads, **kwargs)
-
                 out = original_attn(q, k, v, heads, **kwargs)
                 return run_expr(out, meta)
 
@@ -355,7 +254,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         def attach_side_hook(side_name: str):
             if not hasattr(V, "original_conds") or side_name not in V.original_conds:
                 return
-            tdict = build_transformers_for_side(side_name)
+            tdict = build_transformers_for_side(None)
             hook = comfy.hooks.TransformerOptionsHook(
                 transformers_dict=tdict,
                 hook_scope=comfy.hooks.EnumHookScope.HookedOnly,
@@ -423,5 +322,4 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             V._mrmth_debug_callbacks_added = True
 
         stack = stack if remember_stack else copy.deepcopy(stack)
-        # do execute(), před register_*:
         return (V, stack)

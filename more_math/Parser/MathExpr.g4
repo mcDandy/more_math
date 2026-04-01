@@ -188,6 +188,7 @@ func2:
 	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
 	| CORR LPAREN expr COMMA expr RPAREN			# CorrFunc
 	| APPEND LPAREN expr COMMA expr RPAREN		# AppendFunc
+	| PERM LPAREN expr COMMA expr RPAREN		# PermuteFunc
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 	| TOPK_IND LPAREN expr COMMA expr RPAREN		# TopkIndFunc
 	| BOTK_IND LPAREN expr COMMA expr RPAREN		# BotkIndFunc
@@ -226,12 +227,15 @@ func3:
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN	# CropFunc
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
 	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc
+	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
+	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # RgbToHsvFunc
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
+	| LOGSPACE LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ĹogspaceFunc
 	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc;
 
 func5:
@@ -244,7 +248,6 @@ funcN:
 	| MAP LPAREN expr (COMMA expr)+ RPAREN		# MapFunc
 	| EZCONV LPAREN expr (COMMA expr)+ RPAREN	# EzConvFunc
 	| CONV LPAREN expr (COMMA expr)+ RPAREN		# ConvFunc
-	| PERM LPAREN expr COMMA expr RPAREN		# PermuteFunc
 	| RESHAPE LPAREN expr COMMA expr RPAREN		# ReshapeFunc
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc;
 
@@ -315,12 +318,15 @@ SOFTPLUS: 'softplus';
 GELU: 'gelu';
 SIGN: 'sign';
 MAP: 'map';
+ROLL: 'roll';
 EZCONV: 'ezconvolution' | 'ezconv';
 CONV: 'convolution' | 'conv';
 SWAP: 'swap';
 PERM: 'permute' | 'perm';
 RESHAPE: 'reshape' | 'rshp';
 RANGE: 'range';
+LINSPACE: 'linspace';
+LOGSPACE: 'logspace';
 TOPK: 'topk';
 BOTK: 'botk';
 PINV: 'pinv';
@@ -405,7 +411,7 @@ IN: 'in';
 BREAK: 'break';
 CONTINUE: 'continue';
 RETURN: 'return';
-TIMESTAMP: 'timestamp';
+TIMESTAMP: 'timestamp'|'now';
 SORT: 'sort';
 ARGSORT: 'argsort';
 ARGMIN: 'argmin';
@@ -414,6 +420,7 @@ SOFTMAX: 'softmax';
 SOFTMIN: 'softmin';
 UNIQUE: 'unique';
 FLIP: 'flip';
+ROLL: 'roll';
 COV: 'cov';
 CORR: 'corr' | 'correlation';
 ENTROPY: 'entropy';

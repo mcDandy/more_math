@@ -3472,3 +3472,44 @@ class UnifiedMathVisitor(MathExprVisitor):
             b = (self._promote_to_tensor(b) * 256).clamp(0, 255).to(torch.int32)
             return ((r << 16) | (g << 8) | b).contiguous()
         return math.clamp(int(r*256),0,255) << 16 | math.clamp(int(g*256),0,255) << 8 | math.clamp(int(b*256),0,255)
+
+    def visitLinspaceFunc(self, ctx):
+        """linspace(start, end, steps) - linearly spaced values"""
+        start_val = yield ctx.expr(0)
+        end_val = yield ctx.expr(1)
+        steps_val = yield ctx.expr(2)
+        
+        start = float(start_val.item()) if self._is_tensor(start_val) else float(start_val)
+        end = float(end_val.item()) if self._is_tensor(end_val) else float(end_val)
+        steps = int(steps_val.item()) if self._is_tensor(steps_val) else int(steps_val)
+        
+        return torch.linspace(start, end, steps, device=self.device)
+    
+    def visitLogspaceFunc(self, ctx):
+        """linspace(start, end, steps) - linearly spaced values"""
+        start_val = yield ctx.expr(0)
+        end_val = yield ctx.expr(1)
+        steps_val = yield ctx.expr(2)
+        base_val = yield ctx.expr(2)
+        
+        start = float(start_val.item()) if self._is_tensor(start_val) else float(start_val)
+        end = float(end_val.item()) if self._is_tensor(end_val) else float(end_val)
+        base = float(base_val.item()) if self._is_tensor(base_val) else float(base_val)
+        steps = int(steps_val.item()) if self._is_tensor(steps_val) else int(steps_val)
+        
+        return torch.logspace(start, end, steps, device=self.device)
+    
+    def visitRollFunc(self, ctx):
+        """roll(x, shift, [dim]) - circular shift of elements"""
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        shift_val = yield ctx.expr(1)
+        shift = int(shift_val.item()) if self._is_tensor(shift_val) else int(shift_val)
+        
+        dim = 0
+        if len(ctx.expr()) > 2:
+            dim_val = yield ctx.expr(2)
+            dim = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)
+        
+        return torch.roll(x, shifts=shift, dims=dim)
+    
+    

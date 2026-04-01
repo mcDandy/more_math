@@ -159,6 +159,7 @@ You can also get the node from comfy manager under the name of More math.
 - `overlay(base, overlay, offset)`: Replaces a region of `base` with `overlay` starting at `offset`. Works with strings (substring replacement), lists (element replacement), and tensors (region replacement). Areas outside the base are ignored.
 - `pad(tensor, padding)`: Pads a tensor with specified padding (pair for each dimension). For example, `[1,2,0,0]` adds 1 element before and 2 elements after in the first dimension, and no padding in the second dimension.
 - `concatenate(tensor1, tensor2, dim)` or `concat` or `cat`: Concatenates two tensors along specified dimension. It things of everything as tensor.
+- `roll(tensor, shifts, dims)`: Rolls tensor along specified dimensions by given shifts. Elements that roll beyond the last position are re-introduced at the first position.
 
 ### Advanced Tensor Operations
 
@@ -220,6 +221,8 @@ You can also get the node from comfy manager under the name of More math.
 - `print_shape(x)` or `pshp`: Prints the shape of x to the console and returns x.
 - `pinv(x)`: Computes the permutation inverse of list. If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`.
 - `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
+- `linspace(start, end, count)`: Generates a list of `count` evenly spaced values from start to end (inclusive).
+- `logspace(start, end, count,base)`: Generates a list of `count` values logarithmically spaced between base^start and base^end.
 - `nan_to_num(x, nan_value, posinf_value, neginf_value)` or `nvl`: Replaces NaN and infinite values in tensor with specified values.
 - `remap(v, i_min, i_max, o_min, o_max)`: Remaps value `v` from input range `[i_min, i_max]` to output range `[o_min, o_max]`.
 - `timestamp()` or `now`: Returns current UNIX timestamp (precision to microseconds, can be different on other systems)

@@ -371,3 +371,51 @@ Bitwise operations work with scalars, tensors, and lists, preserving bit pattern
   - `LC` or `layer_count` - a count of layers
   - `K` or `key` - a string key for layer (for example "conv1.weight" or "blocks.5.attn.q_proj.weight")
 - **Constants**: `e`, `pi`
+## SelectiveGuiderMathNode (hooking)
+
+`layer_x` is always a **0-based index relative to the selected target**, not a global model layer index.
+
+- `hook_target = attn2` -> `layer_x=0` means the first `attn2` block
+- `hook_target = attn1` -> `layer_x=0` means the first `attn1` block
+- `hook_target = dit_block` -> `layer_x=0` means the first DiT block
+
+### Position modes
+
+- `before_all`: first block of the selected target
+- `after_all`: last block of the selected target
+- `before_x`: all blocks with index `< x`
+- `just_before_x`: block just before `x`
+- `just_after_x`: block `x`
+- `after_x`: blocks after `x`
+
+### Notes
+
+- `layer_x < 0` uses indexing from the end (`-1` = last block of the selected target).
+- In `all_targets` mode, `before_all/after_all` is ambiguous across different streams (`attn1`, `attn2`, `dit`), so those modes are intended for `single_target`.
+- `q/k/v` variables are available only in attention hooks (`attn1`, `attn2`), not in `dit_block`.
+
+### Variables available in `Expression`
+
+Always available:
+- `inp` / `sample`: current tensor passed to the hook
+- `F0..Fn`, `F`: float inputs from the node
+- dimension helpers from `generate_dim_variables` (for example `D0`, `S0`, ...)
+
+Available in attention hooks (`attn1`, `attn2`) only:
+- `q`, `k`, `v`
+- `has_qkv` = `1`
+- `block_name` (`input` / `middle` / `output`)
+- `layer_id` / `i`: current block index (relative to selected target stream)
+- `heads`: number of attention heads
+- `dim_head`: attention head dimension
+- `layer_key`: helper key in format `<block_name>.<attn_name>.<index>`
+
+Available in DiT block hook (`dit_block`) only:
+- `hook_kind` = `dit_block`
+- `layer_id`
+- `block_name`
+- `has_qkv` = `0`
+
+Notes:
+- `q/k/v` are **not** available in `dit_block`.
+- `layer_x` is always relative to the selected target stream (not a global model layer index).

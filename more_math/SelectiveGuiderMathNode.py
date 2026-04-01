@@ -154,9 +154,26 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             return [int(layer_x)]
 
         def run_expr(inp: torch.Tensor, extra_vars: dict | None = None) -> torch.Tensor:
+            # universal defaults: always defined
             variables = {
                 "inp": inp,
                 "sample": inp,
+
+                # hook identity
+                "hook_kind": "unknown",
+                "block_name": "",
+                "layer_key": "",
+                "layer_id": -1.0,
+                "i": -1.0,
+                "total_blocks": -1.0,
+
+                # attention-related (always present, valid flag says if real)
+                "has_qkv": 0.0,
+                "q": inp,
+                "k": inp,
+                "v": inp,
+                "heads": 0.0,
+                "dim_head": 0.0,
             } | generate_dim_variables(inp)
 
             if extra_vars:
@@ -186,7 +203,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 meta = {
                     "hook_kind": "dit_block",
                     "layer_id": float(idx),
+                    "i": float(idx),
+                    "total_blocks": float(total_blocks) if total_blocks is not None else -1.0,
                     "block_name": btype,
+                    "layer_key": f"dit.{btype}.{idx}",
                     "has_qkv": 0.0,
                 }
 
@@ -214,34 +234,43 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             patched["transformer_options"] = topts
 
         def register_attn(attn_name: str):
-            def attn_replace(q, k, v, extra_options):
-                idx = int(extra_options.get("block_index", -1))
-                total_blocks = extra_options.get("total_blocks", None)
+            def make_attn_replace(block_name: str):
+                def attn_replace(q, k, v, extra_options):
+                    idx = int(extra_options.get("block_index", -1))
+                    total_blocks = extra_options.get("total_blocks", None)
 
-                if not match_index(idx, total_blocks):
-                    return optimized_attention(q, k, v, extra_options["n_heads"], transformer_options=extra_options)
+                    if not match_index(idx, total_blocks):
+                        return optimized_attention(q, k, v, extra_options["n_heads"], transformer_options=extra_options)
 
-                meta = {
-                    "hook_kind": attn_name,
-                    "i": float(idx),
-                    "heads": float(extra_options.get("n_heads", 0)),
-                    "dim_head": float(extra_options.get("dim_head", 0)),
-                    "q": q,
-                    "k": k,
-                    "v": v,
-                }
+                    meta = {
+                        "hook_kind": attn_name,
+                        "block_name": block_name,
+                        "layer_id": float(idx),
+                        "i": float(idx),
+                        "total_blocks": float(total_blocks) if total_blocks is not None else -1.0,
+                        "has_qkv": 1.0,
 
-                # BEFORE -> uprav q
-                if not is_after_phase():
-                    q2 = run_expr(q, meta)
-                    return optimized_attention(q2, k, v, extra_options["n_heads"], transformer_options=extra_options)
+                        "q": q,
+                        "k": k,
+                        "v": v,
+                        "heads": float(extra_options.get("n_heads", 0)),
+                        "dim_head": float(extra_options.get("dim_head", 0)),
+                        "layer_key": f"{block_name}.{attn_name}.{idx}",
+                    }
 
-                # AFTER -> uprav attention output
-                out = optimized_attention(q, k, v, extra_options["n_heads"], transformer_options=extra_options)
-                return run_expr(out, meta)
+                    # BEFORE -> modify q
+                    if not is_after_phase():
+                        q2 = run_expr(q, meta)
+                        return optimized_attention(q2, k, v, extra_options["n_heads"], transformer_options=extra_options)
+
+                    # AFTER -> modify attn output
+                    out = optimized_attention(q, k, v, extra_options["n_heads"], transformer_options=extra_options)
+                    return run_expr(out, meta)
+                return attn_replace
 
             nonlocal patched
             for blk in ("input", "middle", "output"):
+                attn_replace = make_attn_replace(blk)
                 for li in target_indices():
                     patched = comfy.model_patcher.set_model_options_patch_replace(
                         patched,

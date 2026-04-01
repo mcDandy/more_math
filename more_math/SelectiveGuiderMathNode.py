@@ -110,6 +110,14 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         tree = parse_expr(Expression) if isinstance(Expression, str) else Expression
 
         MAX_HOOK_INDEX = 999
+        hit_flags = {"attn": False, "dit": False}
+        
+        # Lokální stav pro sledování aktuálního timestepu přes všechny volání hooků
+        step_states = {
+            "attn1": {"ts": None, "hit": False},
+            "attn2": {"ts": None, "hit": False},
+            "dit_block": {"ts": None, "hit": False},
+        }
 
         def is_after_phase() -> bool:
             return hook_when in ("after_all", "after_x", "just_after_x")
@@ -122,16 +130,36 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 x = max(0, min(x, total_blocks - 1))
             return x
 
-        def match_index(idx: int, total_blocks: int | None) -> bool:
-            # fallback: když neznáme total_blocks, "all" režimy nefiltruj
-            if total_blocks is None:
-                if hook_when in ("before_all", "after_all"):
-                    return True
-
+        def match_index(idx: int, total_blocks: int | None, stage: str, topts: dict, hook_kind: str) -> bool:
             if hook_when == "before_all":
-                return idx == 0
+                ts_val = topts.get("sigmas")
+                try:
+                    if torch.is_tensor(ts_val) and ts_val.numel() > 0:
+                        ts = float(ts_val[0].item())
+                    elif isinstance(ts_val, (list, tuple)) and len(ts_val) > 0:
+                        ts = float(ts_val[0])
+                    else:
+                        ts = float(ts_val)
+                except:
+                    ts = -999.0
+
+                # Zkontroluj, jestli už byl operátor v tomto timestepu a pro daný druh aplikován
+                state = step_states.setdefault(hook_kind, {"ts": None, "hit": False})
+                if state["ts"] != ts:
+                    state["ts"] = ts
+                    state["hit"] = False
+
+                if not state["hit"]:
+                    state["hit"] = True
+                    return True
+                return False
+            
             if hook_when == "after_all":
-                return total_blocks is not None and idx == (total_blocks - 1)
+                # U after_all nelze 100% předpovědět finální krok bez plného grafu, pofallbackujeme na indexování
+                if total_blocks is not None:
+                    return idx == (total_blocks - 1)
+                else: 
+                    return stage == "output" and idx >= 8
 
             x = resolve_x(total_blocks)
             if hook_when == "before_x":
@@ -174,6 +202,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 "block_name": "",
                 "layer_key": "",
                 "layer_id": -1.0,
+                "layer": -1.0,
                 "i": -1.0,
                 "total_blocks": -1.0,
                 "has_qkv": 0.0,
@@ -205,7 +234,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 idx = int(args.get("transformer_options", {}).get("block_index", -1))
                 total_blocks = args.get("transformer_options", {}).get("total_blocks", None)
 
-                if not match_index(idx, total_blocks):
+                if not match_index(idx, total_blocks, "dit", args.get("transformer_options", {}), "dit_block"):
                     return extra_args["original_block"](args)
                 if not hit_flags["dit"]:
                   logging.warning(f"[SelectiveGuiderMathNode] DIT HIT idx={idx} total={total_blocks}")
@@ -219,6 +248,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 meta = {
                     "hook_kind": "dit_block",
                     "layer_id": float(idx),
+                    "layer": float(idx),
                     "i": float(idx),
                     "total_blocks": float(total_blocks) if total_blocks is not None else -1.0,
                     "block_name": btype,
@@ -265,13 +295,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     stage = "unknown"
                     layer_id = int(transformer_options.get("block_index", -1))
 
-                # filtr podle cíle attn1/attn2
-                # v SD1 je spolehlivé rozlišení přes aktuální index uvnitř transformeru menší;
-                # proto zatím pouštíme obě a filtrujeme až expression logikou přes hook_kind/layer_key.
                 idx = layer_id
                 total_blocks = None
 
-                if not match_index(idx, total_blocks):
+                if not match_index(idx, total_blocks, stage, transformer_options, attn_name):
                     return original_attn(q, k, v, heads, **kwargs)
 
                 co = transformer_options.get("cond_or_uncond", None)
@@ -287,6 +314,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "hook_kind": attn_name,
                     "block_name": stage,
                     "layer_id": float(layer_id),
+                    "layer": float(layer_id),
                     "i": float(layer_id),
                     "total_blocks": -1.0,
                     "has_qkv": 1.0,
@@ -363,7 +391,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             V.model_options = patched
 
         if hasattr(V, "model_patcher") and V.model_patcher is not None and not getattr(V, "_mrmth_debug_callbacks_added", False):
-            hit_flags = {"attn": False, "dit": False}
             def _on_register_all_hook_patches(model_patcher, hooks, target_dict, model_options, registered):
                 try:
                     reg_len = len(registered) if registered is not None else 0

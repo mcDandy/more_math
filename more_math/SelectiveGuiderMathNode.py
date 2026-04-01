@@ -146,6 +146,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 "hook_kind": "unknown",
                 "hook_domain": "unknown",
                 "attn_kind": "none",
+                "transformer_index": -1.0,
                 "is_dit": 0.0,
                 "is_unet_block": 0.0,
                 "is_attn1": 0.0,
@@ -238,6 +239,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             def attn_override(original_attn, q, k, v, heads, **kwargs):
                 transformer_options = kwargs.get("transformer_options", {})
                 attn_kind = resolve_attn_kind(transformer_options, q=q, k=k, v=v)
+                t_index = int(transformer_options.get("transformer_index", -1))
 
                 if hook_target == "attn1" and attn_kind != "attn1":
                     return original_attn(q, k, v, heads, **kwargs)
@@ -271,6 +273,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "hook_kind": attn_kind,
                     "hook_domain": "attention",
                     "attn_kind": attn_kind,
+                    "transformer_index": float(t_index),
                     "is_dit": 0.0,
                     "is_attn1": 1.0 if attn_kind == "attn1" else 0.0,
                     "is_attn2": 1.0 if attn_kind == "attn2" else 0.0,
@@ -285,7 +288,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "v": v,
                     "heads": float(heads),
                     "dim_head": float(q.shape[-1] // heads) if heads > 0 else 0.0,
-                    "layer_key": f"{stage}.{layer_id}.{attn_kind}",
+                    "layer_key": f"{stage}.{layer_id}.{attn_kind}.{t_index}",
                     "cond_side": side,
                     "cond_index": float(idx_side),
                     "is_positive": 1.0 if side == "positive" else 0.0,
@@ -389,6 +392,13 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 cc["hooks"] = comfy.hooks.HookGroup.combine_all_hooks([old, hg])
                 new_conds.append(cc)
             V.original_conds[side_name] = new_conds
+
+        # po parse_expr(...)
+        if hasattr(V, "original_conds"):
+            if not hasattr(V, "_mrmth_base_original_conds"):
+                V._mrmth_base_original_conds = copy.deepcopy(V.original_conds)
+            else:
+                V.original_conds = copy.deepcopy(V._mrmth_base_original_conds)
 
         if hasattr(V, "original_conds"):
             attach_side_hook("positive")

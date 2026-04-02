@@ -423,6 +423,7 @@ The following variables are available in `Expression`.
 | `is_attn2` | float (0/1) | `1` when current hook is `attn2`, else `0`. |
 | `is_dit` | float (0/1) | `1` when current hook is DiT block hook, else `0`. |
 | `is_unet_block` | float (0/1) | `1` when current hook is UNet block hook, else `0`. |
+| `is_time_emb` | float (0/1) | `1` when current hook is timestep embedding entry (`block_name=="time_emb"`), else `0`. |
 | `block_name` | string | Block/stage name (`input`, `middle`, `output`, `time_emb`, `model`, DiT block type, etc.). |
 | `layer_id` | float | Numeric block/layer id used by current hook context. |
 | `layer` | float | Alias of `layer_id`. |

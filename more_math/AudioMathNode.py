@@ -38,7 +38,7 @@ class AudioMathNode(io.ComfyNode):
                 io.MultiType.Input(
                     io.String.Input("Expression", default="", multiline=False),
                     types=[io.String,MrmthParseTree],
-                    tooltip="3D model file or path string",
+                    tooltip="Expression to apply on weights",
                 ),
                 io.Combo.Input(
                     id="length_mismatch",

@@ -33,7 +33,7 @@ class StringMathNode(io.ComfyNode):
                 io.MultiType.Input(
                     io.String.Input("Expression", default="", multiline=False),
                     types=[io.String,MrmthParseTree],
-                    tooltip="3D model file or path string",
+                    tooltip="Expression to apply on weights",
                 ),
                 io.Int.Input(id="batching", default=0),
                 io.Boolean.Input(

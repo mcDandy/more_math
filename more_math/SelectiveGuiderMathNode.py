@@ -360,11 +360,64 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 stage, idx = _parse_block(extra_options, "middle")
                 return _apply_block_expr(x, extra_options, stage, idx)
 
+            def emb_patch(emb, model_channels, transformer_options):
+                # začátek timestep pipeline
+                return _apply_block_expr(emb, transformer_options, "time_emb", 0)
+
             patches["input_block_patch"] = list(patches.get("input_block_patch", [])) + [input_block_patch]
             patches["output_block_patch"] = list(patches.get("output_block_patch", [])) + [output_block_patch]
             patches["middle_patch"] = list(patches.get("middle_patch", [])) + [middle_patch]
+            patches["emb_patch"] = list(patches.get("emb_patch", [])) + [emb_patch]
 
             topts["patches"] = patches
+            patched_dict["transformer_options"] = topts
+            return patched_dict
+
+        def register_model_edges(patched_dict, forced_side=None):
+            topts = patched_dict["transformer_options"].copy()
+            wrappers = topts.get("wrappers", {}).copy()
+            wtype = comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL
+            bucket = wrappers.get(wtype, {}).copy()
+            key = "mrmth_model_edges"
+
+            def model_edges_wrapper(executor, x, *args, **kwargs):
+                # BEGIN (all the way at the beginning)
+                pre_meta = {
+                    "hook_kind": "model_begin",
+                    "hook_domain": "diffusion",
+                    "attn_kind": "none",
+                    "block_name": "model",
+                    "layer_id": -1.0,
+                    "layer": -1.0,
+                    "i": -1.0,
+                    "total_blocks": -1.0,
+                    "has_qkv": 0.0,
+                    "layer_key": "model.begin",
+                }
+                xin = run_expr(x, pre_meta) if isinstance(x, torch.Tensor) else x
+
+                out = executor(xin, *args, **kwargs)
+
+                # END (all the way at the end)
+                if isinstance(out, torch.Tensor):
+                    post_meta = {
+                        "hook_kind": "model_end",
+                        "hook_domain": "diffusion",
+                        "attn_kind": "none",
+                        "block_name": "model",
+                        "layer_id": -1.0,
+                        "layer": -1.0,
+                        "i": -1.0,
+                        "total_blocks": -1.0,
+                        "has_qkv": 0.0,
+                        "layer_key": "model.end",
+                    }
+                    return run_expr(out, post_meta)
+                return out
+
+            bucket[key] = list(bucket.get(key, [])) + [model_edges_wrapper]
+            wrappers[wtype] = bucket
+            topts["wrappers"] = wrappers
             patched_dict["transformer_options"] = topts
             return patched_dict
 
@@ -377,6 +430,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 p = register_unet_blocks(p, forced_side=side_label)
             if hook_target in ("all", "attn1", "attn2"):
                 p = register_attn(p, forced_side=side_label)
+            if hook_target in ("all", "unet_block"):
+                p = register_model_edges(p, forced_side=side_label)
             return p["transformer_options"]
 
         def attach_side_hook(side_name: str):

@@ -382,6 +382,12 @@ Current implementation details:
 - `hook_when` is currently set but not used for filtering.
 - `layer_x` is used as direct index match (`idx == layer_x`) for current hook context.
 - For guiders with `original_conds`, base conditions are restored before reattaching hooks to avoid hook accumulation across reruns/interrupted runs.
+- Active hook paths currently include:
+  - Attention override (`attn1` / `attn2` / `attn_unknown`)
+  - DiT block replace (`dit.double_block`, `dit.single_block`)
+  - UNet block patches (`input_block_patch`, `middle_patch`, `output_block_patch`)
+  - Timestep embedding start via `emb_patch` (`block_name="time_emb"`, `layer_x=0`)
+  - Whole-model edges via diffusion-model wrapper (`model_begin`, `model_end`)
 
 ### Side behavior (positive / negative)
 
@@ -409,7 +415,7 @@ The following variables are available in `Expression`.
 | `F` | list/tensor | Collection of all float inputs. |
 | `D0..Dn` | tensor | Per-dimension index tensors from `generate_dim_variables`. |
 | `S0..Sn` | float | Per-dimension sizes from `generate_dim_variables`. |
-| `hook_kind` | string | Active hook identifier: `attn1`, `attn2`, `attn_unknown`, `dit_block`, `unet_block`, or `unknown`. |
+| `hook_kind` | string | Active hook identifier: `attn1`, `attn2`, `attn_unknown`, `dit_block`, `unet_block`, `model_begin`, `model_end`, or `unknown`. |
 | `hook_domain` | string | High-level domain: `attention`, `diffusion`, or `unknown`. |
 | `attn_kind` | string | Attention kind: `attn1`, `attn2`, `attn_unknown`, or `none` outside attention hooks. |
 | `transformer_index` | float | Attention sub-block index inside a UNet block (`-1` if unavailable). |
@@ -417,11 +423,11 @@ The following variables are available in `Expression`.
 | `is_attn2` | float (0/1) | `1` when current hook is `attn2`, else `0`. |
 | `is_dit` | float (0/1) | `1` when current hook is DiT block hook, else `0`. |
 | `is_unet_block` | float (0/1) | `1` when current hook is UNet block hook, else `0`. |
-| `block_name` | string | Block/stage name (`input`, `middle`, `output`, DiT block type, etc.). |
+| `block_name` | string | Block/stage name (`input`, `middle`, `output`, `time_emb`, `model`, DiT block type, etc.). |
 | `layer_id` | float | Numeric block/layer id used by current hook context. |
 | `layer` | float | Alias of `layer_id`. |
 | `i` | float | Alias of `layer_id`. |
-| `layer_key` | string | Composite identifier for debug/filtering (for example `output.6.attn2.0` or `unet.input.2`). |
+| `layer_key` | string | Composite identifier for debug/filtering (for example `output.6.attn2.0`, `unet.time_emb.0`, `model.begin`). |
 | `total_blocks` | float | Total blocks in stream if available, otherwise `-1`. |
 | `has_qkv` | float (0/1) | `1` in attention hooks where `q/k/v` are valid; `0` in diffusion/block hooks. |
 | `q` | tensor | Query tensor in attention hooks; fallback placeholder otherwise. |
@@ -439,4 +445,6 @@ The following variables are available in `Expression`.
 - On SD1.x, repeated hits on the same `layer_id` are normal in attention because one UNet block can contain multiple transformer sub-blocks.
 - Use `transformer_index` to target exactly one sub-block, for example:  
   `(attn_kind=="attn2" and transformer_index==0) ? <logic> : inp`
+- For timestep-begin hooking use `layer_x=0` and filter by `block_name=="time_emb"` (or `layer_key=="unet.time_emb.0"`).
+- For model-edge hooks filter by `hook_kind=="model_begin"` or `hook_kind=="model_end"`.
 - For model-agnostic expressions, prefer guard variables: `has_qkv`, `is_dit`, `is_unet_block`, `is_attn1`, `is_attn2`.

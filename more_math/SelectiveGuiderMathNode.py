@@ -356,8 +356,13 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 h2 = _apply_block_expr(h, transformer_options, stage, idx)
                 return h2, hsp
 
+            def middle_patch(x, extra_options):
+                stage, idx = _parse_block(extra_options, "middle")
+                return _apply_block_expr(x, extra_options, stage, idx)
+
             patches["input_block_patch"] = list(patches.get("input_block_patch", [])) + [input_block_patch]
             patches["output_block_patch"] = list(patches.get("output_block_patch", [])) + [output_block_patch]
+            patches["middle_patch"] = list(patches.get("middle_patch", [])) + [middle_patch]
 
             topts["patches"] = patches
             patched_dict["transformer_options"] = topts

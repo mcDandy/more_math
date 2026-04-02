@@ -445,7 +445,7 @@ The following variables are available in `Expression`.
 
 - On SD1.x, repeated hits on the same `layer_id` are normal in attention because one UNet block can contain multiple transformer sub-blocks.
 - Use `transformer_index` to target exactly one sub-block, for example:  
-  `(attn_kind=="attn2" and transformer_index==0) ? <logic> : inp`
+  `(attn_kind=="attn2" * transformer_index==0) ? <logic> : inp`
 - For timestep-begin hooking use `layer_x=0` and filter by `block_name=="time_emb"` (or `layer_key=="unet.time_emb.0"`).
 - For model-edge hooks filter by `hook_kind=="model_begin"` or `hook_kind=="model_end"`.
 - For model-agnostic expressions, prefer guard variables: `has_qkv`, `is_dit`, `is_unet_block`, `is_attn1`, `is_attn2`.

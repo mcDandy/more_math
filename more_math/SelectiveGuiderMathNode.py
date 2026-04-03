@@ -436,9 +436,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 h2 = _apply_block_expr(h, transformer_options, stage, idx)
                 return h2, hsp
 
-            def middle_patch(x, extra_options):
-                stage, idx = _parse_block(extra_options, "middle")
-                return _apply_block_expr(x, extra_options, stage, idx)
+            def middle_patch(h, transformer_options):
+                stage, idx = _parse_block(transformer_options, "middle")
+                return _apply_block_expr(h, transformer_options, stage, idx)
 
             def emb_patch(emb, model_channels, transformer_options):
                 # začátek timestep pipeline
@@ -536,9 +536,16 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         # po parse_expr(...)
         if hasattr(V, "original_conds"):
             if not hasattr(V, "_mrmth_base_original_conds"):
-                V._mrmth_base_original_conds = copy.deepcopy(V.original_conds)
+                def make_shallow_cond_copy(conds_dict):
+                    new_dict = {}
+                    for k, v_list in conds_dict.items():
+                        # Kondice obvykle obsahují fragmentová pole (slovníky nebo listy)
+                        new_dict[k] = [item.copy() if hasattr(item, "copy") else copy.copy(item) for item in v_list]
+                    return new_dict
+
+                V._mrmth_base_original_conds = make_shallow_cond_copy(V.original_conds)
             else:
-                V.original_conds = copy.deepcopy(V._mrmth_base_original_conds)
+                V.original_conds = make_shallow_cond_copy(V._mrmth_base_original_conds)
 
         if hasattr(V, "original_conds"):
             attach_side_hook("positive")

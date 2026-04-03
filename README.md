@@ -436,10 +436,20 @@ The following variables are available in `Expression`.
 | `v` | tensor | Value tensor in attention hooks; fallback placeholder otherwise. |
 | `heads` | float | Number of attention heads (attention hooks only, else `0`). |
 | `dim_head` | float | Per-head channel size (`q.shape[-1] / heads`) when available. |
-| `cond_side` | string | CFG side: `positive`, `negative`, `mixed`, or `unknown`. |
-| `cond_index` | float | CFG side index: `0` (positive), `1` (negative), `-1` (mixed/unknown). |
-| `is_positive` | float (0/1) | `1` for positive conditioning pass, else `0`. |
-| `is_negative` | float (0/1) | `1` for negative conditioning pass, else `0`. |
+| `activations_shape` | list | Raw shape from transformer context (typically `[B, C, H, W]` in UNet attention). Empty list if unavailable. |
+| `activation_b` | float | Batch dimension from `activations_shape[0]` (or `-1`). |
+| `activation_c` | float | Channel dimension from `activations_shape[1]` (or `-1`). |
+| `activation_h` | float | Height dimension from `activations_shape[2]` (or `-1`). |
+| `activation_w` | float | Width dimension from `activations_shape[3]` (or `-1`). |
+| `attn_mode` | string | Unified attention mode: `self`, `cross`, or `unknown`. Prefer this over `attn1`/`attn2` for non-UNet models. |
+| `is_self_attention` | float (0/1) | `1` when the active attention is self-attention. |
+| `is_cross_attention` | float (0/1) | `1` when the active attention is cross-attention. |
+| `has_context` | float (0/1) | `1` when attention context appears to be present. |
+| `query_tokens` | float | Query sequence length. |
+| `context_tokens` | float | Context sequence length. |
+| `value_tokens` | float | Value sequence length. |
+| `activation_rank` | float | Rank of `activations_shape` (`4` for image-like, `5` for video-like tensors). |
+| `activation_t` | float | Temporal dimension for video-like activations (`-1` if unavailable). |
 
 #### Practical notes
 
@@ -449,3 +459,7 @@ The following variables are available in `Expression`.
 - For timestep-begin hooking use `layer_x=0` and filter by `block_name=="time_emb"` (or `layer_key=="unet.time_emb.0"`).
 - For model-edge hooks filter by `hook_kind=="model_begin"` or `hook_kind=="model_end"`.
 - For model-agnostic expressions, prefer guard variables: `has_qkv`, `is_dit`, `is_unet_block`, `is_attn1`, `is_attn2`.
+
+- `attn2` is only a hook label, not guaranteed to mean real cross-attention.
+- Use `is_cross_attention` only as an inferred relation from runtime metadata.
+- Use `is_attn2_hook` when you need to know the hook path, and `attention_relation` when you need the semantic relation.

@@ -102,12 +102,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
             # Fallback heuristika: self-attn má obvykle stejný zdroj pro q/k/v
             if isinstance(q, torch.Tensor) and isinstance(k, torch.Tensor) and isinstance(v, torch.Tensor):
-                if q.shape == k.shape == v.shape:
-                    if (q.data_ptr() == k.data_ptr()) and (k.data_ptr() == v.data_ptr()):
-                        return "attn1"
-                    # stejný tvar bývá často pořád self-attn
+                if (q.data_ptr() == k.data_ptr()) and (k.data_ptr() == v.data_ptr()):
                     return "attn1"
-                return "attn2"
+                return "attn_unknown"
 
             return "attn_unknown"
 
@@ -140,18 +137,23 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             return ("unknown", -1)
 
         def run_expr(inp: torch.Tensor, extra_vars: dict | None = None) -> torch.Tensor:
+            # v run_expr(...) rozšiř výchozí proměnné:
             variables = {
                 "inp": inp,
                 "sample": inp,
                 "hook_kind": "unknown",
                 "hook_domain": "unknown",
                 "attn_kind": "none",
+                "attn_mode": "unknown",
                 "transformer_index": -1.0,
                 "is_dit": 0.0,
                 "is_unet_block": 0.0,
                 "is_time_emb": 0.0,
                 "is_attn1": 0.0,
                 "is_attn2": 0.0,
+                "is_self_attention": 0.0,
+                "is_cross_attention": 0.0,
+                "has_context": 0.0,
                 "block_name": "",
                 "layer_key": "",
                 "layer_id": -1.0,
@@ -164,10 +166,23 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 "v": inp,
                 "heads": 0.0,
                 "dim_head": 0.0,
+                "query_tokens": -1.0,
+                "context_tokens": -1.0,
+                "value_tokens": -1.0,
+                "activations_shape": [],
+                "activation_rank": -1.0,
+                "activation_b": -1.0,
+                "activation_c": -1.0,
+                "activation_t": -1.0,
+                "activation_h": -1.0,
+                "activation_w": -1.0,
                 "cond_side": "unknown",
                 "cond_index": -1.0,
                 "is_positive": 0.0,
                 "is_negative": 0.0,
+                "is_attn1_hook": 0.0,
+                "is_attn2_hook": 0.0,
+                "attention_relation": "unknown",
             } | generate_dim_variables(inp)
 
             if extra_vars:
@@ -175,6 +190,55 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
             for kf, vf in F.items():
                 variables[kf] = vf if vf is not None else 0.0
+
+            act_shape = variables.get("activations_shape", [])
+            if isinstance(act_shape, (list, tuple)):
+                variables["activation_rank"] = float(len(act_shape))
+                if len(act_shape) >= 1:
+                    variables["activation_b"] = float(act_shape[0])
+                if len(act_shape) >= 2:
+                    variables["activation_c"] = float(act_shape[1])
+                if len(act_shape) == 4:
+                    variables["activation_h"] = float(act_shape[2])
+                    variables["activation_w"] = float(act_shape[3])
+                elif len(act_shape) >= 5:
+                    variables["activation_t"] = float(act_shape[2])
+                    variables["activation_h"] = float(act_shape[3])
+                    variables["activation_w"] = float(act_shape[4])
+
+            qv = variables.get("q", inp)
+            kv = variables.get("k", inp)
+            vv = variables.get("v", inp)
+
+            if variables.get("attn_kind") == "attn1":
+                variables["is_attn1_hook"] = 1.0
+            elif variables.get("attn_kind") == "attn2":
+                variables["is_attn2_hook"] = 1.0
+
+            if hasattr(qv, "shape") and len(qv.shape) >= 2:
+                variables["query_tokens"] = float(qv.shape[-2])
+            if hasattr(kv, "shape") and len(kv.shape) >= 2:
+                variables["context_tokens"] = float(kv.shape[-2])
+                variables["has_context"] = 1.0
+            if hasattr(vv, "shape") and len(vv.shape) >= 2:
+                variables["value_tokens"] = float(vv.shape[-2])
+
+            qt = variables["query_tokens"]
+            kt = variables["context_tokens"]
+
+            if variables["has_context"] == 1.0 and qt > 0 and kt > 0:
+                if qt != kt:
+                    variables["is_cross_attention"] = 1.0
+                    variables["is_self_attention"] = 0.0
+                    variables["attention_relation"] = "cross"
+                else:
+                    variables["is_cross_attention"] = 0.0
+                    variables["is_self_attention"] = 1.0
+                    variables["attention_relation"] = "self"
+            else:
+                variables["is_cross_attention"] = 0.0
+                variables["is_self_attention"] = 0.0
+                variables["attention_relation"] = "unknown"
 
             visitor = UnifiedMathVisitor(variables, inp.shape, inp.device, state_storage=stack)
             out = visitor.visit(tree)
@@ -270,6 +334,14 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     logging.warning(f"[SelectiveGuiderMathNode] {attn_kind.upper()} HIT stage={stage} layer_id={layer_id} side={side}")
                     hit_flags[attn_kind] = True
 
+                # v register_attn -> attn_override(...), před `meta = { ... }` přidej ---
+                act_shape = transformer_options.get("activations_shape", [])
+                if not isinstance(act_shape, (list, tuple)):
+                    act_shape = []
+
+                act_h = float(act_shape[2]) if len(act_shape) >= 4 else -1.0
+                act_w = float(act_shape[3]) if len(act_shape) >= 4 else -1.0
+
                 meta = {
                     "hook_kind": attn_kind,
                     "hook_domain": "attention",
@@ -294,6 +366,12 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "cond_index": float(idx_side),
                     "is_positive": 1.0 if side == "positive" else 0.0,
                     "is_negative": 1.0 if side == "negative" else 0.0,
+                } | {
+                    "activations_shape": list(act_shape),
+                    "activation_b": float(act_shape[0]) if len(act_shape) > 0 else -1.0,
+                    "activation_c": float(act_shape[1]) if len(act_shape) > 1 else -1.0,
+                    "activation_h": float(act_shape[2]) if len(act_shape) > 2 else -1.0,
+                    "activation_w": float(act_shape[3]) if len(act_shape) > 3 else -1.0,
                 }
 
                 out = original_attn(q, k, v, heads, **kwargs)

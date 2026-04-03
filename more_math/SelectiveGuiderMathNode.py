@@ -32,7 +32,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     ),
                 ),
                 io.MultiType.Input(
-                    io.String.Input("Expression", default="push(0, inp); inp", multiline=False),
+                    io.String.Input("Expression", default="print([layer, layer_key, hook_kind, cond_side, activations_shape]); inp", multiline=False),
                     types=[io.String, MrmthParseTree],
                 ),
                 io.Int.Input("layer_x", default=0, min=-999, max=999),

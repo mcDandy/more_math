@@ -38,7 +38,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 io.Int.Input("layer_x", default=0, min=-999, max=999),
                 io.Combo.Input(
                     "hook_target",
-                    options=["all", "dit_block", "unet_block", "attn1", "attn2"],
+                    options=["all", "dit_block", "unet_block", "attn1", "attn2", "model_begin", "model_end"],
                     default="all"
                 ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes", optional=True),
@@ -92,11 +92,21 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 ),
             )
 
+            # Detekce z block_name (např. u Flux je občas block = ('self_attention', layer_id) atd.)
+            blk = transformer_options.get("block", None)
+            if isinstance(blk, (tuple, list)) and len(blk) > 0:
+                blk_name = str(blk[0]).lower()
+                if "self" in blk_name or "attn1" in blk_name:
+                    return "attn1"
+                if "cross" in blk_name or "attn2" in blk_name:
+                    return "attn2"
+
             if isinstance(raw, str):
                 r = raw.lower()
-                if r in ("attn1", "self", "self_attn", "self_attention"):
+                if r in ("attn1", "self", "self_attn", "self_attention", "self_attn_1"):
                     return "attn1"
-                if r in ("attn2", "cross", "cross_attn", "cross_attention"):
+                if r in ("attn2", "cross", "cross_attn", "cross_attention", "self_attn_2"):
+                    # Některé bloky Flux.2 a podobné architektury používají dva self_attn bloky, druhý reprezentuje kontext (obdoba cross-attn)
                     return "attn2"
                 return "attn_unknown"
 
@@ -110,8 +120,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             if isinstance(q, torch.Tensor) and isinstance(k, torch.Tensor) and isinstance(v, torch.Tensor):
                 if (q.data_ptr() == k.data_ptr()) and (k.data_ptr() == v.data_ptr()):
                     return "attn1"
-                return "attn_unknown"
-
+                # Pokud se q neshoduje s k nebo v, je to s velkou pravděpodobností cross-attention
+                if q.data_ptr() != k.data_ptr():
+                    return "attn2"
+                    
             return "attn_unknown"
 
         def resolve_x(total_blocks: int | None) -> int:
@@ -340,7 +352,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     logging.warning(f"[SelectiveGuiderMathNode] {attn_kind.upper()} HIT stage={stage} layer_id={layer_id} side={side}")
                     hit_flags[attn_kind] = True
 
-                # v register_attn -> attn_override(...), před `meta = { ... }` přidej ---
                 act_shape = transformer_options.get("activations_shape", [])
                 if not isinstance(act_shape, (list, tuple)):
                     act_shape = []
@@ -467,25 +478,26 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             key = "mrmth_model_edges"
 
             def model_edges_wrapper(executor, x, *args, **kwargs):
-                # BEGIN (all the way at the beginning)
-                pre_meta = {
-                    "hook_kind": "model_begin",
-                    "hook_domain": "diffusion",
-                    "attn_kind": "none",
-                    "block_name": "model",
-                    "layer_id": -1.0,
-                    "layer": -1.0,
-                    "i": -1.0,
-                    "total_blocks": -1.0,
-                    "has_qkv": 0.0,
-                    "layer_key": "model.begin",
-                }
-                xin = run_expr(x, pre_meta) if isinstance(x, torch.Tensor) else x
+                if hook_target in ("all", "model_begin", "unet_block"):
+                    pre_meta = {
+                        "hook_kind": "model_begin",
+                        "hook_domain": "diffusion",
+                        "attn_kind": "none",
+                        "block_name": "model",
+                        "layer_id": -1.0,
+                        "layer": -1.0,
+                        "i": -1.0,
+                        "total_blocks": -1.0,
+                        "has_qkv": 0.0,
+                        "layer_key": "model.begin",
+                    }
+                    xin = run_expr(x, pre_meta) if isinstance(x, torch.Tensor) else x
+                else:
+                    xin = x
 
                 out = executor(xin, *args, **kwargs)
 
-                # END (all the way at the end)
-                if isinstance(out, torch.Tensor):
+                if isinstance(out, torch.Tensor) and hook_target in ("all", "model_end", "unet_block"):
                     post_meta = {
                         "hook_kind": "model_end",
                         "hook_domain": "diffusion",
@@ -516,7 +528,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 p = register_unet_blocks(p, forced_side=side_label)
             if hook_target in ("all", "attn1", "attn2"):
                 p = register_attn(p, forced_side=side_label)
-            if hook_target in ("all", "unet_block"):
+            if hook_target in ("all", "unet_block", "model_begin", "model_end"):
                 p = register_model_edges(p, forced_side=side_label)
             return p["transformer_options"]
 
@@ -570,6 +582,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 patched = register_unet_blocks(patched, forced_side=None)
             if hook_target in ("all", "attn1", "attn2"):
                 patched = register_attn(patched, forced_side=None)
+            if hook_target in ("all", "unet_block", "model_begin", "model_end"):
+                patched = register_model_edges(patched, forced_side=None)
             V.model_options = patched
 
         if hasattr(V, "model_patcher") and V.model_patcher is not None and not getattr(V, "_mrmth_debug_callbacks_added", False):

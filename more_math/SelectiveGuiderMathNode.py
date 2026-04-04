@@ -36,6 +36,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     types=[io.String, MrmthParseTree],
                 ),
                 io.Int.Input("layer_x", default=0, min=-999, max=999),
+                MrmthStack.Input(id="stack", tooltip="Access stack between nodes", optional=True),
+                io.Boolean.Input(id="remember_stack", default=False, display_name="Remember stack across batch")
             ],
             outputs=[io.Guider.Output(), MrmthStack.Output()],
         )

@@ -21,9 +21,9 @@ class AudioMathNode(io.ComfyNode):
     Enables math expressions on Audio.
 
     Inputs:
-        I: Autogrow image inputs (I0, I1, ...)
+        V: Autogrow audio inputs (V0, V1, ...)
         F: Autogrow float inputs (F0, F1, ...)
-        Image: Expression
+        Expression: Expression
     """
 
     @classmethod
@@ -45,7 +45,7 @@ class AudioMathNode(io.ComfyNode):
                     options=["do nothing","error","tile", "pad"],
                     display_name="on size mismatch",
                     default="error",
-                    tooltip="How to handle mismatched image batch sizes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
+                    tooltip="How to handle mismatched audio shapes. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing samples as zero."
                 ),
                 io.Int.Input(id="batching", default=0),
                 io.Boolean.Input(
@@ -108,14 +108,17 @@ class AudioMathNode(io.ComfyNode):
             "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0,
             "B": getIndexTensorAlongDim(a_w, 0),
+            "batch": getIndexTensorAlongDim(a_w, 0),
             "C": getIndexTensorAlongDim(a_w, 1),
             "channel": getIndexTensorAlongDim(a_w, 1),
+            "N": float(a_w.shape[1]),
+            "channel_count": float(a_w.shape[1]),
             "S": getIndexTensorAlongDim(a_w, 2),
             "sample": getIndexTensorAlongDim(a_w, 2),
+            "T": float(a_w.shape[2]),
+            "sample_count": float(a_w.shape[2]),
             "R": sample_rate,
             "sample_rate": sample_rate,
-            "batch": getIndexTensorAlongDim(a_w, 0),
-            "T": float(a_w.shape[0]),
             "batch_count": float(a_w.shape[0]),
         } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
 

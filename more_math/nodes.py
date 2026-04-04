@@ -26,6 +26,7 @@ from .AudioToSpectrogramNode import AudioToSpectrogram
 
 from .NoiseMathNode import NoiseMathNode
 from .AudioMathNode import AudioMathNode
+from .StringMathNode import StringMathNode
 from .SelectiveGuiderMathNode import SelectiveGuiderMathNode
 
 from .ScriptTextWindow import ScriptTextInput
@@ -169,6 +170,7 @@ class MoreMathExtension(ComfyExtension):
             GuiderMathNode,
             NoiseMathNode,
             AudioMathNode,
+            StringMathNode,
             ScriptTextInput,
             SelectiveGuiderMathNode
         ]

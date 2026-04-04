@@ -2389,11 +2389,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.full(shape, value, device=self.device,dtype=type)
 
     def visitSoftmaxFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr()))
-        return F.softmax(val.float())
+        val = self._promote_to_tensor((yield ctx.expr(0))).float()
+        dim = -1
+        if len(ctx.expr()) > 1:
+            dim_val = (yield ctx.expr(1))
+            dim = self._to_int(dim_val, ctx, "softmax dim")
+        return F.softmax(val, dim=dim)
+
     def visitSoftminFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr()))
-        return F.softmax(-val.float())
+        val = self._promote_to_tensor((yield ctx.expr(0))).float()
+        dim = -1
+        if len(ctx.expr()) > 1:
+            dim_val = (yield ctx.expr(1))
+            dim = self._to_int(dim_val, ctx, "softmin dim")
+        return F.softmax(-val, dim=dim)
 
     def visitArgminFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))
@@ -3360,7 +3369,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return torch.stack([r, g, b], dim=-1)
 
-
     def visitEntropyFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))
         # Shannon entropy: -sum(p * log(p))
@@ -3521,5 +3529,3 @@ class UnifiedMathVisitor(MathExprVisitor):
         """erfinv(x) - inverse error function"""
         x = self._promote_to_tensor((yield ctx.expr()))
         return torch.erfinv(x)
-    
-    

@@ -78,10 +78,18 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         tree = parse_expr(Expression) if isinstance(Expression, str) else Expression
 
         MAX_HOOK_INDEX = 999
-        hit_flags = {"attn1": False, "attn2": False, "dit": False, "attn_unknown": False, "unet": False}
+        hit_flags = {
+            "attn1": False,
+            "attn2": False,
+            "double_block_attn": False,
+            "single_block_attn": False,
+            "dit": False,
+            "attn_unknown": False,
+            "unet": False,
+        }
 
         def resolve_attn_kind(transformer_options: dict, q: torch.Tensor | None = None, k: torch.Tensor | None = None, v: torch.Tensor | None = None) -> str:
-            # Detekce Flux / MM-DiT architektury (vracíme specifické názvosloví)
+            # Flux / MM-DiT
             btype = transformer_options.get("block_type", None)
             if btype == "double":
                 return "double_block_attn"
@@ -99,7 +107,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 ),
             )
 
-            # Detekce z block_name pro non-flux modely
             blk = transformer_options.get("block", None)
             if isinstance(blk, (tuple, list)) and len(blk) > 0:
                 blk_name = str(blk[0]).lower()
@@ -122,13 +129,15 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 if int(raw) == 1:
                     return "attn2"
 
-            # Fallback heuristika
-            if isinstance(q, torch.Tensor) and isinstance(k, torch.Tensor) and isinstance(v, torch.Tensor):
-                if (q.data_ptr() == k.data_ptr()) and (k.data_ptr() == v.data_ptr()):
-                    return "attn1"
-                if q.data_ptr() != k.data_ptr():
+            # Bezpečný fallback podle délek tokenů (funguje i pro FLOW self-attn)
+            if isinstance(q, torch.Tensor) and isinstance(k, torch.Tensor):
+                if q.ndim >= 2 and k.ndim >= 2:
+                    q_tokens = int(q.shape[-2])
+                    k_tokens = int(k.shape[-2])
+                    if q_tokens == k_tokens:
+                        return "attn1"
                     return "attn2"
-                    
+
             return "attn_unknown"
 
         def resolve_x(total_blocks: int | None) -> int:
@@ -205,6 +214,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 "is_negative": 0.0,
                 "is_attn1_hook": 0.0,
                 "is_attn2_hook": 0.0,
+                "is_double_block_attn_hook": 0.0,
+                "is_single_block_attn_hook": 0.0,
                 "attention_relation": "unknown",
             } | generate_dim_variables(inp)
 
@@ -237,6 +248,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 variables["is_attn1_hook"] = 1.0
             elif variables.get("attn_kind") == "attn2":
                 variables["is_attn2_hook"] = 1.0
+            elif variables.get("attn_kind") == "double_block_attn":
+                variables["is_double_block_attn_hook"] = 1.0
+            elif variables.get("attn_kind") == "single_block_attn":
+                variables["is_single_block_attn_hook"] = 1.0
 
             if hasattr(qv, "shape") and len(qv.shape) >= 2:
                 variables["query_tokens"] = float(qv.shape[-2])
@@ -327,19 +342,25 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             def attn_override(original_attn, q, k, v, heads, **kwargs):
                 transformer_options = kwargs.get("transformer_options", {})
                 attn_kind = resolve_attn_kind(transformer_options, q=q, k=k, v=v)
-                t_index = int(transformer_options.get("transformer_index", -1))
-
-                if hook_target != "all" and hook_target in ("attn1", "attn2", "double_block_attn", "single_block_attn"):
-                    if hook_target != attn_kind:
-                        return original_attn(q, k, v, heads, **kwargs)
 
                 blk = transformer_options.get("block", None)
+                btype = str(transformer_options.get("block_type", "unknown"))
+                bindex = int(transformer_options.get("block_index", -1))
+
                 if isinstance(blk, (tuple, list)) and len(blk) >= 2:
                     stage = str(blk[0])
                     layer_id = int(blk[1])
                 else:
-                    stage = "unknown"
-                    layer_id = int(transformer_options.get("block_index", -1))
+                    # lepší fallback pro Flux/FLOW
+                    stage = btype if btype in ("double", "single") else str(transformer_options.get("model_type", "unknown")).lower()
+                    layer_id = bindex
+
+                t_index_raw = transformer_options.get("transformer_index", None)
+                t_index = int(t_index_raw) if isinstance(t_index_raw, (int, float)) else layer_id
+
+                if hook_target != "all" and hook_target in ("attn1", "attn2", "double_block_attn", "single_block_attn"):
+                    if hook_target != attn_kind:
+                        return original_attn(q, k, v, heads, **kwargs)
 
                 idx = layer_id
                 total_blocks = None
@@ -359,9 +380,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 act_shape = transformer_options.get("activations_shape", [])
                 if not isinstance(act_shape, (list, tuple)):
                     act_shape = []
-
-                act_h = float(act_shape[2]) if len(act_shape) >= 4 else -1.0
-                act_w = float(act_shape[3]) if len(act_shape) >= 4 else -1.0
 
                 meta = {
                     "hook_kind": attn_kind,

@@ -150,8 +150,8 @@ func1:
 	| ARGSORT LPAREN expr (COMMA expr)? RPAREN	# ArgsortFunc
 	| ARGMIN LPAREN expr RPAREN			# ArgminFunc
 	| ARGMAX LPAREN expr RPAREN			# ArgmaxFunc
-	| SOFTMAX LPAREN expr RPAREN		# SoftmaxFunc
-	| SOFTMIN LPAREN expr RPAREN		# SoftminFunc
+ 	| SOFTMAX LPAREN expr (COMMA expr)? RPAREN		# SoftmaxFunc
+ 	| SOFTMIN LPAREN expr (COMMA expr)? RPAREN		# SoftminFunc
 	| ERF LPAREN expr RPAREN			# ErfFunc
 	| ERFINV LPAREN expr RPAREN			# ErfinvFunc
 	| UNIQUE LPAREN expr RPAREN			# UniqueFunc
@@ -365,7 +365,7 @@ FLATTEN: 'flatten';
 APPEND: 'append';
 GET_VALUE: 'get_value';
 FLOW_APPLY: 'flow_apply';
-BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle';
+BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle' | 'select';
 MOTION_MASK: 'motion_mask';
 FLOW_TO_IMAGE: 'flow_to_image';
 OVERLAY: 'overlay';

@@ -177,8 +177,8 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Image
 
-- `blur(x, sigma[,auto_convert])` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two dimensions (auto_convert is 0 or omitted) or attempts to use correct spatial dimensions if auto_convert is 1.
-- `edge(x,[kernel_size[,auto_convert]]`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
+- `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two dimensions (auto_convert is 0 or omitted) or attempts to use correct spatial dimensions if auto_convert is 1.
+- `edge(x,[kernel_size]`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
 - `ezconvolution(tensor, kw, [kh], [kd], k_expr)` or `ezconv`: Applies a convolution to `tensor`. Automatically permutes tensor to try to make it work with various inputs without the need to permute manually.
   - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
 - `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects layout `(Batch, Channel, Spatial...)`.
@@ -378,12 +378,11 @@ Adds support for hooking into specific layers/blocks of the model during guided 
 
 Current implementation details:
 
-- `hook_target` is currently hardcoded to `all` in code.
-- `hook_when` is currently set but not used for filtering.
+- `hook_target` supports runtime filtering in node UI.
 - `layer_x` is used as direct index match (`idx == layer_x`) for current hook context.
 - For guiders with `original_conds`, base conditions are restored before reattaching hooks to avoid hook accumulation across reruns/interrupted runs.
 - Active hook paths currently include:
-  - Attention override (`attn1` / `attn2` / `attn_unknown`)
+  - Attention override (`attn1` / `attn2` / `double_block_attn` / `single_block_attn` / `attn_unknown`)
   - DiT block replace (`dit.double_block`, `dit.single_block`)
   - UNet block patches (`input_block_patch`, `middle_patch`, `output_block_patch`)
   - Timestep embedding start via `emb_patch` (`block_name="time_emb"`, `layer_x=0`)
@@ -415,12 +414,14 @@ The following variables are available in `Expression`.
 | `F` | list/tensor | Collection of all float inputs. |
 | `D0..Dn` | tensor | Per-dimension index tensors from `generate_dim_variables`. |
 | `S0..Sn` | float | Per-dimension sizes from `generate_dim_variables`. |
-| `hook_kind` | string | Active hook identifier: `attn1`, `attn2`, `attn_unknown`, `dit_block`, `unet_block`, `model_begin`, `model_end`, or `unknown`. |
+| `hook_kind` | string | Active hook identifier: `attn1`, `attn2`, `double_block_attn`, `single_block_attn`, `attn_unknown`, `dit_block`, `unet_block`, `model_begin`, `model_end`, or `unknown`. |
 | `hook_domain` | string | High-level domain: `attention`, `diffusion`, or `unknown`. |
-| `attn_kind` | string | Attention kind: `attn1`, `attn2`, `attn_unknown`, or `none` outside attention hooks. |
+| `attn_kind` | string | Attention kind: `attn1`, `attn2`, `double_block_attn`, `single_block_attn`, `attn_unknown`, or `none` outside attention hooks. |
 | `transformer_index` | float | Attention sub-block index inside a UNet block (`-1` if unavailable). |
 | `is_attn1` | float (0/1) | `1` when current hook is `attn1`, else `0`. |
 | `is_attn2` | float (0/1) | `1` when current hook is `attn2`, else `0`. |
+| `is_attn1_hook` | float (0/1) | `1` when `attn_kind=="attn1"`, else `0`. |
+| `is_attn2_hook` | float (0/1) | `1` when `attn_kind=="attn2"`, else `0`. |
 | `is_dit` | float (0/1) | `1` when current hook is DiT block hook, else `0`. |
 | `is_unet_block` | float (0/1) | `1` when current hook is UNet block hook, else `0`. |
 | `is_time_emb` | float (0/1) | `1` when current hook is timestep embedding entry (`block_name=="time_emb"`), else `0`. |
@@ -436,30 +437,33 @@ The following variables are available in `Expression`.
 | `v` | tensor | Value tensor in attention hooks; fallback placeholder otherwise. |
 | `heads` | float | Number of attention heads (attention hooks only, else `0`). |
 | `dim_head` | float | Per-head channel size (`q.shape[-1] / heads`) when available. |
-| `activations_shape` | list | Raw shape from transformer context (typically `[B, C, H, W]` in UNet attention). Empty list if unavailable. |
+| `activations_shape` | list | Raw shape from transformer context. Empty list if unavailable. |
 | `activation_b` | float | Batch dimension from `activations_shape[0]` (or `-1`). |
 | `activation_c` | float | Channel dimension from `activations_shape[1]` (or `-1`). |
 | `activation_h` | float | Height dimension from `activations_shape[2]` (or `-1`). |
 | `activation_w` | float | Width dimension from `activations_shape[3]` (or `-1`). |
-| `attn_mode` | string | Unified attention mode: `self`, `cross`, or `unknown`. Prefer this over `attn1`/`attn2` for non-UNet models. |
+| `attn_mode` | string | Legacy compatibility field (default `unknown`). |
+| `attention_relation` | string | Inferred semantic relation: `self`, `cross`, or `unknown`. |
 | `is_self_attention` | float (0/1) | `1` when the active attention is self-attention. |
 | `is_cross_attention` | float (0/1) | `1` when the active attention is cross-attention. |
 | `has_context` | float (0/1) | `1` when attention context appears to be present. |
 | `query_tokens` | float | Query sequence length. |
 | `context_tokens` | float | Context sequence length. |
 | `value_tokens` | float | Value sequence length. |
-| `activation_rank` | float | Rank of `activations_shape` (`4` for image-like, `5` for video-like tensors). |
+| `activation_rank` | float | Rank of `activations_shape`. |
 | `activation_t` | float | Temporal dimension for video-like activations (`-1` if unavailable). |
 
 #### Practical notes
 
 - On SD1.x, repeated hits on the same `layer_id` are normal in attention because one UNet block can contain multiple transformer sub-blocks.
-- Use `transformer_index` to target exactly one sub-block, for example:  
-  `(attn_kind=="attn2" * transformer_index==0) ? <logic> : inp`
+- Use `transformer_index` to target exactly one sub-block.
 - For timestep-begin hooking use `layer_x=0` and filter by `block_name=="time_emb"` (or `layer_key=="unet.time_emb.0"`).
 - For model-edge hooks filter by `hook_kind=="model_begin"` or `hook_kind=="model_end"`.
 - For model-agnostic expressions, prefer guard variables: `has_qkv`, `is_dit`, `is_unet_block`, `is_attn1`, `is_attn2`.
-
 - `attn2` is only a hook label, not guaranteed to mean real cross-attention.
 - Use `is_cross_attention` only as an inferred relation from runtime metadata.
-- Use `is_attn2_hook` when you need to know the hook path, and `attention_relation` when you need the semantic relation.
+- Use `attention_relation` for semantic relation (`self`/`cross`) and `attn_kind` for hook-path classification.
+
+- Selective guider math:
+  - `hook_target`: `all`, `dit_block`, `unet_block`, `attn1`, `attn2`,
+    `double_block_attn`, `single_block_attn`, `model_begin`, `model_end`

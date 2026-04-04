@@ -38,7 +38,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 io.Int.Input("layer_x", default=0, min=-999, max=999),
                 io.Combo.Input(
                     "hook_target",
-                    options=["all", "dit_block", "unet_block", "attn1", "attn2", "model_begin", "model_end"],
+                    options=["all", "dit_block", "unet_block", "attn1", "attn2", "double_block_attn", "single_block_attn", "model_begin", "model_end"],
                     default="all"
                 ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes", optional=True),
@@ -81,6 +81,13 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         hit_flags = {"attn1": False, "attn2": False, "dit": False, "attn_unknown": False, "unet": False}
 
         def resolve_attn_kind(transformer_options: dict, q: torch.Tensor | None = None, k: torch.Tensor | None = None, v: torch.Tensor | None = None) -> str:
+            # Detekce Flux / MM-DiT architektury (vracíme specifické názvosloví)
+            btype = transformer_options.get("block_type", None)
+            if btype == "double":
+                return "double_block_attn"
+            if btype == "single":
+                return "single_block_attn"
+
             raw = transformer_options.get(
                 "attn_name",
                 transformer_options.get(
@@ -92,7 +99,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 ),
             )
 
-            # Detekce z block_name (např. u Flux je občas block = ('self_attention', layer_id) atd.)
+            # Detekce z block_name pro non-flux modely
             blk = transformer_options.get("block", None)
             if isinstance(blk, (tuple, list)) and len(blk) > 0:
                 blk_name = str(blk[0]).lower()
@@ -106,7 +113,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 if r in ("attn1", "self", "self_attn", "self_attention", "self_attn_1"):
                     return "attn1"
                 if r in ("attn2", "cross", "cross_attn", "cross_attention", "self_attn_2"):
-                    # Některé bloky Flux.2 a podobné architektury používají dva self_attn bloky, druhý reprezentuje kontext (obdoba cross-attn)
                     return "attn2"
                 return "attn_unknown"
 
@@ -116,11 +122,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 if int(raw) == 1:
                     return "attn2"
 
-            # Fallback heuristika: self-attn má obvykle stejný zdroj pro q/k/v
+            # Fallback heuristika
             if isinstance(q, torch.Tensor) and isinstance(k, torch.Tensor) and isinstance(v, torch.Tensor):
                 if (q.data_ptr() == k.data_ptr()) and (k.data_ptr() == v.data_ptr()):
                     return "attn1"
-                # Pokud se q neshoduje s k nebo v, je to s velkou pravděpodobností cross-attention
                 if q.data_ptr() != k.data_ptr():
                     return "attn2"
                     
@@ -324,10 +329,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 attn_kind = resolve_attn_kind(transformer_options, q=q, k=k, v=v)
                 t_index = int(transformer_options.get("transformer_index", -1))
 
-                if hook_target == "attn1" and attn_kind != "attn1":
-                    return original_attn(q, k, v, heads, **kwargs)
-                if hook_target == "attn2" and attn_kind != "attn2":
-                    return original_attn(q, k, v, heads, **kwargs)
+                if hook_target != "all" and hook_target in ("attn1", "attn2", "double_block_attn", "single_block_attn"):
+                    if hook_target != attn_kind:
+                        return original_attn(q, k, v, heads, **kwargs)
 
                 blk = transformer_options.get("block", None)
                 if isinstance(blk, (tuple, list)) and len(blk) >= 2:
@@ -526,8 +530,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 register_dit(p, forced_side=side_label)
             if hook_target in ("all", "unet_block"):
                 p = register_unet_blocks(p, forced_side=side_label)
-            if hook_target in ("all", "attn1", "attn2"):
-                p = register_attn(p, forced_side=side_label)
+            if hook_target in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
+                p = register_attn(p, forced_side=side_label) 
             if hook_target in ("all", "unet_block", "model_begin", "model_end"):
                 p = register_model_edges(p, forced_side=side_label)
             return p["transformer_options"]
@@ -580,7 +584,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 register_dit(patched, forced_side=None)
             if hook_target in ("all", "unet_block"):
                 patched = register_unet_blocks(patched, forced_side=None)
-            if hook_target in ("all", "attn1", "attn2"):
+            if hook_target in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 patched = register_attn(patched, forced_side=None)
             if hook_target in ("all", "unet_block", "model_begin", "model_end"):
                 patched = register_model_edges(patched, forced_side=None)

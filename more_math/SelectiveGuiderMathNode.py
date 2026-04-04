@@ -36,6 +36,11 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     types=[io.String, MrmthParseTree],
                 ),
                 io.Int.Input("layer_x", default=0, min=-999, max=999),
+                io.Combo.Input(
+                    "hook_target",
+                    options=["all", "dit_block", "unet_block", "attn1", "attn2"],
+                    default="all"
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes", optional=True),
                 io.Boolean.Input(id="remember_stack", default=False, display_name="Remember stack across batch")
             ],
@@ -49,6 +54,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         F,
         Expression,
         layer_x=0,
+        hook_target="all",
         remember_stack=False,
         stack={},
     ):
@@ -61,14 +67,12 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         F,
         Expression,
         layer_x=0,
+        hook_target="all",
         remember_stack=False,
         stack=None,
     ):
         if V is None or not hasattr(V, "model_options"):
             raise ValueError("Vstupní guider musí mít model_options.")
-
-        hook_target = "all"
-        hook_when = "just_after_x"
 
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
         tree = parse_expr(Expression) if isinstance(Expression, str) else Expression
@@ -537,14 +541,14 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
         # po parse_expr(...)
         if hasattr(V, "original_conds"):
+            def make_shallow_cond_copy(conds_dict):
+                new_dict = {}
+                for k, v_list in conds_dict.items():
+                    # Kondice obvykle obsahují fragmentová pole (slovníky nebo listy)
+                    new_dict[k] = [item.copy() if hasattr(item, "copy") else copy.copy(item) for item in v_list]
+                return new_dict
+                
             if not hasattr(V, "_mrmth_base_original_conds"):
-                def make_shallow_cond_copy(conds_dict):
-                    new_dict = {}
-                    for k, v_list in conds_dict.items():
-                        # Kondice obvykle obsahují fragmentová pole (slovníky nebo listy)
-                        new_dict[k] = [item.copy() if hasattr(item, "copy") else copy.copy(item) for item in v_list]
-                    return new_dict
-
                 V._mrmth_base_original_conds = make_shallow_cond_copy(V.original_conds)
             else:
                 V.original_conds = make_shallow_cond_copy(V._mrmth_base_original_conds)

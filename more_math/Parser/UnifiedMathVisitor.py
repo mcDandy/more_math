@@ -3444,9 +3444,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             return float(val)
         return as_float(ctx,val)
 
-    def visitInt_to_rgb(self,ctx):
-        val = (yield ctx.expr())
-        return i2rgb(val)
 
     def i2rgb(self,val):
         if self._is_list(val):
@@ -3459,6 +3456,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         b = val & 0xFF
         if self._is_tensor(val): return torch.stack([r.to(torch.float)/256, g.to(torch.float)/256, b.to(torch.float)/256], dim=-1).contiguous()
         return [r/256, g/256, b/256]
+
+    def visitInt_to_rgb(self,ctx):
+        val = (yield ctx.expr())
+        return self.i2rgb(val)
 
     def visitRgb_to_int(self,ctx):
         if len(ctx.expr()) == 1:
@@ -3489,38 +3490,38 @@ class UnifiedMathVisitor(MathExprVisitor):
         start_val = yield ctx.expr(0)
         end_val = yield ctx.expr(1)
         steps_val = yield ctx.expr(2)
-        
+
         start = float(start_val.item()) if self._is_tensor(start_val) else float(start_val)
         end = float(end_val.item()) if self._is_tensor(end_val) else float(end_val)
         steps = int(steps_val.item()) if self._is_tensor(steps_val) else int(steps_val)
-        
+
         return torch.linspace(start, end, steps, device=self.device)
-    
+
     def visitLogspaceFunc(self, ctx):
         """linspace(start, end, steps) - linearly spaced values"""
         start_val = yield ctx.expr(0)
         end_val = yield ctx.expr(1)
         steps_val = yield ctx.expr(2)
         base_val = yield ctx.expr(3)
-        
+
         start = float(start_val.item()) if self._is_tensor(start_val) else float(start_val)
         end = float(end_val.item()) if self._is_tensor(end_val) else float(end_val)
         base = float(base_val.item()) if self._is_tensor(base_val) else float(base_val)
         steps = int(steps_val.item()) if self._is_tensor(steps_val) else int(steps_val)
-        
+
         return torch.logspace(start, end, steps, base=base, device=self.device)
-    
+
     def visitRollFunc(self, ctx):
         """roll(x, shift, [dim]) - circular shift of elements"""
         x = self._promote_to_tensor((yield ctx.expr(0)))
         shift_val = yield ctx.expr(1)
         shift = int(shift_val.item()) if self._is_tensor(shift_val) else int(shift_val)
-        
+
         dim = 0
         if len(ctx.expr()) > 2:
             dim_val = yield ctx.expr(2)
             dim = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)
-        
+
         return torch.roll(x, shifts=shift, dims=dim)
 
     def visitErfFunc(self, ctx):

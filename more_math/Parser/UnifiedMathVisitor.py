@@ -3503,7 +3503,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(val):
             t = []
             for v in val:
-                t.append(i2rgb(v))
+                t.append(self.i2rgb(v))
             return t
         r = (val >> 16) & 0xFF
         g = (val >> 8) & 0xFF

@@ -7,7 +7,7 @@ funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;
 
 varDef:
-	VARIABLE (LBRACKET expr (COMMA expr)* RBRACKET)* EQUEALS expr SEMICOLON;
+	VARIABLE (LBRACKET expr (COMMA expr)* RBRACKET)* (EQUEALS | PLUS_EQ | MINUS_EQ | MULT_EQ | DIV_EQ | MOD_EQ) expr SEMICOLON;
 
 paramList: VARIABLE (COMMA VARIABLE)*;
 
@@ -464,6 +464,11 @@ LE: '<=';
 LT: '<';
 EQ: '==';
 EQUEALS: '=';
+PLUS_EQ: '+=';
+MINUS_EQ: '-=';
+MULT_EQ: '*=';
+DIV_EQ: '/=';
+MOD_EQ: '%=';
 NE: '!=';
 PIPE: '|';
 LPAREN: '(';

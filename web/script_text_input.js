@@ -20,7 +20,7 @@ const FUNCTIONS = new Set([
     "bnot", "bitwise_not", "bitcount", "popcount", "popcnt", "shape", "band", "bitwise_and", "bxor", "bitwise_xor",
     "bor", "bitwise_or", "tensor", "stack_push", "stack_pop", "stack_clear", "stack_has", "stack_get", "timestamp","now",
     "sort", "argsort", "argmin", "argmax", "softmax", "softmin", "unique", "flip", "cov", "corr", "correlation", "entropy",
-    "crop", "cat", "concatenate", "concat", "float","int", "linspace", "logspace", "roll",
+    "crop", "cat", "concatenate", "concat", "float","int", "linspace", "logspace", "roll","select",
     "noise", "randn", "random_normal", "rand", "randu", "random_uniform", "randc", "random_cauchy", "rande",
     "random_exponential", "randln", "random_log_normal", "randb", "random_bernoulli", "randp", "random_poisson", "randg",
     "random_gamma", "randbeta", "random_beta", "randl", "random_laplace", "randgumbel", "random_gumbel", "randw",
@@ -60,7 +60,7 @@ function escapeHtml(value) {
 
 function tokenize(text) {
     const tokens = [];
-    const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
+    const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|\+=|-=|\*=|\/=|%=|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
     let match;
     const bracketStack = [];
     const depthByType = { '(': 0, '[': 0, '{': 0 };
@@ -170,8 +170,8 @@ function ensureStyles() {
             display: flex;
             align-items: stretch;
             width: 100%;
-            height: 100%; 
-            min-height: 100%; 
+            height: 100%;
+            min-height: 100%;
             gap: 0;
             overflow: hidden;
         }
@@ -297,7 +297,7 @@ function attachLineNumbers(widget) {
     editorContainer.appendChild(syntaxLayer);
     editorContainer.appendChild(inputEl);
 
-    wrapper.style.height = "100%"; 
+    wrapper.style.height = "100%";
     parent.style.height = "100%";
 
     inputEl.classList.add("mrmth-line-input");

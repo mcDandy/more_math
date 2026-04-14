@@ -1791,9 +1791,32 @@ class UnifiedMathVisitor(MathExprVisitor):
         var_name = ctx.VARIABLE().getText()
         expr_list = ctx.expr()
 
+        assign_op = "="
+        if getattr(ctx, "PLUS_EQ", lambda: None)() is not None: assign_op = "+="
+        elif getattr(ctx, "MINUS_EQ", lambda: None)() is not None: assign_op = "-="
+        elif getattr(ctx, "MULT_EQ", lambda: None)() is not None: assign_op = "*="
+        elif getattr(ctx, "DIV_EQ", lambda: None)() is not None: assign_op = "/="
+        elif getattr(ctx, "MOD_EQ", lambda: None)() is not None: assign_op = "%="
+
         if not ctx.LBRACKET():
             # Standard assignment: x = value
             val = yield expr_list[0]
+
+            if assign_op != "=":
+                if var_name not in self.variables:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Variable '{var_name}' not defined for compound assignment.")
+                existing_val = self.variables[var_name]
+                if assign_op == "+=":
+                    val = self._bin_op(existing_val, val, torch.add, lambda a, b: a + b, ctx)
+                elif assign_op == "-=":
+                    val = self._bin_op(existing_val, val, torch.sub, lambda a, b: a - b, ctx)
+                elif assign_op == "*=":
+                    val = self._bin_op(existing_val, val, torch.mul, lambda a, b: a * b, ctx)
+                elif assign_op == "/=":
+                    val = self._bin_op(existing_val, val, torch.div, lambda a, b: a / b, ctx)
+                elif assign_op == "%=":
+                    val = self._bin_op(existing_val, val, torch.remainder, lambda a, b: a % b, ctx)
+
             self.variables[var_name] = val
             return val
 
@@ -1830,13 +1853,27 @@ class UnifiedMathVisitor(MathExprVisitor):
                 # Target slice - used to compute expected shape
                 target_slice = target[idx_tuple]
 
+                if assign_op != "=":
+                    if assign_op == "+=":
+                        val_t = self._bin_op(target_slice, val_t, torch.add, lambda a, b: a + b, ctx)
+                    elif assign_op == "-=":
+                        val_t = self._bin_op(target_slice, val_t, torch.sub, lambda a, b: a - b, ctx)
+                    elif assign_op == "*=":
+                        val_t = self._bin_op(target_slice, val_t, torch.mul, lambda a, b: a * b, ctx)
+                    elif assign_op == "/=":
+                        val_t = self._bin_op(target_slice, val_t, torch.div, lambda a, b: a / b, ctx)
+                    elif assign_op == "%=":
+                        val_t = self._bin_op(target_slice, val_t, torch.remainder, lambda a, b: a % b, ctx)
+
+                    val_t = self._promote_to_tensor(val_t) # Ensure it's still a tensor
+
                 # Squeeze leading ones to match target slice rank if it's smaller
                 # but target_slice.ndim might be 0 if it's a scalar location.
                 while val_t.ndim > target_slice.ndim and val_t.shape[0] == 1:
                     val_t = val_t.squeeze(0)
 
                 target[idx_tuple] = val_t
-                return assigned_val
+                return assigned_val if assign_op == "=" else val_t
             except Exception as e:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment to '{var_name}' failed: {str(e)}")
         elif self._is_list(target):
@@ -1845,8 +1882,25 @@ class UnifiedMathVisitor(MathExprVisitor):
             for idx in indices[:-1]:
                 curr = curr[int(idx + len(curr) if idx < 0 else idx)]
             last_idx = int(indices[-1])
-            curr[last_idx + len(curr) if last_idx < 0 else last_idx] = assigned_val
-            return assigned_val
+            real_idx = last_idx + len(curr) if last_idx < 0 else last_idx
+
+            if assign_op != "=":
+                existing_val = curr[real_idx]
+                if assign_op == "+=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.add, lambda a, b: a + b, ctx)
+                elif assign_op == "-=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.sub, lambda a, b: a - b, ctx)
+                elif assign_op == "*=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.mul, lambda a, b: a * b, ctx)
+                elif assign_op == "/=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.div, lambda a, b: a / b, ctx)
+                elif assign_op == "%=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.remainder, lambda a, b: a % b, ctx)
+                curr[real_idx] = new_val
+                return new_val
+            else:
+                curr[real_idx] = assigned_val
+                return assigned_val
         else:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment not supported for {type(target)}")
 
@@ -3405,7 +3459,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             return res
 
         tensors = [self._promote_to_tensor(x) for x in items]
-        d = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)        
+        d = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)
         return torch.cat(tensors, dim=d)
 
     def visitIntFunc(self, ctx):

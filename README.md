@@ -23,7 +23,7 @@ You can also get the node from comfy manager under the name of More math.
 - Nodes for FLOAT, STRING, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS and GUIDER
 - Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
 - Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work. **Be careful with recursion. There is no stack limit. Got to 700 000 iterations before I got bored.**
-- Custom variables `varname=expression;` They can be used in any later assigment or final expression.
+- Custom variables `varname=expression;` They can be used in any later assigment or final expression. Compound assignments (`+=`, `-=`, `*=`, `/=`, `%=`) are also supported.
 - Support for **indexed assignment**: `a[i, j, ...] = expression;`. Supports multidimensional tensors and nested lists.
   - **Scalar Filling**: If the assigned value has only 1 element (scalar, 1-element list/tensor), it fills the entire selected slice.
   - **Rank Matching**: Automatically squeezes leading ones from the value to match the rank of the target slice (e.g., assigning a 4D tensor with `dim0=1` to a 3D slice).
@@ -50,6 +50,7 @@ You can also get the node from comfy manager under the name of More math.
 ## Operators
 
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
+- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
 - Bitwise Shifts: `<<`, `>>` (left shift, right shift)

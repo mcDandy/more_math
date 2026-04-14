@@ -228,7 +228,7 @@ func3:
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN	# CropFunc
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
-	| OVERLAY LPAREN expr COMMA expr COMMA expr RPAREN	# OverlayFunc
+	| OVERLAY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# OverlayFunc
 	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
 	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # RgbToHsvFunc

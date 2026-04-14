@@ -1,4 +1,5 @@
 import time
+from token import OP
 import torch
 import math
 import inspect
@@ -3010,7 +3011,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         base = yield ctx.expr(0)
         overlay = yield ctx.expr(1)
         offset_raw = yield ctx.expr(2)
+        if ctx.getChildCount() > 3:
+            opacity = yield ctx.expr(3)
+        else:
+            opacity = 1.0
 
+        if opacity == 0.0: return base;
         if isinstance(base, str):
             if not isinstance(overlay, str):
                 overlay = str(overlay)
@@ -3025,7 +3031,18 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             end = min(len(base), offset + len(overlay))
             overlay_len = end - offset
-            return base[:offset] + overlay[:overlay_len] + base[end:]
+
+            w = float(opacity)
+            if w >= 1.0:
+                return base[:offset] + overlay[:overlay_len] + base[end:]
+            else:
+                mixed = list(base)
+                for i in range(overlay_len):
+                    a = ord(base[offset + i])
+                    c = ord(overlay[i])
+                    avg = round(a * (1 - w) + c * w)
+                    mixed[offset + i] = chr(avg)
+                return ''.join(mixed)
 
         if self._is_list(base):
             if not self._is_list(overlay):
@@ -3042,7 +3059,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             result = list(base)
             end = min(len(base), offset + len(overlay))
             for i, val in enumerate(overlay[:end - offset]):
-                result[offset + i] = val
+                if opacity == 1.0: result[offset + i] = val
+                else: result[offset + i] = result[offset + i]*(1.0-opacity) + val*opacity
 
             return result
 
@@ -3094,6 +3112,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         # Create result by cloning base and pasting overlay
         result = base.clone()
         result[tuple(paste_slices)] = cropped_overlay
+        if self._is_tensor(opacity) or isinstance(opacity, float):
+            if float(opacity) < 1.0:
+                result = cropped_overlay * float(opacity) + base * (1.0 - float(opacity))
 
         return result
 

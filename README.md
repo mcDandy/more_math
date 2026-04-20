@@ -68,248 +68,250 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Functions
 
-### Basic Math
+> Functions are grouped by purpose.  
+> Each function has a short, practical description.
 
-- `abs(x)` or `|x|`: Absolute value. For **float** `abs(x)` and `|x|` are the same. For **tensor** `abs(x)` calculates element-wise absolute value and for `|x|` it calculates L2 norm (euclidean norm).
+### 1) Core Math
+
+#### 1.1 Elementary & Numeric
+- `abs(x)` or `|x|`: Absolute value (`|x|` is norm-style usage for tensors - (vector magnitude)).
 - `sqrt(x)`: Square root.
-- `ln(x)`: Natural logarithm (base e).
-- `log(x)`: Logarithm base 10.
-- `exp(x)`: Exponential function (e^x).
-- `pow(x, y)`: Power function (x^y).
-- `floor(x)`: Rounds down to nearest integer.
-- `ceil(x)`: Rounds up to nearest integer.
-- `round(x)`: Rounds to nearest integer.
-- `fract(x)`: Returns the fractional part of x (x - floor(x)).
-- `sign(x)`: Returns -1 for negative, 1 for positive, 0 for zero.
+- `ln(x)`: Natural logarithm.
+- `log(x)`: Base-10 logarithm.
+- `exp(x)`: Exponential `e^x`.
+- `pow(x, y)`: Power `x^y`.
+- `floor(x)`: Round down.
+- `ceil(x)`: Round up.
+- `round(x)`: Round to nearest integer.
+- `fract(x)`: Fractional part (`x - floor(x)`).
+- `sign(x)`: Sign (`-1`, `0`, `1`).
 - `gamma(x)`: Gamma function.
-- `dist(x1, y1, x2, y2)` or `distance`: Euclidean distance between points (x1, y1) and (x2, y2).
-- `clamp(x, min, max)`: Constrains x to be between min and max.
-- `step(x, edge)`: Returns 1.0 if x ≥ edge, else 0.0.
+- `clamp(x, min, max)`: Clamp to interval.
+- `step(x, edge)`: Step function (`x >= edge` -> `1`, else `0`).
+- `dist(x1, y1, x2, y2)` / `distance`: Euclidean distance between 2D points.
 
-### Trigonometric
+#### 1.2 Trigonometric
+- `sin(x)`: Sine (radians).
+- `cos(x)`: Cosine (radians).
+- `tan(x)`: Tangent (radians).
+- `asin(x)`: Arc-sine.
+- `acos(x)`: Arc-cosine.
+- `atan(x)`: Arc-tangent.
+- `atan2(y, x)`: Quadrant-aware arc-tangent.
 
-- `sin(x)`, `cos(x)`, `tan(x)`: Trigonometric functions.
-- `asin(x)`, `acos(x)`, `atan(x)`: Inverse trigonometric functions.
-- `atan2(y, x)`: Arctangent of y/x, handling quadrants.
+#### 1.3 Hyperbolic
+- `sinh(x)`: Hyperbolic sine.
+- `cosh(x)`: Hyperbolic cosine.
+- `tanh(x)`: Hyperbolic tangent.
+- `asinh(x)`: Inverse hyperbolic sine.
+- `acosh(x)`: Inverse hyperbolic cosine.
+- `atanh(x)`: Inverse hyperbolic tangent.
 
-### Hyperbolic
-
-- `sinh(x)`, `cosh(x)`, `tanh(x)`: Hyperbolic functions.
-- `asinh(x)`, `acosh(x)`, `atanh(x)`: Inverse hyperbolic functions.
-
-### Machine Learning / Activation
-
-- `relu(x)`: Rectified Linear Unit (max(0, x)).
+#### 1.4 Activation / ML
+- `relu(x)`: `max(0, x)`.
 - `gelu(x)`: Gaussian Error Linear Unit.
-- `softplus(x)`: Softplus function (log(1 + e^x)).
-- `sigm(x)`: Sigmoid function (1 / (1 + e^-x)).
-- `softmax(x, dim)`: Softmax normalization along last dimension (converts to probabilities).
-- `softmin(x, dim)`: Softmin normalization along specified dimension (inverse softmax).
+- `softplus(x)`: Smooth ReLU-like function.
+- `sigm(x)`: Sigmoid.
+- `softmax(x, [dim])`: Softmax normalization.
+- `softmin(x, [dim])`: Softmin normalization.
 - `erf(x)`: Error function.
 - `erfinv(x)`: Inverse error function.
 
-### Interpolation
+#### 1.5 Interpolation & Remap
+- `lerp(a, b, t)`: Linear interpolation.
+- `smoothstep(x, e0, e1)`: 3rd-order smooth transition.
+- `smootherstep(x, e0, e1)`: 5th-order smoother transition.
+- `cubic_ease(a, b, t)` / `cubic`: Cubic easing interpolation.
+- `sine_ease(a, b, t)` / `sine`: Sine easing interpolation.
+- `elastic_ease(a, b, t)` / `elastic`: Elastic easing interpolation.
+- `remap(v, i_min, i_max, o_min, o_max)`: Map value from one interval to another.
 
-- `smoothstep(x, edge0, edge1)`: Hermite interpolation between edge0 and edge1.
-- `smootherstep(x, edge0, edge1)`: Quintic interpolation (Perlin's improved smootherstep).
-- `cubic_ease(a, b, t)` or `cubic`: In-Out Cubic interpolation between `a` and `b`.
-- `sine_ease(a, b, t)` or `sine`: In-Out Sine interpolation between `a` and `b`.
-- `elastic_ease(a, b, t)` or `elastic`: In-Out Elastic interpolation between `a` and `b`.
-- `lerp(a, b, t)`: Linear interpolation: `a + (b - a) * w`.
+---
 
-### Aggregates & Tensor Operations
+### 2) Tensor, Stats & Data Ops
 
-- `tmin(x, y)`: Element-wise minimum of x and y.
-- `tmax(x, y)`: Element-wise maximum of x and y.
-- `smin(x, ...)`: Scalar minimum. Returns the single smallest value across all input tensors/values.
-- `smax(x, ...)`: Scalar maximum. Returns the single largest value across all input tensors/values.
-- `sum(x)`: Sum of all elements. Returns scalar float for tensors or Python's sum() result for lists.
-	- `mean(x)`: Mean value of all elements. Returns scalar float for tensors or list value for lists.
-- `std(x)`: Standard deviation of all elements. Returns scalar float for tensors or list value for lists.
-- `var(x)`: Variance of all elements. Returns scalar float for tensors or list value for lists.
-- `median(x)`: Median value of all elements. Returns scalar float for tensors or list value for lists.
-- `mode(x)`: Mode (most common value) of all elements. Returns scalar float for tensors or list value for lists.
-- `quartile(x, k)`: Returns the k-th quartile (k=0 for min, 1 for 25th, 2 for 50th, 3 for 75th, 4 for max). Returns scalar float for tensors or list value for lists.
-- `percentile(x, p)`: Returns the p-th percentile (p is 0-100). Returns scalar float for tensors or list value for lists.
-- `quantile(x, q)`: Returns the q-th quantile (q is 0-1). Returns scalar float for tensors or list value for lists.
-- `dot(a, b)`: Dot product of two tensors (flattens inputs to 1D) or lists.
-- `moment(x, a, k)`: Returns the k-th moment of x centered around a. Returns scalar float for tensors or list value for lists.
-- `topk(x, k)`: Returns a tensor with the **top K largest** values preserved at their original positions (others zeroed). For lists, returns the top K largest items sorted descending. (uses magnitude for complex numbers).
-- `botk(x, k)`: Returns a tensor with the **bottom K smallest** values preserved at their original positions (others zeroed). For lists, returns the bottom K smallest items sorted ascending. (uses magnitude for complex numbers)
-- `topk_ind(x, k)` or `topk_indices: Returns the **indices** of the top K largest values in the flattened tensor.
-- `botk_ind(x, k)` or `botk_indices`: Returns the **indices** of the bottom K smallest values in the flattened tensor.
-- `sort(x)`: Sorts elements in ascending order along the last dimension.
-- `argsort(x)` or `argsort(x, descending)`: Returns the **indices** that would sort the tensor/list. Optional second parameter for descending order.
-- `argmin(x)`: Returns the **index** of the minimum value in the flattened tensor/list.
-- `argmax(x)`: Returns the **index** of the maximum value in the flattened tensor/list.
-- `unique(x)`: Returns **unique elements** from tensor/list in sorted order. Returns tensor for tensor input, list for list input.
-- `tnorm(x)`: Tensor normalisation. Normalises x (L2 norm along last dimension).
-- `snorm(x)`: The same as |x| for tensors.
-- `swap(tensor, dim, index1, index2)`: Swaps two slices of a tensor along a specified dimension.
-- `cossim(a, b)`: Computes cosine similarity between a and b along last dimension.
-- `flip(x, dims)`: Flips tensor along specified dimensions. `dims` can be scalar or list.
-- `cov(x, y)`: Compute covariance between x and y.
-- `corr(x, y)` or `correlation`: Compute Pearson correlation coefficient between x and y. Returns a value in range [-1, 1] indicating the strength and direction of linear relationship. Returns scalar float for tensors or list value for lists.
-- `entropy(x)`: Compute Shannon entropy of a tensor (in nats). Measures the amount of uncertainty or information content in the data. Returns scalar float for tensors or list value for lists.
-- `append(a, b)`: Appends `b` to `a`. Returns tensor if any input is tensor (concatenated along dim 0), otherwise returns concatenated list.
-- `any(x)`: Returns 1.0 if any element in `x` is non-zero (True), else 0.0.
-- `all(x)`: Returns 1.0 if all elements in `x` are non-zero (True), else 0.0.
-- `cumsum(x)`: Returns the cumulative sum of elements along the batch dimension (dim 0).
-- `cumprod(x)`: Returns the cumulative product of elements along the batch dimension (dim 0).
-- `tensor(shape,[value,[type]])`: Createss a tensor of given shape filled with value. Value can be omittend and defaults to zero. Type expacts a tensor from which it copies dtype, if omittend it defaults to float32.
-- `flatten(value)`: Flattens a tensor to 1D. If input is list, it flattens nested lists into a single list.
-- `shape(value)`: Returns the shape of a tensor **as a list**. If input is a list, returns its length as a single-element list. For scalars returns empty list.
-- `overlay(base, overlay, offset)`: Replaces a region of `base` with `overlay` starting at `offset`. Works with strings (substring replacement), lists (element replacement), and tensors (region replacement). Areas outside the base are ignored.
-- `pad(tensor, padding)`: Pads a tensor with specified padding (pair for each dimension). For example, `[1,2,0,0]` adds 1 element before and 2 elements after in the first dimension, and no padding in the second dimension.
-- `concatenate(tensor1, tensor2, dim)` or `concat` or `cat`: Concatenates two tensors along specified dimension. It things of everything as tensor.
-- `roll(tensor, shifts, dims)`: Rolls tensor along specified dimensions by given shifts. Elements that roll beyond the last position are re-introduced at the first position.
-- `where(cond, a, b)`: Element-wise selection. Returns values from `a` where `cond` is non-zero/true, otherwise from `b`. Supports scalars, lists, and tensors (with tensor broadcasting).
-- `histogram(x, bins, min, max)` or `hist`: Computes histogram counts of tensor values in range `[min, max]` using `bins` bins. Returns a 1D tensor of counts.
+#### 2.1 Element-wise / Tensor Math
+- `tmin(x, y)`: Element-wise minimum.
+- `tmax(x, y)`: Element-wise maximum.
+- `tnorm(x)`: L2 normalization along the last dimension.
+- `snorm(x)`: Scalar/tensor norm magnitude.
+- `cossim(a, b)` / `cosine_similarity`: Cosine similarity.
+- `cov(x, y)`: Covariance.
+- `corr(x, y)` / `correlation`: Pearson correlation.
+- `entropy(x)`: Shannon entropy.
+- `flip(x, dims)`: Flip along selected dimensions.
+- `swap(tensor, dim, i1, i2)`: Swap two indices/slices along dimension `dim`.
 
-### Advanced Tensor Operations
+#### 2.2 Reductions & Statistical Aggregates
+- `sum(x)`: Sum.
+- `mean(x)`: Mean.
+- `std(x)`: Standard deviation.
+- `var(x)`: Variance.
+- `median(x)`: Median.
+- `mode(x)`: Mode.
+- `quartile(x, k)`: Quartile (`k` in 0..4).
+- `percentile(x, p)`: Percentile (`p` in 0..100).
+- `quantile(x, q)`: Quantile (`q` in 0..1).
+- `moment(x, a, k)`: k-th moment around center `a`.
+- `any(x)`: True if any element is non-zero.
+- `all(x)`: True if all elements are non-zero.
+- `count(x)` / `length(x)` / `cnt(x)`: Number of elements / length.
+- `cumsum(x)`: Cumulative sum.
+- `cumprod(x)`: Cumulative product.
+- `smin(x, ...)`: Scalar minimum across inputs.
+- `smax(x, ...)`: Scalar maximum across inputs.
 
-- `map(tensor, c1, ...)`: Remaps `tensor` using source coordinates.
-  - Up to 3 coordinate mapping functions can be provided which map to the last (up to 3) dimensions of the tensor. Rest uses identity mapping.
-- `get_value(tensor, position)`: Retrieves a value from a tensor at the specified N-dimensional position (provided as a list or tensor). Uses the formula `pos0*strides[0] + pos1*strides[1] + ...` to find the linear index.
-- `crop(tensor, position, size)`: Extracts a sub-tensor of specified `size` starting at `position` (both provided as lists/tensors). Areas outside the input tensor are filled with zeros.
-- `permute(tensor, dims)` or `perm`: Rearranges the dimensions of the tensor. (e.g., `perm(a, [2, 3, 0, 1])`)
-- `reshape(tensor, shape)` or `rshp`: Reshapes the tensor to a new shape. (e.g., `rshp(a, [S0*S1, S2, S3])`)
-- `batch_shuffle(tensor, indices)` or `shuffle` or `select`: Reorders or gathers slices along the 0th dimension of a tensor based on a list of indices. (e.g., `shuffle(V0, [0, 0, 1])` repeats the first frame twice and then the second).
-- `matmul(a, b)`: Matrix multiplication. For 1D vectors, performs dot product. For 2D+ tensors, performs standard matrix multiplication following NumPy rules.
-- `cross(a, b)`: Computes the cross product (vector product) of two 3D vectors. Both inputs must have last dimension = 3. Returns a vector perpendicular to both inputs.
+#### 2.3 Sorting / Selection / Indices
+- `sort(x)`: Sort values.
+- `argsort(x, [descending])`: Sorting indices.
+- `argmin(x)`: Index of minimum.
+- `argmax(x)`: Index of maximum.
+- `topk(x, k)`: Top-K values.
+- `botk(x, k)`: Bottom-K values.
+- `topk_ind(x, k)` / `topk_indices`: Top-K indices.
+- `botk_ind(x, k)` / `botk_indices`: Bottom-K indices.
+- `unique(x)`: Unique values.
+- `where(cond, a, b)`: Conditional selection (`a` where true, else `b`).
+- `histogram(x, bins, min, max)` / `hist`: Histogram counts in range.
 
-### Image
+#### 2.4 Shape / Structure / Layout
+- `shape(x)`: Return shape.
+- `flatten(x)`: Flatten tensor/list.
+- `reshape(tensor, shape)` / `rshp`: Reshape.
+- `permute(tensor, dims)` / `perm`: Reorder dimensions.
+- `crop(tensor, position, size)`: Extract region.
+- `pad(tensor, padding)`: Pad tensor.
+- `overlay(base, overlay, offset, [opacity])`: Overlay one value/tensor onto another.
+- `append(a, b)`: Append items/slices.
+- `batch_shuffle(tensor, indices)` / `shuffle` / `select`: Reorder batch dimension.
+- `concatenate(..., dim)` / `concat` / `cat`: Concatenate tensors/lists.
+- `roll(tensor, shifts, [dims])`: Circular shift.
+- `tensor(shape, [value, [type]])`: Create filled tensor.
 
-- `blur(x, sigma)` or `gaussian`: Applies a Gaussian blur with given `sigma` along last two dimensions (auto_convert is 0 or omitted) or attempts to use correct spatial dimensions if auto_convert is 1.
-- `edge(x,[kernel_size]`: Applies a Sobel edge detection filter along the last two dimension or spatial dimensions (Height and Width) - can be selected by optional value (0 or missing = use last 2 dimensions).
-- `ezconvolution(tensor, kw, [kh], [kd], k_expr)` or `ezconv`: Applies a convolution to `tensor`. Automatically permutes tensor to try to make it work with various inputs without the need to permute manually.
-  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
-- `convolution(tensor, kw, [kh], [kd], k_expr)` or `conv`: Applies a convolution to `tensor`. Does not perform automatic permutations. Expects layout `(Batch, Channel, Spatial...)`.
-  - `k_expr` can be a math expression (using `kX`, `kY`, `kZ`) or a list literal.
-  - 
-## Mask
+#### 2.5 Linear Algebra
+- `dot(a, b)`: Dot product.
+- `matmul(a, b)`: Matrix multiplication.
+- `cross(a, b)`: Cross product.
+- `pinv(x)`: Permutation inverse (for permutation-like inputs).
 
-- `dilate(x, [kernel_size])`: Dilation operation. Expands bright regions. Default kernel_size is 3.
-- `erode(x, [kernel_size])`: Erosion operation. Shrinks bright regions. Default kernel_size is 3.
-- `morph_open(x, [kernel_size])`: Opening operation (erosion followed by dilation). Removes small bright spots.
-- `morph_close(x, [kernel_size])`: Closing operation (dilation followed by erosion). Fills small dark holes.
+#### 2.6 Mapping / Sampling
+- `map(tensor, c1, ...)`: Coordinate remapping.
+- `get_value(tensor, position)`: Read value at N-D position.
 
+---
 
-### Optical Flow
+### 3) Imaging & Spatial Processing
 
-- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: Calculates optical flow from `img1` to `img2` using RAFT.
-  - `img1`, `img2`: Images or video frames [B, H, W, C].
-  - `tiling_size`: (Optional) Size of tiles for high-res images. Default is `0` (auto-tile if > 2MPx). Supports fractions (e.g., `0.5`).
-  - `iterations`: (Optional) Number of flow updates (default: 12).
-  - `multi_scale`: (Optional) Whether to use a global pass for large movements (default: false (0)).
-  - **Returns**: Flow vectors [B, H, W, 2].
-- `motion_mask(flow)`: Generates an occlusion/motion mask from optical flow vectors.
-  - `flow`: Flow vectors [B, H, W, 2].
-  - **Returns**: Mask [B, H, W] in range [0, 1].
-- `flow_to_image(flow)`: Converts flow vectors to an RGB image for visualization.
-  - `flow`: Flow vectors [B, H, W, 2].
-  - **Returns**: RGB image [B, H, W, 3].
-- `flow_apply(image, flow)`: Warps an image using optical flow vectors.
-  - `image`: Image [B, H, W, C].
-  - `flow`: Flow vectors [B, H, W, 2] from `rife()`.
-  - **Returns**: Warped image [B, H, W, C].
-- `flow_mag(flow)` or `flow_magnitude(flow)`: Returns optical flow vector magnitude `sqrt(dx^2 + dy^2)`.
-- `flow_ang(flow)` or `flow_angle(flow)`: Returns optical flow direction in **radians** using `atan2(dy, dx)`.
+#### 3.1 Filters & Convolution
+- `blur(x, sigma)` / `gaussian`: Gaussian blur.
+- `edge(x, [kernel_size])`: Sobel-style edge detection.
+- `ezconvolution(tensor, ...)` / `ezconv`: Convolution with auto layout handling.
+- `convolution(tensor, ...)` / `conv`: Direct convolution.
 
-### FFT (Tensor Only)
+#### 3.2 Mask Morphology
+- `dilate(x, [kernel_size])`: Dilation.
+- `erode(x, [kernel_size])`: Erosion.
+- `morph_open(x, [kernel_size])`: Opening (erosion then dilation).
+- `morph_close(x, [kernel_size])`: Closing (dilation then erosion).
 
-- `fft(x)`: Fast Fourier Transform (Time to Frequency).
-- `ifft(x)` or `ifft(x, shape)`: Inverse Fast Fourier Transform (Frequency to Time), optional shape argument.
-- `angle(x)`: Returns the element-wise angle (phase) of the complex tensor.
+---
 
-### Utility
+### 4) Optical Flow
+- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: Compute optical flow.
+- `motion_mask(flow)`: Motion/occlusion mask from flow.
+- `flow_to_image(flow)`: Visualize flow as RGB.
+- `flow_apply(image, flow)`: Warp image by flow.
+- `flow_mag(flow)` / `flow_magnitude`: Flow vector magnitude.
+- `flow_ang(flow)` / `flow_angle`: Flow vector angle in radians (`atan2(dy, dx)`).
 
-- `print(x)`: Prints the value of x to the console and returns x.
-- `print_shape(x)` or `pshp`: Prints the shape of x to the console and returns x.
-- `pinv(x)`: Computes the permutation inverse of list. If `permute(i,x) = j`, then `permute(j,pinv(x)) = i`.
-- `range(start, end, step)`: Generates a list of values from start (inclusive) to end (exclusive) with given step.
-- `linspace(start, end, count)`: Generates a list of `count` evenly spaced values from start to end (inclusive).
-- `logspace(start, end, count,base)`: Generates a list of `count` values logarithmically spaced between base^start and base^end.
-- `nan_to_num(x, nan_value, posinf_value, neginf_value)` or `nvl`: Replaces NaN and infinite values in tensor with specified values.
-- `remap(v, i_min, i_max, o_min, o_max)`: Remaps value `v` from input range `[i_min, i_max]` to output range `[o_min, o_max]`.
-- `timestamp()` or `now`: Returns current UNIX timestamp (precision to microseconds, can be different on other systems)
-- `count(x)` or `length(x)` or `cnt(x)`: Returns the length of a list, string, or the count of values in tensor.
-- `int(x)`: Converts tensor/list/scalar to int32 type. If input is a tensor, returns int32 tensor; if a list, recursively converts elements; if a scalar, returns integer.
-- `float(x)`: Converts tensor/list/scalar to float type. If input is a tensor, returns float tensor; if a list, recursively converts elements; if a scalar, returns float.
+---
 
-### Random Distributions
+### 5) Frequency Domain (FFT)
+- `fft(x)`: Fast Fourier Transform.
+- `ifft(x, [shape])`: Inverse FFT.
+- `angle(x)`: Phase angle of complex values.
 
-Generates random noise with default shape of aither first input or maximum of input sizes, depending on node setting.
+---
 
-- `random_normal(seed,[shape])` or `randn` or `noise`: generates a random tensor with normal distribution (var=1, mean=0).
-- `random_uniform(seed,[shape])` or `rand`: generates a random tensor with uniform distribution [0, 1).
-- `random_exponential(seed, lambda,[shape])` or `rande`: generates a random tensor with exponential distribution.
-- `random_cauchy(seed, median, sigma,[shape])` or `randc`: generates a random tensor with Cauchy distribution.
-- `random_log_normal(seed, mean, std,[shape])` or `randln`: generates a random tensor with log-normal distribution.
-- `random_bernoulli(seed, p,[shape])` or `randb`: generates a random tensor with Bernoulli distribution. Parameter `p` is the probability of getting 1, can be aither float or tensor. If p is tensor, shape is ignored.
-- `random_poisson(seed, lambda,[shape])` or `randp`: generates a random tensor with Poisson distribution. Lambda can be either float or tensor.
-- `random_gamma(seed, shape, scale,[shape])` or `randg`: generates a random tensor with Gamma distribution. Shape parameter (α) controls the shape, scale parameter (θ) controls the scale.
-- `random_beta(seed, alpha, beta,[shape])` or `randbeta`: generates a random tensor with Beta distribution in range [0, 1]. Alpha and beta are shape parameters.
-- `random_laplace(seed, loc, scale,[shape])` or `randl`: generates a random tensor with Laplace (double exponential) distribution. Useful for L1 regularization and robust statistics.
-- `random_gumbel(seed, loc, scale,[shape])` or `randgumbel`: generates a random tensor with Gumbel distribution. Used in Gumbel-softmax trick for neural networks.
-- `random_weibull(seed, scale, concentration,[shape])` or `randw`: generates a random tensor with Weibull distribution. Used in reliability analysis and survival modeling.
-- `random_chi2(seed, df,[shape])` or `randchi2`: generates a random tensor with Chi-squared distribution. Degrees of freedom `df` controls the shape. Sum of squared normal distributions.
-- `random_studentt(seed, df,[shape])` or `randt`: generates a random tensor with Student's t distribution. Has heavier tails than normal distribution, useful for robust noise. As `df` increases, approaches normal distribution.
+### 6) Random & Noise
 
-### Noise Generation
+#### 6.1 Random Distributions
+- `random_normal(seed, [shape])` / `randn` / `noise`: Normal distribution.
+- `random_uniform(seed, [shape])` / `rand` / `randu`: Uniform distribution.
+- `random_exponential(seed, lambda, [shape])` / `rande`: Exponential distribution.
+- `random_cauchy(seed, median, sigma, [shape])` / `randc`: Cauchy distribution.
+- `random_log_normal(seed, mean, std, [shape])` / `randln`: Log-normal distribution.
+- `random_bernoulli(seed, p, [shape])` / `randb`: Bernoulli distribution.
+- `random_poisson(seed, lambda, [shape])` / `randp`: Poisson distribution.
+- `random_gamma(seed, shape, scale, [shape])` / `randg`: Gamma distribution.
+- `random_beta(seed, alpha, beta, [shape])` / `randbeta`: Beta distribution.
+- `random_laplace(seed, loc, scale, [shape])` / `randl`: Laplace distribution.
+- `random_gumbel(seed, loc, scale, [shape])` / `randgumbel`: Gumbel distribution.
+- `random_weibull(seed, scale, concentration, [shape])` / `randw`: Weibull distribution.
+- `random_chi2(seed, df, [shape])` / `randchi2`: Chi-squared distribution.
+- `random_studentt(seed, df, [shape])` / `randt`: Student’s t distribution.
 
-- `perlin(seed, scale, [octaves,[offset, [shape]]])` or `perlin_noise`: generates Perlin noise. `scale` controls the frequency of the noise, `octaves` adds additional layers of noise,  `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
-- `plasma(seed, scale, [octaves,[offset, [shape]]])` or `turbulence` or `plasma_noise`: generates Plasma noise. Same parameters as perlin noise.
-- `voronoi(seed, scale, [jitter], [offset], [shape])` or `voronoi_noise`: generates Voronoi noise. `scale` controls the frequency of the noise, `jitter` adds randomness to the cell boundaries, `offset` offsets the noise pattern, `shape` controls the output shape (default is determined by node inputs and settings).
+#### 6.2 Procedural Noise
+- `perlin(seed, scale, [octaves, [offset, [shape]]])` / `perlin_noise`: Perlin noise.
+- `voronoi(seed, scale, [jitter], [offset], [shape])` / `cellular` / `worley` / `voronoi_noise` / `cellular_noise`: Voronoi/cellular noise.
+- `plasma(seed, scale, [octaves, [offset, [shape]]])` / `turbulence` / `plasma_noise`: Plasma/turbulence noise.
 
-### Bitwise Operations
+---
 
-Bitwise operations work with scalars, tensors, and lists, preserving bit patterns (especially important for floats where bit patterns are preserved, not values converted).
+### 7) Bitwise
 
-#### Shift Operators
-- `a << b`: Left shift operator. Shifts bits of `a` left by `b` positions.
-- `a >> b`: Right shift operator. Shifts bits of `a` right by `b` positions.
+#### 7.1 Shift Operators
+- `a << b`: Bitwise left shift.
+- `a >> b`: Bitwise right shift.
 
-#### Bitwise Functions
+#### 7.2 Bitwise Functions
+- `band(a, b)` / `bitwise_and`: Bitwise AND.
+- `bor(a, b)` / `bitwise_or`: Bitwise OR.
+- `bxor(a, b)` / `bitwise_xor`: Bitwise XOR.
+- `bnot(a)` / `bitwise_not`: Bitwise NOT.
+- `bitcount(a)` / `popcount` / `popcnt`: Number of set bits.
 
-- `band(a, b)` or `bitwise_and(a, b)`: Bitwise AND. Returns bits set in both operands.
-- `bor(a, b)` or `bitwise_or(a, b)`: Bitwise OR. Returns bits set in either operand.
-- `bxor(a, b)` or `bitwise_xor(a, b)`: Bitwise XOR. Returns bits set in exactly one operand.
-- `bnot(a)` or `bitwise_not(a)`: Bitwise NOT. Inverts all bits in the operand.
-- `bitcount(a)`, `popcount(a)`, or `popcnt(a)`: Count set bits. Returns the number of set bits (1s) in the binary representation as a float.
+---
 
+### 8) Strings
+- `upper(str)`: Convert to uppercase.
+- `lower(str)`: Convert to lowercase.
+- `trim(str)`: Trim surrounding whitespace.
+- `split(str, [delimiter])`: Split string.
+- `join(list, [separator])`: Join list into string.
+- `substring(str, start, [length])` / `substr`: Substring extraction.
+- `find(str, search)`: First match position.
+- `replace(str, search, replacement)`: Replace occurrences.
 
-### Stack
+---
 
-- `stack_push(id, value)`: Pushes value to stack with id.
-- `stack_pop(id)`: Pops value from stack with id.
-- `stack_get(id)`: Gets value from stack with id.
-- `stack_clear(id)`: Clears stack with id.
-- `stack_has(id)`: Checks if stack with id exists.
+### 9) Color
+- `rgb_to_hsv(...)`: Convert RGB to HSV.
+- `hsv_to_rgb(...)`: Convert HSV to RGB.
+- `int_to_rgb(value)`: Convert packed integer color to RGB.
+- `rgb_to_int(...)`: Convert RGB to packed integer color.
 
-### String Operations
+---
 
-- `upper(str)`: Converts string to uppercase.
-- `lower(str)`: Converts string to lowercase.
-- `split(str, [delimiter])`: Splits string into a list. Default delimiter is space.
-- `join(list, [separator])`: Joins list elements into a string. Default separator is empty string.
-- `substring(str, start, [length])` or `substr`: Extracts substring starting at `start` position. If length is omitted, extracts to end.
-- `find(str, search)`: Returns position of first occurrence of `search` in `str`, or -1 if not found.
-- `replace(str, search, replacement)`: Replaces all occurrences of `search` in `str` with `replacement`. Is compatible with string, list and tensor. If `str` is a list or tensor, it replaces all occurrences of `search` value with `replacement` value. For tensors the search and replacement values must have aither 1 value in dimension or the same as input tensor.
-- `trim(str)`: Removes leading and trailing whitespace from string.
+### 10) Utility & Conversion
+- `print(x)`: Print value and return it.
+- `print_shape(x)` / `pshp`: Print shape and return value.
+- `range(start, end, step)`: Numeric sequence.
+- `linspace(start, end, count)`: Evenly spaced sequence.
+- `logspace(start, end, count, base)`: Log-spaced sequence.
+- `nan_to_num(x, nan, posinf, neginf)` / `nvl`: Replace `NaN` / infinities.
+- `timestamp()` / `now`: Current Unix timestamp.
+- `int(x)`: Convert to int32.
+- `float(x)`: Convert to float.
 
-### Color Space Conversions
+---
 
-- `rgb_to_hsv(r, g, b, [degrees])` or `rgb_to_hsv(rgb_tensor, [degrees])`: Converts RGB color to HSV. 
-- `hsv_to_rgb(h, s, v, [degrees])` or `hsv_to_rgb(hsv_tensor, [degrees])`: Converts HSV color to RGB.
-- `int_to_rgb(value)`: Converts a 32-bit integer (format 0xRRGGBB) to RGB values. 
-  - Input: Integer (scalar, tensor, or list)
-  - Output: [r, g, b] with values in [0, 1]. For tensors, **adds last dimension=3** (e.g., scalar → [r,g,b] list, tensor [B,H,W] → [B,H,W,3]).
-
-- `rgb_to_int(r, g, b)` or `rgb_to_int(rgb_tensor)`: Converts RGB to 32-bit integer (format 0xRRGGBB).
-  - Mode 1 (tensor): Input tensor with shape [..., 3] → Output integer tensor with shape [...] (**removes last dimension**)
-  - Mode 2 (separate args): Three r,g,b values/tensors → Output integer (same shape as inputs)
-  - Mode 3 (list): [r, g, b] → Output scalar integer
+### 11) State / Stack
+- `stack_push(id, value)`: Push into stack slot.
+- `stack_pop(id)`: Pop from stack slot.
+- `stack_get(id)`: Read top value without pop.
+- `stack_clear(id)`: Clear stack slot.
+- `stack_has(id)`: Check slot existence/non-empty state.
 
 ## Variables
 

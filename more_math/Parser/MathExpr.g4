@@ -241,7 +241,7 @@ func3:
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
-	| LOGSPACE LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ĹogspaceFunc
+	| LOGSPACE LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# LogspaceFunc
 	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc
 	| HISTOGRAM LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# HistogramFunc;
 

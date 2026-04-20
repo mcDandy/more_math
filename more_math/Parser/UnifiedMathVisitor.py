@@ -2302,25 +2302,44 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitEdgeFunc(self, ctx):
         tsr_val = yield ctx.expr(0)
         tsr = self._promote_to_tensor(tsr_val)
-        kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
-        kernel_size = int(kernel_size.item()) if self._is_tensor(kernel_size) else int(kernel_size)
+
+        kernel_size_raw = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
+        kernel_size = int(kernel_size_raw.item()) if self._is_tensor(kernel_size_raw) else int(kernel_size_raw)
+
+        if kernel_size < 3 or (kernel_size % 2) == 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: edge kernel_size must be odd and >= 3")
 
         original_shape = tsr.shape
         tsr = tsr.float()
 
-        reshap = False
-        if len(ctx.expr()) >= 2:
-            reshap_val = yield ctx.expr(1)
-            reshap = bool(reshap_val.item()) if self._is_tensor(reshap_val) else bool(reshap_val)
+        def build_sobel_kernels(k, device, dtype):
+            m = k // 2
+            if k == 3:
+                d = torch.tensor([-1.0, 0.0, 1.0], device=device, dtype=dtype)
+                s = torch.tensor([1.0, 2.0, 1.0], device=device, dtype=dtype)
+            else:
+                d = torch.arange(-m, m + 1, device=device, dtype=dtype)
+                s = torch.tensor([float(math.comb(2 * m, i)) for i in range(2 * m + 1)], device=device, dtype=dtype)
+
+            kx = torch.outer(s, d)
+            ky = torch.outer(d, s)
+
+            norm_x = torch.sum(torch.abs(kx))
+            norm_y = torch.sum(torch.abs(ky))
+            if norm_x > 0:
+                kx = kx / norm_x
+            if norm_y > 0:
+                ky = ky / norm_y
+
+            return kx, ky
 
         def sobel_op(x):
-            kx = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], device=x.device, dtype=x.dtype)
-            ky = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], device=x.device, dtype=x.dtype)
-            gx = self._apply_conv_internal(x, kx, [3, 3], 2)
-            gy = self._apply_conv_internal(x, ky, [3, 3], 2)
+            kx, ky = build_sobel_kernels(kernel_size, x.device, x.dtype)
+            gx = self._apply_conv_internal(x, kx, [kernel_size, kernel_size], 2)
+            gy = self._apply_conv_internal(x, ky, [kernel_size, kernel_size], 2)
             return torch.sqrt(gx**2 + gy**2)
 
-        return self._apply_spatial_op(tsr, sobel_op, original_shape) if reshap else sobel_op(tsr)
+        return self._apply_spatial_op(tsr, sobel_op, original_shape)
 
     def visitGaussianFunc(self, ctx):
         tsr_val = yield ctx.expr(0)
@@ -3011,12 +3030,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         base = yield ctx.expr(0)
         overlay = yield ctx.expr(1)
         offset_raw = yield ctx.expr(2)
-        if ctx.getChildCount() > 3:
+
+        if len(ctx.expr()) > 3:
             opacity = yield ctx.expr(3)
         else:
             opacity = 1.0
 
-        if opacity == 0.0: return base;
+        opacity_f = float(opacity.item()) if self._is_tensor(opacity) else float(opacity)
+
+        if opacity_f <= 0.0:
+            return base
+
         if isinstance(base, str):
             if not isinstance(overlay, str):
                 overlay = str(overlay)
@@ -3032,17 +3056,16 @@ class UnifiedMathVisitor(MathExprVisitor):
             end = min(len(base), offset + len(overlay))
             overlay_len = end - offset
 
-            w = float(opacity)
-            if w >= 1.0:
+            if opacity_f >= 1.0:
                 return base[:offset] + overlay[:overlay_len] + base[end:]
-            else:
-                mixed = list(base)
-                for i in range(overlay_len):
-                    a = ord(base[offset + i])
-                    c = ord(overlay[i])
-                    avg = round(a * (1 - w) + c * w)
-                    mixed[offset + i] = chr(avg)
-                return ''.join(mixed)
+
+            mixed = list(base)
+            for i in range(overlay_len):
+                a = ord(base[offset + i])
+                c = ord(overlay[i])
+                avg = round(a * (1 - opacity_f) + c * opacity_f)
+                mixed[offset + i] = chr(avg)
+            return ''.join(mixed)
 
         if self._is_list(base):
             if not self._is_list(overlay):
@@ -3059,64 +3082,57 @@ class UnifiedMathVisitor(MathExprVisitor):
             result = list(base)
             end = min(len(base), offset + len(overlay))
             for i, val in enumerate(overlay[:end - offset]):
-                if opacity == 1.0: result[offset + i] = val
-                else: result[offset + i] = result[offset + i]*(1.0-opacity) + val*opacity
-
+                if opacity_f >= 1.0:
+                    result[offset + i] = val
+                else:
+                    result[offset + i] = result[offset + i] * (1.0 - opacity_f) + val * opacity_f
             return result
 
-        # Handle tensors (existing implementation)
+        # Tensor path
         base = self._promote_to_tensor(base)
         overlay = self._promote_to_tensor(overlay)
-        offset = offset_raw
 
-        # Convert offset to list of ints
-        if self._is_tensor(offset):
-            offset = [int(x) for x in offset.flatten().tolist()]
-        elif self._is_list(offset):
-            offset = [int(x) for x in offset]
+        if self._is_tensor(offset_raw):
+            offset = [int(x) for x in offset_raw.flatten().tolist()]
+        elif self._is_list(offset_raw):
+            offset = [int(x) for x in offset_raw]
         else:
-            offset = [int(offset)]
+            offset = [int(offset_raw)]
 
-        # Ensure offset matches base dimensions
         if len(offset) != base.ndim:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Offset dimensions {len(offset)} must match base dimensions {base.ndim}")
 
-        # Calculate crop and paste regions
         crop_slices = []
         paste_slices = []
 
         for i in range(base.ndim):
             off = offset[i]
-            overlay_size = overlay.shape[i]
-            base_size = base.shape[i]
+            bsz = base.shape[i]
+            osz = overlay.shape[i]
 
-            if off >= base_size:
-                return base  # Overlay outside of base, return original
+            if off >= bsz or (off + osz) <= 0:
+                return base
 
-            if off < 0:
-                overlay = overlay[-off:]
-                off = 0
+            paste_start = max(off, 0)
+            paste_end = min(off + osz, bsz)
 
-            end = min(base_size, off + overlay_size)
-            paste_start = off
-            paste_end = end
-            crop_start = 0
-            crop_end = paste_end - paste_start
+            crop_start = max(-off, 0)
+            crop_end = crop_start + (paste_end - paste_start)
 
             crop_slices.append(slice(crop_start, crop_end))
             paste_slices.append(slice(paste_start, paste_end))
 
-        # Crop overlay to fit
         cropped_overlay = overlay[tuple(crop_slices)]
 
-        # Create result by cloning base and pasting overlay
         result = base.clone()
-        result[tuple(paste_slices)] = cropped_overlay
-        if self._is_tensor(opacity) or isinstance(opacity, float):
-            if float(opacity) < 1.0:
-                result = cropped_overlay * float(opacity) + base * (1.0 - float(opacity))
+        target_region = result[tuple(paste_slices)]
 
-        return result
+        if opacity_f >= 1.0:
+            result[tuple(paste_slices)] = cropped_overlay
+        else:
+            result[tuple(paste_slices)] = cropped_overlay * opacity_f + target_region * (1.0 - opacity_f)
+
+        return result.contiguous()
 
     def visitReplaceFunc(self, ctx):
         val = yield ctx.expr(0)
@@ -3537,6 +3553,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self.i2rgb(val)
 
     def visitRgb_to_int(self,ctx):
+        def clamp255_scaled(x):
+            return max(0, min(255, int(float(x) * 256)))
+
         if len(ctx.expr()) == 1:
             rgb_val = yield ctx.expr(0)
             if self._is_tensor(rgb_val):
@@ -3546,19 +3565,22 @@ class UnifiedMathVisitor(MathExprVisitor):
                 g = (rgb_val[..., 1] * 256).clamp(0, 255).to(torch.int32)
                 b = (rgb_val[..., 2] * 256).clamp(0, 255).to(torch.int32)
                 return ((r << 16) | (g << 8) | b).contiguous()
-            if(self._is_list(rgb_val)):
+            if self._is_list(rgb_val):
                 if len(rgb_val) != 3:
                     raise ValueError(f"{ctx.start.line}:{ctx.start.column}: rgb_to_int expects 3 values [r, g, b], got {len(rgb_val)}")
-                else: return math.clamp(int(rgb_val[0]*256),0,255) << 16 | math.clamp(int(rgb_val[1]*256),0,255) << 8 | math.clamp(int(rgb_val[2]*256),0,255)
+                return (clamp255_scaled(rgb_val[0]) << 16) | (clamp255_scaled(rgb_val[1]) << 8) | clamp255_scaled(rgb_val[2])
+
         r = yield ctx.expr(0)
         g = yield ctx.expr(1)
         b = yield ctx.expr(2)
+
         if self._is_tensor(r) or self._is_tensor(g) or self._is_tensor(b):
             r = (self._promote_to_tensor(r) * 256).clamp(0, 255).to(torch.int32)
             g = (self._promote_to_tensor(g) * 256).clamp(0, 255).to(torch.int32)
             b = (self._promote_to_tensor(b) * 256).clamp(0, 255).to(torch.int32)
             return ((r << 16) | (g << 8) | b).contiguous()
-        return math.clamp(int(r*256),0,255) << 16 | math.clamp(int(g*256),0,255) << 8 | math.clamp(int(b*256),0,255)
+
+        return (clamp255_scaled(r) << 16) | (clamp255_scaled(g) << 8) | clamp255_scaled(b)
 
     def visitLinspaceFunc(self, ctx):
         """linspace(start, end, steps) - linearly spaced values"""

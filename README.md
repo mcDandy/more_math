@@ -158,7 +158,7 @@ You can also get the node from comfy manager under the name of More math.
 - `cov(x, y)`: covariance.
 - `corr(x, y)` / `correlation`: Pearson correlation.
 - `entropy(x)`: Shannon entropy.
-- `flip(x, dims)`: flip selected dimensions.
+- `flip(x, dims)`: flip selected dimensions; `dims` can be a single dimension, list, or tensor of dimensions, so multiple axes can be flipped at once.
 - `swap(tensor, dim, i1, i2)`: swap two indices along dimension `dim`.
 
 #### 2.2 Reductions & Statistical Aggregates
@@ -205,7 +205,7 @@ You can also get the node from comfy manager under the name of More math.
 - `batch_shuffle(tensor, indices)` / `shuffle` / `select`: reorder along batch dimension.
 - `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists.
 - `roll(tensor, shifts, [dim])`: circular shift.
-- `tensor(shape, [value, [type]])`: create a filled tensor.
+- `tensor(shape, [value, [type]])`: create a filled tensor; `type` a tensor to copy its dtype to self when being created.
 
 #### 2.5 Linear Algebra
 - `dot(a, b)`: dot product after flattening.
@@ -216,8 +216,8 @@ You can also get the node from comfy manager under the name of More math.
 #### 2.6 Mapping / Sampling
 - `map(tensor, c1, ...)`: coordinate remapping via `grid_sample`.
   - supports up to `3` coordinate inputs,
-  - coordinates are normalized internally,
-  - intended for spatial sampling/remapping.
+  - uses sampling coordinates derived from the provided coordinate tensors,
+  - intended for spatial remapping / resampling.
 - `get_value(tensor, position)`: read value at an N-D position using flat offset math.
 
 ---

@@ -171,7 +171,10 @@ func1:
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN	# MorphOpenFunc
 	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN	# MorphCloseFunc
 	| INT LPAREN expr RPAREN    # IntFunc
-	| FLOAT LPAREN expr RPAREN    # FloatFunc;
+	| FLOAT LPAREN expr RPAREN    # FloatFunc
+	| FLOW_MAG LPAREN expr RPAREN	# FlowMagFunc
+	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc
+;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc
@@ -232,13 +235,15 @@ func3:
 	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
 	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # RgbToHsvFunc
-	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc;
+	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc
+	| WHERE LPAREN expr COMMA expr COMMA expr RPAREN	# WhereFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
 	| LOGSPACE LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ĹogspaceFunc
-	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc;
+	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc
+	| HISTOGRAM LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# HistogramFunc;
 
 func5:
 	REMAP LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN # RemapFunc;
@@ -368,6 +373,10 @@ FLOW_APPLY: 'flow_apply';
 BATCH_SHUFFLE: 'batch_shuffle' | 'shuffle' | 'select';
 MOTION_MASK: 'motion_mask';
 FLOW_TO_IMAGE: 'flow_to_image';
+FLOW_MAG: 'flow_mag' | 'flow_magnitude';
+FLOW_ANG: 'flow_ang' | 'flow_angle';
+WHERE: 'where';
+HISTOGRAM: 'histogram' | 'hist';
 OVERLAY: 'overlay';
 PAD: 'pad';
 CROSS: 'cross';

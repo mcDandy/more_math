@@ -3608,3 +3608,62 @@ class UnifiedMathVisitor(MathExprVisitor):
         """erfinv(x) - inverse error function"""
         x = self._promote_to_tensor((yield ctx.expr()))
         return torch.erfinv(x)
+
+    def visitWhereFunc(self, ctx):
+        cond = (yield ctx.expr(0))
+        a = (yield ctx.expr(1))
+        b = (yield ctx.expr(2))
+
+        if self._is_tensor(cond) or self._is_tensor(a) or self._is_tensor(b):
+            cond_t = self._promote_to_tensor(cond)
+            if cond_t.dtype != torch.bool:
+                cond_t = cond_t != 0
+            a_t = self._promote_to_tensor(a)
+            b_t = self._promote_to_tensor(b)
+            return torch.where(cond_t, a_t, b_t).contiguous()
+
+        def rec(c, av, bv):
+            if self._is_list(c):
+                out = []
+                for i, ci in enumerate(c):
+                    ai = av[i] if self._is_list(av) and i < len(av) else av
+                    bi = bv[i] if self._is_list(bv) and i < len(bv) else bv
+                    out.append(rec(ci, ai, bi))
+                return out
+            return av if bool(c) else bv
+
+        return rec(cond, a, b)
+
+    def visitHistogramFunc(self, ctx):
+        x = self._promote_to_tensor((yield ctx.expr(0))).float().flatten()
+        bins_raw = (yield ctx.expr(1))
+        min_raw = (yield ctx.expr(2))
+        max_raw = (yield ctx.expr(3))
+
+        bins = int(bins_raw.item()) if self._is_tensor(bins_raw) else int(bins_raw)
+        min_v = float(min_raw.item()) if self._is_tensor(min_raw) else float(min_raw)
+        max_v = float(max_raw.item()) if self._is_tensor(max_raw) else float(max_raw)
+
+        if bins <= 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: histogram bins must be > 0")
+        if max_v <= min_v:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: histogram requires max > min")
+
+        return torch.histc(x, bins=bins, min=min_v, max=max_v).contiguous()
+
+    def visitFlowMagFunc(self, ctx):
+        flow = self._promote_to_tensor((yield ctx.expr()))
+        if flow.shape[-1] != 2:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: flow_mag expects [..., 2], got {tuple(flow.shape)}")
+        dx = flow[..., 0]
+        dy = flow[..., 1]
+        return torch.sqrt(dx * dx + dy * dy).contiguous()
+
+    def visitFlowAngFunc(self, ctx):
+        flow = self._promote_to_tensor((yield ctx.expr()))
+        if flow.shape[-1] != 2:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: flow_ang expects [..., 2], got {tuple(flow.shape)}")
+        dx = flow[..., 0]
+        dy = flow[..., 1]
+
+        return torch.atan2(dy, dx).contiguous()

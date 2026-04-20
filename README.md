@@ -163,6 +163,8 @@ You can also get the node from comfy manager under the name of More math.
 - `pad(tensor, padding)`: Pads a tensor with specified padding (pair for each dimension). For example, `[1,2,0,0]` adds 1 element before and 2 elements after in the first dimension, and no padding in the second dimension.
 - `concatenate(tensor1, tensor2, dim)` or `concat` or `cat`: Concatenates two tensors along specified dimension. It things of everything as tensor.
 - `roll(tensor, shifts, dims)`: Rolls tensor along specified dimensions by given shifts. Elements that roll beyond the last position are re-introduced at the first position.
+- `where(cond, a, b)`: Element-wise selection. Returns values from `a` where `cond` is non-zero/true, otherwise from `b`. Supports scalars, lists, and tensors (with tensor broadcasting).
+- `histogram(x, bins, min, max)` or `hist`: Computes histogram counts of tensor values in range `[min, max]` using `bins` bins. Returns a 1D tensor of counts.
 
 ### Advanced Tensor Operations
 
@@ -204,13 +206,15 @@ You can also get the node from comfy manager under the name of More math.
 - `motion_mask(flow)`: Generates an occlusion/motion mask from optical flow vectors.
   - `flow`: Flow vectors [B, H, W, 2].
   - **Returns**: Mask [B, H, W] in range [0, 1].
-- `flow_to_image(flow)` or `flow_view(flow)`: Converts flow vectors to an RGB image for visualization.
+- `flow_to_image(flow)`: Converts flow vectors to an RGB image for visualization.
   - `flow`: Flow vectors [B, H, W, 2].
   - **Returns**: RGB image [B, H, W, 3].
-- `flow_apply(image, flow)` or `apply_flow(image, flow)`: Warps an image using optical flow vectors.
+- `flow_apply(image, flow)`: Warps an image using optical flow vectors.
   - `image`: Image [B, H, W, C].
   - `flow`: Flow vectors [B, H, W, 2] from `rife()`.
   - **Returns**: Warped image [B, H, W, C].
+- `flow_mag(flow)` or `flow_magnitude(flow)`: Returns optical flow vector magnitude `sqrt(dx^2 + dy^2)`.
+- `flow_ang(flow)` or `flow_angle(flow)`: Returns optical flow direction in **radians** using `atan2(dy, dx)`.
 
 ### FFT (Tensor Only)
 

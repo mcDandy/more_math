@@ -1,6 +1,6 @@
 # More Math
 
-Adds math nodes for numbers and types which do not need it. I got inspired by was_extras node.
+Adds math nodes for numbers and types which do not need it. Inspired by the `was_extras` node.
 
 ## WARNING This node is not compatible to ComfyUI-Impact-Pack and ComfyUI-Ovi which forces older antlr version via omegaconf
 
@@ -18,20 +18,36 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Features
 
-- functions and variables in math expressions
-- Conversion between INT and FLOAT; INT and BOOLEAN; AUDIO and IMAGE (red - real - strenght of cosine of frequency; blue - imaginary - strenght of sine of frequency; green - log1p of amplitude - just so it looks good to humans)
-- Nodes for FLOAT, STRING, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS and GUIDER
-- Vector Math: Support for List literals `[v1, v2, ...]` and operations between lists/scalars/tensors
-- Custom functions `funcname(variable,variable,...)->expression;` they can be used in any later defined custom function or in expression. Shadowing inbuilt functions do not work. **Be careful with recursion. There is no stack limit. Got to 700 000 iterations before I got bored.**
-- Custom variables `varname=expression;` They can be used in any later assigment or final expression. Compound assignments (`+=`, `-=`, `*=`, `/=`, `%=`) are also supported.
-- Support for **indexed assignment**: `a[i, j, ...] = expression;`. Supports multidimensional tensors and nested lists.
-  - **Scalar Filling**: If the assigned value has only 1 element (scalar, 1-element list/tensor), it fills the entire selected slice.
-  - **Rank Matching**: Automatically squeezes leading ones from the value to match the rank of the target slice (e.g., assigning a 4D tensor with `dim0=1` to a 3D slice).
-- Support for control flow statements including `if/else`, `while` loops, blocks `{}`, and `return` statements. `if`/`else`/`while` do not work like ternary operator or other inbuilts. They colapse tensors and list to single value using any.
-- Support for stack. Stack survives between field evaluations and can be passed around using stack connection.
-  - Usefull in GuiderMath node to store variables between steps.
-- comments `#...` and `/*...*/`
-- In places which expact only tensors you can use lists of lists.
+- Functions and variables in math expressions.
+- Conversion between `INT` and `FLOAT`, `INT` and `BOOLEAN`, and `AUDIO` and `IMAGE`
+  - image/audio conversion encodes frequency content into RGB channels.
+- Node support for `FLOAT`, `STRING`, `CONDITIONING`, `LATENT`, `IMAGE`, `MASK`, `NOISE`, `AUDIO`, `VIDEO`, `MODEL`, `CLIP`, `VAE`, `SIGMAS`, and `GUIDER`.
+- Vector math with list literals `[v1, v2, ...]` and mixed operations between lists, scalars, and tensors.
+- Custom functions `funcname(variable, variable, ...)->expression;`
+  - can be used later in expressions and in other custom functions,
+  - shadowing built-in functions is not supported,
+  - recursion is allowed, so be careful.
+- Custom variables `varname=expression;`
+  - can be used later in the same expression chain,
+  - compound assignments are supported: `+=`, `-=`, `*=`, `/=`, `%=`.
+- Indexed assignment `a[i, j, ...] = expression;`
+  - supports multidimensional tensors and nested lists,
+  - scalar values and 1-element tensors/lists fill the selected slice,
+  - leading singleton dimensions are squeezed when needed to match target rank.
+- Control flow:
+  - `if/else`
+  - `while`
+  - `for`
+  - blocks `{ ... }`
+  - `return`
+  - `break`
+  - `continue`
+- Stack support shared across evaluations through stack connections.
+  - useful for `GuiderMath` state between steps.
+- Comments:
+  - line comments `# ...`
+  - block comments `/* ... */`
+- When a tensor is expected, lists can often be used instead and will be promoted automatically.
 
 ### Control Flow Statements
 
@@ -43,23 +59,26 @@ You can also get the node from comfy manager under the name of More math.
 - **Return Statements**: `return [expression];`
   - Early return from functions or top-level expressions
 - **For Loops**: `for (variable in expression) statement`
-  - Iterates over elements of a list or a tensor (along dimension 0)
+  - Iterates over list elements
+  - Iterates over tensor elements along dimension `0`
+  - Scalars are treated as one-item iterables
 - **Break/Continue**: `break;`, `continue;`
   - Control loop execution (works in `while` and `for` loops)
 
 ## Operators
 
-- Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (norm/abs)
-- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
+- Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (abs / norm-style magnitude)
+- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `=`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
-- Bitwise Shifts: `<<`, `>>` (left shift, right shift)
-- Indexing: `x[i]` or `x[i, j, ...]` - Selects a sublist (if index count < number of dimensions) or value at position.
-- Lists: `[v1, v2, ...]` (Vector math supported, mostly usefull in `conv` and `permute`)
-  - You can also use lists to do math with input tensor (image, noise, conditioing, latent, audio) which results in batched output as long as batch size is different to list size.
-  - print_shape(a) = torch.Shape[1,1024,1024,3]; b = a*[0,0.2,-0.3]; print_shape(b) = torch.Shape[3,1024,1024,3]
-  - You can &lt;operator&gt; batched tensor with another tensor which is not batched (dim[0] = 1) - the non batched tensor will be duplicated along batch dimension
-  - In imageMath node you can use 3 element list to specify a color of image. You cannot use any imput tensor, doing so will result in behaviour in subpoint 1 in list
+- Bitwise shifts: `<<`, `>>`
+- Indexing: `x[i]` or `x[i, j, ...]`
+  - works on tensors, nested lists, and strings,
+  - supports scalar, tensor, and list indices.
+- Lists: `[v1, v2, ...]`
+  - vector math is supported,
+  - lists can broadcast across tensor operations in many cases,
+  - lists can be used for color triples, coordinates, kernel sizes, and permutations.
 - **Length Mismatch Handling**: All math nodes (except Model, Clip, Vae which default to broadcast) include a `length_mismatch` option to handle inputs with different batch sizes, sample counts, or list lengths. The target length is determined by the **maximum length** among all provided inputs (`a`, `b`, `c`, `d`).
   - `do nothing`: dones **no validation** on input
   - `tile`: Repeats shorter inputs to match the maximum length.
@@ -69,315 +88,323 @@ You can also get the node from comfy manager under the name of More math.
 ## Functions
 
 > Functions are grouped by purpose.  
-> Each function has a short, practical description.
+> The descriptions below reflect the runtime behavior implemented in `UnifiedMathVisitor.py`.
 
 ### 1) Core Math
 
 #### 1.1 Elementary & Numeric
-- `abs(x)` or `|x|`: Absolute value (`|x|` is norm-style usage for tensors - (vector magnitude)).
-- `sqrt(x)`: Square root.
-- `ln(x)`: Natural logarithm.
-- `log(x)`: Base-10 logarithm.
-- `exp(x)`: Exponential `e^x`.
-- `pow(x, y)`: Power `x^y`.
-- `floor(x)`: Round down.
-- `ceil(x)`: Round up.
-- `round(x)`: Round to nearest integer.
-- `fract(x)`: Fractional part (`x - floor(x)`).
-- `sign(x)`: Sign (`-1`, `0`, `1`).
-- `gamma(x)`: Gamma function.
-- `clamp(x, min, max)`: Clamp to interval.
-- `step(x, edge)`: Step function (`x >= edge` -> `1`, else `0`).
+- `abs(x)` or `|x|`: absolute value; tensor/list inputs are handled element-wise.
+- `sqrt(x)`: square root.
+- `ln(x)`: natural logarithm.
+- `log(x)`: base-10 logarithm.
+- `exp(x)`: exponential `e^x`.
+- `pow(x, y)`: power `x^y`.
+- `floor(x)`: round down.
+- `ceil(x)`: round up.
+- `round(x)`: round to nearest integer.
+- `fract(x)`: fractional part (`x - floor(x)`).
+- `sign(x)`: sign (`-1`, `0`, `1`).
+- `gamma(x)`: gamma function.
+- `clamp(x, min, max)`: clamp to interval.
+- `step(x, edge)`: returns `1` when `x >= edge`, otherwise `0`.
 - `dist(x1, y1, x2, y2)` / `distance`: Euclidean distance between 2D points.
 
 #### 1.2 Trigonometric
-- `sin(x)`: Sine (radians).
-- `cos(x)`: Cosine (radians).
-- `tan(x)`: Tangent (radians).
-- `asin(x)`: Arc-sine.
-- `acos(x)`: Arc-cosine.
-- `atan(x)`: Arc-tangent.
-- `atan2(y, x)`: Quadrant-aware arc-tangent.
+- `sin(x)`: sine in radians.
+- `cos(x)`: cosine in radians.
+- `tan(x)`: tangent in radians.
+- `asin(x)`: inverse sine.
+- `acos(x)`: inverse cosine.
+- `atan(x)`: inverse tangent.
+- `atan2(y, x)`: quadrant-aware inverse tangent.
 
 #### 1.3 Hyperbolic
-- `sinh(x)`: Hyperbolic sine.
-- `cosh(x)`: Hyperbolic cosine.
-- `tanh(x)`: Hyperbolic tangent.
-- `asinh(x)`: Inverse hyperbolic sine.
-- `acosh(x)`: Inverse hyperbolic cosine.
-- `atanh(x)`: Inverse hyperbolic tangent.
+- `sinh(x)`: hyperbolic sine.
+- `cosh(x)`: hyperbolic cosine.
+- `tanh(x)`: hyperbolic tangent.
+- `asinh(x)`: inverse hyperbolic sine.
+- `acosh(x)`: inverse hyperbolic cosine.
+- `atanh(x)`: inverse hyperbolic tangent.
 
 #### 1.4 Activation / ML
 - `relu(x)`: `max(0, x)`.
 - `gelu(x)`: Gaussian Error Linear Unit.
-- `softplus(x)`: Smooth ReLU-like function.
-- `sigm(x)`: Sigmoid.
-- `softmax(x, [dim])`: Softmax normalization.
-- `softmin(x, [dim])`: Softmin normalization.
-- `erf(x)`: Error function.
-- `erfinv(x)`: Inverse error function.
+- `softplus(x)`: smooth ReLU-like function.
+- `sigm(x)`: sigmoid.
+- `softmax(x, [dim])`: softmax normalization.
+- `softmin(x, [dim])`: softmin normalization.
+- `erf(x)`: error function.
+- `erfinv(x)`: inverse error function.
 
 #### 1.5 Interpolation & Remap
-- `lerp(a, b, t)`: Linear interpolation.
+- `lerp(a, b, t)`: linear interpolation.
 - `smoothstep(x, e0, e1)`: 3rd-order smooth transition.
 - `smootherstep(x, e0, e1)`: 5th-order smoother transition.
-- `cubic_ease(a, b, t)` / `cubic`: Cubic easing interpolation.
-- `sine_ease(a, b, t)` / `sine`: Sine easing interpolation.
-- `elastic_ease(a, b, t)` / `elastic`: Elastic easing interpolation.
-- `remap(v, i_min, i_max, o_min, o_max)`: Map value from one interval to another.
+- `cubic_ease(a, b, t)` / `cubic`: cubic easing interpolation.
+- `sine_ease(a, b, t)` / `sine`: sine easing interpolation.
+- `elastic_ease(a, b, t)` / `elastic`: elastic easing interpolation.
+- `remap(v, i_min, i_max, o_min, o_max)`: map value from one interval to another.
 
 ---
 
 ### 2) Tensor, Stats & Data Ops
 
 #### 2.1 Element-wise / Tensor Math
-- `tmin(x, y)`: Element-wise minimum.
-- `tmax(x, y)`: Element-wise maximum.
+- `tmin(x, y)`: element-wise minimum.
+- `tmax(x, y)`: element-wise maximum.
 - `tnorm(x)`: L2 normalization along the last dimension.
-- `snorm(x)`: Scalar/tensor norm magnitude.
-- `cossim(a, b)` / `cosine_similarity`: Cosine similarity.
-- `cov(x, y)`: Covariance.
+- `snorm(x)`: scalar/tensor norm magnitude.
+- `cossim(a, b)` / `cosine_similarity`: cosine similarity.
+- `cov(x, y)`: covariance.
 - `corr(x, y)` / `correlation`: Pearson correlation.
 - `entropy(x)`: Shannon entropy.
-- `flip(x, dims)`: Flip along selected dimensions.
-- `swap(tensor, dim, i1, i2)`: Swap two indices/slices along dimension `dim`.
+- `flip(x, dims)`: flip selected dimensions.
+- `swap(tensor, dim, i1, i2)`: swap two indices along dimension `dim`.
 
 #### 2.2 Reductions & Statistical Aggregates
-- `sum(x)`: Sum.
-- `mean(x)`: Mean.
-- `std(x)`: Standard deviation.
-- `var(x)`: Variance.
-- `median(x)`: Median.
-- `mode(x)`: Mode.
-- `quartile(x, k)`: Quartile (`k` in 0..4).
-- `percentile(x, p)`: Percentile (`p` in 0..100).
-- `quantile(x, q)`: Quantile (`q` in 0..1).
+- `sum(x)`: sum.
+- `mean(x)`: mean.
+- `std(x)`: standard deviation.
+- `var(x)`: variance.
+- `median(x)`: median.
+- `mode(x)`: mode.
+- `quartile(x, k)`: quartile (`k` in `0..4`).
+- `percentile(x, p)`: percentile (`p` in `0..100`).
+- `quantile(x, q)`: quantile (`q` in `0..1`).
 - `moment(x, a, k)`: k-th moment around center `a`.
-- `any(x)`: True if any element is non-zero.
-- `all(x)`: True if all elements are non-zero.
-- `count(x)` / `length(x)` / `cnt(x)`: Number of elements / length.
-- `cumsum(x)`: Cumulative sum.
-- `cumprod(x)`: Cumulative product.
-- `smin(x, ...)`: Scalar minimum across inputs.
-- `smax(x, ...)`: Scalar maximum across inputs.
+- `any(x)`: `1.0` if any element is non-zero.
+- `all(x)`: `1.0` if all elements are non-zero.
+- `count(x)` / `length(x)` / `cnt(x)`: number of elements or length.
+- `cumsum(x)`: cumulative sum along dimension `0`.
+- `cumprod(x)`: cumulative product along dimension `0`.
+- `smin(x, ...)`: scalar minimum across inputs.
+- `smax(x, ...)`: scalar maximum across inputs.
 
 #### 2.3 Sorting / Selection / Indices
-- `sort(x)`: Sort values.
-- `argsort(x, [descending])`: Sorting indices.
-- `argmin(x)`: Index of minimum.
-- `argmax(x)`: Index of maximum.
-- `topk(x, k)`: Top-K values.
-- `botk(x, k)`: Bottom-K values.
-- `topk_ind(x, k)` / `topk_indices`: Top-K indices.
-- `botk_ind(x, k)` / `botk_indices`: Bottom-K indices.
-- `unique(x)`: Unique values.
-- `where(cond, a, b)`: Conditional selection (`a` where true, else `b`).
-- `histogram(x, bins, min, max)` / `hist`: Histogram counts in range.
+- `sort(x)`: tensors are sorted along the last dimension (`dim=-1`); lists use Python sorting.
+- `argsort(x, [descending])`: returns indices along the last dimension, default `descending=false`.
+- `argmin(x)`: global minimum index for tensors; list index for lists.
+- `argmax(x)`: global maximum index for tensors; list index for lists.
+- `topk(x, k)`: tensors keep the same shape and all non-top-k values are zeroed; lists return the sorted top-k slice.
+- `botk(x, k)`: same as `topk`, but for smallest values.
+- `topk_ind(x, k)` / `topk_indices`: global top-k indices from `flatten()`.
+- `botk_ind(x, k)` / `botk_indices`: global bottom-k indices from `flatten()`.
+- `unique(x)`: sorted unique values for tensors and lists.
+- `where(cond, a, b)`: tensor broadcasting for tensor inputs; recursive truthy selection for lists/scalars.
+- `histogram(x, bins, min, max)` / `hist`: histogram counts from `flatten()` in the given interval.
 
 #### 2.4 Shape / Structure / Layout
-- `shape(x)`: Return shape.
-- `flatten(x)`: Flatten tensor/list.
-- `reshape(tensor, shape)` / `rshp`: Reshape.
-- `permute(tensor, dims)` / `perm`: Reorder dimensions.
-- `crop(tensor, position, size)`: Extract region.
-- `pad(tensor, padding)`: Pad tensor.
-- `overlay(base, overlay, offset, [opacity])`: Overlay one value/tensor onto another.
-- `append(a, b)`: Append items/slices.
-- `batch_shuffle(tensor, indices)` / `shuffle` / `select`: Reorder batch dimension.
-- `concatenate(..., dim)` / `concat` / `cat`: Concatenate tensors/lists.
-- `roll(tensor, shifts, [dims])`: Circular shift.
-- `tensor(shape, [value, [type]])`: Create filled tensor.
+- `shape(x)`: returns shape as a Python list.
+- `flatten(x)`: flattens tensor or nested list.
+- `reshape(tensor, shape)` / `rshp`: reshape with element-count validation.
+- `permute(tensor, dims)` / `perm`: reorder dimensions.
+- `crop(tensor, position, size)`: extract a region from tensor or string.
+- `pad(tensor, padding)`: pad tensor.
+- `overlay(base, overlay, offset, [opacity])`: overlay one value/tensor onto another.
+- `append(a, b)`: append or concatenate items, lists, and tensors.
+- `batch_shuffle(tensor, indices)` / `shuffle` / `select`: reorder along batch dimension.
+- `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists.
+- `roll(tensor, shifts, [dim])`: circular shift.
+- `tensor(shape, [value, [type]])`: create a filled tensor.
 
 #### 2.5 Linear Algebra
-- `dot(a, b)`: Dot product.
-- `matmul(a, b)`: Matrix multiplication.
-- `cross(a, b)`: Cross product.
-- `pinv(x)`: Permutation inverse (for permutation-like inputs).
+- `dot(a, b)`: dot product after flattening.
+- `matmul(a, b)`: matrix multiplication.
+- `cross(a, b)`: cross product; last dimension must be `3`.
+- `pinv(x)`: permutation inverse for permutation-like values.
 
 #### 2.6 Mapping / Sampling
-- `map(tensor, c1, ...)`: Coordinate remapping.
-- `get_value(tensor, position)`: Read value at N-D position.
+- `map(tensor, c1, ...)`: coordinate remapping via `grid_sample`.
+  - supports up to `3` coordinate inputs,
+  - coordinates are normalized internally,
+  - intended for spatial sampling/remapping.
+- `get_value(tensor, position)`: read value at an N-D position using flat offset math.
 
 ---
 
 ### 3) Imaging & Spatial Processing
 
 #### 3.1 Filters & Convolution
-- `blur(x, sigma)` / `gaussian`: Gaussian blur.
+- `blur(x, sigma)` / `gaussian`: Gaussian blur using separable convolution.
 - `edge(x, [kernel_size])`: Sobel-style edge detection.
-- `ezconvolution(tensor, ...)` / `ezconv`: Convolution with auto layout handling.
-- `convolution(tensor, ...)` / `conv`: Direct convolution.
+- `ezconvolution(tensor, ...)` / `ezconv`: convolution with auto layout handling.
+- `convolution(tensor, ...)` / `conv`: direct convolution.
 
 #### 3.2 Mask Morphology
-- `dilate(x, [kernel_size])`: Dilation.
-- `erode(x, [kernel_size])`: Erosion.
-- `morph_open(x, [kernel_size])`: Opening (erosion then dilation).
-- `morph_close(x, [kernel_size])`: Closing (dilation then erosion).
+- `dilate(x, [kernel_size])`: dilation.
+- `erode(x, [kernel_size])`: erosion.
+- `morph_open(x, [kernel_size])`: opening = erosion followed by dilation.
+- `morph_close(x, [kernel_size])`: closing = dilation followed by erosion.
 
 ---
 
 ### 4) Optical Flow
-- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: Compute optical flow.
-- `motion_mask(flow)`: Motion/occlusion mask from flow.
-- `flow_to_image(flow)`: Visualize flow as RGB.
-- `flow_apply(image, flow)`: Warp image by flow.
-- `flow_mag(flow)` / `flow_magnitude`: Flow vector magnitude.
-- `flow_ang(flow)` / `flow_angle`: Flow vector angle in radians (`atan2(dy, dx)`).
+- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: compute optical flow.
+- `motion_mask(flow)`: motion/occlusion mask from flow.
+- `flow_to_image(flow)`: visualize flow as RGB.
+- `flow_apply(image, flow)`: warp image by flow.
+- `flow_mag(flow)` / `flow_magnitude`: flow vector magnitude.
+- `flow_ang(flow)` / `flow_angle`: flow vector angle in radians (`atan2(dy, dx)`).
 
 ---
 
 ### 5) Frequency Domain (FFT)
-- `fft(x)`: Fast Fourier Transform.
-- `ifft(x, [shape])`: Inverse FFT.
-- `angle(x)`: Phase angle of complex values.
+- `fft(x)`: fast Fourier transform across all dimensions.
+- `ifft(x, [shape])`: inverse FFT.
+- `angle(x)`: phase angle of complex values.
 
 ---
 
 ### 6) Random & Noise
 
 #### 6.1 Random Distributions
-- `random_normal(seed, [shape])` / `randn` / `noise`: Normal distribution.
-- `random_uniform(seed, [shape])` / `rand` / `randu`: Uniform distribution.
-- `random_exponential(seed, lambda, [shape])` / `rande`: Exponential distribution.
-- `random_cauchy(seed, median, sigma, [shape])` / `randc`: Cauchy distribution.
-- `random_log_normal(seed, mean, std, [shape])` / `randln`: Log-normal distribution.
-- `random_bernoulli(seed, p, [shape])` / `randb`: Bernoulli distribution.
-- `random_poisson(seed, lambda, [shape])` / `randp`: Poisson distribution.
-- `random_gamma(seed, shape, scale, [shape])` / `randg`: Gamma distribution.
-- `random_beta(seed, alpha, beta, [shape])` / `randbeta`: Beta distribution.
-- `random_laplace(seed, loc, scale, [shape])` / `randl`: Laplace distribution.
-- `random_gumbel(seed, loc, scale, [shape])` / `randgumbel`: Gumbel distribution.
-- `random_weibull(seed, scale, concentration, [shape])` / `randw`: Weibull distribution.
-- `random_chi2(seed, df, [shape])` / `randchi2`: Chi-squared distribution.
-- `random_studentt(seed, df, [shape])` / `randt`: Student’s t distribution.
+- All random generators are seeded and deterministic for a given seed.
+- If `shape` is omitted, the current node shape is used.
+- `noise` / `randn` / `random_normal`: normal distribution.
+- `rand` / `randu` / `random_uniform`: uniform distribution.
+- `rande` / `random_exponential`: exponential distribution.
+- `randc` / `random_cauchy`: Cauchy distribution.
+- `randln` / `random_log_normal`: log-normal distribution.
+- `randb` / `random_bernoulli`: Bernoulli distribution.
+- `randp` / `random_poisson`: Poisson distribution.
+- `randg` / `random_gamma`: gamma distribution.
+- `randbeta` / `random_beta`: beta distribution.
+- `randl` / `random_laplace`: Laplace distribution.
+- `randgumbel` / `random_gumbel`: Gumbel distribution.
+- `randw` / `random_weibull`: Weibull distribution.
+- `randchi2` / `random_chi2`: chi-squared distribution.
+- `randt` / `random_studentt`: Student’s t distribution.
 
 #### 6.2 Procedural Noise
-- `perlin(seed, scale, [octaves, [offset, [shape]]])` / `perlin_noise`: Perlin noise.
-- `voronoi(seed, scale, [jitter], [offset], [shape])` / `cellular` / `worley` / `voronoi_noise` / `cellular_noise`: Voronoi/cellular noise.
-- `plasma(seed, scale, [octaves, [offset, [shape]]])` / `turbulence` / `plasma_noise`: Plasma/turbulence noise.
+- `perlin(seed, scale, [octaves, [offset, [shape]]])` / `perlin_noise`:
+  - smooth gradient noise,
+  - supports arbitrary dimensional grids.
+- `voronoi(seed, scale, [jitter], [offset], [shape])` / `cellular` / `worley` / `voronoi_noise` / `cellular_noise`:
+  - cellular / Voronoi noise,
+  - `jitter` is clamped to `0..1`.
+- `plasma(seed, scale, [octaves, [offset, [shape]]])` / `turbulence` / `plasma_noise`:
+  - high-frequency turbulence-style noise.
 
 ---
 
 ### 7) Bitwise
 
 #### 7.1 Shift Operators
-- `a << b`: Bitwise left shift.
-- `a >> b`: Bitwise right shift.
+ - `a << b`: Bitwise left shift.
+ - `a >> b`: Bitwise right shift.
 
-#### 7.2 Bitwise Functions
-- `band(a, b)` / `bitwise_and`: Bitwise AND.
-- `bor(a, b)` / `bitwise_or`: Bitwise OR.
-- `bxor(a, b)` / `bitwise_xor`: Bitwise XOR.
-- `bnot(a)` / `bitwise_not`: Bitwise NOT.
-- `bitcount(a)` / `popcount` / `popcnt`: Number of set bits.
+ #### 7.2 Bitwise Functions
+- `band(a, b)` / `bitwise_and`: bitwise AND.
+- `bor(a, b)` / `bitwise_or`: bitwise OR.
+- `bxor(a, b)` / `bitwise_xor`: bitwise XOR.
+- `bnot(a)` / `bitwise_not`: bitwise NOT.
+- `bitcount(a)` / `popcount` / `popcnt`: number of set bits.
 
 ---
 
 ### 8) Strings
-- `upper(str)`: Convert to uppercase.
-- `lower(str)`: Convert to lowercase.
-- `trim(str)`: Trim surrounding whitespace.
-- `split(str, [delimiter])`: Split string.
-- `join(list, [separator])`: Join list into string.
-- `substring(str, start, [length])` / `substr`: Substring extraction.
-- `find(str, search)`: First match position.
-- `replace(str, search, replacement)`: Replace occurrences.
+- `upper(str)`: convert to uppercase.
+- `lower(str)`: convert to lowercase.
+- `trim(str)`: trim surrounding whitespace.
+- `split(str, [delimiter])`: split string.
+- `join(list, [separator])`: join list into string.
+- `substring(str, start, [length])` / `substr`: substring extraction.
+- `find(str, search)`: first match position.
+- `replace(str, search, replacement)`: replace occurrences.
 
 ---
 
 ### 9) Color
-- `rgb_to_hsv(...)`: Convert RGB to HSV.
-- `hsv_to_rgb(...)`: Convert HSV to RGB.
-- `int_to_rgb(value)`: Convert packed integer color to RGB.
-- `rgb_to_int(...)`: Convert RGB to packed integer color.
+- `rgb_to_hsv(...)`: convert RGB to HSV.
+  - accepts packed tensor/list input or separate `r, g, b`,
+  - optional fourth boolean argument enables hue in degrees.
+- `hsv_to_rgb(...)`: convert HSV to RGB.
+  - accepts packed tensor/list input or separate `h, s, v`,
+  - optional fourth boolean argument treats hue as degrees.
+- `int_to_rgb(value)`: convert packed integer color to RGB triplet.
+- `rgb_to_int(...)`: convert RGB triplet to packed integer color.
 
 ---
 
 ### 10) Utility & Conversion
-- `print(x)`: Print value and return it.
-- `print_shape(x)` / `pshp`: Print shape and return value.
-- `range(start, end, step)`: Numeric sequence.
-- `linspace(start, end, count)`: Evenly spaced sequence.
-- `logspace(start, end, count, base)`: Log-spaced sequence.
-- `nan_to_num(x, nan, posinf, neginf)` / `nvl`: Replace `NaN` / infinities.
-- `timestamp()` / `now`: Current Unix timestamp.
-- `int(x)`: Convert to int32.
-- `float(x)`: Convert to float.
+- `print(x)`: print value and return it.
+- `print_shape(x)` / `pshp`: print shape and return value.
+- `range(start, end, step)`: numeric sequence as a list.
+- `linspace(start, end, count)`: evenly spaced sequence.
+- `logspace(start, end, count, base)`: logarithmically spaced sequence.
+- `nan_to_num(x, nan, posinf, neginf)` / `nvl`: replace `NaN` and infinities.
+- `timestamp()` / `now`: current Unix timestamp.
+- `int(x)`: convert to int32 or nested int values.
+- `float(x)`: convert to float or nested float values.
 
 ---
 
 ### 11) State / Stack
-- `stack_push(id, value)`: Push into stack slot.
-- `stack_pop(id)`: Pop from stack slot.
-- `stack_get(id)`: Read top value without pop.
-- `stack_clear(id)`: Clear stack slot.
-- `stack_has(id)`: Check slot existence/non-empty state.
+- `stack_push(id, value)`: push into stack slot.
+- `stack_pop(id)`: pop from stack slot.
+- `stack_get(id)`: read top value without removing it.
+- `stack_clear(id)`: clear stack slot.
+- `stack_has(id)`: check whether slot exists and is non-empty.
 
 ## Variables
 
-- **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
-  - `D{N}` - position in n-th dimension of tensor (for example D0, D1, D2, ...)
-  - `S{N}` - size of n-th dimension of tensor (for example S0, S1, S2, ...)
-  - `V{N}` - value input (for example V0, V1, V2, ...) - input type
-  - `V` - list of value inputs
-  - `F{N}` - float input (for example F0, F1, F2, ...) - float type
-  - `F` - list of float inputs
-  - `Fcnt` or `F_count`: Number of float inputs.
-  - `Vcnt` or `V_count`: Number of value inputs.
-  - `depth`: Current recursion depth (0 at top level)
-- **common inputs** (legacy):
-  - `a`, `b`, `c`, `d`
-- **Extra floats** (legacy):
-  - `w`, `x`, `y`, `z`
-- **INSIDE IFFT**
-  - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
-  - `K` or `frequency` - isotropic frequency (Euclidean norm of indices, iFFT only)
-  - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
-  - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
-- **IMAGE and LATENT**:
-  - `C` or `channel` - channel of image
-  - `X` - position X in image. 0 is in top left
-  - `Y` - position Y in image. 0 is in top left
-  - `W` or `width` - width of image. y/width = 1
-  - `H` or `height`- height of image. x/height = 1
-  - `B` or `batch` - position in batch
-  - `T` or `batch_count` - number of batches
-  - `N` or `channel_count` - count of channels
-- **IMAGE KERNEL**:
-  - `kX`, `kY` - position in kernel. Centered at 0.0.
-  - `kW`, `kernel_width` - width of kernel.
-  - `kH`, `kernel_height` - height of kernel.
-  - `kD`, `kernel_depth` - depth of kernel.
+ - **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
+-  - `D{N}` - position in n-th dimension of tensor, for example `D0`, `D1`, `D2`
+-  - `S{N}` - size of n-th dimension of tensor, for example `S0`, `S1`, `S2`
+-  - `V{N}` - value input, for example `V0`, `V1`, `V2`
+-  - `V` - list of value inputs
+-  - `F{N}` - float input, for example `F0`, `F1`, `F2`
+-  - `F` - list of float inputs
+-  - `Fcnt` or `F_count`: number of float inputs
+-  - `Vcnt` or `V_count`: number of value inputs
+   - `depth`: Current recursion depth (0 at top level)
+ - **common inputs** (legacy):
+   - `a`, `b`, `c`, `d`
+ - **Extra floats** (legacy):
+   - `w`, `x`, `y`, `z`
+ - **INSIDE IFFT**
+   - `F` or `frequency_count` – frequency count (freq domain, iFFT only)
+   - `K` or `frequency` - isotropic frequency (Euclidean norm of indices, iFFT only)
+   - `Kx`, `Ky`, `K_dimN` - frequency index for specific dimension
+   - `Fx`, `Fy`, `F_dimN` - frequency count for specific dimension
+ - **IMAGE and LATENT**:
+   - `C` or `channel` - channel of image
+   - `X` - X position in image, origin in top-left
+   - `Y` - Y position in image, origin in top-left
+   - `W` or `width` - image width
+   - `H` or `height` - image height
+   - `B` or `batch` - batch index
+   - `T` or `batch_count` - number of batches
+   - `N` or `channel_count` - channel count
+ - **IMAGE KERNEL**:
+   - `kX`, `kY` - position in kernel, centered at `0.0`
+   - `kW`, `kernel_width` - kernel width
+   - `kH`, `kernel_height` - kernel height
+   - `kD`, `kernel_depth` - kernel depth
 
-- **AUDIO**:
-  - `B` or 'batch' - position in batch
-  - `N` or `channel_count` - count of channels
-  - `C` or `channel` - channel of audio
-  - `S` or `sample` – current audio sample
-  - `T` or `sample_count` - audio lenght in samples
-  - `R` or `sample_rate` - sample rate
+ - **AUDIO**:
+   - `B` or `batch` - batch index
+   - `N` or `channel_count` - channel count
+   - `C` or `channel` - audio channel
+   - `S` or `sample` - current sample
+   - `T` or `sample_count` - audio length in samples
+   - `R` or `sample_rate` - sample rate
 
-- **VIDEO**
-  - refer to `IMAGE and LATENT` for visual part (but `batch` is `frame` and `batch_count` is `frame_count`)
-  - refer to `AUDIO` for sound part
-- **NOISE**
-  - refer to `IMAGE and LATENT` for most variables
-  - `I` or `input_latent` - latent used as input to generate noise before noise is generated into it
-- **GUIDER**
-  - refer to `IMAGE and LATENT`
-  - `sigma` - current sigma value
-  - `seed` - seed used for noise generation
-  - `steps` - total number of sampling steps
-  - `current_step` - current step index (0 to steps)
-  - `sample` - tensor input to guider or output from sampling
-
-- **CONDITIONING, SIGMAS and FLOAT**
-  - no additional variables
-- **MODEL, CLIP and VAE**
-  - `L` or `layer` - a position of layer from beginning of object
-  - `LC` or `layer_count` - a count of layers
-  - `K` or `key` - a string key for layer (for example "conv1.weight" or "blocks.5.attn.q_proj.weight")
-- **Constants**: `e`, `pi`
+ - **VIDEO**
+   - refer to `IMAGE and LATENT` for the visual part
+   - `batch` means `frame`
+   - `batch_count` means `frame_count`
+   - refer to `AUDIO` for sound part
+ - **NOISE**
+   - refer to `IMAGE and LATENT` for most variables
+   - `I` or `input_latent` - latent used as input to generate noise
+ - **GUIDER**
+   - refer to `IMAGE and LATENT`
+   - `sigma` - current sigma value
+   - `seed` - seed used for noise generation
+   - `steps` - total number of sampling steps
+   - `current_step` - current step index, `0..steps`
+   - `sample` - tensor input to guider or output from sampling
 
 ## SelectiveGuiderMathNode (hooking)
 
@@ -412,6 +439,74 @@ Runtime variables expose side information:
 ### Variable reference (`SelectiveGuiderMathNode`)
 
 The following variables are available in `Expression`.
+
+## Parser / grammar notes
+
+The grammar in `MathExpr.g4` accepts:
+
+- expressions, statements, blocks, function definitions, and variable assignments,
+- `exprList` for function arguments,
+- function groups by arity:
+  - `func0`
+  - `func1`
+  - `func2`
+  - `func3`
+  - `func4`
+  - `func5`
+  - `funcN`
+  - `funcNoise`
+- operator precedence:
+  - unary
+  - power
+  - shift
+  - multiply/divide/modulo
+  - add/subtract
+  - comparisons
+  - ternary
+- literals:
+  - `NUMBER`
+  - `STRING`
+  - `CONSTANT` (`e`, `pi`)
+  - `NONE`
+  - `VARIABLE`
+
+## Behavioral notes from the visitor
+
+- `if`, `while`, and `for` are statement-level constructs, not expression operators.
+- `return` may be used inside custom functions and top-level blocks.
+- `break` and `continue` are supported in loop bodies.
+- `print_shape(x)` prints a readable shape summary and returns the original value.
+- `shape(x)` returns a Python list, not a tensor.
+- `range(...)` returns a Python list of floats.
+- `fft(x)` and `ifft(x)` use the current tensor shape and expose frequency helper variables during `ifft`.
+- `crop`, `overlay`, `pad`, `replace`, `split`, `join`, `substring`, `find`, and `trim` also support string values where applicable.
+- `rgb_to_hsv` and `hsv_to_rgb` support both packed values and separate channel arguments.
+- `tensor(shape, [value, [type]])` creates a tensor filled with `value`.
+- `stack_*` functions operate on persistent state shared across evaluations.
+
+## Practical examples
+
+```text
+f(x)->x*x+1;
+a=5;
+f(a);
+```
+
+```text
+if (a > 0) { b = a * 2; } else { b = 0; }
+```
+
+```text
+topk([1, 9, 3, 7], 2)
+```
+
+```text
+rgb_to_hsv([1.0, 0.5, 0.25], true)
+```
+
+```text
+perlin(1234, 0.05, 4, [10, 20], [256, 256])
+```
 
 | Variable | Type | Description |
 |---|---|---|

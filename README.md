@@ -243,8 +243,8 @@ You can also get the node from comfy manager under the name of More math.
 - `motion_mask(flow)`: motion/occlusion mask from flow.
 - `flow_to_image(flow)`: visualize flow as RGB.
 - `flow_apply(image, flow)`: warp image by flow.
-- `flow_mag(flow)` / `flow_magnitude`: flow vector magnitude.
-- `flow_ang(flow)` / `flow_angle`: flow vector angle in radians (`atan2(dy, dx)`).
+- `flow_mag(flow)` / `flow_magnitude`: flow vector magnitude (or anything else, uses first 2 positions of last dimension).
+- `flow_ang(flow)` / `flow_angle`: flow vector angle in radians (`atan2(dy, dx)`).  (or anything else, uses first 2 positions of last dimension)
 
 ---
 
@@ -259,6 +259,8 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 6.1 Random Distributions
 - All random generators are seeded and deterministic for a given seed.
+- All use the current node shape by default (based on shape of input to the node), but an optional `shape` argument can be provided to specify a different output shape.
+- all use `rand<dist>(seed, [shape])` / `random_<distribution>` naming convention. `noise`/`randn`/`random_normal` is the same generator as in `Random Noise` node.
 - If `shape` is omitted, the current node shape is used.
 - `noise` / `randn` / `random_normal`: normal distribution.
 - `rand` / `randu` / `random_uniform`: uniform distribution.

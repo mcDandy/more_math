@@ -23,6 +23,7 @@ from .VaeMathNode import VAEMathNode
 from .ClipMathNode import CLIPMathNode
 from .SpectrogramToAudioNode import SpectrogramToAudio
 from .AudioToSpectrogramNode import AudioToSpectrogram
+from .ColorMathNode import ColorMathNode
 
 from .NoiseMathNode import NoiseMathNode
 from .AudioMathNode import AudioMathNode
@@ -172,7 +173,8 @@ class MoreMathExtension(ComfyExtension):
             AudioMathNode,
             StringMathNode,
             ScriptTextInput,
-            SelectiveGuiderMathNode
+            SelectiveGuiderMathNode,
+            ColorMathNode
         ]
 
 

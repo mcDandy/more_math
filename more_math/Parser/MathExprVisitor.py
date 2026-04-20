@@ -719,6 +719,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#FlowMagFunc.
+    def visitFlowMagFunc(self, ctx:MathExprParser.FlowMagFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FlowAngFunc.
+    def visitFlowAngFunc(self, ctx:MathExprParser.FlowAngFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -994,6 +1004,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#WhereFunc.
+    def visitWhereFunc(self, ctx:MathExprParser.WhereFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SwapFunc.
     def visitSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         return self.visitChildren(ctx)
@@ -1004,13 +1019,18 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#ĹogspaceFunc.
-    def visitĹogspaceFunc(self, ctx:MathExprParser.ĹogspaceFuncContext):
+    # Visit a parse tree produced by MathExprParser#LogspaceFunc.
+    def visitLogspaceFunc(self, ctx:MathExprParser.LogspaceFuncContext):
         return self.visitChildren(ctx)
 
 
     # Visit a parse tree produced by MathExprParser#DistFunc.
     def visitDistFunc(self, ctx:MathExprParser.DistFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#HistogramFunc.
+    def visitHistogramFunc(self, ctx:MathExprParser.HistogramFuncContext):
         return self.visitChildren(ctx)
 
 

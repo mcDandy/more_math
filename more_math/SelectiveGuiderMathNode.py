@@ -393,14 +393,14 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 co = transformer_options.get("cond_or_uncond", None)
                 auto_side, auto_idx = side_from_cond_or_uncond(co)
                 side = forced_side if forced_side is not None else auto_side
-                idx_side = 0 if side == "positive" else (1 if side == "negative" else auto_idx)
 
                 if not hit_flags.get(attn_kind, False):
                     dbg(f"{attn_kind.upper()} HIT stage={stage} layer_id={layer_id} side={side}")
                     hit_flags[attn_kind] = True
 
                 act_shape = transformer_options.get("activations_shape", [])
-
+                if not isinstance(act_shape, (list, tuple)):
+                    act_shape = []
 
                 meta = {
                     "hook_kind": attn_kind,
@@ -420,10 +420,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "k": k,
                     "v": v,
                     "heads": float(heads),
-                    "dim_head": float(q.shape[-1] // heads) if heads > 0 : 0.0,
+                    "dim_head": float(q.shape[-1] // heads) if heads > 0 else 0.0,  # <- oprava
                     "layer_key": f"{stage}.{layer_id}.{attn_kind}.{t_index}",
                     "cond_side": side,
-                    "cond_index": float(idx_side),
+                    "cond_index": float(0 if side == "positive" else (1 if side == "negative" else auto_idx)),
                     "is_positive": 1.0 if side == "positive" else 0.0,
                     "is_negative": 1.0 if side == "negative" else 0.0,
                 } | {

@@ -25,30 +25,9 @@ class ColorMathNode(io.ComfyNode):
             category="More math",
             display_name="Color math",
             inputs=[
-                io.Autogrow.Input(
-                    id="V",
-                    template=io.Autogrow.TemplatePrefix(
-                        io.Color.Input("values", optional=True),
-                        prefix="V",
-                        min=1,
-                        max=50,
-                    ),
-                ),
-                io.Autogrow.Input(
-                    id="F",
-                    template=io.Autogrow.TemplatePrefix(
-                        io.Float.Input(
-                            "float",
-                            default=0.0,
-                            optional=True,
-                            lazy=True,
-                            force_input=True,
-                        ),
-                        prefix="F",
-                        min=1,
-                        max=50,
-                    ),
-                ),
+                io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Color.Input("values"), prefix="V", min=1, max=50)),
+                io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
+
                 io.MultiType.Input(
                     io.String.Input("Expression", default="V0", multiline=False),
                     types=[io.String, MrmthParseTree],
@@ -111,12 +90,14 @@ class ColorMathNode(io.ComfyNode):
         stack: dict | None = None,
     ) -> tuple[str, dict]:
         """Execute color expression and return resulting color."""
+        print(V)
+        print("---")
         work_stack = stack if remember_stack else (
             copy.deepcopy(stack) if stack is not None else {}
         )
 
-        if not V:
-            raise ValueError("At least one color input is required.")
+       # if not V:
+      #      raise ValueError("At least one color input is required.")
 
         variables: dict[str, Any] = {}
 

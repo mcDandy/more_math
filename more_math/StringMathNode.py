@@ -13,20 +13,20 @@ from .ParseTree import MrmthParseTree
 
 class StringMathNode(io.ComfyNode):
     """
-    Enables math expressions on Audio.
+    Enables math expressions on String values.
 
     Inputs:
-        I: Autogrow image inputs (I0, I1, ...)
+        V: Autogrow string inputs (V0, V1, ...)
         F: Autogrow float inputs (F0, F1, ...)
-        Image: Expression
+        Expression: Math expression to evaluate
     """
 
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_ag_AudioMathNode",
+            node_id="mrmth_ag_StringMathNode",
             category="More math",
-            display_name="Audio math",
+            display_name="String math",
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.String.Input("values", optional=True), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),

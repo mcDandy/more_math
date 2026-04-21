@@ -32,6 +32,8 @@ from .SelectiveGuiderMathNode import SelectiveGuiderMathNode
 
 from .ScriptTextWindow import ScriptTextInput
 
+from .minimal_test import mintest
+
 from comfy_api.latest import ComfyExtension, io
 
 
@@ -174,7 +176,8 @@ class MoreMathExtension(ComfyExtension):
             StringMathNode,
             ScriptTextInput,
             SelectiveGuiderMathNode,
-            ColorMathNode
+            ColorMathNode,
+            mintest
         ]
 
 

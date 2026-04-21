@@ -340,6 +340,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "cond_index": float(idx_side),
                     "is_positive": 1.0 if side == "positive" else 0.0,
                     "is_negative": 1.0 if side == "negative" else 0.0,
+                    "activations_shape": tensor_shape(out["img"]) if isinstance(out, dict) and "img" in out else [],
                 }
 
                 out = extra_args["original_block"](args)
@@ -484,7 +485,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "cond_index": float(idx_side),
                     "is_positive": 1.0 if side == "positive" else 0.0,
                     "is_negative": 1.0 if side == "negative" else 0.0,
+                    "activations_shape": tensor_shape(t),
                 }
+
                 return run_expr(t, meta)
 
             def input_block_patch(h, transformer_options):
@@ -508,6 +511,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             patches["output_block_patch"] = list(patches.get("output_block_patch", [])) + [output_block_patch]
             patches["middle_patch"] = list(patches.get("middle_patch", [])) + [middle_patch]
             patches["emb_patch"] = list(patches.get("emb_patch", [])) + [emb_patch]
+            patches["middle_block_after_patch"] = list(patches.get("middle_block_after_patch", [])) + [middle_patch]
 
             topts["patches"] = patches
             patched_dict["transformer_options"] = topts
@@ -533,6 +537,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                         "total_blocks": -1.0,
                         "has_qkv": 0.0,
                         "layer_key": "model.begin",
+                        "activations_shape": tensor_shape(x),
                     }
                     xin = run_expr(x, pre_meta) if isinstance(x, torch.Tensor) else x
                 else:
@@ -552,6 +557,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                         "total_blocks": -1.0,
                         "has_qkv": 0.0,
                         "layer_key": "model.end",
+                        "activations_shape": tensor_shape(out),
                     }
                     return run_expr(out, post_meta)
                 return out
@@ -674,3 +680,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 dbg(f"HOOK SUMMARY ITEM {item}")
 
         return result
+    
+def tensor_shape(x):
+    return list(x.shape) if isinstance(x, torch.Tensor) else []

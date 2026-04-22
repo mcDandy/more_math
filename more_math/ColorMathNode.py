@@ -52,21 +52,36 @@ class ColorMathNode(io.ComfyNode):
 
     @staticmethod
     def _hex_to_int(color_hex: str) -> int:
-        """Convert #RRGGBB/#RGB into packed integer 0xRRGGBB."""
+        """Convert #RRGGBB/#RRGGBBAA into packed ARGB 0xAARRGGBB."""
         s = str(color_hex).strip()
-        if s.startswith("#"):
-            s = s[1:]
-        if len(s) == 3:
-            s = "".join(ch * 2 for ch in s)
-        if len(s) != 6:
+        if not s.startswith("#"):
             raise ValueError(f"Invalid color format: {color_hex}")
-        return int(s, 16) & 0xFFFFFF
+        s = s[1:]
+
+        if len(s) == 6:  # RRGGBB
+            rr = int(s[0:2], 16)
+            gg = int(s[2:4], 16)
+            bb = int(s[4:6], 16)
+            aa = 0xFF
+        elif len(s) == 8:  # RRGGBBAA
+            rr = int(s[0:2], 16)
+            gg = int(s[2:4], 16)
+            bb = int(s[4:6], 16)
+            aa = int(s[6:8], 16)
+        else:
+            raise ValueError(f"Invalid color format: {color_hex}")
+
+        return ((aa & 0xFF) << 24) | ((rr & 0xFF) << 16) | ((gg & 0xFF) << 8) | (bb & 0xFF)
 
     @staticmethod
     def _int_to_hex(value: int) -> str:
-        """Convert numeric value to #RRGGBB."""
-        s = f"{int(value) & 0xFFFFFF:06x}"
-        return f"#{s}"
+        """Convert packed ARGB 0xAARRGGBB into #RRGGBBAA."""
+        v = int(value) & 0xFFFFFFFF
+        aa = (v >> 24) & 0xFF
+        rr = (v >> 16) & 0xFF
+        gg = (v >> 8) & 0xFF
+        bb = v & 0xFF
+        return f"#{rr:02x}{gg:02x}{bb:02x}{aa:02x}"
 
     @classmethod
     def check_lazy_status(
@@ -88,7 +103,7 @@ class ColorMathNode(io.ComfyNode):
         Expression: Any,
         remember_stack: bool = False,
         stack: dict | None = None,
-    ) -> tuple[str, dict]:
+    ) -> io.NodeOutput:
         """Execute color expression and return resulting color."""
         print(V)
         print("---")
@@ -146,4 +161,4 @@ class ColorMathNode(io.ComfyNode):
         out_color = cls._int_to_hex(result)
 
         returned_stack = work_stack if remember_stack else copy.deepcopy(work_stack)
-        return out_color, returned_stack
+        return io.NodeOutput(out_color, returned_stack)

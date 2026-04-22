@@ -18,7 +18,7 @@ class mintest(io.ComfyNode):
             category="More math",
             display_name="Minimal test",
             inputs=[
-                io.Autogrow.Input(id="V", template=io.Autogrow.TemplatePrefix(io.Color.Input("values"), prefix="V", min=1, max=50)),
+                io.Color.Input(id="V"),
             ],
             outputs=[
                 io.Color.Output(id="color"),
@@ -33,4 +33,4 @@ class mintest(io.ComfyNode):
     ):
         """Execute color expression and return resulting color."""
         print(V)
-        return V["V0"]
+        return V

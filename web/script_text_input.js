@@ -46,7 +46,11 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 box-sizing: border-box;
                 overflow: hidden;
             }
-
+            .mrmth-syntax-layer::after {
+                content: "";
+                display: block;
+                height: 1em;
+            }
             .mrmth-gutter-content {
                 white-space: pre;
                 will-change: transform;
@@ -325,15 +329,8 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         requestAnimationFrame(refresh);
     }
     function updateHighlight(textarea, syntaxLayer) {
-        // trik: přidat mezeru, pokud končí novým řádkem
-        const source =
-            textarea.value.endsWith("\n")
-                ? textarea.value + " "
-                : textarea.value;
+        syntaxLayer.innerHTML = renderHighlight(textarea.value);
 
-        syntaxLayer.innerHTML = renderHighlight(source);
-
-        // synchronizace scrollu
         syntaxLayer.scrollTop = textarea.scrollTop;
         syntaxLayer.scrollLeft = textarea.scrollLeft;
     }

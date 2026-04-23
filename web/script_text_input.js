@@ -104,6 +104,12 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 height: auto;
             }
 
+.mrmth-syntax-layer,
+.mrmth-measure {
+    margin: 0 !important;
+}
+
+
             .mrmth-token-comment { color: #7f8c8d; }
             .mrmth-token-number { color: #f39c12; }
             .mrmth-token-constant { color: #f1c40f; }

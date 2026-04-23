@@ -2,6 +2,15 @@ import { app } from "/scripts/app.js";
 
 const STYLE_ID = "mrmth-script-line-numbers-unified";
 
+function escapeHtml(value) {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 if (!window.__mrmthScriptInputUnifiedInit) {
     window.__mrmthScriptInputUnifiedInit = true;
 
@@ -43,33 +52,40 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 will-change: transform;
             }
 
-            .mrmth-editor-container {
-                position: relative;
-                flex: 1;
-                min-width: 0;
-                min-height: 170px;
-                overflow: hidden;
+           .mrmth-editor-container {
+             position: relative;
+             flex: 1;
+             min-width: 0;
+             min-height: 170px;
+             overflow: hidden;
+             background: transparent; /* ⬅️ DŮLEŽITÉ */
+           }
+
+            .mrmth-syntax-layer {
+              position: absolute;
+              inset: 0;
+              z-index: 3;              /* ⬅️ výš než textarea */
+              pointer-events: none;
+              white-space: pre-wrap;
+              overflow-wrap: anywhere;
+              word-break: break-word;
+              box-sizing: border-box;
+              overflow: hidden;
+              opacity: 1;
             }
 
+
             .mrmth-script-textarea {
-                display: block;
-                width: 100% !important;
-                height: 100% !important;
-                min-height: 170px !important;
-                margin: 0 !important;
-                border: 0 !important;
-                outline: none !important;
-                resize: vertical !important;
-                box-sizing: border-box !important;
+              position: absolute;       /* ⬅️ ne relative */
+              inset: 0;
+              z-index: 2;
 
-                font-family: monospace !important;
-                font-size: 12px !important;
-                line-height: 1.45 !important;
-                padding: 8px 10px !important;
+              color: transparent !important;
+              caret-color: #ffffff !important;
+              background: transparent !important;
 
-                white-space: pre-wrap !important;
-                overflow-wrap: anywhere !important;
-                word-break: break-word !important;
+              mix-blend-mode: normal;   /* ⬅️ ZRUŠ lighten */
+              -webkit-text-fill-color: transparent;
             }
 
             .mrmth-measure {
@@ -83,17 +99,24 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 box-sizing: border-box;
                 height: auto;
             }
+
+            .mrmth-token-comment { color: #7f8c8d; }
+            .mrmth-token-number { color: #f39c12; }
+            .mrmth-token-constant { color: #f1c40f; }
+            .mrmth-token-keyword { color: #e74c3c; }
+            .mrmth-token-function { color: #8e44ad; }
+            .mrmth-token-variable { color: #ecf0f1; }
+            .mrmth-token-operator { color: #95a5a6; }
+            .mrmth-token-string { color: #4ea658; }
+            .mrmth-token-bracket { font-weight: 700; }
+            .mrmth-bracket-0 { color: #ffd700; }
+            .mrmth-bracket-1 { color: #da70d6; }
+            .mrmth-bracket-2 { color: #87cefa; }
+            .mrmth-bracket-3 { color: #98fb98; }
+            .mrmth-bracket-4 { color: #ff6347; }
+            .mrmth-bracket-5 { color: #ffa500; }
         `;
         document.head.appendChild(style);
-    }
-
-    function escapeHtml(value) {
-        return value
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
     }
 
     function hasNearbyScriptLabel(el) {
@@ -255,10 +278,14 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const measureEl = document.createElement("pre");
         measureEl.className = "mrmth-measure";
 
+        const syntaxLayer = document.createElement("pre");
+        syntaxLayer.className = "mrmth-syntax-layer";
+
         parent.replaceChild(wrapper, textarea);
         wrapper.appendChild(gutter);
         wrapper.appendChild(editorContainer);
         editorContainer.appendChild(measureEl);
+        editorContainer.appendChild(syntaxLayer);
         editorContainer.appendChild(textarea);
 
         textarea.classList.add("mrmth-script-textarea");
@@ -269,12 +296,26 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         textarea.autocorrect = "off";
 
         addBracketAutoClose(textarea);
-        const lineHeightPx = getLineHeightPx(textarea);
+        const cs = getComputedStyle(textarea);
+        syntaxLayer.style.fontFamily = cs.fontFamily;
+        syntaxLayer.style.fontSize = cs.fontSize;
+        syntaxLayer.style.fontWeight = cs.fontWeight;
+        syntaxLayer.style.fontStyle = cs.fontStyle;
+        syntaxLayer.style.lineHeight = cs.lineHeight;
+        syntaxLayer.style.padding = cs.padding;
 
-        const refresh = () => updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
+        const lineHeightPx = getLineHeightPx(textarea);
+        const refresh = () => {
+            updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
+            updateHighlight(textarea, syntaxLayer);
+        };
 
         textarea.addEventListener("input", refresh);
-        textarea.addEventListener("scroll", refresh);
+        textarea.addEventListener("scroll", () => {
+            gutterContent.style.transform = `translateY(${-textarea.scrollTop}px)`;
+            syntaxLayer.scrollTop = textarea.scrollTop;
+            syntaxLayer.scrollLeft = textarea.scrollLeft;
+        });
 
         if (window.ResizeObserver) {
             const ro = new ResizeObserver(refresh);
@@ -282,6 +323,19 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         }
 
         requestAnimationFrame(refresh);
+    }
+    function updateHighlight(textarea, syntaxLayer) {
+        // trik: přidat mezeru, pokud končí novým řádkem
+        const source =
+            textarea.value.endsWith("\n")
+                ? textarea.value + " "
+                : textarea.value;
+
+        syntaxLayer.innerHTML = renderHighlight(source);
+
+        // synchronizace scrollu
+        syntaxLayer.scrollTop = textarea.scrollTop;
+        syntaxLayer.scrollLeft = textarea.scrollLeft;
     }
 
     function scan(root = document) {
@@ -306,4 +360,76 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             observer.observe(document.body, { childList: true, subtree: true });
         },
     });
+}
+
+const KEYWORDS = new Set(["if", "else", "while", "for", "in", "break", "continue", "return", "none", "None", "null", "NULL"]);
+const CONSTANTS = new Set(["pi", "PI", "e", "E"]);
+const FUNCTIONS = new Set([
+    "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+    "abs", "sqrt", "ln", "log", "exp", "floor", "ceil", "round", "pow", "clamp",
+    "fft", "ifft", "print", "where", "rgb_to_int", "int_to_rgb", "hsv_to_rgb", "rgb_to_hsv",
+    "sum", "mean", "std", "var", "min", "max", "sort", "argsort", "argmin", "argmax"
+]);
+
+const BRACKET_PAIRS = { "(": ")", "[": "]", "{": "}" };
+const OPENING_BRACKETS = new Set(["(", "[", "{"]);
+const CLOSING_BRACKETS = new Set([")", "]", "}"]);
+
+function tokenize(text) {
+    const tokens = [];
+    const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|\+=|-=|\*=|\/=|%=|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
+
+    const bracketStack = [];
+    const depthByType = { "(": 0, "[": 0, "{": 0 };
+    let m;
+
+    while ((m = pattern.exec(text)) !== null) {
+        const value = m[0];
+        let type = "text";
+        let depth = 0;
+
+        if (value.startsWith("#") || value.startsWith("/*")) {
+            type = "comment";
+        } else if (value.startsWith('"') || value.startsWith("'")) {
+            type = "string";
+        } else if (OPENING_BRACKETS.has(value)) {
+            depth = depthByType[value];
+            depthByType[value]++;
+            bracketStack.push(value);
+            type = "bracket";
+        } else if (CLOSING_BRACKETS.has(value)) {
+            if (bracketStack.length) {
+                const lastOpen = bracketStack[bracketStack.length - 1];
+                if (BRACKET_PAIRS[lastOpen] === value) {
+                    depth = depthByType[lastOpen] - 1;
+                    depthByType[lastOpen]--;
+                    bracketStack.pop();
+                }
+            }
+            type = "bracket";
+        } else if (/^[+\-*/%^=<>|?:,;]|==|!=|>=|<=|<<|>>|->$/.test(value)) {
+            type = "operator";
+        } else if (/^(?:\d+\.\d*|\d+|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) {
+            type = "number";
+        } else if (/^[a-zA-Z_]/.test(value)) {
+            if (KEYWORDS.has(value)) type = "keyword";
+            else if (CONSTANTS.has(value)) type = "constant";
+            else if (FUNCTIONS.has(value)) type = "function";
+            else type = "variable";
+        }
+
+        tokens.push({ type, value, depth });
+    }
+    return tokens;
+}
+
+function renderHighlight(text) {
+    return tokenize(text).map((t) => {
+        if (t.type === "text") return escapeHtml(t.value);
+        if (t.type === "bracket") {
+            const d = t.depth % 6;
+            return `<span class="mrmth-token-bracket mrmth-bracket-${d}">${escapeHtml(t.value)}</span>`;
+        }
+        return `<span class="mrmth-token-${t.type}">${escapeHtml(t.value)}</span>`;
+    }).join("");
 }

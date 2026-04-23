@@ -9,9 +9,45 @@ function ensureStyles() {
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-        .mrmth-v2-editor { display:flex; width:100%; min-height:160px; border:1px solid rgba(255,255,255,.12); border-radius:8px; overflow:hidden; }
-        .mrmth-v2-gutter { padding:8px 10px; min-width:40px; text-align:right; user-select:none; color:#9aa0a6; background:rgba(0,0,0,.35); border-right:1px solid rgba(255,255,255,.12); font-family:monospace; font-size:12px; line-height:1.45; white-space:pre; box-sizing:border-box; }
-        .mrmth-v2-textarea { flex:1; min-height:160px !important; border:0 !important; outline:none !important; resize:vertical !important; font-family:monospace !important; font-size:12px !important; line-height:1.45 !important; padding:8px 10px !important; box-sizing:border-box !important; }
+        .mrmth-v2-editor { 
+            display:flex; 
+            width:100%; 
+            min-height:160px; 
+            border:1px solid rgba(255,255,255,.12); 
+            border-radius:8px; 
+            overflow:hidden; 
+        }
+        .mrmth-v2-gutter { 
+            padding:8px 10px; 
+            min-width:40px; 
+            text-align:right; 
+            user-select:none; 
+            color:#9aa0a6; 
+            background:rgba(0,0,0,.35); 
+            border-right:1px solid rgba(255,255,255,.12); 
+            font-family:monospace; 
+            font-size:12px; 
+            line-height:1.45; 
+            white-space:pre; 
+            box-sizing:border-box; 
+        }
+        .mrmth-v2-textarea { 
+            flex: 1;
+            min-height: 160px !important;
+            border: 0 !important;
+            outline: none !important;
+            resize: vertical !important;
+            font-family: monospace !important;
+            font-size: 12px !important;
+            line-height: 1.45 !important;
+            padding: 8px 10px !important;
+            box-sizing: border-box !important;
+
+            white-space: pre !important;
+            overflow: auto !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -73,12 +109,29 @@ function addBracketAutoClose(textarea) {
     });
 }
 
+function hideNearbyScriptLabels(textarea) {
+    const root = textarea.closest("div, section, article") ?? textarea.parentElement;
+    if (!root) return;
+
+    const labels = root.querySelectorAll("label, .label, .input-label, .property_name, .v-label, span, div");
+    for (const el of labels) {
+        if (el.dataset.mrmthHiddenLabel === "1") continue;
+        const t = (el.textContent || "").trim().toLowerCase();
+        if (t === "script") {
+            el.style.display = "none";
+            el.dataset.mrmthHiddenLabel = "1";
+        }
+    }
+}
+
 function attachToTextarea(textarea) {
     if (!isLikelyScriptTextarea(textarea)) return;
+
     const parent = textarea.parentElement;
     if (!parent) return;
 
     ensureStyles();
+    hideNearbyScriptLabels(textarea);
 
     const wrapper = document.createElement("div");
     wrapper.className = "mrmth-v2-editor";
@@ -92,6 +145,12 @@ function attachToTextarea(textarea) {
 
     textarea.classList.add("mrmth-v2-textarea");
     textarea.dataset.mrmthV2Script = "1";
+
+    // disable red spell-check underline for code
+    textarea.spellcheck = false;
+    textarea.autocapitalize = "off";
+    textarea.autocomplete = "off";
+    textarea.autocorrect = "off";
 
     const refresh = () => updateGutter(textarea, gutter);
     textarea.addEventListener("input", refresh);

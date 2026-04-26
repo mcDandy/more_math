@@ -23,7 +23,6 @@ from .VaeMathNode import VAEMathNode
 from .ClipMathNode import CLIPMathNode
 from .SpectrogramToAudioNode import SpectrogramToAudio
 from .AudioToSpectrogramNode import AudioToSpectrogram
-from .ColorMathNode import ColorMathNode
 
 from .NoiseMathNode import NoiseMathNode
 from .AudioMathNode import AudioMathNode
@@ -31,8 +30,6 @@ from .StringMathNode import StringMathNode
 from .SelectiveGuiderMathNode import SelectiveGuiderMathNode
 
 from .ScriptTextWindow import ScriptTextInput
-
-from .minimal_test import mintest
 
 from comfy_api.latest import ComfyExtension, io
 
@@ -175,9 +172,7 @@ class MoreMathExtension(ComfyExtension):
             AudioMathNode,
             StringMathNode,
             ScriptTextInput,
-            SelectiveGuiderMathNode,
-            ColorMathNode,
-            mintest
+            SelectiveGuiderMathNode
         ]
 
 

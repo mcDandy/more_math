@@ -21,7 +21,7 @@ You can also get the node from comfy manager under the name of More math.
 - Functions and variables in math expressions.
 - Conversion between `INT` and `FLOAT`, `INT` and `BOOLEAN`, and `AUDIO` and `IMAGE`
   - image/audio conversion encodes frequency content into RGB channels.
-- Node support for `FLOAT`, `STRING`, `CONDITIONING`, `LATENT`, `IMAGE`, `MASK`, `COLOR`, `NOISE`, `AUDIO`, `VIDEO`, `MODEL`, `CLIP`, `VAE`, `SIGMAS`, and `GUIDER`.
+- Node support for `FLOAT`, `STRING`, `CONDITIONING`, `LATENT`, `IMAGE`, `MASK`, `NOISE`, `AUDIO`, `VIDEO`, `MODEL`, `CLIP`, `VAE`, `SIGMAS`, and `GUIDER`.
 - Vector math with list literals `[v1, v2, ...]` and mixed operations between lists, scalars, and tensors.
 - Custom functions `funcname(variable, variable, ...)->expression;`
   - can be used later in expressions and in other custom functions,

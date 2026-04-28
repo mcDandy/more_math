@@ -2,6 +2,9 @@ from comfy_api.latest import io
 from .Stack import MrmthStack
 
 class StackUnBatcher(io.ComfyNode):
+    """
+    Takes a list of stack created during operation running on batched values and outputs the last stack, making it possible to use the stack in non-batched operations after. When used on non-batched stack, it will do nothing.
+    """
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(

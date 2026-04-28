@@ -28,6 +28,7 @@ from .NoiseMathNode import NoiseMathNode
 from .AudioMathNode import AudioMathNode
 from .StringMathNode import StringMathNode
 from .SelectiveGuiderMathNode import SelectiveGuiderMathNode
+from .StackUnBatcher import StackUnBatcher
 
 from .ScriptTextWindow import ScriptTextInput
 
@@ -172,7 +173,8 @@ class MoreMathExtension(ComfyExtension):
             AudioMathNode,
             StringMathNode,
             ScriptTextInput,
-            SelectiveGuiderMathNode
+            SelectiveGuiderMathNode,
+            StackUnBatcher
         ]
 
 

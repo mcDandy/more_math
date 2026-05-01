@@ -1,4 +1,4 @@
-# Generated from MathExpr.g4 by ANTLR 4.13.2
+# Generated from ./MathExpr.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .MathExprParser import MathExprParser
@@ -921,6 +921,21 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#Rgb_to_intFunc.
     def visitRgb_to_intFunc(self, ctx:MathExprParser.Rgb_to_intFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#InterpolateLinearFunc.
+    def visitInterpolateLinearFunc(self, ctx:MathExprParser.InterpolateLinearFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#InterpolateAreaFunc.
+    def visitInterpolateAreaFunc(self, ctx:MathExprParser.InterpolateAreaFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
+    def visitInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
         return self.visitChildren(ctx)
 
 

@@ -29,7 +29,7 @@ const FUNCTIONS = new Set([
     "upper", "lower", "split", "join", "substring", "substr", "find", "trim", "replace",
     "dilate", "erode", "morph_open", "morph_close",
     "rgb_to_hsv", "hsv_to_rgb", "int_to_rgb", "rgb_to_int", "where", "histogram", "hist", "flow_mag", "flow_magnitude", "flow_ang", "flow_angle",
-]);
+    "interpolate_linear", "interpolate_area", "interpolate_nearest","interpolate_nearest_exact"]);
 
 const BRACKET_PAIRS = {
     '(': ')',

@@ -1286,6 +1286,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#FlowMagFunc.
+    def enterFlowMagFunc(self, ctx:MathExprParser.FlowMagFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowMagFunc.
+    def exitFlowMagFunc(self, ctx:MathExprParser.FlowMagFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowAngFunc.
+    def enterFlowAngFunc(self, ctx:MathExprParser.FlowAngFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowAngFunc.
+    def exitFlowAngFunc(self, ctx:MathExprParser.FlowAngFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -1637,6 +1655,33 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#InterpolateLinearFunc.
+    def enterInterpolateLinearFunc(self, ctx:MathExprParser.InterpolateLinearFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpolateLinearFunc.
+    def exitInterpolateLinearFunc(self, ctx:MathExprParser.InterpolateLinearFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InterpolateAreaFunc.
+    def enterInterpolateAreaFunc(self, ctx:MathExprParser.InterpolateAreaFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpolateAreaFunc.
+    def exitInterpolateAreaFunc(self, ctx:MathExprParser.InterpolateAreaFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
+    def enterInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
+    def exitInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ClampFunc.
     def enterClampFunc(self, ctx:MathExprParser.ClampFuncContext):
         pass
@@ -1781,6 +1826,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#WhereFunc.
+    def enterWhereFunc(self, ctx:MathExprParser.WhereFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#WhereFunc.
+    def exitWhereFunc(self, ctx:MathExprParser.WhereFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SwapFunc.
     def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         pass
@@ -1799,12 +1853,12 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#ĹogspaceFunc.
-    def enterĹogspaceFunc(self, ctx:MathExprParser.ĹogspaceFuncContext):
+    # Enter a parse tree produced by MathExprParser#LogspaceFunc.
+    def enterLogspaceFunc(self, ctx:MathExprParser.LogspaceFuncContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#ĹogspaceFunc.
-    def exitĹogspaceFunc(self, ctx:MathExprParser.ĹogspaceFuncContext):
+    # Exit a parse tree produced by MathExprParser#LogspaceFunc.
+    def exitLogspaceFunc(self, ctx:MathExprParser.LogspaceFuncContext):
         pass
 
 
@@ -1814,6 +1868,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#DistFunc.
     def exitDistFunc(self, ctx:MathExprParser.DistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#HistogramFunc.
+    def enterHistogramFunc(self, ctx:MathExprParser.HistogramFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#HistogramFunc.
+    def exitHistogramFunc(self, ctx:MathExprParser.HistogramFuncContext):
         pass
 
 

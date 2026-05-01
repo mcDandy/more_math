@@ -217,6 +217,9 @@ func2:
 	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN # ReplaceFunc
 	| INT_TO_RGB LPAREN expr RPAREN                # Int_to_rgbFunc
 	| RGB_TO_INT LPAREN expr ( COMMA expr COMMA expr)? RPAREN # Rgb_to_intFunc
+	| INTERPOLATE_LINEAR LPAREN expr COMMA expr RPAREN # InterpolateLinearFunc
+	| INTERPOLATE_AREA LPAREN expr COMMA expr RPAREN # InterpolateAreaFunc
+	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN # InterpolateNearestExactFunc
 	;
 
 func3:
@@ -415,6 +418,9 @@ RGB_TO_HSV: 'rgb_to_hsv';
 HSV_TO_RGB: 'hsv_to_rgb';
 INT_TO_RGB: 'int_to_rgb';
 RGB_TO_INT: 'rgb_to_int';
+INTERPOLATE_LINEAR: 'interpolate_linear';
+INTERPOLATE_AREA: 'interpolate_area';
+INTERPOLATE_NEAREST: 'interpolate_nearest' | 'interpolate_nearest_exact';
 
 IF: 'if';
 ELSE: 'else';

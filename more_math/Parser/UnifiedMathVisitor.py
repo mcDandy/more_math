@@ -3689,3 +3689,58 @@ class UnifiedMathVisitor(MathExprVisitor):
         dy = flow[..., 1]
 
         return torch.atan2(dy, dx).contiguous()
+
+
+
+    def _interpolate_impl(self, ctx, mode):
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        arg = (yield ctx.expr(1))
+
+        if x.ndim not in (3, 4, 5):
+            raise ValueError(
+                f"{ctx.start.line}:{ctx.start.column}: interpolate expects 3D, 4D or 5D input, got shape {tuple(x.shape)}"
+            )
+
+        spatial_dims = x.ndim - 2
+
+        if mode == "linear":
+            interp_mode = {1: "linear", 2: "bilinear", 3: "trilinear"}[spatial_dims]
+        else:
+            interp_mode = mode
+
+        if self._is_list(arg):
+            size = tuple(self._to_int(v, ctx, "interpolate") for v in arg)
+            if len(size) != spatial_dims:
+                raise ValueError(
+                    f"{ctx.start.line}:{ctx.start.column}: interpolate size length {len(size)} does not match spatial dims {spatial_dims}"
+                )
+            kwargs = {"size": size, "mode": interp_mode}
+
+        elif self._is_tensor(arg):
+            if arg.numel() == 1:
+                size = (self._to_int(arg, ctx, "interpolate"),)
+            else:
+                size = tuple(self._to_int(v, ctx, "interpolate") for v in arg.flatten().tolist())
+
+            if len(size) != spatial_dims:
+                raise ValueError(
+                    f"{ctx.start.line}:{ctx.start.column}: interpolate size length {len(size)} does not match spatial dims {spatial_dims}"
+                )
+            kwargs = {"size": size, "mode": interp_mode}
+
+        else:
+            kwargs = {"scale_factor": float(arg), "mode": interp_mode}
+
+        if interp_mode in ("linear", "bilinear", "trilinear"):
+            kwargs["align_corners"] = False
+
+        return F.interpolate(x, **kwargs)
+
+    def visitInterpolateLinearFunc(self, ctx):
+        return (yield from self._interpolate_impl(ctx, "linear"))
+
+    def visitInterpolateAreaFunc(self, ctx):
+        return (yield from self._interpolate_impl(ctx, "area"))
+
+    def visitInterpolateNearestExactFunc(self, ctx):
+        return (yield from self._interpolate_impl(ctx, "nearest-exact"))

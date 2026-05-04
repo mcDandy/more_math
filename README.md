@@ -206,6 +206,9 @@ You can also get the node from comfy manager under the name of More math.
 - `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists.
 - `roll(tensor, shifts, [dim])`: circular shift.
 - `tensor(shape, [value, [type]])`: create a filled tensor; `type` a tensor to copy its dtype to self when being created.
+- `interpolate_linear(tensor, scale)`: linear interpolation-based resizing. Scale can be a single float or a list. When it is a list, it is interpreted as the target output size.
+- `interpolate_area(tensor, scale)`: area interpolation-based resizing.
+- `interpolate_nearest(tensor, scale)`: nearest neighbor interpolation-based resizing.
 
 #### 2.5 Linear Algebra
 - `dot(a, b)`: dot product after flattening.

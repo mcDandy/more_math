@@ -3827,7 +3827,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             r = self._promote_to_tensor((yield ctx.expr(0))).float()
             g = self._promote_to_tensor((yield ctx.expr(1))).float()
             b = self._promote_to_tensor((yield ctx.expr(2))).float()
-            x = self._linear_to_cielab(r, g, b)
+        x = self._linear_to_cielab(r, g, b)
         return torch.stack((x[..., 0]/100, x[..., 1], x[..., 2]), dim=-1)
 
     def _linear_to_srgb(self, c):
@@ -3869,7 +3869,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         b_lin = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z
 
         rgb_lin = torch.stack([r_lin, g_lin, b_lin], dim=-1)
-        return torch.clamp(self._linear_to_srgb(rgb_lin), 0.0, 1.0)
+        return self._linear_to_srgb(rgb_lin)
 
     def visitOklabToRgbFunc(self, ctx):
         num_args = len(ctx.expr())

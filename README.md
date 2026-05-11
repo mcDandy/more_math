@@ -327,13 +327,13 @@ You can also get the node from comfy manager under the name of More math.
   - accepts packed tensor/list input or separate `h, s, v`,
   - optional fourth boolean argument treats hue as degrees.
 - `rgb_to_oklab(...)`: convert RGB to OKLab.
-  - accepts packed tensor/list input or separate `r, g, b`.
+   - accepts packed tensor/list input or separate `r, g, b`.
 - `oklab_to_rgb(...)`: convert OKLab to RGB.
-  - accepts packed tensor/list input or separate `L, a, b`.
-- `rgb_to_cilab(...)` / `rgb_to_cielab(...)`: convert RGB to CIELAB.
-  - accepts packed tensor/list input or separate `r, g, b`.
-- `cilab_to_rgb(...)` / `cielab_to_rgb(...)`: convert CIELAB to RGB.
-  - accepts packed tensor/list input or separate `L, a, b`.
+   - accepts packed tensor/list input or separate `L, a, b`.
+-  `rgb_to_cielab(...)`: convert RGB to CIELAB.
+   - accepts packed tensor/list input or separate `r, g, b`.
+-  `cielab_to_rgb(...)`: convert CIELAB to RGB.
+   - accepts packed tensor/list input or separate `L, a, b`.
 - `int_to_rgb(value)`: convert packed integer color to RGB triplet.
 - `rgb_to_int(...)`: convert RGB triplet to packed integer color.
 

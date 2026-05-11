@@ -1009,6 +1009,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#RgbToOklabFunc.
+    def visitRgbToOklabFunc(self, ctx:MathExprParser.RgbToOklabFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RgbToCilabFunc.
+    def visitRgbToCilabFunc(self, ctx:MathExprParser.RgbToCilabFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#RgbToHsvFunc.
     def visitRgbToHsvFunc(self, ctx:MathExprParser.RgbToHsvFuncContext):
         return self.visitChildren(ctx)
@@ -1021,6 +1031,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#WhereFunc.
     def visitWhereFunc(self, ctx:MathExprParser.WhereFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#OklabToRgbFunc.
+    def visitOklabToRgbFunc(self, ctx:MathExprParser.OklabToRgbFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CilabToRgbFunc.
+    def visitCilabToRgbFunc(self, ctx:MathExprParser.CilabToRgbFuncContext):
         return self.visitChildren(ctx)
 
 

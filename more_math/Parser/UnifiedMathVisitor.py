@@ -3744,3 +3744,153 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitInterpolateNearestExactFunc(self, ctx):
         return (yield from self._interpolate_impl(ctx, "nearest-exact"))
+
+    def _rgb_triplet_from_arg(self, ctx, val, func_name):
+        if self._is_list(val):
+            if len(val) != 3:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {func_name} expects 3 values [r, g, b], got {len(val)}")
+            return (
+                self._promote_to_tensor(val[0]).float(),
+                self._promote_to_tensor(val[1]).float(),
+                self._promote_to_tensor(val[2]).float(),
+            )
+
+        rgb = self._promote_to_tensor(val)
+        if rgb.shape[-1] != 3:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {func_name} expects tensor with last dim=3, got shape {rgb.shape}")
+        rgb = rgb.float()
+        return rgb[..., 0], rgb[..., 1], rgb[..., 2]
+
+    def _srgb_to_linear(self, c):
+        return torch.where(c <= 0.04045, c / 12.92, torch.pow((c + 0.055) / 1.055, 2.4))
+
+    def _linear_to_oklab(self, r, g, b):
+        rgb = torch.stack([r, g, b], dim=-1).float()
+        rgb = self._srgb_to_linear(rgb)
+
+        l = 0.4122214708 * rgb[..., 0] + 0.5363325363 * rgb[..., 1] + 0.0514459929 * rgb[..., 2]
+        m = 0.2119034982 * rgb[..., 0] + 0.6806995451 * rgb[..., 1] + 0.1073969566 * rgb[..., 2]
+        s = 0.0883024619 * rgb[..., 0] + 0.2817188376 * rgb[..., 1] + 0.6299787005 * rgb[..., 2]
+
+        l_ = torch.pow(l, 1.0 / 3.0)
+        m_ = torch.pow(m, 1.0 / 3.0)
+        s_ = torch.pow(s, 1.0 / 3.0)
+
+        L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
+        a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+        b = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+        return torch.stack([L, a, b], dim=-1)
+
+    def _linear_to_cielab(self, r, g, b):
+        rgb = torch.stack([r, g, b], dim=-1).float()
+        rgb = self._srgb_to_linear(rgb)
+
+        x = 0.4124564 * rgb[..., 0] + 0.3575761 * rgb[..., 1] + 0.1804375 * rgb[..., 2]
+        y = 0.2126729 * rgb[..., 0] + 0.7151522 * rgb[..., 1] + 0.0721750 * rgb[..., 2]
+        z = 0.0193339 * rgb[..., 0] + 0.1191920 * rgb[..., 1] + 0.9503041 * rgb[..., 2]
+
+        xn, yn, zn = 0.95047, 1.0, 1.08883
+        delta = 6.0 / 29.0
+
+        def f(t):
+            return torch.where(t > delta ** 3, torch.pow(t, 1.0 / 3.0), t / (3.0 * delta ** 2) + 4.0 / 29.0)
+
+        fx = f(x / xn)
+        fy = f(y / yn)
+        fz = f(z / zn)
+
+        L = 116.0 * fy - 16.0
+        a = 500.0 * (fx - fy)
+        b = 200.0 * (fy - fz)
+        return torch.stack([L, a, b], dim=-1)
+
+    def visitRgbToOklabFunc(self, ctx):
+        num_args = len(ctx.expr())
+
+        if num_args == 1:
+            rgb_val = yield ctx.expr(0)
+            r, g, b = self._rgb_triplet_from_arg(ctx, rgb_val, "rgb_to_oklab")
+        else:
+            r = self._promote_to_tensor((yield ctx.expr(0))).float()
+            g = self._promote_to_tensor((yield ctx.expr(1))).float()
+            b = self._promote_to_tensor((yield ctx.expr(2))).float()
+
+        return self._linear_to_oklab(r, g, b)
+
+    def visitRgbToCilabFunc(self, ctx):
+        num_args = len(ctx.expr())
+
+        if num_args == 1:
+            rgb_val = yield ctx.expr(0)
+            r, g, b = self._rgb_triplet_from_arg(ctx, rgb_val, "rgb_to_cilab")
+        else:
+            r = self._promote_to_tensor((yield ctx.expr(0))).float()
+            g = self._promote_to_tensor((yield ctx.expr(1))).float()
+            b = self._promote_to_tensor((yield ctx.expr(2))).float()
+
+        return self._linear_to_cielab(r, g, b)
+
+    def _linear_to_srgb(self, c):
+        return torch.where(c <= 0.0031308, 12.92 * c, 1.055 * torch.pow(c, 1.0 / 2.4) - 0.055)
+
+    def _oklab_to_rgb(self, L, a, b):
+        l_ = L + 0.3963377774 * a + 0.2158037573 * b
+        m_ = L - 0.1055613458 * a - 0.0638541728 * b
+        s_ = L - 0.0894841775 * a - 1.2914855480 * b
+
+        l = l_ * l_ * l_
+        m = m_ * m_ * m_
+        s = s_ * s_ * s_
+
+        r_lin = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+        g_lin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+        b_lin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+        rgb_lin = torch.stack([r_lin, g_lin, b_lin], dim=-1)
+        return torch.clamp(self._linear_to_srgb(rgb_lin), 0.0, 1.0)
+
+    def _cielab_to_rgb(self, L, a, b):
+        delta = 6.0 / 29.0
+
+        fy = (L + 16.0) / 116.0
+        fx = fy + a / 500.0
+        fz = fy - b / 200.0
+
+        def finv(t):
+            return torch.where(t > delta, t * t * t, 3.0 * (delta ** 2) * (t - 4.0 / 29.0))
+
+        xn, yn, zn = 0.95047, 1.0, 1.08883
+        x = xn * finv(fx)
+        y = yn * finv(fy)
+        z = zn * finv(fz)
+
+        r_lin = 3.2404542 * x - 1.5371385 * y - 0.4985314 * z
+        g_lin = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z
+        b_lin = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z
+
+        rgb_lin = torch.stack([r_lin, g_lin, b_lin], dim=-1)
+        return torch.clamp(self._linear_to_srgb(rgb_lin), 0.0, 1.0)
+
+    def visitOklabToRgbFunc(self, ctx):
+        num_args = len(ctx.expr())
+        if num_args == 1:
+            lab_val = yield ctx.expr(0)
+            L, a, b = self._rgb_triplet_from_arg(ctx, lab_val, "oklab_to_rgb")
+        else:
+            L = self._promote_to_tensor((yield ctx.expr(0))).float()
+            a = self._promote_to_tensor((yield ctx.expr(1))).float()
+            b = self._promote_to_tensor((yield ctx.expr(2))).float()
+
+        return self._oklab_to_rgb(L, a, b)
+
+    def visitCilabToRgbFunc(self, ctx):
+        num_args = len(ctx.expr())
+        if num_args == 1:
+            lab_val = yield ctx.expr(0)
+            L, a, b = self._rgb_triplet_from_arg(ctx, lab_val, "cilab_to_rgb")
+        else:
+            L = self._promote_to_tensor((yield ctx.expr(0))).float()
+            a = self._promote_to_tensor((yield ctx.expr(1))).float()
+            b = self._promote_to_tensor((yield ctx.expr(2))).float()
+
+        return self._cielab_to_rgb(L, a, b)

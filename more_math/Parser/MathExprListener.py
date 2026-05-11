@@ -1817,12 +1817,12 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#RgbToCilabFunc.
-    def enterRgbToCilabFunc(self, ctx:MathExprParser.RgbToCilabFuncContext):
+    # Enter a parse tree produced by MathExprParser#RgbToCielabFunc.
+    def enterRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#RgbToCilabFunc.
-    def exitRgbToCilabFunc(self, ctx:MathExprParser.RgbToCilabFuncContext):
+    # Exit a parse tree produced by MathExprParser#RgbToCielabFunc.
+    def exitRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
         pass
 
 
@@ -1862,12 +1862,12 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#CilabToRgbFunc.
-    def enterCilabToRgbFunc(self, ctx:MathExprParser.CilabToRgbFuncContext):
+    # Enter a parse tree produced by MathExprParser#CielabToRgbFunc.
+    def enterCielabToRgbFunc(self, ctx:MathExprParser.CielabToRgbFuncContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#CilabToRgbFunc.
-    def exitCilabToRgbFunc(self, ctx:MathExprParser.CilabToRgbFuncContext):
+    # Exit a parse tree produced by MathExprParser#CielabToRgbFunc.
+    def exitCielabToRgbFunc(self, ctx:MathExprParser.CielabToRgbFuncContext):
         pass
 
 

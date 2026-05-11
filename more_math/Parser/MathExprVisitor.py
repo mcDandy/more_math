@@ -1014,8 +1014,8 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#RgbToCilabFunc.
-    def visitRgbToCilabFunc(self, ctx:MathExprParser.RgbToCilabFuncContext):
+    # Visit a parse tree produced by MathExprParser#RgbToCielabFunc.
+    def visitRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -1039,8 +1039,8 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#CilabToRgbFunc.
-    def visitCilabToRgbFunc(self, ctx:MathExprParser.CilabToRgbFuncContext):
+    # Visit a parse tree produced by MathExprParser#CielabToRgbFunc.
+    def visitCielabToRgbFunc(self, ctx:MathExprParser.CielabToRgbFuncContext):
         return self.visitChildren(ctx)
 
 

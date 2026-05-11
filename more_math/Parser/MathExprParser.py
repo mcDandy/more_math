@@ -732,7 +732,7 @@ class MathExprParser ( Parser ):
                      "'float'", "'upper'", "'lower'", "'trim'", "'split'", 
                      "'join'", "'substring'", "'substr'", "'find'", "'replace'", 
                      "'dilate'", "'erode'", "'morph_open'", "'morph_close'", 
-                     "'rgb_to_oklab'", "'rgb_to_cilab'", "'oklab_to_rgb'", 
+                     "'rgb_to_oklab'", "'rgb_to_cielab'", "'oklab_to_rgb'", 
                      "'cielab_to_rgb'", "'rgb_to_hsv'", "'hsv_to_rgb'", 
                      "'int_to_rgb'", "'rgb_to_int'", "'interpolate_linear'", 
                      "'interpolate_area'", "<INVALID>", "'if'", "'else'", 
@@ -773,15 +773,15 @@ class MathExprParser ( Parser ):
                       "CONCAT", "INT", "FLOAT", "UPPER", "LOWER", "TRIM", 
                       "SPLIT", "JOIN", "SUBSTRING", "SUBSTR", "FIND", "REPLACE", 
                       "DILATE", "ERODE", "MORPH_OPEN", "MORPH_CLOSE", "RGB_TO_OKLAB", 
-                      "RGB_TO_CILAB", "OKLAB_TO_RGB", "CILAB_TO_RGB", "RGB_TO_HSV", 
-                      "HSV_TO_RGB", "INT_TO_RGB", "RGB_TO_INT", "INTERPOLATE_LINEAR", 
-                      "INTERPOLATE_AREA", "INTERPOLATE_NEAREST", "IF", "ELSE", 
-                      "WHILE", "FOR", "IN", "BREAK", "CONTINUE", "RETURN", 
-                      "TIMESTAMP", "SORT", "ARGSORT", "ARGMIN", "ARGMAX", 
-                      "SOFTMAX", "SOFTMIN", "UNIQUE", "FLIP", "ROLL", "COV", 
-                      "CORR", "ENTROPY", "CROP", "NONE", "NOISE", "RAND", 
-                      "CAUCHY", "EXPONENTIAL", "LOGNORMAL", "BERNOULLI", 
-                      "POISSON", "GAMMADIST", "BETADIST", "LAPLACEDIST", 
+                      "RGB_TO_CIELAB", "OKLAB_TO_RGB", "CIELAB_TO_RGB", 
+                      "RGB_TO_HSV", "HSV_TO_RGB", "INT_TO_RGB", "RGB_TO_INT", 
+                      "INTERPOLATE_LINEAR", "INTERPOLATE_AREA", "INTERPOLATE_NEAREST", 
+                      "IF", "ELSE", "WHILE", "FOR", "IN", "BREAK", "CONTINUE", 
+                      "RETURN", "TIMESTAMP", "SORT", "ARGSORT", "ARGMIN", 
+                      "ARGMAX", "SOFTMAX", "SOFTMIN", "UNIQUE", "FLIP", 
+                      "ROLL", "COV", "CORR", "ENTROPY", "CROP", "NONE", 
+                      "NOISE", "RAND", "CAUCHY", "EXPONENTIAL", "LOGNORMAL", 
+                      "BERNOULLI", "POISSON", "GAMMADIST", "BETADIST", "LAPLACEDIST", 
                       "GUMBELDIST", "WEIBULLDIST", "CHI2DIST", "STUDENTTDIST", 
                       "PERLIN", "CELLULAR", "PLASMA", "PLUS", "MINUS", "MULT", 
                       "DIV", "MOD", "POW", "LSHIFT", "RSHIFT", "GE", "GT", 
@@ -963,9 +963,9 @@ class MathExprParser ( Parser ):
     MORPH_OPEN=129
     MORPH_CLOSE=130
     RGB_TO_OKLAB=131
-    RGB_TO_CILAB=132
+    RGB_TO_CIELAB=132
     OKLAB_TO_RGB=133
-    CILAB_TO_RGB=134
+    CIELAB_TO_RGB=134
     RGB_TO_HSV=135
     HSV_TO_RGB=136
     INT_TO_RGB=137
@@ -10519,6 +10519,45 @@ class MathExprParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class CielabToRgbFuncContext(Func3Context):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.Func3Context
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def CIELAB_TO_RGB(self):
+            return self.getToken(MathExprParser.CIELAB_TO_RGB, 0)
+        def LPAREN(self):
+            return self.getToken(MathExprParser.LPAREN, 0)
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(MathExprParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(MathExprParser.ExprContext,i)
+
+        def RPAREN(self):
+            return self.getToken(MathExprParser.RPAREN, 0)
+        def COMMA(self, i:int=None):
+            if i is None:
+                return self.getTokens(MathExprParser.COMMA)
+            else:
+                return self.getToken(MathExprParser.COMMA, i)
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCielabToRgbFunc" ):
+                listener.enterCielabToRgbFunc(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCielabToRgbFunc" ):
+                listener.exitCielabToRgbFunc(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCielabToRgbFunc" ):
+                return visitor.visitCielabToRgbFunc(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class CubicEaseFuncContext(Func3Context):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.Func3Context
@@ -10831,45 +10870,6 @@ class MathExprParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
-    class CilabToRgbFuncContext(Func3Context):
-
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.Func3Context
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def CILAB_TO_RGB(self):
-            return self.getToken(MathExprParser.CILAB_TO_RGB, 0)
-        def LPAREN(self):
-            return self.getToken(MathExprParser.LPAREN, 0)
-        def expr(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(MathExprParser.ExprContext)
-            else:
-                return self.getTypedRuleContext(MathExprParser.ExprContext,i)
-
-        def RPAREN(self):
-            return self.getToken(MathExprParser.RPAREN, 0)
-        def COMMA(self, i:int=None):
-            if i is None:
-                return self.getTokens(MathExprParser.COMMA)
-            else:
-                return self.getToken(MathExprParser.COMMA, i)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCilabToRgbFunc" ):
-                listener.enterCilabToRgbFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCilabToRgbFunc" ):
-                listener.exitCilabToRgbFunc(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCilabToRgbFunc" ):
-                return visitor.visitCilabToRgbFunc(self)
-            else:
-                return visitor.visitChildren(self)
-
-
     class RollFuncContext(Func3Context):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.Func3Context
@@ -10905,6 +10905,45 @@ class MathExprParser ( Parser ):
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitRollFunc" ):
                 return visitor.visitRollFunc(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class RgbToCielabFuncContext(Func3Context):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.Func3Context
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def RGB_TO_CIELAB(self):
+            return self.getToken(MathExprParser.RGB_TO_CIELAB, 0)
+        def LPAREN(self):
+            return self.getToken(MathExprParser.LPAREN, 0)
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(MathExprParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(MathExprParser.ExprContext,i)
+
+        def RPAREN(self):
+            return self.getToken(MathExprParser.RPAREN, 0)
+        def COMMA(self, i:int=None):
+            if i is None:
+                return self.getTokens(MathExprParser.COMMA)
+            else:
+                return self.getToken(MathExprParser.COMMA, i)
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterRgbToCielabFunc" ):
+                listener.enterRgbToCielabFunc(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitRgbToCielabFunc" ):
+                listener.exitRgbToCielabFunc(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitRgbToCielabFunc" ):
+                return visitor.visitRgbToCielabFunc(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -11058,45 +11097,6 @@ class MathExprParser ( Parser ):
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitSifftFunc" ):
                 return visitor.visitSifftFunc(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-    class RgbToCilabFuncContext(Func3Context):
-
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a MathExprParser.Func3Context
-            super().__init__(parser)
-            self.copyFrom(ctx)
-
-        def RGB_TO_CILAB(self):
-            return self.getToken(MathExprParser.RGB_TO_CILAB, 0)
-        def LPAREN(self):
-            return self.getToken(MathExprParser.LPAREN, 0)
-        def expr(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(MathExprParser.ExprContext)
-            else:
-                return self.getTypedRuleContext(MathExprParser.ExprContext,i)
-
-        def RPAREN(self):
-            return self.getToken(MathExprParser.RPAREN, 0)
-        def COMMA(self, i:int=None):
-            if i is None:
-                return self.getTokens(MathExprParser.COMMA)
-            else:
-                return self.getToken(MathExprParser.COMMA, i)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRgbToCilabFunc" ):
-                listener.enterRgbToCilabFunc(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRgbToCilabFunc" ):
-                listener.exitRgbToCilabFunc(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRgbToCilabFunc" ):
-                return visitor.visitRgbToCilabFunc(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -11553,10 +11553,10 @@ class MathExprParser ( Parser ):
                 self.match(MathExprParser.RPAREN)
                 pass
             elif token in [132]:
-                localctx = MathExprParser.RgbToCilabFuncContext(self, localctx)
+                localctx = MathExprParser.RgbToCielabFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 16)
                 self.state = 1250
-                self.match(MathExprParser.RGB_TO_CILAB)
+                self.match(MathExprParser.RGB_TO_CIELAB)
                 self.state = 1251
                 self.match(MathExprParser.LPAREN)
                 self.state = 1252
@@ -11697,10 +11697,10 @@ class MathExprParser ( Parser ):
                 self.match(MathExprParser.RPAREN)
                 pass
             elif token in [134]:
-                localctx = MathExprParser.CilabToRgbFuncContext(self, localctx)
+                localctx = MathExprParser.CielabToRgbFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 21)
                 self.state = 1315
-                self.match(MathExprParser.CILAB_TO_RGB)
+                self.match(MathExprParser.CIELAB_TO_RGB)
                 self.state = 1316
                 self.match(MathExprParser.LPAREN)
                 self.state = 1317

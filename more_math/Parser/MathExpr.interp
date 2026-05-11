@@ -131,7 +131,7 @@ null
 'morph_open'
 'morph_close'
 'rgb_to_oklab'
-'rgb_to_cilab'
+'rgb_to_cielab'
 'oklab_to_rgb'
 'cielab_to_rgb'
 'rgb_to_hsv'
@@ -354,9 +354,9 @@ ERODE
 MORPH_OPEN
 MORPH_CLOSE
 RGB_TO_OKLAB
-RGB_TO_CILAB
+RGB_TO_CIELAB
 OKLAB_TO_RGB
-CILAB_TO_RGB
+CIELAB_TO_RGB
 RGB_TO_HSV
 HSV_TO_RGB
 INT_TO_RGB

@@ -238,12 +238,12 @@ func3:
 	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
 	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 	| RGB_TO_OKLAB LPAREN expr (COMMA expr COMMA expr)? RPAREN # RgbToOklabFunc
-	| RGB_TO_CILAB LPAREN expr (COMMA expr COMMA expr)? RPAREN # RgbToCilabFunc
+	| RGB_TO_CIELAB LPAREN expr (COMMA expr COMMA expr)? RPAREN # RgbToCielabFunc
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # RgbToHsvFunc
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc
 	| WHERE LPAREN expr COMMA expr COMMA expr RPAREN	# WhereFunc
 	| OKLAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# OklabToRgbFunc
-	| CILAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# CilabToRgbFunc;
+	| CIELAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# CielabToRgbFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
@@ -419,9 +419,9 @@ ERODE: 'erode';
 MORPH_OPEN: 'morph_open';
 MORPH_CLOSE: 'morph_close';
 RGB_TO_OKLAB: 'rgb_to_oklab';
-RGB_TO_CILAB: 'rgb_to_cilab';
+RGB_TO_CIELAB: 'rgb_to_cielab';
 OKLAB_TO_RGB: 'oklab_to_rgb';
-CILAB_TO_RGB: 'cielab_to_rgb';
+CIELAB_TO_RGB: 'cielab_to_rgb';
 RGB_TO_HSV: 'rgb_to_hsv';
 HSV_TO_RGB: 'hsv_to_rgb';
 INT_TO_RGB: 'int_to_rgb';

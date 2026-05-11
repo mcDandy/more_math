@@ -3817,12 +3817,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return self._linear_to_oklab(r, g, b)
 
-    def visitRgbToCilabFunc(self, ctx):
+    def visitRgbToCielabFunc(self, ctx):
         num_args = len(ctx.expr())
 
         if num_args == 1:
             rgb_val = yield ctx.expr(0)
-            r, g, b = self._rgb_triplet_from_arg(ctx, rgb_val, "rgb_to_cilab")
+            r, g, b = self._rgb_triplet_from_arg(ctx, rgb_val, "rgb_to_cielab")
         else:
             r = self._promote_to_tensor((yield ctx.expr(0))).float()
             g = self._promote_to_tensor((yield ctx.expr(1))).float()
@@ -3883,11 +3883,11 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return self._oklab_to_rgb(L, a, b)
 
-    def visitCilabToRgbFunc(self, ctx):
+    def visitCielabToRgbFunc(self, ctx):
         num_args = len(ctx.expr())
         if num_args == 1:
             lab_val = yield ctx.expr(0)
-            L, a, b = self._rgb_triplet_from_arg(ctx, lab_val, "cilab_to_rgb")
+            L, a, b = self._rgb_triplet_from_arg(ctx, lab_val, "cielab_to_rgb")
         else:
             L = self._promote_to_tensor((yield ctx.expr(0))).float()
             a = self._promote_to_tensor((yield ctx.expr(1))).float()

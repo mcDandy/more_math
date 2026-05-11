@@ -3827,8 +3827,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             r = self._promote_to_tensor((yield ctx.expr(0))).float()
             g = self._promote_to_tensor((yield ctx.expr(1))).float()
             b = self._promote_to_tensor((yield ctx.expr(2))).float()
-
-        return self._linear_to_cielab(r, g, b)
+            x = self._linear_to_cielab(r, g, b)
+        return torch.stack((x[..., 0]/100, x[..., 1], x[..., 2]), dim=-1)
 
     def _linear_to_srgb(self, c):
         return torch.where(c <= 0.0031308, 12.92 * c, 1.055 * torch.pow(c, 1.0 / 2.4) - 0.055)
@@ -3847,7 +3847,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         b_lin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
 
         rgb_lin = torch.stack([r_lin, g_lin, b_lin], dim=-1)
-        return torch.clamp(self._linear_to_srgb(rgb_lin), 0.0, 1.0)
+        return self._linear_to_srgb(rgb_lin)
 
     def _cielab_to_rgb(self, L, a, b):
         delta = 6.0 / 29.0
@@ -3893,4 +3893,4 @@ class UnifiedMathVisitor(MathExprVisitor):
             a = self._promote_to_tensor((yield ctx.expr(1))).float()
             b = self._promote_to_tensor((yield ctx.expr(2))).float()
 
-        return self._cielab_to_rgb(L, a, b)
+        return self._cielab_to_rgb(L*100, a, b)

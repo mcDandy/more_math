@@ -361,7 +361,7 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Variables
 
- - **Common variables (except FLOAT, MODEL, VAE and CLIP)**:
+ - **Common variables (except FLOAT)**:
 -  - `D{N}` - position in n-th dimension of tensor, for example `D0`, `D1`, `D2`
 -  - `S{N}` - size of n-th dimension of tensor, for example `S0`, `S1`, `S2`
 -  - `V{N}` - value input, for example `V0`, `V1`, `V2`
@@ -452,74 +452,6 @@ Runtime variables expose side information:
 ### Variable reference (`SelectiveGuiderMathNode`)
 
 The following variables are available in `Expression`.
-
-## Parser / grammar notes
-
-The grammar in `MathExpr.g4` accepts:
-
-- expressions, statements, blocks, function definitions, and variable assignments,
-- `exprList` for function arguments,
-- function groups by arity:
-  - `func0`
-  - `func1`
-  - `func2`
-  - `func3`
-  - `func4`
-  - `func5`
-  - `funcN`
-  - `funcNoise`
-- operator precedence:
-  - unary
-  - power
-  - shift
-  - multiply/divide/modulo
-  - add/subtract
-  - comparisons
-  - ternary
-- literals:
-  - `NUMBER`
-  - `STRING`
-  - `CONSTANT` (`e`, `pi`)
-  - `NONE`
-  - `VARIABLE`
-
-## Behavioral notes from the visitor
-
-- `if`, `while`, and `for` are statement-level constructs, not expression operators.
-- `return` may be used inside custom functions and top-level blocks.
-- `break` and `continue` are supported in loop bodies.
-- `print_shape(x)` prints a readable shape summary and returns the original value.
-- `shape(x)` returns a Python list, not a tensor.
-- `range(...)` returns a Python list of floats.
-- `fft(x)` and `ifft(x)` use the current tensor shape and expose frequency helper variables during `ifft`.
-- `crop`, `overlay`, `pad`, `replace`, `split`, `join`, `substring`, `find`, and `trim` also support string values where applicable.
-- `rgb_to_hsv` and `hsv_to_rgb` support both packed values and separate channel arguments.
-- `tensor(shape, [value, [type]])` creates a tensor filled with `value`.
-- `stack_*` functions operate on persistent state shared across evaluations.
-
-## Practical examples
-
-```text
-f(x)->x*x+1;
-a=5;
-f(a);
-```
-
-```text
-if (a > 0) { b = a * 2; } else { b = 0; }
-```
-
-```text
-topk([1, 9, 3, 7], 2)
-```
-
-```text
-rgb_to_hsv([1.0, 0.5, 0.25], true)
-```
-
-```text
-perlin(1234, 0.05, 4, [10, 20], [256, 256])
-```
 
 | Variable | Type | Description |
 |---|---|---|

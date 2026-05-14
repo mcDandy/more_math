@@ -3,8 +3,8 @@ from antlr4 import InputStream, CommonTokenStream
 
 import torch
 
-from .Parser.MathExprLexer import MathExprLexer
-from .Parser.MathExprParser import MathExprParser
+from .Parser.antlr_router import get_antlr_modules
+MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
 import re
 

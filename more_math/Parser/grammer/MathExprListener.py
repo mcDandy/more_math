@@ -1,0 +1,2145 @@
+# Generated from MathExpr.g4 by ANTLR 4.13.2
+from antlr4 import *
+if "." in __name__:
+    from .MathExprParser import MathExprParser
+else:
+    from MathExprParser import MathExprParser
+
+# This class defines a complete listener for a parse tree produced by MathExprParser.
+class MathExprListener(ParseTreeListener):
+
+    # Enter a parse tree produced by MathExprParser#start.
+    def enterStart(self, ctx:MathExprParser.StartContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#start.
+    def exitStart(self, ctx:MathExprParser.StartContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FunctionDef.
+    def enterFunctionDef(self, ctx:MathExprParser.FunctionDefContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FunctionDef.
+    def exitFunctionDef(self, ctx:MathExprParser.FunctionDefContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#varDef.
+    def enterVarDef(self, ctx:MathExprParser.VarDefContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#varDef.
+    def exitVarDef(self, ctx:MathExprParser.VarDefContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#paramList.
+    def enterParamList(self, ctx:MathExprParser.ParamListContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#paramList.
+    def exitParamList(self, ctx:MathExprParser.ParamListContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IfStatement.
+    def enterIfStatement(self, ctx:MathExprParser.IfStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IfStatement.
+    def exitIfStatement(self, ctx:MathExprParser.IfStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#WhileStatement.
+    def enterWhileStatement(self, ctx:MathExprParser.WhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#WhileStatement.
+    def exitWhileStatement(self, ctx:MathExprParser.WhileStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BlockStatement.
+    def enterBlockStatement(self, ctx:MathExprParser.BlockStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BlockStatement.
+    def exitBlockStatement(self, ctx:MathExprParser.BlockStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BreakStatement.
+    def enterBreakStatement(self, ctx:MathExprParser.BreakStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BreakStatement.
+    def exitBreakStatement(self, ctx:MathExprParser.BreakStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ContinueStatement.
+    def enterContinueStatement(self, ctx:MathExprParser.ContinueStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ContinueStatement.
+    def exitContinueStatement(self, ctx:MathExprParser.ContinueStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ReturnStatement.
+    def enterReturnStatement(self, ctx:MathExprParser.ReturnStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ReturnStatement.
+    def exitReturnStatement(self, ctx:MathExprParser.ReturnStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#VarDefStmt.
+    def enterVarDefStmt(self, ctx:MathExprParser.VarDefStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#VarDefStmt.
+    def exitVarDefStmt(self, ctx:MathExprParser.VarDefStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ForStatement.
+    def enterForStatement(self, ctx:MathExprParser.ForStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ForStatement.
+    def exitForStatement(self, ctx:MathExprParser.ForStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ExprStatement.
+    def enterExprStatement(self, ctx:MathExprParser.ExprStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ExprStatement.
+    def exitExprStatement(self, ctx:MathExprParser.ExprStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ifStmt.
+    def enterIfStmt(self, ctx:MathExprParser.IfStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ifStmt.
+    def exitIfStmt(self, ctx:MathExprParser.IfStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#whileStmt.
+    def enterWhileStmt(self, ctx:MathExprParser.WhileStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#whileStmt.
+    def exitWhileStmt(self, ctx:MathExprParser.WhileStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#forStmt.
+    def enterForStmt(self, ctx:MathExprParser.ForStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#forStmt.
+    def exitForStmt(self, ctx:MathExprParser.ForStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#block.
+    def enterBlock(self, ctx:MathExprParser.BlockContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#block.
+    def exitBlock(self, ctx:MathExprParser.BlockContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#breakStmt.
+    def enterBreakStmt(self, ctx:MathExprParser.BreakStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#breakStmt.
+    def exitBreakStmt(self, ctx:MathExprParser.BreakStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#continueStmt.
+    def enterContinueStmt(self, ctx:MathExprParser.ContinueStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#continueStmt.
+    def exitContinueStmt(self, ctx:MathExprParser.ContinueStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#returnStmt.
+    def enterReturnStmt(self, ctx:MathExprParser.ReturnStmtContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#returnStmt.
+    def exitReturnStmt(self, ctx:MathExprParser.ReturnStmtContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#expr.
+    def enterExpr(self, ctx:MathExprParser.ExprContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#expr.
+    def exitExpr(self, ctx:MathExprParser.ExprContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TernaryExp.
+    def enterTernaryExp(self, ctx:MathExprParser.TernaryExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TernaryExp.
+    def exitTernaryExp(self, ctx:MathExprParser.TernaryExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LtExp.
+    def enterLtExp(self, ctx:MathExprParser.LtExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LtExp.
+    def exitLtExp(self, ctx:MathExprParser.LtExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EqExp.
+    def enterEqExp(self, ctx:MathExprParser.EqExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EqExp.
+    def exitEqExp(self, ctx:MathExprParser.EqExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToAdd.
+    def enterToAdd(self, ctx:MathExprParser.ToAddContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToAdd.
+    def exitToAdd(self, ctx:MathExprParser.ToAddContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GeExp.
+    def enterGeExp(self, ctx:MathExprParser.GeExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GeExp.
+    def exitGeExp(self, ctx:MathExprParser.GeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LeExp.
+    def enterLeExp(self, ctx:MathExprParser.LeExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LeExp.
+    def exitLeExp(self, ctx:MathExprParser.LeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NeExp.
+    def enterNeExp(self, ctx:MathExprParser.NeExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NeExp.
+    def exitNeExp(self, ctx:MathExprParser.NeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GtExp.
+    def enterGtExp(self, ctx:MathExprParser.GtExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GtExp.
+    def exitGtExp(self, ctx:MathExprParser.GtExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AddExp.
+    def enterAddExp(self, ctx:MathExprParser.AddExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AddExp.
+    def exitAddExp(self, ctx:MathExprParser.AddExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToMul.
+    def enterToMul(self, ctx:MathExprParser.ToMulContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToMul.
+    def exitToMul(self, ctx:MathExprParser.ToMulContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SubExp.
+    def enterSubExp(self, ctx:MathExprParser.SubExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SubExp.
+    def exitSubExp(self, ctx:MathExprParser.SubExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToShift.
+    def enterToShift(self, ctx:MathExprParser.ToShiftContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToShift.
+    def exitToShift(self, ctx:MathExprParser.ToShiftContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MulExp.
+    def enterMulExp(self, ctx:MathExprParser.MulExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MulExp.
+    def exitMulExp(self, ctx:MathExprParser.MulExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ModExp.
+    def enterModExp(self, ctx:MathExprParser.ModExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ModExp.
+    def exitModExp(self, ctx:MathExprParser.ModExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DivExp.
+    def enterDivExp(self, ctx:MathExprParser.DivExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DivExp.
+    def exitDivExp(self, ctx:MathExprParser.DivExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RShiftExp.
+    def enterRShiftExp(self, ctx:MathExprParser.RShiftExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RShiftExp.
+    def exitRShiftExp(self, ctx:MathExprParser.RShiftExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LShiftExp.
+    def enterLShiftExp(self, ctx:MathExprParser.LShiftExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LShiftExp.
+    def exitLShiftExp(self, ctx:MathExprParser.LShiftExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToPow.
+    def enterToPow(self, ctx:MathExprParser.ToPowContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToPow.
+    def exitToPow(self, ctx:MathExprParser.ToPowContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PowExp.
+    def enterPowExp(self, ctx:MathExprParser.PowExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PowExp.
+    def exitPowExp(self, ctx:MathExprParser.PowExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToUnary.
+    def enterToUnary(self, ctx:MathExprParser.ToUnaryContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToUnary.
+    def exitToUnary(self, ctx:MathExprParser.ToUnaryContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#UnaryPlus.
+    def enterUnaryPlus(self, ctx:MathExprParser.UnaryPlusContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#UnaryPlus.
+    def exitUnaryPlus(self, ctx:MathExprParser.UnaryPlusContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#UnaryMinus.
+    def enterUnaryMinus(self, ctx:MathExprParser.UnaryMinusContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#UnaryMinus.
+    def exitUnaryMinus(self, ctx:MathExprParser.UnaryMinusContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToIndex.
+    def enterToIndex(self, ctx:MathExprParser.ToIndexContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToIndex.
+    def exitToIndex(self, ctx:MathExprParser.ToIndexContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IndexExp.
+    def enterIndexExp(self, ctx:MathExprParser.IndexExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IndexExp.
+    def exitIndexExp(self, ctx:MathExprParser.IndexExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToAtom.
+    def enterToAtom(self, ctx:MathExprParser.ToAtomContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToAtom.
+    def exitToAtom(self, ctx:MathExprParser.ToAtomContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Func0Exp.
+    def enterFunc0Exp(self, ctx:MathExprParser.Func0ExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Func0Exp.
+    def exitFunc0Exp(self, ctx:MathExprParser.Func0ExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Func1Exp.
+    def enterFunc1Exp(self, ctx:MathExprParser.Func1ExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Func1Exp.
+    def exitFunc1Exp(self, ctx:MathExprParser.Func1ExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Func2Exp.
+    def enterFunc2Exp(self, ctx:MathExprParser.Func2ExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Func2Exp.
+    def exitFunc2Exp(self, ctx:MathExprParser.Func2ExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Func3Exp.
+    def enterFunc3Exp(self, ctx:MathExprParser.Func3ExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Func3Exp.
+    def exitFunc3Exp(self, ctx:MathExprParser.Func3ExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Func4Exp.
+    def enterFunc4Exp(self, ctx:MathExprParser.Func4ExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Func4Exp.
+    def exitFunc4Exp(self, ctx:MathExprParser.Func4ExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Func5Exp.
+    def enterFunc5Exp(self, ctx:MathExprParser.Func5ExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Func5Exp.
+    def exitFunc5Exp(self, ctx:MathExprParser.Func5ExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FuncNExp.
+    def enterFuncNExp(self, ctx:MathExprParser.FuncNExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FuncNExp.
+    def exitFuncNExp(self, ctx:MathExprParser.FuncNExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FuncNoiseExp.
+    def enterFuncNoiseExp(self, ctx:MathExprParser.FuncNoiseExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FuncNoiseExp.
+    def exitFuncNoiseExp(self, ctx:MathExprParser.FuncNoiseExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#VariableExp.
+    def enterVariableExp(self, ctx:MathExprParser.VariableExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#VariableExp.
+    def exitVariableExp(self, ctx:MathExprParser.VariableExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NumberExp.
+    def enterNumberExp(self, ctx:MathExprParser.NumberExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NumberExp.
+    def exitNumberExp(self, ctx:MathExprParser.NumberExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ConstantExp.
+    def enterConstantExp(self, ctx:MathExprParser.ConstantExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ConstantExp.
+    def exitConstantExp(self, ctx:MathExprParser.ConstantExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StringExp.
+    def enterStringExp(self, ctx:MathExprParser.StringExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StringExp.
+    def exitStringExp(self, ctx:MathExprParser.StringExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ParenExp.
+    def enterParenExp(self, ctx:MathExprParser.ParenExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ParenExp.
+    def exitParenExp(self, ctx:MathExprParser.ParenExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AbsExp.
+    def enterAbsExp(self, ctx:MathExprParser.AbsExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AbsExp.
+    def exitAbsExp(self, ctx:MathExprParser.AbsExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ListExp.
+    def enterListExp(self, ctx:MathExprParser.ListExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ListExp.
+    def exitListExp(self, ctx:MathExprParser.ListExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CallExp.
+    def enterCallExp(self, ctx:MathExprParser.CallExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CallExp.
+    def exitCallExp(self, ctx:MathExprParser.CallExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NoneExp.
+    def enterNoneExp(self, ctx:MathExprParser.NoneExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NoneExp.
+    def exitNoneExp(self, ctx:MathExprParser.NoneExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BreakExp.
+    def enterBreakExp(self, ctx:MathExprParser.BreakExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BreakExp.
+    def exitBreakExp(self, ctx:MathExprParser.BreakExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ContinueExp.
+    def enterContinueExp(self, ctx:MathExprParser.ContinueExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ContinueExp.
+    def exitContinueExp(self, ctx:MathExprParser.ContinueExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#exprList.
+    def enterExprList(self, ctx:MathExprParser.ExprListContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#exprList.
+    def exitExprList(self, ctx:MathExprParser.ExprListContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TimestampFunc.
+    def enterTimestampFunc(self, ctx:MathExprParser.TimestampFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TimestampFunc.
+    def exitTimestampFunc(self, ctx:MathExprParser.TimestampFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SinFunc.
+    def enterSinFunc(self, ctx:MathExprParser.SinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SinFunc.
+    def exitSinFunc(self, ctx:MathExprParser.SinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CosFunc.
+    def enterCosFunc(self, ctx:MathExprParser.CosFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CosFunc.
+    def exitCosFunc(self, ctx:MathExprParser.CosFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TanFunc.
+    def enterTanFunc(self, ctx:MathExprParser.TanFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TanFunc.
+    def exitTanFunc(self, ctx:MathExprParser.TanFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AsinFunc.
+    def enterAsinFunc(self, ctx:MathExprParser.AsinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AsinFunc.
+    def exitAsinFunc(self, ctx:MathExprParser.AsinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AcosFunc.
+    def enterAcosFunc(self, ctx:MathExprParser.AcosFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AcosFunc.
+    def exitAcosFunc(self, ctx:MathExprParser.AcosFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AtanFunc.
+    def enterAtanFunc(self, ctx:MathExprParser.AtanFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AtanFunc.
+    def exitAtanFunc(self, ctx:MathExprParser.AtanFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SinhFunc.
+    def enterSinhFunc(self, ctx:MathExprParser.SinhFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SinhFunc.
+    def exitSinhFunc(self, ctx:MathExprParser.SinhFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CoshFunc.
+    def enterCoshFunc(self, ctx:MathExprParser.CoshFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CoshFunc.
+    def exitCoshFunc(self, ctx:MathExprParser.CoshFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TanhFunc.
+    def enterTanhFunc(self, ctx:MathExprParser.TanhFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TanhFunc.
+    def exitTanhFunc(self, ctx:MathExprParser.TanhFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AsinhFunc.
+    def enterAsinhFunc(self, ctx:MathExprParser.AsinhFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AsinhFunc.
+    def exitAsinhFunc(self, ctx:MathExprParser.AsinhFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AcoshFunc.
+    def enterAcoshFunc(self, ctx:MathExprParser.AcoshFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AcoshFunc.
+    def exitAcoshFunc(self, ctx:MathExprParser.AcoshFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AtanhFunc.
+    def enterAtanhFunc(self, ctx:MathExprParser.AtanhFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AtanhFunc.
+    def exitAtanhFunc(self, ctx:MathExprParser.AtanhFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AbsFunc.
+    def enterAbsFunc(self, ctx:MathExprParser.AbsFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AbsFunc.
+    def exitAbsFunc(self, ctx:MathExprParser.AbsFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SqrtFunc.
+    def enterSqrtFunc(self, ctx:MathExprParser.SqrtFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SqrtFunc.
+    def exitSqrtFunc(self, ctx:MathExprParser.SqrtFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LnFunc.
+    def enterLnFunc(self, ctx:MathExprParser.LnFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LnFunc.
+    def exitLnFunc(self, ctx:MathExprParser.LnFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogFunc.
+    def enterLogFunc(self, ctx:MathExprParser.LogFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogFunc.
+    def exitLogFunc(self, ctx:MathExprParser.LogFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ExpFunc.
+    def enterExpFunc(self, ctx:MathExprParser.ExpFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ExpFunc.
+    def exitExpFunc(self, ctx:MathExprParser.ExpFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TNormFunc.
+    def enterTNormFunc(self, ctx:MathExprParser.TNormFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TNormFunc.
+    def exitTNormFunc(self, ctx:MathExprParser.TNormFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SNormFunc.
+    def enterSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SNormFunc.
+    def exitSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FloorFunc.
+    def enterFloorFunc(self, ctx:MathExprParser.FloorFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FloorFunc.
+    def exitFloorFunc(self, ctx:MathExprParser.FloorFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CeilFunc.
+    def enterCeilFunc(self, ctx:MathExprParser.CeilFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CeilFunc.
+    def exitCeilFunc(self, ctx:MathExprParser.CeilFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RoundFunc.
+    def enterRoundFunc(self, ctx:MathExprParser.RoundFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RoundFunc.
+    def exitRoundFunc(self, ctx:MathExprParser.RoundFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GammaFunc.
+    def enterGammaFunc(self, ctx:MathExprParser.GammaFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GammaFunc.
+    def exitGammaFunc(self, ctx:MathExprParser.GammaFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#sigmoidFunc.
+    def enterSigmoidFunc(self, ctx:MathExprParser.SigmoidFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#sigmoidFunc.
+    def exitSigmoidFunc(self, ctx:MathExprParser.SigmoidFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#anglFunc.
+    def enterAnglFunc(self, ctx:MathExprParser.AnglFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#anglFunc.
+    def exitAnglFunc(self, ctx:MathExprParser.AnglFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#printFunc.
+    def enterPrintFunc(self, ctx:MathExprParser.PrintFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#printFunc.
+    def exitPrintFunc(self, ctx:MathExprParser.PrintFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FractFunc.
+    def enterFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FractFunc.
+    def exitFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ReluFunc.
+    def enterReluFunc(self, ctx:MathExprParser.ReluFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ReluFunc.
+    def exitReluFunc(self, ctx:MathExprParser.ReluFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SoftplusFunc.
+    def enterSoftplusFunc(self, ctx:MathExprParser.SoftplusFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SoftplusFunc.
+    def exitSoftplusFunc(self, ctx:MathExprParser.SoftplusFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GeluFunc.
+    def enterGeluFunc(self, ctx:MathExprParser.GeluFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GeluFunc.
+    def exitGeluFunc(self, ctx:MathExprParser.GeluFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SignFunc.
+    def enterSignFunc(self, ctx:MathExprParser.SignFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SignFunc.
+    def exitSignFunc(self, ctx:MathExprParser.SignFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PrintShapeFunc.
+    def enterPrintShapeFunc(self, ctx:MathExprParser.PrintShapeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PrintShapeFunc.
+    def exitPrintShapeFunc(self, ctx:MathExprParser.PrintShapeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PinvFunc.
+    def enterPinvFunc(self, ctx:MathExprParser.PinvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PinvFunc.
+    def exitPinvFunc(self, ctx:MathExprParser.PinvFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SumFunc.
+    def enterSumFunc(self, ctx:MathExprParser.SumFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SumFunc.
+    def exitSumFunc(self, ctx:MathExprParser.SumFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MeanFunc.
+    def enterMeanFunc(self, ctx:MathExprParser.MeanFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MeanFunc.
+    def exitMeanFunc(self, ctx:MathExprParser.MeanFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StdFunc.
+    def enterStdFunc(self, ctx:MathExprParser.StdFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StdFunc.
+    def exitStdFunc(self, ctx:MathExprParser.StdFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#VarFunc.
+    def enterVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#VarFunc.
+    def exitVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SortFunc.
+    def enterSortFunc(self, ctx:MathExprParser.SortFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SortFunc.
+    def exitSortFunc(self, ctx:MathExprParser.SortFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AnyFunc.
+    def enterAnyFunc(self, ctx:MathExprParser.AnyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AnyFunc.
+    def exitAnyFunc(self, ctx:MathExprParser.AnyFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AllFunc.
+    def enterAllFunc(self, ctx:MathExprParser.AllFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AllFunc.
+    def exitAllFunc(self, ctx:MathExprParser.AllFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EdgeFunc.
+    def enterEdgeFunc(self, ctx:MathExprParser.EdgeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EdgeFunc.
+    def exitEdgeFunc(self, ctx:MathExprParser.EdgeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MedianFunc.
+    def enterMedianFunc(self, ctx:MathExprParser.MedianFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MedianFunc.
+    def exitMedianFunc(self, ctx:MathExprParser.MedianFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ModeFunc.
+    def enterModeFunc(self, ctx:MathExprParser.ModeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ModeFunc.
+    def exitModeFunc(self, ctx:MathExprParser.ModeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CumsumFunc.
+    def enterCumsumFunc(self, ctx:MathExprParser.CumsumFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CumsumFunc.
+    def exitCumsumFunc(self, ctx:MathExprParser.CumsumFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CountFunc.
+    def enterCountFunc(self, ctx:MathExprParser.CountFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CountFunc.
+    def exitCountFunc(self, ctx:MathExprParser.CountFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CumprodFunc.
+    def enterCumprodFunc(self, ctx:MathExprParser.CumprodFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CumprodFunc.
+    def exitCumprodFunc(self, ctx:MathExprParser.CumprodFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PopFunc.
+    def enterPopFunc(self, ctx:MathExprParser.PopFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PopFunc.
+    def exitPopFunc(self, ctx:MathExprParser.PopFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ClearFunc.
+    def enterClearFunc(self, ctx:MathExprParser.ClearFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ClearFunc.
+    def exitClearFunc(self, ctx:MathExprParser.ClearFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#HasFunc.
+    def enterHasFunc(self, ctx:MathExprParser.HasFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#HasFunc.
+    def exitHasFunc(self, ctx:MathExprParser.HasFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GetFunc.
+    def enterGetFunc(self, ctx:MathExprParser.GetFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetFunc.
+    def exitGetFunc(self, ctx:MathExprParser.GetFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ArgsortFunc.
+    def enterArgsortFunc(self, ctx:MathExprParser.ArgsortFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ArgsortFunc.
+    def exitArgsortFunc(self, ctx:MathExprParser.ArgsortFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ArgminFunc.
+    def enterArgminFunc(self, ctx:MathExprParser.ArgminFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ArgminFunc.
+    def exitArgminFunc(self, ctx:MathExprParser.ArgminFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ArgmaxFunc.
+    def enterArgmaxFunc(self, ctx:MathExprParser.ArgmaxFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ArgmaxFunc.
+    def exitArgmaxFunc(self, ctx:MathExprParser.ArgmaxFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SoftmaxFunc.
+    def enterSoftmaxFunc(self, ctx:MathExprParser.SoftmaxFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SoftmaxFunc.
+    def exitSoftmaxFunc(self, ctx:MathExprParser.SoftmaxFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SoftminFunc.
+    def enterSoftminFunc(self, ctx:MathExprParser.SoftminFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SoftminFunc.
+    def exitSoftminFunc(self, ctx:MathExprParser.SoftminFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ErfFunc.
+    def enterErfFunc(self, ctx:MathExprParser.ErfFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ErfFunc.
+    def exitErfFunc(self, ctx:MathExprParser.ErfFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ErfinvFunc.
+    def enterErfinvFunc(self, ctx:MathExprParser.ErfinvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ErfinvFunc.
+    def exitErfinvFunc(self, ctx:MathExprParser.ErfinvFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#UniqueFunc.
+    def enterUniqueFunc(self, ctx:MathExprParser.UniqueFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#UniqueFunc.
+    def exitUniqueFunc(self, ctx:MathExprParser.UniqueFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlattenFunc.
+    def enterFlattenFunc(self, ctx:MathExprParser.FlattenFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlattenFunc.
+    def exitFlattenFunc(self, ctx:MathExprParser.FlattenFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MotionMaskFunc.
+    def enterMotionMaskFunc(self, ctx:MathExprParser.MotionMaskFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MotionMaskFunc.
+    def exitMotionMaskFunc(self, ctx:MathExprParser.MotionMaskFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowToImageFunc.
+    def enterFlowToImageFunc(self, ctx:MathExprParser.FlowToImageFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowToImageFunc.
+    def exitFlowToImageFunc(self, ctx:MathExprParser.FlowToImageFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitNotFunc.
+    def enterBitNotFunc(self, ctx:MathExprParser.BitNotFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitNotFunc.
+    def exitBitNotFunc(self, ctx:MathExprParser.BitNotFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitCountFunc.
+    def enterBitCountFunc(self, ctx:MathExprParser.BitCountFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitCountFunc.
+    def exitBitCountFunc(self, ctx:MathExprParser.BitCountFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ShapeFunc.
+    def enterShapeFunc(self, ctx:MathExprParser.ShapeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ShapeFunc.
+    def exitShapeFunc(self, ctx:MathExprParser.ShapeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#UpperFunc.
+    def enterUpperFunc(self, ctx:MathExprParser.UpperFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#UpperFunc.
+    def exitUpperFunc(self, ctx:MathExprParser.UpperFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LowerFunc.
+    def enterLowerFunc(self, ctx:MathExprParser.LowerFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LowerFunc.
+    def exitLowerFunc(self, ctx:MathExprParser.LowerFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TrimFunc.
+    def enterTrimFunc(self, ctx:MathExprParser.TrimFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TrimFunc.
+    def exitTrimFunc(self, ctx:MathExprParser.TrimFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EntropyFunc.
+    def enterEntropyFunc(self, ctx:MathExprParser.EntropyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EntropyFunc.
+    def exitEntropyFunc(self, ctx:MathExprParser.EntropyFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SfftFunc.
+    def enterSfftFunc(self, ctx:MathExprParser.SfftFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SfftFunc.
+    def exitSfftFunc(self, ctx:MathExprParser.SfftFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DilateFunc.
+    def enterDilateFunc(self, ctx:MathExprParser.DilateFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DilateFunc.
+    def exitDilateFunc(self, ctx:MathExprParser.DilateFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ErodeFunc.
+    def enterErodeFunc(self, ctx:MathExprParser.ErodeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ErodeFunc.
+    def exitErodeFunc(self, ctx:MathExprParser.ErodeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MorphOpenFunc.
+    def enterMorphOpenFunc(self, ctx:MathExprParser.MorphOpenFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MorphOpenFunc.
+    def exitMorphOpenFunc(self, ctx:MathExprParser.MorphOpenFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MorphCloseFunc.
+    def enterMorphCloseFunc(self, ctx:MathExprParser.MorphCloseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MorphCloseFunc.
+    def exitMorphCloseFunc(self, ctx:MathExprParser.MorphCloseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IntFunc.
+    def enterIntFunc(self, ctx:MathExprParser.IntFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IntFunc.
+    def exitIntFunc(self, ctx:MathExprParser.IntFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FloatFunc.
+    def enterFloatFunc(self, ctx:MathExprParser.FloatFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FloatFunc.
+    def exitFloatFunc(self, ctx:MathExprParser.FloatFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowMagFunc.
+    def enterFlowMagFunc(self, ctx:MathExprParser.FlowMagFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowMagFunc.
+    def exitFlowMagFunc(self, ctx:MathExprParser.FlowMagFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowAngFunc.
+    def enterFlowAngFunc(self, ctx:MathExprParser.FlowAngFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowAngFunc.
+    def exitFlowAngFunc(self, ctx:MathExprParser.FlowAngFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PowFunc.
+    def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PowFunc.
+    def exitPowFunc(self, ctx:MathExprParser.PowFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Atan2Func.
+    def enterAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Atan2Func.
+    def exitAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TMinFunc.
+    def enterTMinFunc(self, ctx:MathExprParser.TMinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TMinFunc.
+    def exitTMinFunc(self, ctx:MathExprParser.TMinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TMaxFunc.
+    def enterTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TMaxFunc.
+    def exitTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StepFunc.
+    def enterStepFunc(self, ctx:MathExprParser.StepFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StepFunc.
+    def exitStepFunc(self, ctx:MathExprParser.StepFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TopkFunc.
+    def enterTopkFunc(self, ctx:MathExprParser.TopkFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TopkFunc.
+    def exitTopkFunc(self, ctx:MathExprParser.TopkFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BotkFunc.
+    def enterBotkFunc(self, ctx:MathExprParser.BotkFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BotkFunc.
+    def exitBotkFunc(self, ctx:MathExprParser.BotkFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#QuartileFunc.
+    def enterQuartileFunc(self, ctx:MathExprParser.QuartileFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#QuartileFunc.
+    def exitQuartileFunc(self, ctx:MathExprParser.QuartileFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PercentileFunc.
+    def enterPercentileFunc(self, ctx:MathExprParser.PercentileFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PercentileFunc.
+    def exitPercentileFunc(self, ctx:MathExprParser.PercentileFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#QuantileFunc.
+    def enterQuantileFunc(self, ctx:MathExprParser.QuantileFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#QuantileFunc.
+    def exitQuantileFunc(self, ctx:MathExprParser.QuantileFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DotFunc.
+    def enterDotFunc(self, ctx:MathExprParser.DotFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DotFunc.
+    def exitDotFunc(self, ctx:MathExprParser.DotFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CossimFunc.
+    def enterCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CossimFunc.
+    def exitCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlipFunc.
+    def enterFlipFunc(self, ctx:MathExprParser.FlipFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlipFunc.
+    def exitFlipFunc(self, ctx:MathExprParser.FlipFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CovFunc.
+    def enterCovFunc(self, ctx:MathExprParser.CovFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CovFunc.
+    def exitCovFunc(self, ctx:MathExprParser.CovFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CorrFunc.
+    def enterCorrFunc(self, ctx:MathExprParser.CorrFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CorrFunc.
+    def exitCorrFunc(self, ctx:MathExprParser.CorrFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AppendFunc.
+    def enterAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AppendFunc.
+    def exitAppendFunc(self, ctx:MathExprParser.AppendFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PermuteFunc.
+    def enterPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PermuteFunc.
+    def exitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GaussianFunc.
+    def enterGaussianFunc(self, ctx:MathExprParser.GaussianFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GaussianFunc.
+    def exitGaussianFunc(self, ctx:MathExprParser.GaussianFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#TopkIndFunc.
+    def enterTopkIndFunc(self, ctx:MathExprParser.TopkIndFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TopkIndFunc.
+    def exitTopkIndFunc(self, ctx:MathExprParser.TopkIndFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BotkIndFunc.
+    def enterBotkIndFunc(self, ctx:MathExprParser.BotkIndFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BotkIndFunc.
+    def exitBotkIndFunc(self, ctx:MathExprParser.BotkIndFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BatchShuffleFunc.
+    def enterBatchShuffleFunc(self, ctx:MathExprParser.BatchShuffleFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BatchShuffleFunc.
+    def exitBatchShuffleFunc(self, ctx:MathExprParser.BatchShuffleFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PushFunc.
+    def enterPushFunc(self, ctx:MathExprParser.PushFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PushFunc.
+    def exitPushFunc(self, ctx:MathExprParser.PushFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GetValueFunc.
+    def enterGetValueFunc(self, ctx:MathExprParser.GetValueFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetValueFunc.
+    def exitGetValueFunc(self, ctx:MathExprParser.GetValueFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EmptyTensorFunc.
+    def enterEmptyTensorFunc(self, ctx:MathExprParser.EmptyTensorFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EmptyTensorFunc.
+    def exitEmptyTensorFunc(self, ctx:MathExprParser.EmptyTensorFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PadFunc.
+    def enterPadFunc(self, ctx:MathExprParser.PadFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PadFunc.
+    def exitPadFunc(self, ctx:MathExprParser.PadFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CrossFunc.
+    def enterCrossFunc(self, ctx:MathExprParser.CrossFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CrossFunc.
+    def exitCrossFunc(self, ctx:MathExprParser.CrossFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MatmulFunc.
+    def enterMatmulFunc(self, ctx:MathExprParser.MatmulFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MatmulFunc.
+    def exitMatmulFunc(self, ctx:MathExprParser.MatmulFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FlowApplyFunc.
+    def enterFlowApplyFunc(self, ctx:MathExprParser.FlowApplyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FlowApplyFunc.
+    def exitFlowApplyFunc(self, ctx:MathExprParser.FlowApplyFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RifeFunc.
+    def enterRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RifeFunc.
+    def exitRifeFunc(self, ctx:MathExprParser.RifeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitAndFunc.
+    def enterBitAndFunc(self, ctx:MathExprParser.BitAndFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitAndFunc.
+    def exitBitAndFunc(self, ctx:MathExprParser.BitAndFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitXorFunc.
+    def enterBitXorFunc(self, ctx:MathExprParser.BitXorFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitXorFunc.
+    def exitBitXorFunc(self, ctx:MathExprParser.BitXorFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BitOrFunc.
+    def enterBitOrFunc(self, ctx:MathExprParser.BitOrFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BitOrFunc.
+    def exitBitOrFunc(self, ctx:MathExprParser.BitOrFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SplitFunc.
+    def enterSplitFunc(self, ctx:MathExprParser.SplitFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SplitFunc.
+    def exitSplitFunc(self, ctx:MathExprParser.SplitFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#JoinFunc.
+    def enterJoinFunc(self, ctx:MathExprParser.JoinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#JoinFunc.
+    def exitJoinFunc(self, ctx:MathExprParser.JoinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SubstringFunc.
+    def enterSubstringFunc(self, ctx:MathExprParser.SubstringFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SubstringFunc.
+    def exitSubstringFunc(self, ctx:MathExprParser.SubstringFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FindFunc.
+    def enterFindFunc(self, ctx:MathExprParser.FindFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FindFunc.
+    def exitFindFunc(self, ctx:MathExprParser.FindFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ReplaceFunc.
+    def enterReplaceFunc(self, ctx:MathExprParser.ReplaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ReplaceFunc.
+    def exitReplaceFunc(self, ctx:MathExprParser.ReplaceFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Int_to_rgbFunc.
+    def enterInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Int_to_rgbFunc.
+    def exitInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Rgb_to_intFunc.
+    def enterRgb_to_intFunc(self, ctx:MathExprParser.Rgb_to_intFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Rgb_to_intFunc.
+    def exitRgb_to_intFunc(self, ctx:MathExprParser.Rgb_to_intFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InterpolateLinearFunc.
+    def enterInterpolateLinearFunc(self, ctx:MathExprParser.InterpolateLinearFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpolateLinearFunc.
+    def exitInterpolateLinearFunc(self, ctx:MathExprParser.InterpolateLinearFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InterpolateAreaFunc.
+    def enterInterpolateAreaFunc(self, ctx:MathExprParser.InterpolateAreaFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpolateAreaFunc.
+    def exitInterpolateAreaFunc(self, ctx:MathExprParser.InterpolateAreaFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
+    def enterInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
+    def exitInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ClampFunc.
+    def enterClampFunc(self, ctx:MathExprParser.ClampFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ClampFunc.
+    def exitClampFunc(self, ctx:MathExprParser.ClampFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LerpFunc.
+    def enterLerpFunc(self, ctx:MathExprParser.LerpFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LerpFunc.
+    def exitLerpFunc(self, ctx:MathExprParser.LerpFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SmoothstepFunc.
+    def enterSmoothstepFunc(self, ctx:MathExprParser.SmoothstepFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SmoothstepFunc.
+    def exitSmoothstepFunc(self, ctx:MathExprParser.SmoothstepFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RangeFunc.
+    def enterRangeFunc(self, ctx:MathExprParser.RangeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RangeFunc.
+    def exitRangeFunc(self, ctx:MathExprParser.RangeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MomentFunc.
+    def enterMomentFunc(self, ctx:MathExprParser.MomentFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MomentFunc.
+    def exitMomentFunc(self, ctx:MathExprParser.MomentFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CubicEaseFunc.
+    def enterCubicEaseFunc(self, ctx:MathExprParser.CubicEaseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CubicEaseFunc.
+    def exitCubicEaseFunc(self, ctx:MathExprParser.CubicEaseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ElasticEaseFunc.
+    def enterElasticEaseFunc(self, ctx:MathExprParser.ElasticEaseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ElasticEaseFunc.
+    def exitElasticEaseFunc(self, ctx:MathExprParser.ElasticEaseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SineEaseFunc.
+    def enterSineEaseFunc(self, ctx:MathExprParser.SineEaseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SineEaseFunc.
+    def exitSineEaseFunc(self, ctx:MathExprParser.SineEaseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SmootherstepFunc.
+    def enterSmootherstepFunc(self, ctx:MathExprParser.SmootherstepFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SmootherstepFunc.
+    def exitSmootherstepFunc(self, ctx:MathExprParser.SmootherstepFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CropFunc.
+    def enterCropFunc(self, ctx:MathExprParser.CropFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CropFunc.
+    def exitCropFunc(self, ctx:MathExprParser.CropFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SifftFunc.
+    def enterSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SifftFunc.
+    def exitSifftFunc(self, ctx:MathExprParser.SifftFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#OverlayFunc.
+    def enterOverlayFunc(self, ctx:MathExprParser.OverlayFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#OverlayFunc.
+    def exitOverlayFunc(self, ctx:MathExprParser.OverlayFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LinspaceFunc.
+    def enterLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LinspaceFunc.
+    def exitLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RollFunc.
+    def enterRollFunc(self, ctx:MathExprParser.RollFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RollFunc.
+    def exitRollFunc(self, ctx:MathExprParser.RollFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RgbToOklabFunc.
+    def enterRgbToOklabFunc(self, ctx:MathExprParser.RgbToOklabFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RgbToOklabFunc.
+    def exitRgbToOklabFunc(self, ctx:MathExprParser.RgbToOklabFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RgbToCielabFunc.
+    def enterRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RgbToCielabFunc.
+    def exitRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RgbToHsvFunc.
+    def enterRgbToHsvFunc(self, ctx:MathExprParser.RgbToHsvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RgbToHsvFunc.
+    def exitRgbToHsvFunc(self, ctx:MathExprParser.RgbToHsvFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#HsvToRgbFunc.
+    def enterHsvToRgbFunc(self, ctx:MathExprParser.HsvToRgbFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#HsvToRgbFunc.
+    def exitHsvToRgbFunc(self, ctx:MathExprParser.HsvToRgbFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#WhereFunc.
+    def enterWhereFunc(self, ctx:MathExprParser.WhereFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#WhereFunc.
+    def exitWhereFunc(self, ctx:MathExprParser.WhereFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#OklabToRgbFunc.
+    def enterOklabToRgbFunc(self, ctx:MathExprParser.OklabToRgbFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#OklabToRgbFunc.
+    def exitOklabToRgbFunc(self, ctx:MathExprParser.OklabToRgbFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CielabToRgbFunc.
+    def enterCielabToRgbFunc(self, ctx:MathExprParser.CielabToRgbFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CielabToRgbFunc.
+    def exitCielabToRgbFunc(self, ctx:MathExprParser.CielabToRgbFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SwapFunc.
+    def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SwapFunc.
+    def exitSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NvlFunc.
+    def enterNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NvlFunc.
+    def exitNvlFunc(self, ctx:MathExprParser.NvlFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogspaceFunc.
+    def enterLogspaceFunc(self, ctx:MathExprParser.LogspaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogspaceFunc.
+    def exitLogspaceFunc(self, ctx:MathExprParser.LogspaceFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DistFunc.
+    def enterDistFunc(self, ctx:MathExprParser.DistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DistFunc.
+    def exitDistFunc(self, ctx:MathExprParser.DistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#HistogramFunc.
+    def enterHistogramFunc(self, ctx:MathExprParser.HistogramFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#HistogramFunc.
+    def exitHistogramFunc(self, ctx:MathExprParser.HistogramFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RemapFunc.
+    def enterRemapFunc(self, ctx:MathExprParser.RemapFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RemapFunc.
+    def exitRemapFunc(self, ctx:MathExprParser.RemapFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SMinFunc.
+    def enterSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SMinFunc.
+    def exitSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SMaxFunc.
+    def enterSMaxFunc(self, ctx:MathExprParser.SMaxFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SMaxFunc.
+    def exitSMaxFunc(self, ctx:MathExprParser.SMaxFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MapFunc.
+    def enterMapFunc(self, ctx:MathExprParser.MapFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MapFunc.
+    def exitMapFunc(self, ctx:MathExprParser.MapFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EzConvFunc.
+    def enterEzConvFunc(self, ctx:MathExprParser.EzConvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EzConvFunc.
+    def exitEzConvFunc(self, ctx:MathExprParser.EzConvFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ConvFunc.
+    def enterConvFunc(self, ctx:MathExprParser.ConvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ConvFunc.
+    def exitConvFunc(self, ctx:MathExprParser.ConvFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ReshapeFunc.
+    def enterReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ReshapeFunc.
+    def exitReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ConcatFunc.
+    def enterConcatFunc(self, ctx:MathExprParser.ConcatFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ConcatFunc.
+    def exitConcatFunc(self, ctx:MathExprParser.ConcatFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NoiseFunc.
+    def enterNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NoiseFunc.
+    def exitNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RandFunc.
+    def enterRandFunc(self, ctx:MathExprParser.RandFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RandFunc.
+    def exitRandFunc(self, ctx:MathExprParser.RandFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ExponentialFunc.
+    def enterExponentialFunc(self, ctx:MathExprParser.ExponentialFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ExponentialFunc.
+    def exitExponentialFunc(self, ctx:MathExprParser.ExponentialFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BernoulliFunc.
+    def enterBernoulliFunc(self, ctx:MathExprParser.BernoulliFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BernoulliFunc.
+    def exitBernoulliFunc(self, ctx:MathExprParser.BernoulliFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PoissonFunc.
+    def enterPoissonFunc(self, ctx:MathExprParser.PoissonFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PoissonFunc.
+    def exitPoissonFunc(self, ctx:MathExprParser.PoissonFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CauchyFunc.
+    def enterCauchyFunc(self, ctx:MathExprParser.CauchyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CauchyFunc.
+    def exitCauchyFunc(self, ctx:MathExprParser.CauchyFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogNormalFunc.
+    def enterLogNormalFunc(self, ctx:MathExprParser.LogNormalFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogNormalFunc.
+    def exitLogNormalFunc(self, ctx:MathExprParser.LogNormalFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GammaDistFunc.
+    def enterGammaDistFunc(self, ctx:MathExprParser.GammaDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GammaDistFunc.
+    def exitGammaDistFunc(self, ctx:MathExprParser.GammaDistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#BetaDistFunc.
+    def enterBetaDistFunc(self, ctx:MathExprParser.BetaDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BetaDistFunc.
+    def exitBetaDistFunc(self, ctx:MathExprParser.BetaDistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LaplaceDistFunc.
+    def enterLaplaceDistFunc(self, ctx:MathExprParser.LaplaceDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LaplaceDistFunc.
+    def exitLaplaceDistFunc(self, ctx:MathExprParser.LaplaceDistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GumbelDistFunc.
+    def enterGumbelDistFunc(self, ctx:MathExprParser.GumbelDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GumbelDistFunc.
+    def exitGumbelDistFunc(self, ctx:MathExprParser.GumbelDistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#WeibullDistFunc.
+    def enterWeibullDistFunc(self, ctx:MathExprParser.WeibullDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#WeibullDistFunc.
+    def exitWeibullDistFunc(self, ctx:MathExprParser.WeibullDistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Chi2DistFunc.
+    def enterChi2DistFunc(self, ctx:MathExprParser.Chi2DistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Chi2DistFunc.
+    def exitChi2DistFunc(self, ctx:MathExprParser.Chi2DistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StudentTDistFunc.
+    def enterStudentTDistFunc(self, ctx:MathExprParser.StudentTDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StudentTDistFunc.
+    def exitStudentTDistFunc(self, ctx:MathExprParser.StudentTDistFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PerlinFunc.
+    def enterPerlinFunc(self, ctx:MathExprParser.PerlinFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PerlinFunc.
+    def exitPerlinFunc(self, ctx:MathExprParser.PerlinFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CellularFunc.
+    def enterCellularFunc(self, ctx:MathExprParser.CellularFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CellularFunc.
+    def exitCellularFunc(self, ctx:MathExprParser.CellularFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PlasmaFunc.
+    def enterPlasmaFunc(self, ctx:MathExprParser.PlasmaFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PlasmaFunc.
+    def exitPlasmaFunc(self, ctx:MathExprParser.PlasmaFuncContext):
+        pass
+
+
+
+del MathExprParser

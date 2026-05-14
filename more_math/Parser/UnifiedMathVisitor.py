@@ -1,12 +1,15 @@
 import time
-from token import OP
+import sys
 import torch
 import math
 import inspect
 import torch.nn.functional as F
 from . import optical_flow_utils as ofu
 from antlr4 import TerminalNode
-from .MathExprVisitor import MathExprVisitor
+
+from .antlr_router import get_antlr_modules
+_, _, MathExprVisitor = get_antlr_modules()
+
 from ..helper_functions import generate_dim_variables
 from ..noise_utils import NoiseUtils
 import struct

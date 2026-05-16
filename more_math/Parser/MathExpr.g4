@@ -82,15 +82,17 @@ atom:
 	| funcNoise						# FuncNoiseExp
 	| VARIABLE						# VariableExp
 	| NUMBER						# NumberExp
-	| CONSTANT					# ConstantExp
-	| STRING					# StringExp
-	| LPAREN expr RPAREN		# ParenExp
-	| PIPE expr PIPE			# AbsExp
+	| CONSTANT						# ConstantExp
+	| STRING						# StringExp
+	| LPAREN paramList RPAREN ARROW (block | expr)	# LambdaExp
+	| LPAREN expr RPAREN			# ParenExp
+	| LPAREN expr RPAREN			# ParenExp
+	| PIPE expr PIPE				# AbsExp
 	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
 	| VARIABLE LPAREN exprList? RPAREN	# CallExp
-	| NONE						# NoneExp
-	| BREAK						# BreakExp
-	| CONTINUE					# ContinueExp;
+	| NONE							# NoneExp
+	| BREAK							# BreakExp
+	| CONTINUE						# ContinueExp;
 
 exprList: expr (COMMA expr)*;
 
@@ -173,8 +175,7 @@ func1:
 	| INT LPAREN expr RPAREN    # IntFunc
 	| FLOAT LPAREN expr RPAREN    # FloatFunc
 	| FLOW_MAG LPAREN expr RPAREN	# FlowMagFunc
-	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc
-;
+	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc;
 
 func2:
 	POWE LPAREN expr COMMA expr RPAREN				# PowFunc

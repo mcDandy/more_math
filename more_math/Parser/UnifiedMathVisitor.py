@@ -5,6 +5,7 @@ import math
 import inspect
 import torch.nn.functional as F
 from . import optical_flow_utils as ofu
+from .Func import LambdaFunction
 from antlr4 import TerminalNode
 
 from .antlr_router import get_antlr_modules
@@ -1924,7 +1925,35 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitCallExp(self, ctx):
         func_name = ctx.VARIABLE().getText()
 
-        # Check if it is a user-defined function
+        # 1) Pokud proměnná existuje a je to lambda uložená v variables, aplikuj ji
+        if func_name in self.variables and isinstance(self.variables[func_name], LambdaFunction):
+            lam = self.variables[func_name]
+            # vyhodnotit argumenty
+            args = []
+            if ctx.exprList():
+                for e in ctx.exprList().expr():
+                    args.append((yield e))
+
+            # připrav nový scope na základě uzávěrky
+            new_vars = lam.env.copy()
+            for i, p in enumerate(lam.params):
+                new_vars[p] = args[i] if i < len(args) else None
+
+            # push/pop scope stejným stylem jako pro pojmenované funkce
+            self._scope_stack.append(self.variables)
+            self.variables = new_vars
+            self.depth += 1
+            self.variables["depth"] = float(self.depth)
+            try:
+                res = yield lam.body
+                if isinstance(res, ReturnSignal):
+                    return res.value
+                return res
+            finally:
+                self.variables = self._scope_stack.pop()
+                self.depth -= 1
+
+        # 2) existující uživatelské funkce (bez změn)
         if func_name in self.functions:
             func_def = self.functions[func_name]
             params = func_def["params"]
@@ -1965,7 +1994,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 self.variables = self._scope_stack.pop()
                 self.depth -= 1
 
-        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Unknown function: {func_name}")
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Unknown function or variable: {func_name}")
 
     def visitNoiseFunc(self,ctx):
         seed_val = yield ctx.expr(0)
@@ -3347,9 +3376,9 @@ class UnifiedMathVisitor(MathExprVisitor):
                 b = rgb[..., 2]
         else:
             # Separate r, g, b mode
-            r = self._promote_to_tensor((yield ctx.expr(0)))
-            g = self._promote_to_tensor((yield ctx.expr(1)))
-            b = self._promote_to_tensor((yield ctx.expr(2)))
+            r = self._promote_to_tensor((yield ctx.expr(0))).float()
+            g = self._promote_to_tensor((yield ctx.expr(1))).float()
+            b = self._promote_to_tensor((yield ctx.expr(2))).float()
 
             use_degrees = False
             if num_args == 4:
@@ -3896,3 +3925,12 @@ class UnifiedMathVisitor(MathExprVisitor):
             b = self._promote_to_tensor((yield ctx.expr(2))).float()
 
         return self._cielab_to_rgb(L*100, a*100, b*100)
+
+    def visitLambdaExp(self, ctx):
+        # ctx.paramList() nebo None; body je ctx.block() nebo ctx.expr()
+        params = []
+        if ctx.paramList():
+            params = [node.getText() for node in ctx.paramList().VARIABLE()]
+        body = ctx.block() if ctx.block() else ctx.expr()
+        closure = self.variables.copy()
+        return LambdaFunction(params, body, closure)

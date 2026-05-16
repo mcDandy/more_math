@@ -2898,15 +2898,19 @@ class UnifiedMathVisitor(MathExprVisitor):
             result = noise
             amplitude = 0.5
             frequency = 2.0
-            for oct in range(octaves - 1):
-                scaled_grids = tuple(g * frequency for g in grids)
-                octave_noise = NoiseUtils.perlin_noise_nd(scaled_grids, scale / frequency, seed + oct, self.device)
+            for octa in range(octaves - 1):
+                octave_noise = NoiseUtils.perlin_noise_nd(
+                    grids,
+                    scale / frequency,
+                    seed + octa + 1,
+                    self.device
+                )
                 result = result + octave_noise * amplitude
                 amplitude *= 0.5
                 frequency *= 2.0
             noise = result / (2 - 2**(-octaves))
 
-        return noise
+        return noise * 2 + 0.5
 
     def visitCellularFunc(self, ctx):
         """cellular(seed, scale, [jitter], [offset], [shape])
@@ -2977,7 +2981,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         scale_val = yield ctx.expr(1)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
 
-        octaves = 1
+        octaves = 4  # bylo 1
         expr_idx = 2
         if len(ctx.expr()) > expr_idx:
             oct_val = yield ctx.expr(expr_idx)
@@ -2990,7 +2994,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             offset = offset_val
             expr_idx += 1
 
-        # Optional shape parameter
         shape = self.shape
         if len(ctx.expr()) > expr_idx:
             shape_arg = (yield ctx.expr(expr_idx))
@@ -3022,22 +3025,13 @@ class UnifiedMathVisitor(MathExprVisitor):
             indexing='ij'
         )
 
-        # Call perlin_noise_nd with all coordinate grids
-        noise = NoiseUtils.plasma_noise_nd(grids, scale, seed, self.device)
-
-        # Apply octaves (fBm-like composition)
-        if octaves > 1:
-            result = noise
-            amplitude = 0.5
-            frequency = 2.0
-            for oct in range(octaves - 1):
-                scaled_grids = tuple(g * frequency for g in grids)
-                octave_noise = NoiseUtils.plasma_noise_nd(scaled_grids, scale / frequency, seed + oct, self.device)
-                result = result + octave_noise * amplitude
-                amplitude *= 0.5
-                frequency *= 2.0
-            noise = result / (2 - 2**(-octaves))
-
+        noise = NoiseUtils.plasma_noise_nd(
+            grids,
+            scale=scale,
+            seed=seed,
+            device=self.device,
+            octaves=octaves
+        )
         return noise
 
     def visitPadFunc(self,ctx):

@@ -25,17 +25,15 @@ class NoiseUtils:
         # Použijeme stabilní deterministické koeficienty pro míchání dimenzí
         constants = [12.9898, 78.233, 45.164, 92.411, 27.531, 53.892]
 
-        # Inicializace float tensoru se seedem
-        dt = torch.full_like(coords[0], float(seed), dtype=torch.float32)
+        # Inicializace jako float pro implicitní broadcasting místo full_like
+        dt = float(seed)
 
         # Lineární kombinace souřadnic s prvočíselnými vahami
         for i, coord in enumerate(coords):
-            # Převod na float32 je klíčový pro rychlé matematické operace
-            c_float = coord.to(torch.float32)
-            dt = dt + c_float * constants[i % len(constants)]
+            # Pokud už je to float32, to() je skoro no-op, ale můžeme rovnou přičítat
+            dt = dt + coord.to(torch.float32) * constants[i % len(constants)]
 
         # Velmi rychlý a osvědčený hash z GPU shaderů: fract(sin(x) * 43758.5453)
-        # torch.sin a následné odtržení celé části je na CPU extrémně rychlé a vektorizované
         st = torch.sin(dt) * 43758.5453
         h = st - torch.floor(st)
 
@@ -57,8 +55,9 @@ class NoiseUtils:
         coords = tuple(c / scale for c in coords_input)
 
         # Split into integer and fractional parts
-        coords_floor = tuple(torch.floor(c).long() for c in coords)
-        coords_frac = tuple(c - torch.floor(c) for c in coords)
+        # Keep coords_floor as float32 to avoid expensive conversions to and from long
+        coords_floor = tuple(torch.floor(c).to(torch.float32) for c in coords)
+        coords_frac = tuple(c - coords_floor[d] for d, c in enumerate(coords))
 
         # Fade curves for each dimension
         fades = tuple(NoiseUtils._fade(f) for f in coords_frac)
@@ -74,22 +73,23 @@ class NoiseUtils:
             for d in range(ndim):
                 h = NoiseUtils._hash_nd(corner_coords, seed + prime_seeds[d % len(prime_seeds)] * (d + 1))
                 grad_components.append(h * 2.0 - 1.0)
-            grad = torch.stack(grad_components, dim=0)
-            grad_norm = torch.linalg.norm(grad, dim=0, keepdim=True)
-            grad = grad / torch.where(grad_norm == 0, torch.ones_like(grad_norm), grad_norm)
 
-            dist_components = [coords_frac[d] - corner_offsets[d] for d in range(ndim)]
-            dist = torch.stack(dist_components, dim=0)
-            dot = torch.sum(grad * dist, dim=0)
+            # Optimalizace: výpočet normy a dot produktu iterativně bez torch.stack
+            grad_norm_sq = grad_components[0] * grad_components[0]
+            for d in range(1, ndim):
+                grad_norm_sq += grad_components[d] * grad_components[d]
 
-            weight = 1.0
-            for d in range(ndim):
-                if corner_offsets[d]:
-                    weight = weight * fades[d]
-                else:
-                    weight = weight * (1 - fades[d])
+            inv_norm = torch.where(grad_norm_sq == 0.0, torch.ones_like(grad_norm_sq), torch.rsqrt(grad_norm_sq))
 
-            result = result + dot * weight
+            dot = grad_components[0] * (coords_frac[0] - corner_offsets[0]) * inv_norm
+            for d in range(1, ndim):
+                dot += grad_components[d] * (coords_frac[d] - corner_offsets[d]) * inv_norm
+
+            weight = fades[0] if corner_offsets[0] else (1.0 - fades[0])
+            for d in range(1, ndim):
+                weight = weight * (fades[d] if corner_offsets[d] else (1.0 - fades[d]))
+
+            result += dot * weight
 
         return torch.clamp(result, -1, 1)
 
@@ -104,7 +104,8 @@ class NoiseUtils:
 
         # 1. Škálování a rozdělení souřadnic
         coords = tuple(c / scale for c in coords_input)
-        coords_cell = tuple(torch.floor(c) for c in coords)
+        # Optimalizace: uložit jako float32 pro rychlejší indexování a hash
+        coords_cell = tuple(torch.floor(c).to(torch.float32) for c in coords)
 
         # OPRAVA: Musíme indexovat konkrétní prvek z tuple pomocí `coords_cell[i]`
         coords_frac = tuple(coords[i] - coords_cell[i] for i in range(ndim))
@@ -127,8 +128,7 @@ class NoiseUtils:
             # Souřadnice sousední buňky složené ze všech dimenzí naráz pro správný hash
             neighbor_coords = tuple(coords_cell[i] + current_offset[i] for i in range(ndim))
 
-            # Inicializace dist_sq podle prvního tensoru v mřížce
-            dist_sq = torch.zeros_like(coords_input[0], dtype=torch.float32, device=device)
+            dist_sq = 0.0
             for i in range(ndim):
                 # Generování unikátního seedu pro každou dimenzi aktuálního souseda
                 s = seed + prime_seeds[i % len(prime_seeds)] * (i + 2)
@@ -139,7 +139,7 @@ class NoiseUtils:
 
                 # Vzdálenost pixelu od tohoto bodu
                 diff = coords_frac[i] - pos_i
-                dist_sq = dist_sq + diff * diff
+                dist_sq += diff * diff
 
             dist = torch.sqrt(dist_sq)
             min_dist = torch.minimum(min_dist, dist)
@@ -184,3 +184,87 @@ class NoiseUtils:
         # Normalizace zpět do [-1, 1] a potom do [0, 1]
         result = result / max_amplitude
         return (result*2)+0.5
+
+    @staticmethod
+    def _accumulate_octaves_nd(sample_fn, octaves=1, persistence=0.5, lacunarity=2.0):
+        octaves = max(1, int(octaves))
+        result = None
+        amplitude = 1.0
+        frequency = 1.0
+        max_amplitude = 0.0
+
+        for octave in range(octaves):
+            value = sample_fn(frequency, octave)
+            if result is None:
+                result = torch.zeros_like(value, dtype=torch.float32)
+            result = result + value * amplitude
+            max_amplitude += amplitude
+            amplitude *= persistence
+            frequency *= lacunarity
+
+        if max_amplitude == 0.0:
+            return result
+        return result / max_amplitude
+
+    @staticmethod
+    def ridged_noise_nd(coords_input, scale=1.0, seed=0, device=None, octaves=4, persistence=0.5, lacunarity=2.0, ridge_power=2.0):
+        """
+        Ridged multifractal noise in [0, 1].
+        """
+        def sample(frequency, octave):
+            noise = NoiseUtils.perlin_noise_nd(
+                tuple((c / scale) * frequency for c in coords_input),
+                1.0,
+                seed + octave * 1000,
+                device,
+            )
+            ridged = (1.0 - noise.abs()).clamp(0.0, 1.0)
+            return ridged.pow(ridge_power)
+
+        return NoiseUtils._accumulate_octaves_nd(sample, octaves, persistence, lacunarity).clamp(0.0, 1.0)
+
+    @staticmethod
+    def domain_warp_noise_nd(
+        coords_input,
+        scale=1.0,
+        seed=0,
+        device=None,
+        warp_scale=1.0,
+        warp_strength=0.35,
+        octaves=4,
+        warp_octaves=2,
+        persistence=0.5,
+        lacunarity=2.0,
+    ):
+        """
+        Domain-warped Perlin noise in [0, 1].
+        """
+        ndim = len(coords_input)
+
+        warp_fields = []
+        for dim in range(ndim):
+            def sample_warp(frequency, octave, dim=dim):
+                return NoiseUtils.perlin_noise_nd(
+                    tuple((c / warp_scale) * frequency for c in coords_input),
+                    1.0,
+                    seed + 10000 + dim * 1000 + octave * 97,
+                    device,
+                )
+
+            warp_fields.append(NoiseUtils._accumulate_octaves_nd(sample_warp, warp_octaves, persistence, lacunarity))
+
+        warped_coords = tuple(
+            (coords_input[dim] / scale) + warp_fields[dim] * warp_strength
+            for dim in range(ndim)
+        )
+
+        def sample_base(frequency, octave):
+            return NoiseUtils.perlin_noise_nd(
+                tuple(c * frequency for c in warped_coords),
+                1.0,
+                seed + 20000 + octave * 1000,
+                device,
+            )
+
+        base = NoiseUtils._accumulate_octaves_nd(sample_base, octaves, persistence, lacunarity)
+        return ((base + 1.0) * 0.5).clamp(0.0, 1.0)

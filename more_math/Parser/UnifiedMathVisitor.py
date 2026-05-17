@@ -151,9 +151,34 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             # Handle tensor operations
             if self._is_tensor(a) or self._is_tensor(b):
+                orig_dtype = None
+
+                # Promote float8 to float16 if needed
+                if self._is_tensor(a):
+                    if hasattr(torch, "float8_e4m3fn") and a.dtype == torch.float8_e4m3fn:
+                        orig_dtype = a.dtype
+                        a = a.to(torch.float16)
+                    elif hasattr(torch, "float8_e5m2") and a.dtype == torch.float8_e5m2:
+                        orig_dtype = a.dtype
+                        a = a.to(torch.float16)
+
+                if self._is_tensor(b):
+                    if hasattr(torch, "float8_e4m3fn") and b.dtype == torch.float8_e4m3fn:
+                        orig_dtype = b.dtype if orig_dtype is None else orig_dtype
+                        b = b.to(torch.float16)
+                    elif hasattr(torch, "float8_e5m2") and b.dtype == torch.float8_e5m2:
+                        orig_dtype = b.dtype if orig_dtype is None else orig_dtype
+                        b = b.to(torch.float16)
+
                 if torch_op:
-                    return torch_op(a, b).contiguous()
-                return scalar_op(a, b)
+                    res = torch_op(a, b).contiguous()
+                else:
+                    res = scalar_op(a, b)
+
+                if orig_dtype is not None and self._is_tensor(res):
+                    res = res.to(orig_dtype)
+
+                return res
 
             return scalar_op(a, b)
         except (ArithmeticError) as e:
@@ -168,7 +193,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(a):
             return [self._unary_op(x, torch_op, scalar_op) for x in a]
         if self._is_tensor(a):
-            return torch_op(a).contiguous() if torch_op else scalar_op(a)
+            orig_dtype = None
+            if hasattr(torch, "float8_e4m3fn") and a.dtype == torch.float8_e4m3fn:
+                orig_dtype = a.dtype
+                a = a.to(torch.float16)
+            elif hasattr(torch, "float8_e5m2") and a.dtype == torch.float8_e5m2:
+                orig_dtype = a.dtype
+                a = a.to(torch.float16)
+
+            res = torch_op(a).contiguous() if torch_op else scalar_op(a)
+
+            if orig_dtype is not None and self._is_tensor(res):
+                res = res.to(orig_dtype)
+            return res
+
         return scalar_op(a)
 
     def _reduction_op(self, val, torch_op, list_op):
@@ -3942,3 +3980,167 @@ class UnifiedMathVisitor(MathExprVisitor):
         body = ctx.block() if ctx.block() else ctx.expr()
         closure = self.variables.copy()
         return LambdaFunction(params, body, closure)
+
+    def visitRidgedFunc(self, ctx):
+        """ridged(seed, scale, [octaves], [offset], [shape])"""
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+ 
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+ 
+        octaves = 4
+        expr_idx = 2
+        if len(ctx.expr()) > expr_idx:
+            oct_val = yield ctx.expr(expr_idx)
+            octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
+            expr_idx += 1
+ 
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+ 
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+ 
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+ 
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+ 
+        # Build 1D ranges with offsets and avoid full meshgrid when some dims == 1
+        ranges = [
+            torch.arange(s, dtype=torch.float32, device=self.device)
+            + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+            for i, s in enumerate(shape)
+        ]
+        valid_indices = [i for i, s in enumerate(shape) if s > 1]
+        if len(valid_indices) == 0:
+            # all dims are size 1: create cheap singleton tensors per-dim
+            grids = tuple(
+                torch.tensor(
+                    [offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                for i in range(len(shape))
+            )
+            grids_optimized = grids
+        else:
+            # only build meshgrid for dimensions with size > 1
+            ranges_filtered = [ranges[i] for i in valid_indices]
+            grids_filtered = torch.meshgrid(*ranges_filtered, indexing='ij')
+            grids_optimized = tuple(grids_filtered)
+
+        noise = NoiseUtils.ridged_noise_nd(grids_optimized, scale, seed, self.device, octaves=octaves)
+        target_shape = tuple(int(x) for x in shape)
+        return noise.view(target_shape)
+ 
+    def visitDomainWarpFunc(self, ctx):
+        """domain_warp(seed, scale, warp_scale, warp_strength, [octaves], [warp_octaves], [offset], [shape])"""
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+ 
+        scale_val = yield ctx.expr(1)
+        scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
+ 
+        warp_scale_val = yield ctx.expr(2)
+        warp_scale = float(warp_scale_val.item()) if self._is_tensor(warp_scale_val) else float(warp_scale_val)
+ 
+        warp_strength_val = yield ctx.expr(3)
+        warp_strength = float(warp_strength_val.item()) if self._is_tensor(warp_strength_val) else float(warp_strength_val)
+ 
+        octaves = 4
+        warp_octaves = 2
+        expr_idx = 4
+ 
+        if len(ctx.expr()) > expr_idx:
+            oct_val = yield ctx.expr(expr_idx)
+            octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
+            expr_idx += 1
+ 
+        if len(ctx.expr()) > expr_idx:
+            warp_oct_val = yield ctx.expr(expr_idx)
+            warp_octaves = int(warp_oct_val.item()) if self._is_tensor(warp_oct_val) else int(warp_oct_val)
+            expr_idx += 1
+ 
+        offset = None
+        if len(ctx.expr()) > expr_idx:
+            offset_val = yield ctx.expr(expr_idx)
+            offset = offset_val
+            expr_idx += 1
+ 
+        shape = self.shape
+        if len(ctx.expr()) > expr_idx:
+            shape_arg = (yield ctx.expr(expr_idx))
+            if self._is_tensor(shape_arg):
+                shape = tuple(shape_arg.long().flatten().tolist())
+            elif self._is_list(shape_arg):
+                shape = tuple(int(x) for x in shape_arg)
+            else:
+                shape = (int(shape_arg),)
+ 
+        if len(shape) == 0:
+            return torch.tensor(0.0, device=self.device)
+ 
+        offset_list = None
+        if offset is not None:
+            if self._is_tensor(offset):
+                offset_list = [float(x) for x in offset.flatten().tolist()]
+            elif self._is_list(offset):
+                offset_list = [float(x) for x in offset]
+            else:
+                offset_list = [float(offset)]
+ 
+        # Build 1D ranges with offsets and avoid full meshgrid when some dims == 1
+        ranges = [
+            torch.arange(s, dtype=torch.float32, device=self.device)
+            + (offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0)
+            for i, s in enumerate(shape)
+        ]
+        valid_indices = [i for i, s in enumerate(shape) if s > 1]
+        if len(valid_indices) == 0:
+            # all dims are size 1: create cheap singleton tensors per-dim
+            grids = tuple(
+                torch.tensor(
+                    [offset_list[i] if offset_list is not None and i < len(offset_list) else 0.0],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                for i in range(len(shape))
+            )
+            grids_optimized = grids
+        else:
+            # only build meshgrid for dimensions with size > 1
+            ranges_filtered = [ranges[i] for i in valid_indices]
+            grids_filtered = torch.meshgrid(*ranges_filtered, indexing='ij')
+            grids_optimized = tuple(grids_filtered)
+ 
+        noise = NoiseUtils.domain_warp_noise_nd(
+            grids_optimized,
+            scale=scale,
+            seed=seed,
+            device=self.device,
+            warp_scale=warp_scale,
+            warp_strength=warp_strength,
+            octaves=octaves,
+            warp_octaves=warp_octaves,
+        )
+        target_shape = tuple(int(x) for x in shape)
+        return noise.view(target_shape)

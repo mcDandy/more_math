@@ -289,6 +289,10 @@ You can also get the node from comfy manager under the name of More math.
   - `jitter` is clamped to `0..1`.
 - `plasma(seed, scale, [octaves, [offset, [shape]]])` / `turbulence` / `plasma_noise`:
   - high-frequency turbulence-style noise.
+- `ridged(seed, scale, [octaves, [offset, [shape]]])` / `ridged_noise`:
+  - ridged multifractal noise with sharp peaks and mountain-like structures.
+- `domain_warp(seed, scale, warp_scale, warp_strength, [octaves, [warp_octaves, [offset, [shape]]]])` / `domain_warp_noise`:
+  - domain-warped noise for breaking up regular patterns and adding complex organic detail.
 
 ---
 

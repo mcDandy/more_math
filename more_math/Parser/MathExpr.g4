@@ -125,8 +125,7 @@ func1:
 	| SIGM LPAREN expr RPAREN			# sigmoidFunc
 	| ANGL LPAREN expr RPAREN			# anglFunc
 	| PRNT LPAREN expr RPAREN			# printFunc
-	| FRACT LPAREN expr RPAREN			# FractFunc
-	| RELU LPAREN expr RPAREN			# ReluFunc
+	| FRACT LPAREN expr RPAREN			# ReluFunc
 	| SOFTPLUS LPAREN expr RPAREN		# SoftplusFunc
 	| GELU LPAREN expr RPAREN			# GeluFunc
 	| SIGN LPAREN expr RPAREN			# SignFunc
@@ -283,7 +282,9 @@ funcNoise:
 	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc
 	| PERLIN LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PerlinFunc
 	| CELLULAR LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# CellularFunc
-	| PLASMA LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PlasmaFunc;
+	| PLASMA LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PlasmaFunc
+	| RIDGED LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# RidgedFunc
+	| DOMAIN_WARP LPAREN expr COMMA expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# DomainWarpFunc;
 
 // LEXER RULES
 
@@ -472,6 +473,8 @@ STUDENTTDIST: 'randt' | 'random_studentt';
 PERLIN: 'perlin' | 'perlin_noise';
 CELLULAR: 'cellular' | 'voronoi' | 'worley' | 'cellular_noise'|'voronoi_noise';
 PLASMA: 'plasma' | 'turbulence' | 'plasma_noise';
+RIDGED: 'ridged' | 'ridged_noise';
+DOMAIN_WARP: 'domain_warp'|'domain_warp_noise';
 
 PLUS: '+';
 MINUS: '-';

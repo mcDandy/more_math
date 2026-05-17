@@ -2891,8 +2891,14 @@ class UnifiedMathVisitor(MathExprVisitor):
             ],
             indexing='ij'
         )
+        valid_indices = [i for i, s in enumerate(shape) if s > 1]
 
-        noise = NoiseUtils.perlin_noise_nd(grids, scale, seed, self.device)
+        if len(valid_indices) > 0:
+            grids_optimized = tuple(grids[i] for i in valid_indices)
+        else:
+            grids_optimized = grids # Záloha pro případ, že by shape byl např. [1, 1, 1]
+
+        noise = NoiseUtils.perlin_noise_nd(grids_optimized, scale, seed, self.device)
 
         if octaves > 1:
             result = noise
@@ -2900,7 +2906,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             frequency = 2.0
             for octa in range(octaves - 1):
                 octave_noise = NoiseUtils.perlin_noise_nd(
-                    grids,
+                    grids_optimized,
                     scale / frequency,
                     seed + octa + 1,
                     self.device
@@ -2909,7 +2915,8 @@ class UnifiedMathVisitor(MathExprVisitor):
                 amplitude *= 0.5
                 frequency *= 2.0
             noise = result / (2 - 2**(-octaves))
-
+        target_shape = grids[0].shape
+        noise = noise.view(target_shape)
         return noise * 2 + 0.5
 
     def visitCellularFunc(self, ctx):
@@ -3024,14 +3031,21 @@ class UnifiedMathVisitor(MathExprVisitor):
             ],
             indexing='ij'
         )
+        valid_indices = [i for i, s in enumerate(shape) if s > 1]
 
+        if len(valid_indices) > 0:
+            grids_optimized = tuple(grids[i] for i in valid_indices)
+        else:
+            grids_optimized = grids
         noise = NoiseUtils.plasma_noise_nd(
-            grids,
+            grids_optimized,
             scale=scale,
             seed=seed,
             device=self.device,
             octaves=octaves
         )
+        target_shape = grids[0].shape
+        noise = noise.view(target_shape)
         return noise
 
     def visitPadFunc(self,ctx):

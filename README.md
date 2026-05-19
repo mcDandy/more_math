@@ -4,7 +4,7 @@ Adds math nodes for numbers and types which do not need it. Inspired by the `was
 
 There is workflow folder containing examples. It will expand.
 
-The most important thing is that last part of input must be an expression. Node uses it to output result. It can be constant, function call, variable or mixture of these. No loops, branching using if.
+The most important thing is that last part of input must be an expression. Node uses it to output result. It can be constant, function call, variable or mixture of these. No loops, branching using if. Branches, loops, ... can be before the final expression.
 
 ## Quickstart
 

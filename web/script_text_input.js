@@ -313,6 +313,19 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         syntaxLayer.style.fontStyle = cs.fontStyle;
         syntaxLayer.style.lineHeight = cs.lineHeight;
         syntaxLayer.style.padding = cs.padding;
+        measureEl.style.fontFamily = cs.fontFamily;
+        measureEl.style.fontSize = cs.fontSize;
+        measureEl.style.fontWeight = cs.fontWeight;
+        measureEl.style.fontStyle = cs.fontStyle;
+        measureEl.style.lineHeight = cs.lineHeight;
+        measureEl.style.padding = cs.padding;
+        gutterContent.style.fontFamily = cs.fontFamily;
+        gutterContent.style.fontSize = cs.fontSize;
+        gutterContent.style.fontWeight = cs.fontWeight;
+        gutterContent.style.fontStyle = cs.fontStyle;
+        gutterContent.style.lineHeight = cs.lineHeight;
+        gutterContent.style.padding = cs.padding;
+        gutterContent.style.boxSizing = 'border-box';
 
         const lineHeightPx = getLineHeightPx(textarea);
         const refresh = () => {

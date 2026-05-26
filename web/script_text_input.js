@@ -256,7 +256,21 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         }
 
         gutterContent.textContent = gutterLines.join("\n");
-        gutterContent.style.transform = `translateY(${-textarea.scrollTop}px)`;
+        // sync gutter to measure markers: compute marker viewport top vs textarea content top
+        const firstMarker = measureEl.querySelector(`[data-ln="0"]`);
+        const textareaRect = textarea.getBoundingClientRect();
+        const markerRect = firstMarker ? firstMarker.getBoundingClientRect() : null;
+        const padTop = parseFloat(getComputedStyle(textarea).paddingTop) || 0;
+        const offset = markerRect ? (markerRect.top - (textareaRect.top + padTop)) : 0;
+        gutterContent.style.padding = '0';
+        gutterContent.style.lineHeight = `${lineHeightPx}px`;
+        gutterContent.style.boxSizing = 'border-box';
+        gutterContent.style.fontFamily = cs.fontFamily;
+        gutterContent.style.fontSize = cs.fontSize;
+        gutterContent.style.fontWeight = cs.fontWeight;
+        gutterContent.style.fontStyle = cs.fontStyle;
+        gutterContent.dataset.mrmthOffset = String(offset);
+        gutterContent.style.transform = `translateY(${offset - textarea.scrollTop}px)`;
     }
 
     function attachToTextarea(textarea) {
@@ -323,9 +337,11 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         gutterContent.style.fontSize = cs.fontSize;
         gutterContent.style.fontWeight = cs.fontWeight;
         gutterContent.style.fontStyle = cs.fontStyle;
-        gutterContent.style.lineHeight = cs.lineHeight;
         gutterContent.style.padding = cs.padding;
         gutterContent.style.boxSizing = 'border-box';
+        gutterContent.style.margin = '0';
+        gutterContent.style.whiteSpace = 'pre';
+        gutterContent.style.lineHeight = cs.lineHeight;
 
         const lineHeightPx = getLineHeightPx(textarea);
         const refresh = () => {
@@ -335,7 +351,8 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
         textarea.addEventListener("input", refresh);
         textarea.addEventListener("scroll", () => {
-            gutterContent.style.transform = `translateY(${-textarea.scrollTop}px)`;
+            const base = parseFloat(gutterContent.dataset.mrmthOffset) || 0;
+            gutterContent.style.transform = `translateY(${base - textarea.scrollTop}px)`;
             syntaxLayer.scrollTop = textarea.scrollTop;
             syntaxLayer.scrollLeft = textarea.scrollLeft;
         });

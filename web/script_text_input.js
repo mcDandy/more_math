@@ -246,6 +246,20 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         return html;
     }
 
+    function findBoundingAncestor(el) {
+        let node = el.parentElement;
+        while (node && node !== document.body && node !== document.documentElement) {
+            const cs = getComputedStyle(node);
+            // if ancestor has an explicit height or max-height or constrained overflow, use it as bounding box
+            if ((cs.height && cs.height !== 'auto') || (cs.maxHeight && cs.maxHeight !== 'none') || (cs.overflowY && cs.overflowY !== 'visible')) {
+                return node;
+            }
+            node = node.parentElement;
+        }
+        // fallback to viewport
+        return document.documentElement;
+    }
+
     function updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx) {
         const rawLines = textarea.value.split("\n");
         const lineCount = Math.max(1, rawLines.length);
@@ -497,6 +511,38 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
             updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
             updateHighlight(textarea, syntaxLayer);
+
+            // Reactive height: size wrapper and editor container to content, clamped to parent's height
+            const contentHeight = measureEl.offsetHeight || (lineHeightPx * Math.max(1, textarea.value.split('\n').length));
+                const bounding = findBoundingAncestor(wrapper) || parent || document.documentElement;
+                const parentHeight = bounding && bounding.clientHeight ? bounding.clientHeight : null;
+                const minHeight = 60;
+                let maxHeight = 600;
+
+                if (parentHeight !== null) {
+                    // leave some padding inside parent
+                    maxHeight = Math.max(60, parentHeight - 12);
+
+                    // special-case: if bounding is the documentElement (viewport), allow growth until viewport
+                    if (bounding === document.documentElement) {
+                        // but guard against ancestor that resizes with content (V2). If wrapper's parent adapts to content, find a higher static ancestor
+                        const staticAncestor = findBoundingAncestor(bounding);
+                        if (staticAncestor && staticAncestor !== document.documentElement) {
+                            maxHeight = Math.max(60, staticAncestor.clientHeight - 12);
+                        }
+                    }
+                }
+
+                const desired = Math.min(Math.max(contentHeight, minHeight), maxHeight);
+
+                // ensure wrapper and editor container fill the desired height
+                try {
+                    wrapper.style.minHeight = '0';
+                    wrapper.style.height = desired + 'px';
+                    editorContainer.style.height = desired + 'px';
+                } catch (e) {
+                    // ignore if elements unavailable
+                }
         };
 
         // Force initial measurement again after a short delay to allow different node wrappers to settle

@@ -344,8 +344,11 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             if (stableCount >= 3) gutterContent.dataset.mrmthLocked = "1";
         }
 
-        gutterContent.style.padding = '0';
-        gutterContent.style.lineHeight = `${lineHeightPx}px`;
+        // Keep gutter padding in sync with textarea to match vertical origin across node variants
+        gutterContent.style.padding = cs.padding || '0';
+        // Prefer computed CSS line-height when available, otherwise fall back to measured px
+        const parsedLH = parseFloat(cs.lineHeight);
+        gutterContent.style.lineHeight = Number.isFinite(parsedLH) && parsedLH > 0 ? cs.lineHeight : `${lineHeightPx}px`;
         gutterContent.style.boxSizing = 'border-box';
         gutterContent.style.fontFamily = cs.fontFamily;
         gutterContent.style.fontSize = cs.fontSize;
@@ -381,10 +384,16 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             });
         }
 
+        // Apply half-line correction: shift gutter up by half the line height so numbers align with text baseline
+        const parsedLHFinal = parseFloat(cs.lineHeight);
+        const lineHUsedFinal = Number.isFinite(parsedLHFinal) && parsedLHFinal > 0 ? parsedLHFinal : lineHeightPx;
+        const halfLineCorrection = lineHUsedFinal / 2;
+        const adjustedBaseline = baselineDelta - halfLineCorrection;
+
         // Apply transform on next frame to avoid layout thrash
-        gutterContent.dataset.mrmthOffset = String(baselineDelta);
+        gutterContent.dataset.mrmthOffset = String(adjustedBaseline);
         requestAnimationFrame(() => {
-            gutterContent.style.transform = `translateY(${baselineDelta - textarea.scrollTop}px)`;
+            gutterContent.style.transform = `translateY(${adjustedBaseline - textarea.scrollTop}px)`;
         });
     }
 
@@ -463,6 +472,10 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
             updateHighlight(textarea, syntaxLayer);
         };
+
+        // Force initial measurement again after a short delay to allow different node wrappers to settle
+        setTimeout(refresh, 50);
+        setTimeout(refresh, 200);
 
         textarea.addEventListener("input", refresh);
         textarea.addEventListener("scroll", () => {

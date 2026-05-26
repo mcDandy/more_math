@@ -369,10 +369,33 @@ const KEYWORDS = new Set(["if", "else", "while", "for", "in", "break", "continue
 const CONSTANTS = new Set(["pi", "PI", "e", "E"]);
 const FUNCTIONS = new Set([
     "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
-    "abs", "sqrt", "ln", "log", "exp", "floor", "ceil", "round", "pow", "clamp",
-    "fft", "ifft", "print", "where", "rgb_to_int", "int_to_rgb", "hsv_to_rgb", "rgb_to_hsv",
-    "sum", "mean", "std", "var", "min", "max", "sort", "argsort", "argmin", "argmax"
-]);
+    "abs", "sqrt", "ln", "log", "exp", "smin", "smax", "tmin", "tmax", "tnorm", "snorm", "floor", "ceil",
+    "round", "gamma", "pow", "sigm", "clamp", "fft", "ifft", "angle", "print", "print_shape", "pshp", "nvl",
+    "nan_to_num", "lerp", "step", "smoothstep", "fract", "relu", "softplus", "gelu", "sign", "map", "ezconvolution",
+    "ezconv", "convolution", "conv", "swap", "permute", "perm", "reshape", "rshp", "range", "topk", "botk", "pinv",
+    "sum", "mean", "std", "var", "quartile", "quartil", "percentile", "prcnt", "quantile", "dot", "moment", "erf", "erfinv", "any",
+    "all", "edge", "blur", "gaussian", "median", "mode", "cumsum", "cumprod", "topk_ind", "topk_indices", "botk_ind",
+    "botk_indices", "cubic_ease", "cubic", "elastic_ease", "elastic", "sine_ease", "sine", "smootherstep", "dist",
+    "distance", "remap", "cossim", "cosine_similarity", "count", "cnt", "length", "flatten", "append", "get_value",
+    "flow_apply", "batch_shuffle", "shuffle", "motion_mask", "flow_to_image", "overlay", "pad", "cross", "matmul", "rife",
+    "bnot", "bitwise_not", "bitcount", "popcount", "popcnt", "shape", "band", "bitwise_and", "bxor", "bitwise_xor",
+    "bor", "bitwise_or", "tensor", "stack_push", "stack_pop", "stack_clear", "stack_has", "stack_get", "timestamp", "now",
+    "sort", "argsort", "argmin", "argmax", "softmax", "softmin", "unique", "flip", "cov", "corr", "correlation", "entropy",
+    "crop", "cat", "concatenate", "concat", "float", "int", "linspace", "logspace", "roll", "select",
+    "noise", "randn", "random_normal", "rand", "randu", "random_uniform", "randc", "random_cauchy", "rande",
+    "random_exponential", "randln", "random_log_normal", "randb", "random_bernoulli", "randp", "random_poisson", "randg",
+    "random_gamma", "randbeta", "random_beta", "randl", "random_laplace", "randgumbel", "random_gumbel", "randw",
+    "random_weibull", "randchi2", "random_chi2", "randt", "random_studentt", "perlin", "perlin_noise", "cellular", "voronoi",
+    "worley", "cellular_noise", "voronoi_noise", "plasma", "turbulence", "plasma_noise", "ridged", "ridged_noise",
+    "domain_warp", "domain_warp_noise",
+    "upper", "lower", "split", "join", "substring", "substr", "find", "trim", "replace",
+    "dilate", "erode", "morph_open", "morph_close",
+    "rgb_to_hsv", "hsv_to_rgb",
+    "rgb_to_oklab", "oklab_to_rgb", "rgb_to_cielab", "cielab_to_rgb",
+    "int_to_rgb", "rgb_to_int",
+    "where", "histogram", "hist", "flow_mag", "flow_magnitude", "flow_ang", "flow_angle",
+    "interpolate_linear", "interpolate_area", "interpolate_nearest", "interpolate_nearest_exact"]);
+
 
 const BRACKET_PAIRS = { "(": ")", "[": "]", "{": "}" };
 const OPENING_BRACKETS = new Set(["(", "[", "{"]);

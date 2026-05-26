@@ -563,7 +563,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
         if (window.ResizeObserver) {
             const ro = new ResizeObserver(refresh);
-            ro.observe(textarea);
+            ro.observe(editorContainer);
         }
 
         requestAnimationFrame(refresh);

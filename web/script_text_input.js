@@ -56,6 +56,20 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 will-change: transform;
             }
 
+            /* Make token spans allow breaking at the same points as plain text so highlighted layer wraps identically */
+            .mrmth-syntax-layer span,
+            .mrmth-syntax-layer .mrmth-token-comment,
+            .mrmth-syntax-layer .mrmth-token-string,
+            .mrmth-syntax-layer .mrmth-token-variable,
+            .mrmth-syntax-layer .mrmth-token-operator,
+            .mrmth-syntax-layer .mrmth-token-bracket {
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+                hyphens: none;
+                display: inline;
+            }
+
            .mrmth-editor-container {
              position: relative;
              flex: 1;
@@ -466,9 +480,21 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         gutterContent.style.margin = '0';
         gutterContent.style.whiteSpace = 'pre';
         gutterContent.style.lineHeight = cs.lineHeight;
+        // Ensure syntax layer wraps characters the same way as measure layer
+        syntaxLayer.style.whiteSpace = 'pre-wrap';
+        syntaxLayer.style.overflowWrap = 'anywhere';
+        syntaxLayer.style.wordBreak = 'break-word';
+        syntaxLayer.style.boxSizing = 'border-box';
+        syntaxLayer.style.display = 'block';
 
         const lineHeightPx = getLineHeightPx(textarea);
         const refresh = () => {
+            // keep measure and syntax layers using the exact textarea content width to ensure identical wrapping
+            const widthPx = textarea.clientWidth;
+            measureEl.style.width = `${widthPx}px`;
+            syntaxLayer.style.width = `${widthPx}px`;
+            syntaxLayer.style.boxSizing = 'border-box';
+
             updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
             updateHighlight(textarea, syntaxLayer);
         };

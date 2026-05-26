@@ -90,6 +90,11 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
               mix-blend-mode: normal;   /* ⬅️ ZRUŠ lighten */
               -webkit-text-fill-color: transparent;
+
+              /* Reserve scrollbar space to avoid layout jumps when it appears */
+              overflow-y: auto;
+              scrollbar-gutter: stable;
+              -webkit-overflow-scrolling: touch;
             }
 
             .mrmth-measure {
@@ -108,6 +113,10 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 .mrmth-measure {
     margin: 0 !important;
 }
+
+.mrmth-gutter-line { display: block; }
+.mrmth-baseline-probe { display:inline-block; width:0; height:0; line-height:0; overflow:hidden; }
+.mrmth-gutter-line { padding: 0 6px; }
 
 
             .mrmth-token-comment { color: #7f8c8d; }
@@ -227,8 +236,8 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const rawLines = textarea.value.split("\n");
         const lineCount = Math.max(1, rawLines.length);
 
-        const scrollbarWidth = textarea.offsetWidth - textarea.clientWidth;
-        const widthPx = Math.max(0, textarea.clientWidth - scrollbarWidth);
+        // Use clientWidth directly for mirror width to avoid rewrap when scrollbar appears/disappears
+        const widthPx = textarea.clientWidth;
 
         const cs = getComputedStyle(textarea);
         measureEl.style.fontFamily = cs.fontFamily;
@@ -255,13 +264,86 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             for (let j = 1; j < visualLines; j++) gutterLines.push(" ");
         }
 
-        gutterContent.textContent = gutterLines.join("\n");
-        // sync gutter to measure markers: compute marker viewport top vs textarea content top
+        // Render gutter lines as elements so we can measure baseline correctly
+        gutterContent.innerHTML = gutterLines.map(l => `<div class="mrmth-gutter-line">${escapeHtml(l)}</div>`).join("");
+        // stable baseline alignment using offsetTop sums (measure marker + probe) to avoid viewport jitter
         const firstMarker = measureEl.querySelector(`[data-ln="0"]`);
-        const textareaRect = textarea.getBoundingClientRect();
-        const markerRect = firstMarker ? firstMarker.getBoundingClientRect() : null;
-        const padTop = parseFloat(getComputedStyle(textarea).paddingTop) || 0;
-        const offset = markerRect ? (markerRect.top - (textareaRect.top + padTop)) : 0;
+        const gutterFirstLine = gutterContent.firstElementChild;
+
+        // ensure probes exist
+        let measureProbe = firstMarker ? firstMarker.querySelector('.mrmth-baseline-probe') : null;
+        if (!measureProbe && firstMarker) {
+            measureProbe = document.createElement('span');
+            measureProbe.className = 'mrmth-baseline-probe';
+            measureProbe.style.display = 'inline-block';
+            measureProbe.style.width = '0px';
+            measureProbe.style.height = '0px';
+            measureProbe.style.lineHeight = '0';
+            measureProbe.style.verticalAlign = 'baseline';
+            measureProbe.style.overflow = 'hidden';
+            firstMarker.appendChild(measureProbe);
+        }
+
+        let gutterProbe = gutterFirstLine ? gutterFirstLine.querySelector('.mrmth-baseline-probe') : null;
+        if (!gutterProbe && gutterFirstLine) {
+            gutterProbe = document.createElement('span');
+            gutterProbe.className = 'mrmth-baseline-probe';
+            gutterProbe.style.display = 'inline-block';
+            gutterProbe.style.width = '0px';
+            gutterProbe.style.height = '0px';
+            gutterProbe.style.lineHeight = '0';
+            gutterProbe.style.verticalAlign = 'baseline';
+            gutterProbe.style.overflow = 'hidden';
+            gutterFirstLine.insertAdjacentElement('afterbegin', gutterProbe);
+        }
+
+        // Prefer baseline positions computed relative to each container to avoid global jumps
+        let baselineDelta;
+        try {
+            if (measureProbe && gutterProbe) {
+                const mProbeRect = measureProbe.getBoundingClientRect();
+                const gProbeRect = gutterProbe.getBoundingClientRect();
+                const mRect = measureEl.getBoundingClientRect();
+                const gRect = gutterContent.getBoundingClientRect();
+                // probe offsets relative to their own containers
+                const mOffset = mProbeRect.top - mRect.top;
+                const gOffset = gProbeRect.top - gRect.top;
+                baselineDelta = mOffset - gOffset;
+            } else {
+                const measureBaseline = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0);
+                const gutterBaseline = (gutterFirstLine ? gutterFirstLine.offsetTop : 0) + (gutterProbe ? gutterProbe.offsetTop : 0);
+                baselineDelta = measureBaseline - gutterBaseline;
+            }
+        } catch (e) {
+            // fallback to previous offsetTop-based method
+            baselineDelta = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0) - ((gutterFirstLine ? gutterFirstLine.offsetTop : 0) + (gutterProbe ? gutterProbe.offsetTop : 0));
+        }
+
+        // If gutterBaseline couldn't be measured for some reason, fall back to marker offset
+        if (!gutterFirstLine) baselineDelta = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0);
+
+        // Clamp and smooth extreme jumps to avoid the gutter flying away on transient layout changes
+        const prevOffset = parseFloat(gutterContent.dataset.mrmthOffset || "0");
+        let stableCount = parseInt(gutterContent.dataset.mrmthStableCount || "0", 10) || 0;
+        const locked = gutterContent.dataset.mrmthLocked === "1";
+        const maxJumpPerFrame = 20; // px
+
+        if (locked) {
+            // keep previous locked offset
+            baselineDelta = prevOffset;
+        } else {
+            if (!Number.isFinite(baselineDelta)) baselineDelta = prevOffset;
+            const jump = baselineDelta - prevOffset;
+            if (Math.abs(jump) > maxJumpPerFrame) baselineDelta = prevOffset + Math.sign(jump) * maxJumpPerFrame;
+            // absolute sanity clamp
+            if (Math.abs(baselineDelta) > 200) baselineDelta = prevOffset;
+
+            const postJump = baselineDelta - prevOffset;
+            if (Math.abs(postJump) <= 1) stableCount++; else stableCount = 0;
+            gutterContent.dataset.mrmthStableCount = String(stableCount);
+            if (stableCount >= 3) gutterContent.dataset.mrmthLocked = "1";
+        }
+
         gutterContent.style.padding = '0';
         gutterContent.style.lineHeight = `${lineHeightPx}px`;
         gutterContent.style.boxSizing = 'border-box';
@@ -269,8 +351,41 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         gutterContent.style.fontSize = cs.fontSize;
         gutterContent.style.fontWeight = cs.fontWeight;
         gutterContent.style.fontStyle = cs.fontStyle;
-        gutterContent.dataset.mrmthOffset = String(offset);
-        gutterContent.style.transform = `translateY(${offset - textarea.scrollTop}px)`;
+
+        if (window.__mrmthGutterDebug) {
+            const textareaRect = textarea.getBoundingClientRect();
+            const measureRect = measureEl.getBoundingClientRect();
+            const gutterRect = gutterContent.getBoundingClientRect();
+            const firstMarkerTop = firstMarker ? firstMarker.offsetTop : null;
+            const measureProbeTop = measureProbe ? measureProbe.offsetTop : null;
+            const gutterFirstLineTop = gutterFirstLine ? gutterFirstLine.offsetTop : null;
+            const gutterProbeTop = gutterProbe ? gutterProbe.offsetTop : null;
+            const computedTranslate = baselineDelta - textarea.scrollTop;
+            console.log("mrmth-gutter-debug", {
+                textareaRect,
+                measureRect,
+                gutterRect,
+                lineHeightPx,
+                lineCount,
+                widthPx,
+                totalHeight,
+                firstMarkerTop,
+                measureProbeTop,
+                gutterFirstLineTop,
+                gutterProbeTop,
+                baselineDelta,
+                computedTranslate,
+                prevOffset,
+                stableCount,
+                locked
+            });
+        }
+
+        // Apply transform on next frame to avoid layout thrash
+        gutterContent.dataset.mrmthOffset = String(baselineDelta);
+        requestAnimationFrame(() => {
+            gutterContent.style.transform = `translateY(${baselineDelta - textarea.scrollTop}px)`;
+        });
     }
 
     function attachToTextarea(textarea) {
@@ -356,6 +471,10 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             syntaxLayer.scrollTop = textarea.scrollTop;
             syntaxLayer.scrollLeft = textarea.scrollLeft;
         });
+
+        // Also keep gutter stable on mouse enter/leave which previously caused jumps
+        gutter.addEventListener('mouseenter', () => requestAnimationFrame(refresh));
+        gutter.addEventListener('mouseleave', () => requestAnimationFrame(refresh));
 
         if (window.ResizeObserver) {
             const ro = new ResizeObserver(refresh);

@@ -537,9 +537,16 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
                 // ensure wrapper and editor container fill the desired height
                 try {
-                    wrapper.style.minHeight = '0';
-                    wrapper.style.height = desired + 'px';
-                    editorContainer.style.height = desired + 'px';
+                    wrapper.style.minHeight = '170px';
+                    // FIX: If the parent container is larger than the desired content height (e.g. node was enlarged/resized),
+                    // allow it to occupy 100% of the parent height. Otherwise, let it match content size.
+                    if (parentHeight && parentHeight > desired + 20) {
+                        wrapper.style.height = '100%';
+                        editorContainer.style.height = '100%';
+                    } else {
+                        wrapper.style.height = desired + 'px';
+                        editorContainer.style.height = desired + 'px';
+                    }
                 } catch (e) {
                     // ignore if elements unavailable
                 }
@@ -581,6 +588,17 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
     app.registerExtension({
         name: "mrmth.ScriptTextInput.Unified",
+        nodeCreated(node, app) {
+            if (node.comfyClass === "mrmth_ScriptInput" || node.type === "mrmth_ScriptInput") {
+                const widget = node.widgets?.find(w => w.name === "script");
+                if (widget) {
+                    const isVue = app.ui?.settings?.getSettingValue?.("Comfy.VueNodes.Enabled") || document.getElementById("vue-app");
+                    if (isVue) {
+                        widget.type = "scriptinput";
+                    }
+                }
+            }
+        },
         async setup() {
             scan(document);
 

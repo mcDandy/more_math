@@ -31,6 +31,7 @@ from .SelectiveGuiderMathNode import SelectiveGuiderMathNode
 from .StackUnBatcher import StackUnBatcher
 
 from .ScriptTextWindow import ScriptTextInput
+from .BatchLoraNode import BatchLoraNode
 
 from comfy_api.latest import ComfyExtension, io
 
@@ -174,7 +175,8 @@ class MoreMathExtension(ComfyExtension):
             StringMathNode,
             ScriptTextInput,
             SelectiveGuiderMathNode,
-            StackUnBatcher
+            StackUnBatcher,
+            BatchLoraNode
         ]
 
 

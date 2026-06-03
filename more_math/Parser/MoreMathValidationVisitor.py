@@ -28,7 +28,7 @@ class MoreMathValidationVisitor(MathExprVisitor):
     def visitCallExp(self, ctx):
         func_name = ctx.VARIABLE().getText()
         if func_name not in self.functions and func_name not in self.variables:
-            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Neznámá funkce nebo proměnná: {func_name}")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: unknown function or variable: {func_name}")
 
         if ctx.exprList():
             for e in ctx.exprList().expr():

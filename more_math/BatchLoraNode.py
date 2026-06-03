@@ -38,11 +38,11 @@ class BatchLoraNode(io.ComfyNode):
                 io.String.Input(id="folder", tooltip="The sub-folder containing the LoRA weights"),
                 io.Boolean.Input(id="add_no_lora", tooltip="Whether to add a model execution without a lora"),
                 io.MultiType.Input(
-                    io.String.Input("model_strength", default="1.0", multiline=False),
+                    io.String.Input("model_strength", default="[1.0]", multiline=False),
                     types=[io.String,MrmthParseTree],
                     tooltip="strength of lora applied to model",
                 ),                io.MultiType.Input(
-                    io.String.Input("clip_strength", default="1.0", multiline=False),
+                    io.String.Input("clip_strength", default="[1.0]", multiline=False),
                     types=[io.String,MrmthParseTree],
                     tooltip="strength of lora applied to clip",
                 ),

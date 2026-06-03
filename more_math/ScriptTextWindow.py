@@ -18,6 +18,7 @@ class ScriptTextInput(io.ComfyNode):
             ],
         )
 
+
     @classmethod
     def execute(cls, script):
         expr = parse_expr(script)

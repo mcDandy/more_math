@@ -119,6 +119,8 @@ class BatchLoraHooksNode(io.ComfyNode):
         weights1, stack = _parse_strengths(clip_strength, {})
         scaled_models = []
         scaled_clips = []
+        if len(weights0) != len(weights1):
+            raise ValueError("model_strength and clip_strength must have the same number of elements. Model: {}, Clip: {}".format(len(weights0), len(weights1)))
         for w0,w1 in zip(weights0, weights1):
             scaled_model = model.clone()
             scaled_clip = clip.clone()

@@ -1,12 +1,27 @@
 from __future__ import annotations
 
 import copy
+import torch
 
-import comfy
 from comfy.patcher_extension import PatcherInjection
 from comfy.weight_adapter.bypass import BypassForwardHook
 from comfy_api.latest import io
 
+from .helper_functions import parse_expr
+from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from .Stack import Stack
+
+@staticmethod
+def _parse_strengths(Expression, stack):
+    tree = None
+    variables = {}
+    if isinstance(Expression,str):
+        tree = parse_expr(Expression)
+    else:
+        tree = Expression
+    visitor = UnifiedMathVisitor(variables, [1],torch.device("cpu"),state_storage=stack)
+    result = visitor.visit(tree)
+    return (list(result), stack)
 
 class BatchLoraHooksNode(io.ComfyNode):
     """Scale existing bypass LoRA injections on a model/clip pair."""
@@ -72,28 +87,37 @@ class BatchLoraHooksNode(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> io.Schema:
         return io.Schema(
-            node_id="mrmth_BatchLoraHooksNode",
+            node_id="mrmth_LoraBatchRescale",
             category="More math",
-            display_name="Scale LoRA hooks",
+            display_name="Scale LoRA (Batch)",
             inputs=[
                 io.Model.Input(id="model", tooltip="The model with bypass LoRA injections"),
                 io.Clip.Input(id="clip", tooltip="The clip with bypass LoRA injections"),
-                io.Float.Input(id="model_strength", default=1.0, tooltip="Multiplier for model-side LoRA strength"),
-                io.Float.Input(id="clip_strength", default=1.0, tooltip="Multiplier for clip-side LoRA strength"),
+                io.String.Input(id="model_strength", default="[1.0]", tooltip="Multiplier for model-side LoRA strength"),
+                io.String.Input(id="clip_strength", default="[1.0]", tooltip="Multiplier for clip-side LoRA strength"),
+                Stack.Input(id="stack", default=None, optional=True)
             ],
             outputs=[
-                io.Model.Output(id="model", tooltip="The model with scaled bypass LoRA injections"),
-                io.Clip.Output(id="clip", tooltip="The clip with scaled bypass LoRA injections"),
+                io.Model.Output(id="model", tooltip="The model with scaled bypass LoRA injections", is_output_list=True),
+                io.Clip.Output(id="clip", tooltip="The clip with scaled bypass LoRA injections", is_output_list=True),
+                Stack.Output(id="stack", tooltip="The stack"),
             ],
         )
 
     @classmethod
-    def execute(cls, model, clip, model_strength, clip_strength):
-        scaled_model = model.clone()
-        scaled_clip = clip.clone()
+    def execute(cls, model, clip, model_strength, clip_strength, stack=None):
+        stack = copy.deepcopy(stack) if stack is not None else {}
+        weights0, stack = _parse_strengths(model_strength, {})
+        weights1, stack = _parse_strengths(clip_strength, {})
+        scaled_models = []
+        scaled_clips = []
+        for w0,w1 in zip(weights0, weights1):
+            scaled_model = model.clone()
+            scaled_clip = clip.clone()
+            cls._scale_bypass_injections(scaled_model, w0)
+            clip_patcher = getattr(scaled_clip, "patcher", None)
+            cls._scale_bypass_injections(clip_patcher, w1)
+            scaled_models.append(scaled_model)
+            scaled_clips.append(scaled_clip)
 
-        cls._scale_bypass_injections(scaled_model, model_strength)
-        clip_patcher = getattr(scaled_clip, "patcher", None)
-        cls._scale_bypass_injections(clip_patcher, clip_strength)
-
-        return (scaled_model, scaled_clip)
+        return (scaled_models, scaled_clips, stack)

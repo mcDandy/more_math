@@ -70,8 +70,6 @@ class BatchLoraNode(io.ComfyNode):
                 or os.path.normpath(lora).startswith(selected_folder + os.sep)
             ]
 
-        print("BatchLoraNode: Found LoRA weights:", lora_path)
-
         model_strengths, stack = cls._parse_strengths(model_strength, stack, lora_path, len(lora_path))
         clip_strengths, stack = cls._parse_strengths(clip_strength, stack, lora_path, len(lora_path))
         print(stack)

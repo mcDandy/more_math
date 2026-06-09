@@ -9,7 +9,7 @@ from comfy_api.latest import io
 
 from .helper_functions import parse_expr
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from .Stack import Stack
+from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 
 @staticmethod
@@ -103,12 +103,12 @@ class BatchLoraHooksNode(io.ComfyNode):
                     types=[io.String, MrmthParseTree],
                     tooltip="List of clip-side LoRA strengths",
                 ),
-                Stack.Input(id="stack", default=None, optional=True)
+                MrmthStack.Input(id="stack", optional=True)
             ],
             outputs=[
                 io.Model.Output(id="model", tooltip="The model with scaled bypass LoRA injections", is_output_list=True),
                 io.Clip.Output(id="clip", tooltip="The clip with scaled bypass LoRA injections", is_output_list=True),
-                Stack.Output(id="stack", tooltip="The stack"),
+                MrmthStack.Output(id="stack", tooltip="The stack"),
             ],
         )
 

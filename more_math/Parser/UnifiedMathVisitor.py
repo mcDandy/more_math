@@ -3104,6 +3104,52 @@ class UnifiedMathVisitor(MathExprVisitor):
             reversed_pad.extend([pad[i-1], pad[i]])
         return F.pad(val, reversed_pad)
 
+    def _align_mask_to_overlay(self, mask, overlay_shape):
+        if mask.shape == overlay_shape:
+            return mask
+        if mask.ndim == 0:
+            return mask.expand(overlay_shape)
+
+        # Try left-to-right alignment
+        mask_shape = list(mask.shape)
+        new_shape = []
+        mask_idx = 0
+        for dim_size in overlay_shape:
+            if mask_idx < len(mask_shape) and mask_shape[mask_idx] == dim_size:
+                new_shape.append(dim_size)
+                mask_idx += 1
+            elif mask_idx < len(mask_shape) and mask_shape[mask_idx] == 1:
+                new_shape.append(1)
+                mask_idx += 1
+            else:
+                new_shape.append(1)
+        if mask_idx == len(mask_shape):
+            return mask.view(new_shape).expand(overlay_shape)
+
+        # Try right-to-left alignment
+        new_shape = []
+        mask_idx = len(mask_shape) - 1
+        for dim_size in reversed(overlay_shape):
+            if mask_idx >= 0 and mask_shape[mask_idx] == dim_size:
+                new_shape.insert(0, dim_size)
+                mask_idx -= 1
+            elif mask_idx >= 0 and mask_shape[mask_idx] == 1:
+                new_shape.insert(0, 1)
+                mask_idx -= 1
+            else:
+                new_shape.insert(0, 1)
+        if mask_idx < 0:
+            return mask.view(new_shape).expand(overlay_shape)
+
+        # Fallback: try broadcast_to or expand
+        try:
+            return torch.broadcast_to(mask, overlay_shape)
+        except Exception:
+            try:
+                return mask.expand(overlay_shape)
+            except Exception:
+                return mask
+
     def visitOverlayFunc(self, ctx):
         base = yield ctx.expr(0)
         overlay = yield ctx.expr(1)
@@ -3114,10 +3160,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             opacity = 1.0
 
-        opacity_f = float(opacity.item()) if self._is_tensor(opacity) else float(opacity)
+        opacity_is_tensor = self._is_tensor(opacity) and opacity.numel() > 1
 
-        if opacity_f <= 0.0:
-            return base
+        if not opacity_is_tensor:
+            opacity_f = float(opacity.item()) if self._is_tensor(opacity) else float(opacity)
+            if opacity_f <= 0.0:
+                return base
+        else:
+            opacity_f = 1.0
 
         if isinstance(base, str):
             if not isinstance(overlay, str):
@@ -3129,19 +3179,24 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             if offset < 0:
                 overlay = overlay[-offset:]
+                if opacity_is_tensor:
+                    opacity = opacity[-offset:]
                 offset = 0
 
             end = min(len(base), offset + len(overlay))
             overlay_len = end - offset
 
-            if opacity_f >= 1.0:
+            if not opacity_is_tensor and opacity_f >= 1.0:
                 return base[:offset] + overlay[:overlay_len] + base[end:]
 
             mixed = list(base)
+            if opacity_is_tensor:
+                opacity_list = opacity.detach().cpu().flatten().tolist()
             for i in range(overlay_len):
                 a = ord(base[offset + i])
                 c = ord(overlay[i])
-                avg = round(a * (1 - opacity_f) + c * opacity_f)
+                op_val = opacity_list[i] if (opacity_is_tensor and i < len(opacity_list)) else (opacity_f if not opacity_is_tensor else 1.0)
+                avg = round(a * (1 - op_val) + c * op_val)
                 mixed[offset + i] = chr(avg)
             return ''.join(mixed)
 
@@ -3155,20 +3210,32 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             if offset < 0:
                 overlay = overlay[-offset:]
+                if opacity_is_tensor:
+                    opacity = opacity[-offset:]
                 offset = 0
 
             result = list(base)
             end = min(len(base), offset + len(overlay))
+            if opacity_is_tensor:
+                opacity_list = opacity.detach().cpu().flatten().tolist()
             for i, val in enumerate(overlay[:end - offset]):
-                if opacity_f >= 1.0:
+                op_val = opacity_list[i] if (opacity_is_tensor and i < len(opacity_list)) else (opacity_f if not opacity_is_tensor else 1.0)
+                if op_val >= 1.0:
                     result[offset + i] = val
+                elif op_val <= 0.0:
+                    pass
                 else:
-                    result[offset + i] = result[offset + i] * (1.0 - opacity_f) + val * opacity_f
+                    result[offset + i] = result[offset + i] * (1.0 - op_val) + val * op_val
             return result
 
         # Tensor path
         base = self._promote_to_tensor(base)
         overlay = self._promote_to_tensor(overlay)
+        mask = self._promote_to_tensor(opacity)
+
+        if opacity_is_tensor:
+            mask = mask.to(dtype=overlay.dtype, device=overlay.device)
+            mask = self._align_mask_to_overlay(mask, overlay.shape)
 
         if self._is_tensor(offset_raw):
             offset = [int(x) for x in offset_raw.flatten().tolist()]
@@ -3205,10 +3272,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         result = base.clone()
         target_region = result[tuple(paste_slices)]
 
-        if opacity_f >= 1.0:
-            result[tuple(paste_slices)] = cropped_overlay
+        if opacity_is_tensor:
+            cropped_mask = mask[tuple(crop_slices)]
+            result[tuple(paste_slices)] = cropped_overlay * cropped_mask + target_region * (1.0 - cropped_mask)
         else:
-            result[tuple(paste_slices)] = cropped_overlay * opacity_f + target_region * (1.0 - opacity_f)
+            if opacity_f >= 1.0:
+                result[tuple(paste_slices)] = cropped_overlay
+            else:
+                result[tuple(paste_slices)] = cropped_overlay * opacity_f + target_region * (1.0 - opacity_f)
 
         return result.contiguous()
 

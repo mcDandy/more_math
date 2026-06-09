@@ -1871,6 +1871,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#TextImageFunc.
+    def enterTextImageFunc(self, ctx:MathExprParser.TextImageFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TextImageFunc.
+    def exitTextImageFunc(self, ctx:MathExprParser.TextImageFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SwapFunc.
     def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         pass

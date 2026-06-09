@@ -243,7 +243,8 @@ func3:
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN # HsvToRgbFunc
 	| WHERE LPAREN expr COMMA expr COMMA expr RPAREN	# WhereFunc
 	| OKLAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# OklabToRgbFunc
-	| CIELAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# CielabToRgbFunc;
+	| CIELAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# CielabToRgbFunc
+	| TEXT_IMAGE LPAREN expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# TextImageFunc;
 
 func4:
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
@@ -431,6 +432,7 @@ RGB_TO_INT: 'rgb_to_int';
 INTERPOLATE_LINEAR: 'interpolate_linear';
 INTERPOLATE_AREA: 'interpolate_area';
 INTERPOLATE_NEAREST: 'interpolate_nearest' | 'interpolate_nearest_exact';
+TEXT_IMAGE: 'text_image';
 
 IF: 'if';
 ELSE: 'else';

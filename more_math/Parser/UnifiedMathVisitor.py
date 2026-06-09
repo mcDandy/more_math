@@ -1,5 +1,5 @@
 import time
-import sys
+import numpy as np
 import torch
 import math
 import inspect
@@ -2034,6 +2034,223 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Unknown function or variable: {func_name}")
 
+    def visitTextImageFunc(self, ctx):
+        """text_image(text, font, size, [max_width], [weight], [angle], [spacing], [italic], [underline])
+
+        Renders text to a normalised float32 2D tensor [H, W] using Pillow.
+
+        Args:
+            text       (str)   : Text to render (newlines supported).
+            font       (str)   : Font family name or absolute path to a .ttf/.otf file.
+            size       (int)   : Font size in points.
+            max_width  (int)   : Optional. Max canvas width in pixels; text wraps to fit.
+                                 0 = no limit. Default: 0.
+            weight     (int)   : Optional. Font weight integer (e.g., 100-900). Default: 400.
+            angle      (float) : Optional. Counter-clockwise rotation in degrees.
+                                 Default: 0.0.
+            spacing    (float) : Optional. Line height multiplier (1.0 = normal).
+                                 Default: 1.0.
+            italic     (bool)  : Optional. Look up an italic file or variant axis.
+                                 Default: False.
+            underline  (bool)  : Optional. Render a clean baseline underline decoration.
+                                 Default: False.
+
+        Returns:
+            torch.Tensor [H, W] float32, values in where 1.0 = full ink.
+        """
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except ImportError:
+            raise ImportError(
+                f"{ctx.start.line}:{ctx.start.column}: "
+                "text_image() requires the 'Pillow' package. "
+                "Install it with: pip install Pillow"
+            )
+
+        # --- Evaluate arguments ---
+        def _to_str(v):
+            if isinstance(v, str):
+                return v
+            if self._is_tensor(v):
+                return str(v.item())
+            return str(v)
+
+        def _to_float(v):
+            if self._is_tensor(v):
+                return float(v.item())
+            return float(v)
+
+        def _to_int(v):
+            if self._is_tensor(v):
+                return int(v.item())
+            return int(v)
+
+        def _to_bool(v):
+            if isinstance(v, bool):
+                return v
+            if self._is_tensor(v):
+                v = v.item()
+            if isinstance(v, str):
+                return v.lower() in ("true", "1", "yes")
+            return bool(v)
+
+        text       = _to_str((yield ctx.expr(0)))
+        font_name  = _to_str((yield ctx.expr(1)))
+        size       = max(1, _to_int((yield ctx.expr(2))))
+        max_width  = _to_int((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 0
+        weight_val = _to_int((yield ctx.expr(4))) if len(ctx.expr()) > 4 else 400
+        angle      = _to_float((yield ctx.expr(5))) if len(ctx.expr()) > 5 else 0.0
+        spacing    = max(0.1, _to_float((yield ctx.expr(6)))) if len(ctx.expr()) > 6 else 1.0
+        is_italic  = _to_bool((yield ctx.expr(7))) if len(ctx.expr()) > 7 else False
+        has_ul     = _to_bool((yield ctx.expr(8))) if len(ctx.expr()) > 8 else False
+
+        # --- Sub-bucket style mapping for fallback on static files ---
+        if weight_val <= 250:
+            weight_tier = "light"
+        elif weight_val <= 550:
+            weight_tier = "regular"
+        elif weight_val <= 750:
+            weight_tier = "bold"
+        else:
+            weight_tier = "black"
+
+        style_key = f"bold_italic" if (weight_tier == "bold" and is_italic) else (
+                    "italic" if is_italic else weight_tier)
+
+        # --- Load font ---
+        def _load_font(name, sz, target_style, exact_weight):
+            import os
+            if os.path.exists(name):
+                try:
+                    fnt = ImageFont.truetype(name, sz)
+                    if hasattr(fnt, "set_variation_by_axes"):
+                        try:
+                            fnt.set_variation_by_axes({"wght": exact_weight})
+                        except Exception:
+                            pass
+                    return fnt
+                except Exception:
+                    pass
+
+            style_suffixes = {
+                "light":       ["Light", "light", "-Light", "L"],
+                "regular":     ["", "Regular", "-Regular", "Normal", "normal"],
+                "bold":        ["Bold", "bold", "-Bold", "B"],
+                "black":       ["Black", "black", "-Black", "Heavy", "heavy"],
+                "italic":      ["Italic", "italic", "-Italic", "I"],
+                "bold_italic": ["BoldItalic", "bolditalic", "-BoldItalic", "BI", "Bold Italic"],
+            }.get(target_style, [""])
+
+            search_dirs = []
+            import platform
+            sys_platform = platform.system()
+            if sys_platform == "Windows":
+                search_dirs = [os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")]
+            elif sys_platform == "Darwin":
+                search_dirs = ["/Library/Fonts", "/System/Library/Fonts", os.path.expanduser("~/Library/Fonts")]
+            else:
+                search_dirs = ["/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts")]
+
+            for directory in search_dirs:
+                if not os.path.isdir(directory):
+                    continue
+                for root, _, files in os.walk(directory):
+                    for fname in files:
+                        if not fname.lower().endswith((".ttf", ".otf")):
+                            continue
+                        base = os.path.splitext(fname)[0]  # Fixed: Added [0] index
+                        for suf in style_suffixes:
+                            if base.lower() == (name.lower() + suf.lower()) or base.lower() == name.lower():
+                                try:
+                                    fnt = ImageFont.truetype(os.path.join(root, fname), sz)
+                                    if hasattr(fnt, "set_variation_by_axes"):
+                                        try:
+                                            fnt.set_variation_by_axes({"wght": exact_weight})
+                                        except Exception:
+                                            pass
+                                    return fnt
+                                except Exception:
+                                    pass
+
+            raise FileNotFoundError(
+                f"Could not resolve font package matching name: '{name}' "
+                f"under style spectrum '{target_style}'."
+            )
+        font = _load_font(font_name, size, style_key, weight_val)
+
+        # --- Word-wrap if max_width is set ---
+        def _wrap_text(text_in, fnt, max_w):
+            if max_w <= 0:
+                return text_in.splitlines()
+            lines = []
+            for paragraph in text_in.splitlines():
+                words = paragraph.split(" ")
+                current = ""
+                for word in words:
+                    test = (current + " " + word).strip()
+                    bbox = fnt.getbbox(test)
+                    w = bbox[2] - bbox[0]  # Fixed: Restored index positions
+                    if w <= max_w or not current:
+                        current = test
+                    else:
+                        lines.append(current)
+                        current = word
+                lines.append(current)
+            return lines
+
+        lines = _wrap_text(text, font, max_width)
+
+        # --- Measure canvas size ---
+        line_heights = []
+        line_widths = []
+        for line in lines:
+            bbox = font.getbbox(line if line else " ")
+            line_widths.append(bbox[2] - bbox[0])  # Fixed: Restored index positions
+            line_heights.append(bbox[3] - bbox[1])  # Fixed: Restored index positions
+
+        line_h = max(line_heights) if line_heights else size
+        line_stride = max(1, int(line_h * spacing))
+        canvas_w = max(line_widths) if line_widths else size
+        canvas_h = line_stride * len(lines)
+
+        canvas_w = max(canvas_w, 1)
+        canvas_h = max(canvas_h, 1)
+
+        # --- Render text ---
+        img = Image.new("L", (canvas_w, canvas_h), color=0)
+        draw = ImageDraw.Draw(img)
+        y = 0
+
+        ul_thickness = max(1, int(size * 0.06))
+        ul_offset = max(1, int(size * 0.08))
+
+        for line in lines:
+            if not line:
+                y += line_stride
+                continue
+            bbox = font.getbbox(line)
+            text_w = bbox[2] - bbox[0]  # Fixed: Restored index positions
+            text_h = bbox[3] - bbox[1]  # Fixed: Restored index positions
+
+            draw.text((0, y - bbox[1]), line, fill=255, font=font)  # Fixed: Restored index positions
+
+            if has_ul:
+                ul_top = y + text_h + ul_offset
+                draw.rectangle(
+                    [0, ul_top, text_w, ul_top + ul_thickness],
+                    fill=255
+                )
+            y += line_stride
+
+        # --- Rotate if requested ---
+        if angle != 0.0:
+            img = img.rotate(angle, expand=True, fillcolor=0)
+
+        # --- Convert to tensor on self.device ---
+        import numpy as np
+        arr = np.array(img, dtype=np.float32) / 255.0
+        return torch.from_numpy(arr).to(device=self.device)
+
     def visitNoiseFunc(self,ctx):
         seed_val = yield ctx.expr(0)
         shape_arg = self.shape;
@@ -4056,23 +4273,23 @@ class UnifiedMathVisitor(MathExprVisitor):
         """ridged(seed, scale, [octaves], [offset], [shape])"""
         seed_val = yield ctx.expr(0)
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
- 
+
         scale_val = yield ctx.expr(1)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
- 
+
         octaves = 4
         expr_idx = 2
         if len(ctx.expr()) > expr_idx:
             oct_val = yield ctx.expr(expr_idx)
             octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
             expr_idx += 1
- 
+
         offset = None
         if len(ctx.expr()) > expr_idx:
             offset_val = yield ctx.expr(expr_idx)
             offset = offset_val
             expr_idx += 1
- 
+
         shape = self.shape
         if len(ctx.expr()) > expr_idx:
             shape_arg = (yield ctx.expr(expr_idx))
@@ -4082,10 +4299,10 @@ class UnifiedMathVisitor(MathExprVisitor):
                 shape = tuple(int(x) for x in shape_arg)
             else:
                 shape = (int(shape_arg),)
- 
+
         if len(shape) == 0:
             return torch.tensor(0.0, device=self.device)
- 
+
         offset_list = None
         if offset is not None:
             if self._is_tensor(offset):
@@ -4094,7 +4311,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 offset_list = [float(x) for x in offset]
             else:
                 offset_list = [float(offset)]
- 
+
         # Build 1D ranges with offsets and avoid full meshgrid when some dims == 1
         ranges = [
             torch.arange(s, dtype=torch.float32, device=self.device)
@@ -4122,41 +4339,41 @@ class UnifiedMathVisitor(MathExprVisitor):
         noise = NoiseUtils.ridged_noise_nd(grids_optimized, scale, seed, self.device, octaves=octaves)
         target_shape = tuple(int(x) for x in shape)
         return noise.view(target_shape)
- 
+
     def visitDomainWarpFunc(self, ctx):
         """domain_warp(seed, scale, warp_scale, warp_strength, [octaves], [warp_octaves], [offset], [shape])"""
         seed_val = yield ctx.expr(0)
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
- 
+
         scale_val = yield ctx.expr(1)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
- 
+
         warp_scale_val = yield ctx.expr(2)
         warp_scale = float(warp_scale_val.item()) if self._is_tensor(warp_scale_val) else float(warp_scale_val)
- 
+
         warp_strength_val = yield ctx.expr(3)
         warp_strength = float(warp_strength_val.item()) if self._is_tensor(warp_strength_val) else float(warp_strength_val)
- 
+
         octaves = 4
         warp_octaves = 2
         expr_idx = 4
- 
+
         if len(ctx.expr()) > expr_idx:
             oct_val = yield ctx.expr(expr_idx)
             octaves = int(oct_val.item()) if self._is_tensor(oct_val) else int(oct_val)
             expr_idx += 1
- 
+
         if len(ctx.expr()) > expr_idx:
             warp_oct_val = yield ctx.expr(expr_idx)
             warp_octaves = int(warp_oct_val.item()) if self._is_tensor(warp_oct_val) else int(warp_oct_val)
             expr_idx += 1
- 
+
         offset = None
         if len(ctx.expr()) > expr_idx:
             offset_val = yield ctx.expr(expr_idx)
             offset = offset_val
             expr_idx += 1
- 
+
         shape = self.shape
         if len(ctx.expr()) > expr_idx:
             shape_arg = (yield ctx.expr(expr_idx))
@@ -4166,10 +4383,10 @@ class UnifiedMathVisitor(MathExprVisitor):
                 shape = tuple(int(x) for x in shape_arg)
             else:
                 shape = (int(shape_arg),)
- 
+
         if len(shape) == 0:
             return torch.tensor(0.0, device=self.device)
- 
+
         offset_list = None
         if offset is not None:
             if self._is_tensor(offset):
@@ -4178,7 +4395,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 offset_list = [float(x) for x in offset]
             else:
                 offset_list = [float(offset)]
- 
+
         # Build 1D ranges with offsets and avoid full meshgrid when some dims == 1
         ranges = [
             torch.arange(s, dtype=torch.float32, device=self.device)
@@ -4202,7 +4419,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             ranges_filtered = [ranges[i] for i in valid_indices]
             grids_filtered = torch.meshgrid(*ranges_filtered, indexing='ij')
             grids_optimized = tuple(grids_filtered)
- 
+
         noise = NoiseUtils.domain_warp_noise_nd(
             grids_optimized,
             scale=scale,

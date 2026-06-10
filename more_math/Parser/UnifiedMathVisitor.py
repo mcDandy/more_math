@@ -2359,7 +2359,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     pass
 
             raise FileNotFoundError(
-                f"Font '{name}' se stylem '{target_style}' (weight {exact_weight}) nebyl nalezen v systémových složkách."
+                f"Font '{name}' with style '{target_style}' (weight {exact_weight}) was not found in the system directories."
             )
 
         try:
@@ -2372,7 +2372,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 synthetic_italic = is_italic
                 synthetic_bold = (weight_val >= 600)
             except FileNotFoundError:
-                raise FileNotFoundError(f"Font '{font_name}' nebyl v systému vůbec znalezen (ani jeho základní verze).")
+                raise FileNotFoundError(f"Font '{font_name}' was not found in the system directories (nor its base version).")
 
         # --- Word-wrap if max_width is set ---
         def _wrap_text(text_in, fnt, max_w):
@@ -2385,7 +2385,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 for word in words:
                     test = (current + " " + word).strip()
                     bbox = fnt.getbbox(test)
-                    w = bbox[2] - bbox[0] # OPRAVENO
+                    w = bbox[2] - bbox[0]
                     if w <= max_w or not current:
                         current = test
                     else:
@@ -2430,7 +2430,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             text_w = bbox[2] - bbox[0]
             text_h = bbox[3] - bbox[1]
 
-            # Pokud se aktivoval syntetický bold (protože statický soubor chyběl)
+            # Synthetic bold.
             if synthetic_bold:
                 thickness_offset = max(1, int(size * 0.02))
                 for ox in range(-thickness_offset, thickness_offset + 1):
@@ -2445,7 +2445,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             y += line_stride
 
-        # --- Softwarová kurzíva (Až po vykreslení textu) ---
+        # --- Software Italic (After Text Rendering) ---
         if synthetic_italic:
             img = img.transform(img.size, Image.Transform.AFFINE, (1, 0.25, 0, 0, 1, 0))
 

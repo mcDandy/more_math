@@ -1,5 +1,6 @@
 import { app } from "/scripts/app.js";
 import { KEYWORDS, CONSTANTS, FUNCTIONS } from "./inbuilt_symbols.js";
+import { attachAutocomplete } from "./autocomplete.js";
 
 const STYLE_ID = "mrmth-script-line-numbers-unified";
 
@@ -167,6 +168,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
     function isLikelyScriptTextarea(el) {
         if (!(el instanceof HTMLTextAreaElement)) return false;
         if (el.dataset.mrmthEnhanced === "1") return false;
+        if (el.closest('[data-mrmth-script-widget="vue"]')) return false;
 
         const attrs = [
             el.name,
@@ -473,6 +475,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         textarea.autocorrect = "off";
 
         addBracketAutoClose(textarea);
+        attachAutocomplete(textarea, editorContainer);
         const cs = getComputedStyle(textarea);
         syntaxLayer.style.fontFamily = cs.fontFamily;
         syntaxLayer.style.fontSize = cs.fontSize;

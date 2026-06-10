@@ -2248,12 +2248,31 @@ class UnifiedMathVisitor(MathExprVisitor):
                                        try:
                                            axes = test_fnt.get_variation_axes()
 
-                                           has_weight_axis = any(
-                                               _axis_name(a) in ("weight", "wght")
-                                               for a in axes
+                                           axis_names = {
+                                               _axis_name(axis)
+                                               for axis in axes
+                                           }
+                                           has_weight_axis = bool(
+                                               axis_names & {"weight", "wght"}
+                                           )
+                                           has_italic_axis = bool(
+                                               axis_names & {
+                                                   "italic",
+                                                   "ital",
+                                                   "slant",
+                                                   "slnt",
+                                               }
                                            )
 
-                                           if has_weight_axis:
+                                           if (
+                                               "italic" in target_style
+                                               and has_italic_axis
+                                           ):
+                                               match_found = True
+                                           elif (
+                                               "italic" not in target_style
+                                               and has_weight_axis
+                                           ):
                                                match_found = True
                                        except Exception:
                                            pass

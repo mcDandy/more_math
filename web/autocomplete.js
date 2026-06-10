@@ -9,12 +9,14 @@ function ensureAutocompleteStyles() {
     style.id = AUTOCOMPLETE_STYLE_ID;
     style.textContent = `
         .mrmth-autocomplete {
-            position: absolute;
-            z-index: 20;
+            position: fixed;
+            z-index: 10000;
             min-width: 180px;
-            max-width: min(420px, 100%);
+            max-width: min(420px, 100vw - 16px);
             max-height: 220px;
             overflow-y: auto;
+            overscroll-behavior: contain;
+            pointer-events: auto;
             margin: 0;
             padding: 4px 0;
             list-style: none;
@@ -220,19 +222,52 @@ function getCaretCoordinates(textarea, position) {
     return { top, left };
 }
 
+function getTextareaViewportScale(textarea) {
+    const rect = textarea.getBoundingClientRect();
+    const layoutHeight = textarea.offsetHeight;
+    if (layoutHeight <= 0) return 1;
+    return rect.height / layoutHeight;
+}
+
+function getViewportLineHeight(textarea, scale) {
+    const lh = parseFloat(window.getComputedStyle(textarea).lineHeight);
+    if (Number.isFinite(lh) && lh > 0) return lh * scale;
+    return 18 * scale;
+}
+
+function getCaretScreenPosition(textarea, position) {
+    const coords = getCaretCoordinates(textarea, position);
+    const rect = textarea.getBoundingClientRect();
+    const scale = getTextareaViewportScale(textarea);
+    const style = window.getComputedStyle(textarea);
+    const padLeft = parseFloat(style.paddingLeft) || 0;
+    const padTop = parseFloat(style.paddingTop) || 0;
+    const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+    const borderTop = parseFloat(style.borderTopWidth) || 0;
+
+    const x = borderLeft + padLeft + coords.left - textarea.scrollLeft;
+    const y = borderTop + padTop + coords.top - textarea.scrollTop;
+
+    return {
+        left: rect.left + x * scale,
+        top: rect.top + y * scale,
+        scale,
+    };
+}
+
 /**
  * Attach identifier autocomplete to a script textarea.
  * @param {HTMLTextAreaElement} textarea
- * @param {HTMLElement} containerEl - positioned parent (e.g. .mrmth-editor-container)
+ * @param {HTMLElement} [_containerEl] - unused; dropdown is portaled to document.body
  * @returns {{ destroy: () => void, close: () => void }}
  */
-export function attachAutocomplete(textarea, containerEl) {
+export function attachAutocomplete(textarea, _containerEl) {
     ensureAutocompleteStyles();
 
     const dropdown = document.createElement("ul");
     dropdown.className = "mrmth-autocomplete";
     dropdown.hidden = true;
-    containerEl.appendChild(dropdown);
+    document.body.appendChild(dropdown);
 
     let items = [];
     let selectedIndex = 0;
@@ -246,6 +281,36 @@ export function attachAutocomplete(textarea, containerEl) {
         items = [];
         selectedIndex = 0;
         prefixInfo = null;
+    };
+
+    const scrollSelectedIntoView = () => {
+        const selected = dropdown.querySelector(".mrmth-autocomplete-item.is-selected");
+        if (!selected) return;
+
+        const itemTop = selected.offsetTop;
+        const itemBottom = itemTop + selected.offsetHeight;
+        const viewTop = dropdown.scrollTop;
+        const viewBottom = viewTop + dropdown.clientHeight;
+
+        const pad = 2;
+        if (itemTop < viewTop + pad) {
+            dropdown.scrollTop = Math.max(0, itemTop - pad);
+        } else if (itemBottom > viewBottom - pad) {
+            dropdown.scrollTop = itemBottom - dropdown.clientHeight + pad;
+        }
+    };
+
+    const onDropdownWheel = (e) => {
+        e.stopPropagation();
+
+        const maxScroll = Math.max(0, dropdown.scrollHeight - dropdown.clientHeight);
+        const atTop = dropdown.scrollTop <= 0;
+        const atBottom = dropdown.scrollTop >= maxScroll;
+
+        // Block scroll chaining to the node/canvas when the list cannot move further.
+        if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
+            e.preventDefault();
+        }
     };
 
     const render = () => {
@@ -277,13 +342,72 @@ export function attachAutocomplete(textarea, containerEl) {
             });
             dropdown.appendChild(li);
         });
+        scrollSelectedIntoView();
+        if (open) positionDropdown();
     };
 
     const positionDropdown = () => {
         if (!prefixInfo) return;
-        const coords = getCaretCoordinates(textarea, prefixInfo.start);
-        dropdown.style.left = `${coords.left}px`;
-        dropdown.style.top = `${coords.top + 18}px`;
+
+        const cursorPos = textarea.selectionStart;
+        const caret = getCaretScreenPosition(textarea, cursorPos);
+        const textareaRect = textarea.getBoundingClientRect();
+        const scale = caret.scale ?? getTextareaViewportScale(textarea);
+        const lineHeight = getViewportLineHeight(textarea, scale);
+        const gap = 6;
+        const viewportPad = 8;
+        const preferredMax = 220;
+        const minListHeight = 48;
+
+        const lineTop = caret.top;
+        const lineBottom = lineTop + lineHeight;
+        const spaceBelow = window.innerHeight - lineBottom - gap - viewportPad;
+        const spaceAbove = lineTop - gap - viewportPad;
+        const spaceRight = window.innerWidth - textareaRect.right - gap - viewportPad;
+
+        // Prefer below the active line so the list never covers what you are typing.
+        let placement = "below";
+        if (spaceBelow < minListHeight) {
+            if (spaceRight >= 160) {
+                placement = "right";
+            } else if (spaceAbove > spaceBelow + 40) {
+                placement = "above";
+            }
+        }
+
+        let maxHeight;
+        let top;
+        let left;
+        const dropdownWidthTarget = Math.max(180, textareaRect.width);
+
+        if (placement === "below") {
+            maxHeight = Math.min(preferredMax, Math.max(minListHeight, spaceBelow));
+            top = lineBottom + gap;
+            left = caret.left;
+        } else if (placement === "above") {
+            maxHeight = Math.min(preferredMax, Math.max(minListHeight, spaceAbove));
+            top = lineTop - gap - maxHeight;
+            if (top < viewportPad) {
+                maxHeight = Math.max(minListHeight, lineTop - gap - viewportPad);
+                top = lineTop - gap - maxHeight;
+            }
+            left = caret.left;
+        } else {
+            maxHeight = Math.min(preferredMax, window.innerHeight - viewportPad * 2);
+            top = Math.max(viewportPad, Math.min(lineTop, window.innerHeight - maxHeight - viewportPad));
+            left = textareaRect.right + gap;
+        }
+
+        dropdown.style.width = `${dropdownWidthTarget}px`;
+        dropdown.style.maxHeight = `${maxHeight}px`;
+        dropdown.style.top = `${top}px`;
+
+        dropdown.style.visibility = "hidden";
+        dropdown.style.left = "0px";
+        const dropdownWidth = dropdown.offsetWidth || dropdownWidthTarget;
+        left = Math.max(viewportPad, Math.min(left, window.innerWidth - dropdownWidth - viewportPad));
+        dropdown.style.left = `${left}px`;
+        dropdown.style.visibility = "";
     };
 
     const openWith = (nextItems, nextPrefix) => {
@@ -392,24 +516,33 @@ export function attachAutocomplete(textarea, containerEl) {
         setTimeout(close, 120);
     };
 
-    const onScroll = () => {
+    const onReposition = () => {
         if (open) positionDropdown();
     };
 
     textarea.addEventListener("input", onInput);
     textarea.addEventListener("keydown", onKeyDown);
     textarea.addEventListener("blur", onBlur);
-    textarea.addEventListener("scroll", onScroll);
+    textarea.addEventListener("scroll", onReposition);
+    dropdown.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+    });
+    dropdown.addEventListener("wheel", onDropdownWheel, { passive: false });
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
 
     return {
         close,
         destroy() {
             close();
+            dropdown.removeEventListener("wheel", onDropdownWheel);
+            window.removeEventListener("scroll", onReposition, true);
+            window.removeEventListener("resize", onReposition);
             dropdown.remove();
             textarea.removeEventListener("input", onInput);
             textarea.removeEventListener("keydown", onKeyDown);
             textarea.removeEventListener("blur", onBlur);
-            textarea.removeEventListener("scroll", onScroll);
+            textarea.removeEventListener("scroll", onReposition);
         },
     };
 }

@@ -197,12 +197,14 @@ function getCaretCoordinates(textarea, position) {
         "paddingBottom", "paddingLeft", "borderTopWidth", "borderRightWidth",
         "borderBottomWidth", "borderLeftWidth", "boxSizing",
     ];
+
     div.style.position = "absolute";
     div.style.visibility = "hidden";
-    div.style.whiteSpace = "pre-wrap";
+    div.style.whiteSpace = style.whiteSpace === "none" ? "pre" : "pre-wrap";
     div.style.overflowWrap = style.overflowWrap;
     div.style.wordBreak = style.wordBreak;
     div.style.width = `${textarea.clientWidth}px`;
+
     for (const prop of props) {
         div.style[prop] = style[prop];
     }
@@ -212,7 +214,7 @@ function getCaretCoordinates(textarea, position) {
     span.textContent = text;
     div.appendChild(span);
     const marker = document.createElement("span");
-    marker.textContent = textarea.value.substring(position) || ".";
+    marker.textContent = "\u200B";
     div.appendChild(marker);
     document.body.appendChild(div);
 
@@ -221,6 +223,7 @@ function getCaretCoordinates(textarea, position) {
     div.remove();
     return { top, left };
 }
+
 
 function getTextareaViewportScale(textarea) {
     const rect = textarea.getBoundingClientRect();
@@ -239,14 +242,9 @@ function getCaretScreenPosition(textarea, position) {
     const coords = getCaretCoordinates(textarea, position);
     const rect = textarea.getBoundingClientRect();
     const scale = getTextareaViewportScale(textarea);
-    const style = window.getComputedStyle(textarea);
-    const padLeft = parseFloat(style.paddingLeft) || 0;
-    const padTop = parseFloat(style.paddingTop) || 0;
-    const borderLeft = parseFloat(style.borderLeftWidth) || 0;
-    const borderTop = parseFloat(style.borderTopWidth) || 0;
 
-    const x = borderLeft + padLeft + coords.left - textarea.scrollLeft;
-    const y = borderTop + padTop + coords.top - textarea.scrollTop;
+    const x = coords.left - textarea.scrollLeft;
+    const y = coords.top - textarea.scrollTop-6;
 
     return {
         left: rect.left + x * scale,
@@ -254,7 +252,6 @@ function getCaretScreenPosition(textarea, position) {
         scale,
     };
 }
-
 /**
  * Attach identifier autocomplete to a script textarea.
  * @param {HTMLTextAreaElement} textarea

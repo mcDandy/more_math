@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import os
 import torch
 import math
 import inspect
@@ -2038,25 +2039,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         """text_image(text, font, size, [max_width], [weight], [angle], [spacing], [italic], [underline])
 
         Renders text to a normalised float32 2D tensor [H, W] using Pillow.
-
-        Args:
-            text       (str)   : Text to render (newlines supported).
-            font       (str)   : Font family name or absolute path to a .ttf/.otf file.
-            size       (int)   : Font size in points.
-            max_width  (int)   : Optional. Max canvas width in pixels; text wraps to fit.
-                                 0 = no limit. Default: 0.
-            weight     (int)   : Optional. Font weight integer (e.g., 100-900). Default: 400.
-            angle      (float) : Optional. Counter-clockwise rotation in degrees.
-                                 Default: 0.0.
-            spacing    (float) : Optional. Line height multiplier (1.0 = normal).
-                                 Default: 1.0.
-            italic     (bool)  : Optional. Look up an italic file or variant axis.
-                                 Default: False.
-            underline  (bool)  : Optional. Render a clean baseline underline decoration.
-                                 Default: False.
-
-        Returns:
-            torch.Tensor [H, W] float32, values in where 1.0 = full ink.
         """
         try:
             from PIL import Image, ImageDraw, ImageFont
@@ -2104,52 +2086,100 @@ class UnifiedMathVisitor(MathExprVisitor):
         is_italic  = _to_bool((yield ctx.expr(7))) if len(ctx.expr()) > 7 else False
         has_ul     = _to_bool((yield ctx.expr(8))) if len(ctx.expr()) > 8 else False
 
-        # --- Sub-bucket style mapping for fallback on static files ---
-        if weight_val <= 250:
+        # --- Plně granulární mapování tlouštěk (CSS standard) ---
+        if weight_val <= 150:
+            weight_tier = "thin"
+        elif weight_val <= 250:
+            weight_tier = "extralight"
+        elif weight_val <= 350:
             weight_tier = "light"
-        elif weight_val <= 550:
+        elif weight_val <= 450:
             weight_tier = "regular"
+        elif weight_val <= 550:
+            weight_tier = "medium"
+        elif weight_val <= 650:
+            weight_tier = "semibold"
         elif weight_val <= 750:
             weight_tier = "bold"
+        elif weight_val <= 850:
+            weight_tier = "extrabold"
         else:
             weight_tier = "black"
 
-        style_key = f"bold_italic" if (weight_tier == "bold" and is_italic) else (
-                    "italic" if is_italic else weight_tier)
+        if is_italic:
+            style_key = f"{weight_tier}_italic" if weight_tier != "regular" else "italic"
+        else:
+            style_key = weight_tier
 
         # --- Load font ---
         def _load_font(name, sz, target_style, exact_weight):
             import os
+            print(f"Searching for font '{name}' with style '{target_style}' and weight {exact_weight}...")
             if os.path.exists(name):
                 try:
                     fnt = ImageFont.truetype(name, sz)
-                    if hasattr(fnt, "set_variation_by_axes"):
+                    if hasattr(fnt, "get_variation_axes") and hasattr(fnt, "set_variation_by_axes"):
                         try:
-                            fnt.set_variation_by_axes({"wght": exact_weight})
-                        except Exception:
-                            pass
+                            axes = fnt.get_variation_axes()
+
+                            values = []
+
+                            for axis in axes:
+                                name = axis.get("name", "")
+
+                                if isinstance(name, bytes):
+                                    name = name.decode(errors="ignore")
+
+                                name = str(name).lower()
+
+                                if name in ("weight", "wght"):
+                                    values.append(exact_weight)
+                                else:
+                                    values.append(axis.get("default", axis.get("minimum", 0)))
+
+                            fnt.set_variation_by_axes(values)
+                            fnt = ImageFont.truetype(full_path, sz)
+
+                            print("FONT:", fnt.getname())
+
+                            if hasattr(fnt, "get_variation_axes"):
+                                print(fnt.get_variation_axes())
+                        except Exception as e:
+                            print("Variable font error:", e)
                     return fnt
                 except Exception:
                     pass
 
             style_suffixes = {
-                "light":       ["Light", "light", "-Light", "L"],
-                "regular":     ["", "Regular", "-Regular", "Normal", "normal"],
-                "bold":        ["Bold", "bold", "-Bold", "B"],
-                "black":       ["Black", "black", "-Black", "Heavy", "heavy"],
-                "italic":      ["Italic", "italic", "-Italic", "I"],
-                "bold_italic": ["BoldItalic", "bolditalic", "-BoldItalic", "BI", "Bold Italic"],
-            }.get(target_style, [""])
+                "thin":        ["thin", "100", "hairline"],
+                "extralight":  ["extralight", "ultralight", "200"],
+                "light":       ["light", "300"],
+                "regular":     ["regular", "normal", "reg", "400", "standard"],
+                "medium":      ["medium", "500"],
+                "semibold":    ["semibold", "demibold", "600"],
+                "bold":        ["bold", "bd", "700"],
+                "extrabold":   ["extrabold", "ultrabold", "800"],
+                "black":       ["black", "heavy", "blk", "900"],
+                "italic":      ["italic", "it", "i"],
+            }.get(target_style.replace("_italic", ""), [""])
+
+            if "italic" in target_style:
+                style_suffixes = [s + "italic" for s in style_suffixes] + ["italic", "it", "bi"]
 
             search_dirs = []
             import platform
             sys_platform = platform.system()
             if sys_platform == "Windows":
-                search_dirs = [os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")]
+                search_dirs = [
+                    os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"),
+                    os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Windows\Fonts")
+                ]
             elif sys_platform == "Darwin":
                 search_dirs = ["/Library/Fonts", "/System/Library/Fonts", os.path.expanduser("~/Library/Fonts")]
             else:
                 search_dirs = ["/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts")]
+
+            name_clean = name.lower().replace(" ", "").replace("-", "")
 
             for directory in search_dirs:
                 if not os.path.isdir(directory):
@@ -2158,25 +2188,79 @@ class UnifiedMathVisitor(MathExprVisitor):
                     for fname in files:
                         if not fname.lower().endswith((".ttf", ".otf")):
                             continue
-                        base = os.path.splitext(fname)[0]  # Fixed: Added [0] index
-                        for suf in style_suffixes:
-                            if base.lower() == (name.lower() + suf.lower()) or base.lower() == name.lower():
-                                try:
-                                    fnt = ImageFont.truetype(os.path.join(root, fname), sz)
-                                    if hasattr(fnt, "set_variation_by_axes"):
-                                        try:
+
+                        full_path = os.path.join(root, fname)
+                        base_name = os.path.splitext(fname)[0].lower().replace("-", "").replace("_", "").replace(" ", "")
+
+                        match_found = False
+
+                        # 1. KONTROLA NÁZVU SOUBORU
+                        if name_clean in base_name:
+                            if target_style == "regular" and base_name == name_clean:
+                                match_found = True
+                            else:
+                                match_found = any(suf in base_name for suf in style_suffixes)
+                        if match_found:
+                             print("MATCH:", full_path)
+                        # 2. KONTROLA METADAT UVNITŘ SOUBORU
+                        if not match_found:
+                            try:
+                                test_fnt = ImageFont.truetype(full_path, 10)
+                                internal_family, internal_sub = test_fnt.getname()
+
+                                family_clean = internal_family.lower().replace(" ", "").replace("-", "")
+                                sub_clean = internal_sub.lower().replace(" ", "").replace("-", "")
+
+                                if name_clean in family_clean or family_clean in name_clean:
+                                    if hasattr(test_fnt, "get_variation_axes"):
+                                       try:
+                                           axes = test_fnt.get_variation_axes()
+
+                                           has_weight_axis = any(
+                                               "weight" in str(a.get("name", "")).lower()
+                                               or "wght" in str(a.get("name", "")).lower()
+                                               for a in axes
+                                           )
+
+                                           if has_weight_axis:
+                                               match_found = True
+                                       except:
+                                           pass
+                                    elif target_style == "regular":
+                                        match_found = any(s in sub_clean for s in ["regular", "normal", "standard"]) or sub_clean == ""
+                                    else:
+                                        match_found = any(suf in sub_clean for suf in style_suffixes) or any(suf in family_clean for suf in style_suffixes)
+                            except Exception:
+                                continue
+
+                        if match_found:
+                            try:
+                                fnt = ImageFont.truetype(full_path, sz)
+                                if hasattr(fnt, "set_variation_by_axes"):
+                                    try:
+                                        if hasattr(fnt, "get_variation_axes") and any(a['name'] == 'Weight' for a in fnt.get_variation_axes()):
                                             fnt.set_variation_by_axes({"wght": exact_weight})
-                                        except Exception:
-                                            pass
-                                    return fnt
-                                except Exception:
-                                    pass
+                                    except Exception:
+                                        pass
+                                return fnt
+                            except Exception:
+                                pass
 
             raise FileNotFoundError(
-                f"Could not resolve font package matching name: '{name}' "
-                f"under style spectrum '{target_style}'."
+                f"Font '{name}' se stylem '{target_style}' (weight {exact_weight}) nebyl nalezen v systémových složkách."
             )
-        font = _load_font(font_name, size, style_key, weight_val)
+
+        try:
+            font = _load_font(font_name, size, style_key, weight_val)
+            synthetic_italic = False
+            synthetic_bold = False
+        except FileNotFoundError:
+            try:
+                font = _load_font(font_name, size, "regular", 400)
+                synthetic_italic = is_italic
+                synthetic_bold = (weight_val >= 600)
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Font '{font_name}' nebyl v systému vůbec znalezen (ani jeho základní verze).")
 
         # --- Word-wrap if max_width is set ---
         def _wrap_text(text_in, fnt, max_w):
@@ -2189,7 +2273,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 for word in words:
                     test = (current + " " + word).strip()
                     bbox = fnt.getbbox(test)
-                    w = bbox[2] - bbox[0]  # Fixed: Restored index positions
+                    w = bbox[2] - bbox[0] # OPRAVENO
                     if w <= max_w or not current:
                         current = test
                     else:
@@ -2205,12 +2289,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         line_widths = []
         for line in lines:
             bbox = font.getbbox(line if line else " ")
-            line_widths.append(bbox[2] - bbox[0])  # Fixed: Restored index positions
-            line_heights.append(bbox[3] - bbox[1])  # Fixed: Restored index positions
+            line_widths.append(bbox[2] - bbox[0])
+            line_heights.append(bbox[3] - bbox[1])
 
         line_h = max(line_heights) if line_heights else size
         line_stride = max(1, int(line_h * spacing))
-        canvas_w = max(line_widths) if line_widths else size
+
+        padding_x = int(size * 0.3) if synthetic_italic else 0
+        canvas_w = (max(line_widths) if line_widths else size) + padding_x
         canvas_h = line_stride * len(lines)
 
         canvas_w = max(canvas_w, 1)
@@ -2229,18 +2315,27 @@ class UnifiedMathVisitor(MathExprVisitor):
                 y += line_stride
                 continue
             bbox = font.getbbox(line)
-            text_w = bbox[2] - bbox[0]  # Fixed: Restored index positions
-            text_h = bbox[3] - bbox[1]  # Fixed: Restored index positions
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
 
-            draw.text((0, y - bbox[1]), line, fill=255, font=font)  # Fixed: Restored index positions
+            # Pokud se aktivoval syntetický bold (protože statický soubor chyběl)
+            if synthetic_bold:
+                thickness_offset = max(1, int(size * 0.02))
+                for ox in range(-thickness_offset, thickness_offset + 1):
+                    for oy in range(-thickness_offset, thickness_offset + 1):
+                        draw.text((ox, (y - bbox[1]) + oy), line, fill=255, font=font)
+            else:
+                draw.text((0, y - bbox[1]), line, fill=255, font=font)
 
             if has_ul:
                 ul_top = y + text_h + ul_offset
-                draw.rectangle(
-                    [0, ul_top, text_w, ul_top + ul_thickness],
-                    fill=255
-                )
+                draw.rectangle([0, ul_top, text_w, ul_top + ul_thickness], fill=255)
+
             y += line_stride
+
+        # --- Softwarová kurzíva (Až po vykreslení textu) ---
+        if synthetic_italic:
+            img = img.transform(img.size, Image.Transform.AFFINE, (1, 0.25, 0, 0, 1, 0))
 
         # --- Rotate if requested ---
         if angle != 0.0:
@@ -2250,6 +2345,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         import numpy as np
         arr = np.array(img, dtype=np.float32) / 255.0
         return torch.from_numpy(arr).to(device=self.device)
+
+
 
     def visitNoiseFunc(self,ctx):
         seed_val = yield ctx.expr(0)

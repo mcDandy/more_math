@@ -2214,6 +2214,45 @@ class UnifiedMathVisitor(MathExprVisitor):
                 search_dirs = ["/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts")]
 
             name_clean = _normalise_font_name(name)
+            wants_italic = "italic" in target_style
+            candidates = []
+
+            def _font_traits(base_name, sub_name):
+                combined = f"{base_name} {sub_name}"
+                is_italic_font = any(
+                    token in combined
+                    for token in ("italic", "ital", "oblique")
+                )
+                is_italic_font = is_italic_font or base_name.endswith(
+                    (f"{name_clean}i", f"{name_clean}bi")
+                )
+
+                weight = 400
+                weight_hints = (
+                    (900, ("black", "heavy", "blk", "900")),
+                    (800, ("extrabold", "ultrabold", "800")),
+                    (700, ("bold", "bd", "700")),
+                    (600, ("semibold", "demibold", "600")),
+                    (500, ("medium", "500")),
+                    (300, ("light", "300")),
+                    (200, ("extralight", "ultralight", "200")),
+                    (100, ("thin", "hairline", "100")),
+                )
+                for font_weight, hints in weight_hints:
+                    if any(hint in combined for hint in hints):
+                        weight = font_weight
+                        break
+                if base_name.endswith((f"{name_clean}bd", f"{name_clean}bi")):
+                    weight = 700
+
+                return is_italic_font, weight
+
+            def _candidate_score(base_name, sub_name, has_weight_axis):
+                is_italic_font, font_weight = _font_traits(base_name, sub_name)
+                italic_penalty = 0 if is_italic_font == wants_italic else 10000
+                weight_penalty = 0 if has_weight_axis else abs(font_weight - exact_weight)
+                exact_name_penalty = 0 if base_name == name_clean else 50
+                return italic_penalty + weight_penalty + exact_name_penalty
 
             for directory in search_dirs:
                 if not os.path.isdir(directory):
@@ -2227,6 +2266,8 @@ class UnifiedMathVisitor(MathExprVisitor):
                         base_name = _normalise_font_name(os.path.splitext(fname)[0])
 
                         match_found = False
+                        has_weight_axis = False
+                        sub_clean = ""
 
                         # 1. KONTROLA NÁZVU SOUBORU
                         if name_clean in base_name:
@@ -2284,15 +2325,25 @@ class UnifiedMathVisitor(MathExprVisitor):
                                 continue
 
                         if match_found:
-                            try:
-                                fnt = ImageFont.truetype(full_path, sz)
-                                return _apply_font_variations(
-                                    fnt,
-                                    exact_weight,
-                                    "italic" in target_style,
-                                )
-                            except Exception:
-                                pass
+                            candidates.append((
+                                _candidate_score(
+                                    base_name,
+                                    sub_clean,
+                                    has_weight_axis,
+                                ),
+                                full_path,
+                            ))
+
+            for _, full_path in sorted(candidates, key=lambda item: item[0]):
+                try:
+                    fnt = ImageFont.truetype(full_path, sz)
+                    return _apply_font_variations(
+                        fnt,
+                        exact_weight,
+                        wants_italic,
+                    )
+                except Exception:
+                    pass
 
             raise FileNotFoundError(
                 f"Font '{name}' se stylem '{target_style}' (weight {exact_weight}) nebyl nalezen v systémových složkách."

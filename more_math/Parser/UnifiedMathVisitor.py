@@ -2112,41 +2112,65 @@ class UnifiedMathVisitor(MathExprVisitor):
             style_key = weight_tier
 
         # --- Load font ---
+        def _normalise_font_name(value):
+            return value.lower().replace(" ", "").replace("-", "").replace("_", "")
+
+        def _axis_name(axis):
+            name = axis.get("name", "")
+            if isinstance(name, bytes):
+                name = name.decode(errors="ignore")
+            return str(name).lower()
+
+        def _axis_value(axis, value):
+            minimum = axis.get("minimum", value)
+            maximum = axis.get("maximum", value)
+            return max(minimum, min(maximum, value))
+
+        def _apply_font_variations(fnt, exact_weight, italic):
+            if not (
+                hasattr(fnt, "get_variation_axes")
+                and hasattr(fnt, "set_variation_by_axes")
+            ):
+                return fnt
+
+            try:
+                axes = fnt.get_variation_axes()
+                values = []
+                changed = False
+
+                for axis in axes:
+                    axis_name = _axis_name(axis)
+                    default = axis.get("default", axis.get("minimum", 0))
+
+                    if axis_name in ("weight", "wght"):
+                        values.append(_axis_value(axis, exact_weight))
+                        changed = True
+                    elif axis_name in ("italic", "ital"):
+                        values.append(_axis_value(axis, 1 if italic else 0))
+                        changed = True
+                    elif axis_name in ("slant", "slnt"):
+                        target = axis.get("minimum", -12) if italic else 0
+                        values.append(_axis_value(axis, target))
+                        changed = True
+                    else:
+                        values.append(default)
+
+                if changed:
+                    fnt.set_variation_by_axes(values)
+            except Exception:
+                pass
+
+            return fnt
+
         def _load_font(name, sz, target_style, exact_weight):
-            import os
-            print(f"Searching for font '{name}' with style '{target_style}' and weight {exact_weight}...")
             if os.path.exists(name):
                 try:
                     fnt = ImageFont.truetype(name, sz)
-                    if hasattr(fnt, "get_variation_axes") and hasattr(fnt, "set_variation_by_axes"):
-                        try:
-                            axes = fnt.get_variation_axes()
-
-                            values = []
-
-                            for axis in axes:
-                                name = axis.get("name", "")
-
-                                if isinstance(name, bytes):
-                                    name = name.decode(errors="ignore")
-
-                                name = str(name).lower()
-
-                                if name in ("weight", "wght"):
-                                    values.append(exact_weight)
-                                else:
-                                    values.append(axis.get("default", axis.get("minimum", 0)))
-
-                            fnt.set_variation_by_axes(values)
-                            fnt = ImageFont.truetype(full_path, sz)
-
-                            print("FONT:", fnt.getname())
-
-                            if hasattr(fnt, "get_variation_axes"):
-                                print(fnt.get_variation_axes())
-                        except Exception as e:
-                            print("Variable font error:", e)
-                    return fnt
+                    return _apply_font_variations(
+                        fnt,
+                        exact_weight,
+                        "italic" in target_style,
+                    )
                 except Exception:
                     pass
 
@@ -2164,7 +2188,17 @@ class UnifiedMathVisitor(MathExprVisitor):
             }.get(target_style.replace("_italic", ""), [""])
 
             if "italic" in target_style:
-                style_suffixes = [s + "italic" for s in style_suffixes] + ["italic", "it", "bi"]
+                italic_suffixes = []
+                for suffix in style_suffixes:
+                    italic_suffixes.extend([
+                        f"{suffix}italic",
+                        f"{suffix}ital",
+                        f"{suffix}it",
+                        f"{suffix}oblique",
+                    ])
+                style_suffixes = italic_suffixes + [
+                    "italic", "ital", "oblique", "it", "bi"
+                ]
 
             search_dirs = []
             import platform
@@ -2179,7 +2213,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             else:
                 search_dirs = ["/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts")]
 
-            name_clean = name.lower().replace(" ", "").replace("-", "")
+            name_clean = _normalise_font_name(name)
 
             for directory in search_dirs:
                 if not os.path.isdir(directory):
@@ -2190,7 +2224,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                             continue
 
                         full_path = os.path.join(root, fname)
-                        base_name = os.path.splitext(fname)[0].lower().replace("-", "").replace("_", "").replace(" ", "")
+                        base_name = _normalise_font_name(os.path.splitext(fname)[0])
 
                         match_found = False
 
@@ -2200,16 +2234,14 @@ class UnifiedMathVisitor(MathExprVisitor):
                                 match_found = True
                             else:
                                 match_found = any(suf in base_name for suf in style_suffixes)
-                        if match_found:
-                             print("MATCH:", full_path)
                         # 2. KONTROLA METADAT UVNITŘ SOUBORU
                         if not match_found:
                             try:
                                 test_fnt = ImageFont.truetype(full_path, 10)
                                 internal_family, internal_sub = test_fnt.getname()
 
-                                family_clean = internal_family.lower().replace(" ", "").replace("-", "")
-                                sub_clean = internal_sub.lower().replace(" ", "").replace("-", "")
+                                family_clean = _normalise_font_name(internal_family)
+                                sub_clean = _normalise_font_name(internal_sub)
 
                                 if name_clean in family_clean or family_clean in name_clean:
                                     if hasattr(test_fnt, "get_variation_axes"):
@@ -2217,14 +2249,13 @@ class UnifiedMathVisitor(MathExprVisitor):
                                            axes = test_fnt.get_variation_axes()
 
                                            has_weight_axis = any(
-                                               "weight" in str(a.get("name", "")).lower()
-                                               or "wght" in str(a.get("name", "")).lower()
+                                               _axis_name(a) in ("weight", "wght")
                                                for a in axes
                                            )
 
                                            if has_weight_axis:
                                                match_found = True
-                                       except:
+                                       except Exception:
                                            pass
                                     elif target_style == "regular":
                                         match_found = any(s in sub_clean for s in ["regular", "normal", "standard"]) or sub_clean == ""
@@ -2236,13 +2267,11 @@ class UnifiedMathVisitor(MathExprVisitor):
                         if match_found:
                             try:
                                 fnt = ImageFont.truetype(full_path, sz)
-                                if hasattr(fnt, "set_variation_by_axes"):
-                                    try:
-                                        if hasattr(fnt, "get_variation_axes") and any(a['name'] == 'Weight' for a in fnt.get_variation_axes()):
-                                            fnt.set_variation_by_axes({"wght": exact_weight})
-                                    except Exception:
-                                        pass
-                                return fnt
+                                return _apply_font_variations(
+                                    fnt,
+                                    exact_weight,
+                                    "italic" in target_style,
+                                )
                             except Exception:
                                 pass
 

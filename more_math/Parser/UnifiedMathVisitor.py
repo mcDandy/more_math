@@ -2197,7 +2197,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                         f"{suffix}oblique",
                     ])
                 style_suffixes = italic_suffixes + [
-                    "italic", "ital", "oblique", "it", "bi"
+                    "italic", "ital", "oblique", "it"
                 ]
 
             search_dirs = []
@@ -2285,42 +2285,55 @@ class UnifiedMathVisitor(MathExprVisitor):
                                 sub_clean = _normalise_font_name(internal_sub)
 
                                 if name_clean in family_clean or family_clean in name_clean:
+                                    has_variable_axes = False
                                     if hasattr(test_fnt, "get_variation_axes"):
-                                       try:
-                                           axes = test_fnt.get_variation_axes()
+                                        try:
+                                            axes = test_fnt.get_variation_axes()
+                                            axis_names = {
+                                                _axis_name(axis)
+                                                for axis in axes
+                                            }
+                                            has_weight_axis = bool(
+                                                axis_names & {"weight", "wght"}
+                                            )
+                                            has_italic_axis = bool(
+                                                axis_names & {
+                                                    "italic",
+                                                    "ital",
+                                                    "slant",
+                                                    "slnt",
+                                                }
+                                            )
+                                            has_variable_axes = (
+                                                has_weight_axis
+                                                or has_italic_axis
+                                            )
 
-                                           axis_names = {
-                                               _axis_name(axis)
-                                               for axis in axes
-                                           }
-                                           has_weight_axis = bool(
-                                               axis_names & {"weight", "wght"}
-                                           )
-                                           has_italic_axis = bool(
-                                               axis_names & {
-                                                   "italic",
-                                                   "ital",
-                                                   "slant",
-                                                   "slnt",
-                                               }
-                                           )
+                                            if wants_italic and has_italic_axis:
+                                                match_found = True
+                                            elif not wants_italic and has_weight_axis:
+                                                match_found = True
+                                        except Exception:
+                                            has_variable_axes = False
 
-                                           if (
-                                               "italic" in target_style
-                                               and has_italic_axis
-                                           ):
-                                               match_found = True
-                                           elif (
-                                               "italic" not in target_style
-                                               and has_weight_axis
-                                           ):
-                                               match_found = True
-                                       except Exception:
-                                           pass
-                                    elif target_style == "regular":
-                                        match_found = any(s in sub_clean for s in ["regular", "normal", "standard"]) or sub_clean == ""
-                                    else:
-                                        match_found = any(suf in sub_clean for suf in style_suffixes) or any(suf in family_clean for suf in style_suffixes)
+                                    if not match_found and not has_variable_axes:
+                                        if target_style == "regular":
+                                            match_found = any(
+                                                s in sub_clean
+                                                for s in [
+                                                    "regular",
+                                                    "normal",
+                                                    "standard",
+                                                ]
+                                            ) or sub_clean == ""
+                                        else:
+                                            match_found = any(
+                                                suf in sub_clean
+                                                for suf in style_suffixes
+                                            ) or any(
+                                                suf in family_clean
+                                                for suf in style_suffixes
+                                            )
                             except Exception:
                                 continue
 

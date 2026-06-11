@@ -36,7 +36,6 @@ function ensureAutocompleteStyles() {
 }
 
 .mrmth-autocomplete {
-    /* !!! ZDE SMAŽ position: fixed; a z-index: 10000; !!! */
     min-width: 180px;
     max-height: 220px;
     overflow-y: auto;
@@ -357,12 +356,32 @@ export function attachAutocomplete(textarea, _containerEl) {
 
     const close = () => {
         open = false;
-        if (layoutEl) layoutEl.hidden = true;
+        if (layoutEl) {
+            layoutEl.hidden = true;
+            layoutEl.style.visibility = "hidden";
+        }
         if (listEl) listEl.innerHTML = "";
         if (tooltipEl) tooltipEl.style.display = "none";
         items = [];
         selectedIndex = 0;
         prefixInfo = null;
+    };
+
+    const openWith = (nextItems, nextPrefix) => {
+        if (!nextItems.length) {
+            close();
+            return;
+        }
+        items = nextItems;
+        selectedIndex = 0;
+        prefixInfo = nextPrefix;
+        open = true;
+        if (layoutEl) {
+            layoutEl.hidden = false;
+            layoutEl.style.display = "flex"; // ZNOVU ROZSVÍTÍ KRESLENÍ PŘI PSANÍ
+        }
+        render();
+        positionDropdown();
     };
 
     const scrollSelectedIntoView = () => {
@@ -384,6 +403,12 @@ export function attachAutocomplete(textarea, _containerEl) {
 
 
     const render = () => {
+        listEl.innerHTML = "";
+        if (!items || items.length === 0) {
+            close();
+            return;
+        }
+
         listEl.innerHTML = "";
         items.forEach((item, index) => {
             const li = document.createElement("li");
@@ -498,21 +523,6 @@ export function attachAutocomplete(textarea, _containerEl) {
 
         layoutEl.style.left = `${left}px`;
         layoutEl.style.visibility = "";
-    };
-
-
-    const openWith = (nextItems, nextPrefix) => {
-        if (!nextItems.length) {
-            close();
-            return;
-        }
-        items = nextItems;
-        selectedIndex = 0;
-        prefixInfo = nextPrefix;
-        open = true;
-        if (layoutEl) layoutEl.hidden = false;
-        render();
-        positionDropdown();
     };
 
     const applySelected = () => {

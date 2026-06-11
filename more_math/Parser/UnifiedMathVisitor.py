@@ -2447,7 +2447,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         # --- Software Italic (After Text Rendering) ---
         if synthetic_italic:
-            img = img.transform(img.size, Image.Transform.AFFINE, (1, 0.25, 0, 0, 1, 0))
+            img = img.transform(img.size, Image.Transform.AFFINE, (1, 0.25, -0.25*text_h, 0, 1, 0))
 
         # --- Rotate if requested ---
         if angle != 0.0:

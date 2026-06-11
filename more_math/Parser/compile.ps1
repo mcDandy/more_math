@@ -27,7 +27,6 @@ if (-not (Test-Path $g4Path)) {
 
 $rawContent = [System.IO.File]::ReadAllText($g4Path, [System.Text.Encoding]::UTF8)
 $content = $rawContent -replace '//.*', ''
-$content = $content -replace '/\*[\s\S]*?\*/', ''
 
 function Get-LexerNames([string]$grammarText) {
     $map = @{}
@@ -78,7 +77,19 @@ function New-Snippet([string]$name) {
     return "${name}()"
 }
 
-function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$line) {
+# Pomocná funkce pro vyčištění ANTLR docstringu do jednoho čistého řádku textu
+function Clean-Docstring([string]$doc) {
+    if ([string]::IsNullOrEmpty($doc)) { return "" }
+    $lines = $doc -split "`r?`n"
+    $cleanLines = @()
+    foreach ($l in $lines) {
+        $t = $l.Trim().TrimStart('/*').TrimEnd('*/').TrimStart('*').Trim()
+        if ($t) { $cleanLines += $t }
+    }
+    return ($cleanLines -join " ") -replace '"', '\"'
+}
+
+function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$line, [string]$currentDoc) {
     $clean = (($line -split '\s+#')[0]).Trim().TrimEnd(';')
     if ($clean -notmatch 'LPAREN') { return }
     if ($clean -notmatch '(?:^\s*\|\s*)?(\w+)\s+LPAREN\s*(.*?)\s+RPAREN\s*$') { return }
@@ -89,10 +100,13 @@ function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$l
     $names = $lexerMap[$token]
     if (-not $names) { return }
 
+    $cleanDoc = Clean-Docstring $currentDoc
+
     foreach ($fn in $names) {
         $entry = @{
-            minArgs = $bounds.min
-            snippet = (New-Snippet $fn)
+            minArgs     = $bounds.min
+            snippet     = (New-Snippet $fn)
+            description = $cleanDoc
         }
         if ($null -eq $bounds.max) {
             $entry.maxArgs = $null
@@ -106,25 +120,46 @@ function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$l
 function Get-FunctionMeta([string]$grammarText, [hashtable]$lexerMap) {
     $meta = @{}
     $inFunc = $false
+    $currentDoc = ""
 
     foreach ($line in ($grammarText -split "`r?`n")) {
+        # Zachytávání docstringů před pravidly
+        if ($line -match '^\s*/\*\*') {
+            $currentDoc = $line
+            if ($line -notmatch '\*/\s*$') {
+                # Pokud je komentář víceřádkový, podržíme ho, dokud neskončí
+                $inDocBlock = $true
+                continue
+            }
+        }
+        if ($inDocBlock) {
+            $currentDoc += "`n" + $line
+            if ($line -match '\*/\s*$') { $inDocBlock = $false }
+            continue
+        }
+
         if ($line -match '^\s*//\s*LEXER') { $inFunc = $false }
         if ($line -match '^\s*(func0|func1|func2|func3|func4|func5|funcN|funcNoise)\s*:\s*(.*)$') {
             $inFunc = $true
             $inline = $matches[2].Trim()
             if ($inline -and $inline -match 'LPAREN') {
-                Add-FunctionRuleLine $meta $lexerMap $inline
+                Add-FunctionRuleLine $meta $lexerMap $inline $currentDoc
+                $currentDoc = "" # Reset po spotřebování docstringu
             }
             continue
         }
-        if (-not $inFunc) { continue }
+        if (-not $inFunc) { 
+            # Pokud řádek není prázdný a není to komentář, resetujeme docstring, pokud nepatří k funkci
+            if ($line.Trim() -and $line -notmatch '^\s*\|') { $currentDoc = "" }
+            continue 
+        }
 
-        Add-FunctionRuleLine $meta $lexerMap $line
+        Add-FunctionRuleLine $meta $lexerMap $line $currentDoc
+        $currentDoc = "" # Reset po spotřebování
     }
 
     return $meta
 }
-
 # 1. Extract quoted symbols for keyword/function lists
 $matches = [regex]::Matches($content, "'([a-zA-Z_][a-zA-Z0-9_]*)'")
 $allSymbols = @()
@@ -167,7 +202,7 @@ $pyMetaLines = @()
 foreach ($key in $sortedMetaKeys) {
     $m = $functionMeta[$key]
     $maxPart = if ($null -eq $m.maxArgs) { "None" } else { [string]$m.maxArgs }
-    $pyMetaLines += "    '$key': {'min_args': $($m.minArgs), 'max_args': $maxPart, 'snippet': '$($m.snippet)'},"
+    $pyMetaLines += "    '$key': {'min_args': $($m.minArgs), 'max_args': $maxPart, 'snippet': '$($m.snippet)', 'description': '$($m.description)'},"
 }
 
 $pyPath = "inbuilt_symbols.py"
@@ -196,11 +231,12 @@ $jsMetaLines = @()
 foreach ($key in $sortedMetaKeys) {
     $m = $functionMeta[$key]
     if ($null -eq $m.maxArgs) {
-        $jsMetaLines += "    $key`: { minArgs: $($m.minArgs), maxArgs: null, snippet: `"$($m.snippet)`" },"
+        $jsMetaLines += "    $key`: { minArgs: $($m.minArgs), maxArgs: null, snippet: `"$($m.snippet)`", description: `"$($m.description)`" },"
     } else {
-        $jsMetaLines += "    $key`: { minArgs: $($m.minArgs), maxArgs: $($m.maxArgs), snippet: `"$($m.snippet)`" },"
+        $jsMetaLines += "    $key`: { minArgs: $($m.minArgs), maxArgs: $($m.maxArgs), snippet: `"$($m.snippet)`", description: `"$($m.description)`" },"
     }
 }
+
 
 $jsContent = @(
     "// Generated automatically by compile.ps1. Do not edit.",

@@ -1,32 +1,57 @@
 import { FUNCTIONS, KEYWORDS, CONSTANTS, FUNCTION_META } from "./inbuilt_symbols.js";
 
 const AUTOCOMPLETE_STYLE_ID = "mrmth-script-autocomplete-styles";
-
 function ensureAutocompleteStyles() {
     if (document.getElementById(AUTOCOMPLETE_STYLE_ID)) return;
 
     const style = document.createElement("style");
     style.id = AUTOCOMPLETE_STYLE_ID;
     style.textContent = `
-        .mrmth-autocomplete {
-            position: fixed;
-            z-index: 10000;
-            min-width: 180px;
-            max-width: min(420px, 100vw - 16px);
-            max-height: 220px;
-            overflow-y: auto;
-            overscroll-behavior: contain;
-            pointer-events: auto;
-            margin: 0;
-            padding: 4px 0;
-            list-style: none;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            border-radius: 8px;
-            background: rgba(18, 20, 24, 0.97);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-            font-family: monospace;
-            font-size: 12px;
-        }
+
+
+.mrmth-autocomplete-tooltip {
+    display: none; /* Řízeno přes JS */
+    min-width: 200px;
+    max-width: 320px;
+    margin-left: 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(24, 28, 36, 0.98);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    font-family: monospace;
+    font-size: 11px;
+    color: #b3b9c1;
+    line-height: 1.5;
+    pointer-events: auto;
+}
+
+.mrmth-autocomplete-layout {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    position: fixed !important; /* Pozici drží POUZE tento společný obal! */
+    z-index: 10000 !important;
+    pointer-events: none;
+}
+
+.mrmth-autocomplete {
+    /* !!! ZDE SMAŽ position: fixed; a z-index: 10000; !!! */
+    min-width: 180px;
+    max-height: 220px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(18, 20, 24, 0.97);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    font-family: monospace;
+    font-size: 12px;
+}
 
         .mrmth-autocomplete-item {
             display: flex;
@@ -53,20 +78,6 @@ function ensureAutocompleteStyles() {
         .mrmth-autocomplete-item .mrmth-ac-name {
             color: #c39bd3;
             font-weight: 600;
-        }
-
-        .mrmth-autocomplete-item.is-keyword .mrmth-ac-name {
-            color: #e74c3c;
-        }
-
-        .mrmth-autocomplete-item.is-constant .mrmth-ac-name {
-            color: #f1c40f;
-        }
-
-        .mrmth-autocomplete-item .mrmth-ac-hint {
-            color: #7f8c8d;
-            font-size: 11px;
-            white-space: nowrap;
         }
     `;
     document.head.appendChild(style);
@@ -261,10 +272,83 @@ function getCaretScreenPosition(textarea, position) {
 export function attachAutocomplete(textarea, _containerEl) {
     ensureAutocompleteStyles();
 
-    const dropdown = document.createElement("ul");
-    dropdown.className = "mrmth-autocomplete";
-    dropdown.hidden = true;
-    document.body.appendChild(dropdown);
+    // 1. Deklarace prvků nového rozvržení
+    let layoutEl = null;
+    let listEl = null;    // Toto plně nahradí tvůj původní samostatný "dropdown"
+    let tooltipEl = null;
+
+    // 2. Opravené vytvoření dropdownu, které se spustí ihned
+    function createDropdown() {
+        layoutEl = document.createElement("div");
+        layoutEl.className = "mrmth-autocomplete-layout";
+        layoutEl.style.position = "fixed";
+        layoutEl.style.zIndex = "10000";
+        layoutEl.style.display = "flex";
+        layoutEl.hidden = true;
+
+        listEl = document.createElement("ul");
+        listEl.className = "mrmth-autocomplete";
+        listEl.addEventListener("wheel", onDropdownWheel, { passive: false });
+        layoutEl.appendChild(listEl);
+
+        tooltipEl = document.createElement("div");
+        tooltipEl.className = "mrmth-autocomplete-tooltip";
+        tooltipEl.style.display = "none";
+        layoutEl.appendChild(tooltipEl);
+
+        document.body.appendChild(layoutEl);
+    }
+
+    function updateTooltip(selectedItem) {
+        if (!tooltipEl || !layoutEl) return;
+
+        const meta = FUNCTION_META[selectedItem?.name] || selectedItem;
+
+        if (!meta || !meta.description) {
+            tooltipEl.style.display = "none";
+            return;
+        }
+
+        let argsText = `Arguments: min ${meta.minArgs ?? 0}`;
+        if (meta.maxArgs !== undefined && meta.maxArgs !== null) {
+            argsText += `, max ${meta.maxArgs}`;
+        } else {
+            argsText += "+ (variadic)";
+        }
+
+        tooltipEl.innerHTML = `
+            <div class="mrmth-tt-title">${selectedItem.name}</div>
+            <div class="mrmth-tt-desc">${meta.description}</div>
+            <div class="mrmth-tt-args">${argsText}</div>
+        `;
+
+        tooltipEl.style.display = "block";
+
+        const rect = tooltipEl.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            layoutEl.style.flexDirection = "row-reverse";
+            tooltipEl.style.marginLeft = "0";
+            tooltipEl.style.marginRight = "8px";
+        } else {
+            layoutEl.style.flexDirection = "row";
+            tooltipEl.style.marginLeft = "8px";
+            tooltipEl.style.marginRight = "0";
+        }
+    }
+
+
+    const onDropdownWheel = (e) => {
+        e.stopPropagation();
+        const maxScroll = Math.max(0, listEl.scrollHeight - listEl.clientHeight);
+        const atTop = listEl.scrollTop <= 0;
+        const atBottom = listEl.scrollTop >= maxScroll;
+        if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
+            e.preventDefault();
+        }
+    };
+
+    createDropdown();
+
 
     let items = [];
     let selectedIndex = 0;
@@ -273,45 +357,34 @@ export function attachAutocomplete(textarea, _containerEl) {
 
     const close = () => {
         open = false;
-        dropdown.hidden = true;
-        dropdown.innerHTML = "";
+        if (layoutEl) layoutEl.hidden = true;
+        if (listEl) listEl.innerHTML = "";
+        if (tooltipEl) tooltipEl.style.display = "none";
         items = [];
         selectedIndex = 0;
         prefixInfo = null;
     };
 
     const scrollSelectedIntoView = () => {
-        const selected = dropdown.querySelector(".mrmth-autocomplete-item.is-selected");
+        const selected = layoutEl.querySelector(".mrmth-autocomplete-item.is-selected");
         if (!selected) return;
 
         const itemTop = selected.offsetTop;
         const itemBottom = itemTop + selected.offsetHeight;
-        const viewTop = dropdown.scrollTop;
-        const viewBottom = viewTop + dropdown.clientHeight;
+        const viewTop = listEl.scrollTop;
+        const viewBottom = viewTop + listEl.clientHeight;
 
         const pad = 2;
         if (itemTop < viewTop + pad) {
-            dropdown.scrollTop = Math.max(0, itemTop - pad);
+            listEl.scrollTop = Math.max(0, itemTop - pad);
         } else if (itemBottom > viewBottom - pad) {
-            dropdown.scrollTop = itemBottom - dropdown.clientHeight + pad;
+            listEl.scrollTop = itemBottom - listEl.clientHeight + pad;
         }
     };
 
-    const onDropdownWheel = (e) => {
-        e.stopPropagation();
-
-        const maxScroll = Math.max(0, dropdown.scrollHeight - dropdown.clientHeight);
-        const atTop = dropdown.scrollTop <= 0;
-        const atBottom = dropdown.scrollTop >= maxScroll;
-
-        // Block scroll chaining to the node/canvas when the list cannot move further.
-        if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
-            e.preventDefault();
-        }
-    };
 
     const render = () => {
-        dropdown.innerHTML = "";
+        listEl.innerHTML = "";
         items.forEach((item, index) => {
             const li = document.createElement("li");
             li.className = `mrmth-autocomplete-item is-${item.kind}${index === selectedIndex ? " is-selected" : ""}`;
@@ -332,19 +405,37 @@ export function attachAutocomplete(textarea, _containerEl) {
             li.appendChild(left);
             li.appendChild(right);
             li.appendChild(kind);
+
             li.addEventListener("mousedown", (e) => {
                 e.preventDefault();
                 selectedIndex = index;
                 applySelected();
             });
-            dropdown.appendChild(li);
+
+            li.addEventListener("mouseenter", () => {
+                selectedIndex = index;
+                listEl.querySelectorAll(".mrmth-autocomplete-item").forEach((el, i) => {
+                    el.classList.toggle("is-selected", i === index);
+                });
+                updateTooltip(item);
+            });
+
+            listEl.appendChild(li);
         });
+
         scrollSelectedIntoView();
+
+        if (items[selectedIndex]) {
+            updateTooltip(items[selectedIndex]);
+        } else {
+            tooltipEl.style.display = "none";
+        }
+
         if (open) positionDropdown();
     };
 
     const positionDropdown = () => {
-        if (!prefixInfo) return;
+        if (!prefixInfo || !layoutEl || !listEl) return; // Změna kontroly prvků
 
         const cursorPos = textarea.selectionStart;
         const caret = getCaretScreenPosition(textarea, cursorPos);
@@ -362,7 +453,6 @@ export function attachAutocomplete(textarea, _containerEl) {
         const spaceAbove = lineTop - gap - viewportPad;
         const spaceRight = window.innerWidth - textareaRect.right - gap - viewportPad;
 
-        // Prefer below the active line so the list never covers what you are typing.
         let placement = "below";
         if (spaceBelow < minListHeight) {
             if (spaceRight >= 160) {
@@ -395,17 +485,21 @@ export function attachAutocomplete(textarea, _containerEl) {
             left = textareaRect.right + gap;
         }
 
-        dropdown.style.width = `${dropdownWidthTarget}px`;
-        dropdown.style.maxHeight = `${maxHeight}px`;
-        dropdown.style.top = `${top}px`;
+        listEl.style.width = `260px`;
 
-        dropdown.style.visibility = "hidden";
-        dropdown.style.left = "0px";
-        const dropdownWidth = dropdown.offsetWidth || dropdownWidthTarget;
+        listEl.style.maxHeight = `${maxHeight}px`;
+        layoutEl.style.top = `${top}px`;
+
+        layoutEl.style.visibility = "hidden";
+        layoutEl.style.left = "0px";
+
+        const dropdownWidth = 260;
         left = Math.max(viewportPad, Math.min(left, window.innerWidth - dropdownWidth - viewportPad));
-        dropdown.style.left = `${left}px`;
-        dropdown.style.visibility = "";
+
+        layoutEl.style.left = `${left}px`;
+        layoutEl.style.visibility = "";
     };
+
 
     const openWith = (nextItems, nextPrefix) => {
         if (!nextItems.length) {
@@ -416,27 +510,20 @@ export function attachAutocomplete(textarea, _containerEl) {
         selectedIndex = 0;
         prefixInfo = nextPrefix;
         open = true;
-        dropdown.hidden = false;
+        if (layoutEl) layoutEl.hidden = false;
         render();
         positionDropdown();
     };
 
     const applySelected = () => {
-        if (!open || !prefixInfo || !items[selectedIndex]) return;
-
+        if (selectedIndex < 0 || selectedIndex >= items.length) return;
         const item = items[selectedIndex];
-        const before = textarea.value.slice(0, prefixInfo.start);
-        const after = textarea.value.slice(textarea.selectionEnd);
-        const insert = item.insertText;
-        textarea.value = `${before}${insert}${after}`;
+        const text = textarea.value;
+        const before = text.slice(0, prefixInfo.start);
+        const after = text.slice(textarea.selectionStart);
 
-        const cursorPos = before.length + insert.length;
-        if (item.kind === "function" && insert.endsWith("()")) {
-            textarea.selectionStart = textarea.selectionEnd = cursorPos - 1;
-        } else {
-            textarea.selectionStart = textarea.selectionEnd = cursorPos;
-        }
-
+        textarea.value = before + item.insertText + after;
+        textarea.selectionStart = textarea.selectionEnd = before.length + item.insertText.length;
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
         close();
     };
@@ -480,7 +567,17 @@ export function attachAutocomplete(textarea, _containerEl) {
     const onKeyDown = (e) => {
         if (e.ctrlKey && e.key === " ") {
             e.preventDefault();
-            maybeOpen(true);
+            if (typeof maybeOpen === "function") {
+                maybeOpen(true);
+            } else {
+                const text = textarea.value;
+                const cursor = textarea.selectionStart;
+                const prefix = getWordPrefix(text, cursor);
+                if (prefix) {
+                    const suggestions = buildSuggestions(prefix.word);
+                    if (suggestions.length > 0) openWith(suggestions, prefix);
+                }
+            }
             return;
         }
 
@@ -517,14 +614,20 @@ export function attachAutocomplete(textarea, _containerEl) {
         if (open) positionDropdown();
     };
 
-    textarea.addEventListener("input", onInput);
+    textarea.addEventListener("input", typeof onInput === "function" ? onInput : () => {
+        const text = textarea.value;
+        const cursor = textarea.selectionStart;
+        const prefix = getWordPrefix(text, cursor);
+        if (!prefix) { close(); return; }
+        const suggestions = buildSuggestions(prefix.word);
+        if (suggestions.length > 0) openWith(suggestions, prefix);
+        else close();
+    });
+
     textarea.addEventListener("keydown", onKeyDown);
     textarea.addEventListener("blur", onBlur);
     textarea.addEventListener("scroll", onReposition);
-    dropdown.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-    });
-    dropdown.addEventListener("wheel", onDropdownWheel, { passive: false });
+
     window.addEventListener("scroll", onReposition, true);
     window.addEventListener("resize", onReposition);
 
@@ -532,14 +635,18 @@ export function attachAutocomplete(textarea, _containerEl) {
         close,
         destroy() {
             close();
-            dropdown.removeEventListener("wheel", onDropdownWheel);
             window.removeEventListener("scroll", onReposition, true);
             window.removeEventListener("resize", onReposition);
-            dropdown.remove();
-            textarea.removeEventListener("input", onInput);
+
+            if (layoutEl) {
+                layoutEl.remove();
+            }
             textarea.removeEventListener("keydown", onKeyDown);
             textarea.removeEventListener("blur", onBlur);
             textarea.removeEventListener("scroll", onReposition);
+            if (typeof onInput === "function") {
+                textarea.removeEventListener("input", onInput);
+            }
         },
     };
 }

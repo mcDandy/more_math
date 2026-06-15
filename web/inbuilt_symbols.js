@@ -209,7 +209,7 @@ export const FUNCTION_META = {
     smin: { minArgs: 1, maxArgs: null, snippet: "smin()", description: "" },
     smootherstep: { minArgs: 3, maxArgs: 3, snippet: "smootherstep()", description: "" },
     smoothstep: { minArgs: 3, maxArgs: 3, snippet: "smoothstep()", description: "" },
-    snorm: { minArgs: 1, maxArgs: 1, snippet: "snorm()", description: "snorm(x) - frobenius norm of tensor" },
+    snorm: { minArgs: 1, maxArgs: 2, snippet: "snorm()", description: "snorm(x,[dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list" },
     softmax: { minArgs: 1, maxArgs: 2, snippet: "softmax()", description: "" },
     softmin: { minArgs: 1, maxArgs: 2, snippet: "softmin()", description: "" },
     softplus: { minArgs: 1, maxArgs: 1, snippet: "softplus()", description: "" },

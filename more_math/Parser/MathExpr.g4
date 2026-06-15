@@ -171,10 +171,6 @@ func1:
           tnorm(x) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. The slice is last dimension of the tensor.
         */
 	| TNORM LPAREN expr RPAREN			# TNormFunc
-        /**
-          snorm(x) - frobenius norm of tensor
-        */
-	| SNORM LPAREN expr RPAREN			# SNormFunc
 	| FLOOR LPAREN expr RPAREN			# FloorFunc
 	| CEIL LPAREN expr RPAREN			# CeilFunc
 	| ROUND LPAREN expr RPAREN			# RoundFunc
@@ -241,6 +237,10 @@ func2:
           tmax(x,y) - elementwise maximum of tensor or list. max(x,y) when inputs are floats
         */
 	| TMAX LPAREN expr COMMA expr RPAREN			# TMaxFunc
+        /**
+          snorm(x,[dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list
+        */
+	| SNORM LPAREN expr (COMMA expr)? RPAREN		# SNormFunc
 	| STEP LPAREN expr COMMA expr RPAREN			# StepFunc
 	| TOPK LPAREN expr COMMA expr RPAREN			# TopkFunc
 	| BOTK LPAREN expr COMMA expr RPAREN			# BotkFunc

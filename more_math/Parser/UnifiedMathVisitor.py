@@ -1,6 +1,8 @@
+from re import S
 import time
 import numpy as np
 import os
+from numpy._core.multiarray import scalar
 import torch
 import math
 import inspect
@@ -220,18 +222,22 @@ class UnifiedMathVisitor(MathExprVisitor):
             return list_op(val)
         return val
 
-    def _to_int(self, x, ctx, context_name="operation"):
+    def _to_int(self, x, ctx, context_name="operation", strict=False):
         """Convert value to int, handling tensors and nested lists recursively"""
         if self._is_tensor(x):
             if x.numel() == 1:
                 return int(x.item())
-            else:
+            elif strict:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {context_name} expects scalar dimensions, got tensor with shape {x.shape}")
+            else:
+                return x.int()
         elif self._is_list(x):
             if len(x) == 1:
                 return self._to_int(x[0], ctx, context_name)
-            else:
+            elif strict:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {context_name} expects scalar dimensions, got list with {len(x)} elements")
+            else:
+                return [self._to_int(v, ctx, context_name) for v in x]
         else:
             return int(float(x))
 
@@ -615,9 +621,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         return 1.0 if val != 0 else 0.0
 
     def visitSNormFunc(self, ctx):
-        val = (yield ctx.expr())
+        val = (yield ctx.expr(0))
+        if len(ctx.expr()) > 1:
+            dim = self._to_int((yield ctx.expr(1)), ctx, "s_norm dimension")
+            if self._is_tensor(val):
+                return F.normalize(val, p=2, dim=dim)
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: s_norm with dimension argument only supports tensors")
         if self._is_tensor(val):
-            res = torch.linalg.norm(val)
+            res = torch.linalg.norm(val, dim=-1)
             if res.numel() == 1:
                 return float(res.item())
             return res
@@ -1074,7 +1085,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reshape expects scalar dimensions, got tensor with shape {d.shape}. Did you mean to pass a shape list instead of data?")
                 if self._is_list(d) and len(d) > 1:
                     raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reshape expects scalar dimensions, got list with {len(d)} elements. Did you pass a data variable (like V) instead of a shape?")
-                result.append(self._to_int(d, ctx, "reshape"))
+                result.append(self._to_int(d, ctx, "reshape", strict=True))
             new_shape = result
         elif isinstance(new_shape, (int, float)):
             new_shape = [int(float(new_shape))]
@@ -2062,11 +2073,6 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return float(v.item())
             return float(v)
 
-        def _to_int(v):
-            if self._is_tensor(v):
-                return int(v.item())
-            return int(v)
-
         def _to_bool(v):
             if isinstance(v, bool):
                 return v
@@ -2078,9 +2084,10 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         text       = _to_str((yield ctx.expr(0)))
         font_name  = _to_str((yield ctx.expr(1)))
-        size       = max(1, _to_int((yield ctx.expr(2))))
-        max_width  = _to_int((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 0
-        weight_val = _to_int((yield ctx.expr(4))) if len(ctx.expr()) > 4 else 400
+        size       = max(1, self._to_int((yield ctx.expr(2)), ctx,"text_image", strict=True))
+        size       = max(1, self._to_int((yield ctx.expr(2)), ctx,"text_image", strict=True))
+        max_width  = self._to_int((yield ctx.expr(3)), ctx,"text_image", strict=True) if len(ctx.expr()) > 3 else 0
+        weight_val = self._to_int((yield ctx.expr(4)), ctx,"text_image", strict=True) if len(ctx.expr()) > 4 else 400
         angle      = _to_float((yield ctx.expr(5))) if len(ctx.expr()) > 5 else 0.0
         spacing    = max(0.1, _to_float((yield ctx.expr(6)))) if len(ctx.expr()) > 6 else 1.0
         is_italic  = _to_bool((yield ctx.expr(7))) if len(ctx.expr()) > 7 else False
@@ -2950,9 +2957,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_val = yield ctx.indexExpr()
 
         if self._is_list(shape_val):
-            shape = [self._to_int(v, ctx, "tensor") for v in shape_val]
+            shape = self._to_int(v, ctx, "tensor")
         elif self._is_tensor(shape_val):
-            shape = [self._to_int(v, ctx, "tensor") for v in shape_val.flatten().tolist()]
+            shape = self._to_int(v, ctx, "tensor").flatten().tolist()
         else:
             shape = [self._to_int(shape_val, ctx, "tensor")]
 
@@ -2963,7 +2970,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         dim = -1
         if len(ctx.expr()) > 1:
             dim_val = (yield ctx.expr(1))
-            dim = self._to_int(dim_val, ctx, "softmax dim")
+            dim = self._to_int(dim_val, ctx, "softmax dim", strict=True)
         return F.softmax(val, dim=dim)
 
     def visitSoftminFunc(self, ctx):
@@ -2971,7 +2978,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         dim = -1
         if len(ctx.expr()) > 1:
             dim_val = (yield ctx.expr(1))
-            dim = self._to_int(dim_val, ctx, "softmin dim")
+            dim = self._to_int(dim_val, ctx, "softmin dim", strict=True)
         return F.softmax(-val, dim=dim)
 
     def visitArgminFunc(self, ctx):
@@ -4170,7 +4177,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.linspace(start, end, steps, device=self.device)
 
     def visitLogspaceFunc(self, ctx):
-        """linspace(start, end, steps) - linearly spaced values"""
+        """logspace(start, end, steps, base) - logarithmically spaced values"""
         start_val = yield ctx.expr(0)
         end_val = yield ctx.expr(1)
         steps_val = yield ctx.expr(2)

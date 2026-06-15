@@ -206,7 +206,7 @@ INBUILT_FUNCTION_META = {
     'smin': {'min_args': 1, 'max_args': None, 'snippet': 'smin()', 'description': ''},
     'smootherstep': {'min_args': 3, 'max_args': 3, 'snippet': 'smootherstep()', 'description': ''},
     'smoothstep': {'min_args': 3, 'max_args': 3, 'snippet': 'smoothstep()', 'description': ''},
-    'snorm': {'min_args': 1, 'max_args': 1, 'snippet': 'snorm()', 'description': 'snorm(x) - frobenius norm of tensor'},
+    'snorm': {'min_args': 1, 'max_args': 2, 'snippet': 'snorm()', 'description': 'snorm(x,[dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list'},
     'softmax': {'min_args': 1, 'max_args': 2, 'snippet': 'softmax()', 'description': ''},
     'softmin': {'min_args': 1, 'max_args': 2, 'snippet': 'softmin()', 'description': ''},
     'softplus': {'min_args': 1, 'max_args': 1, 'snippet': 'softplus()', 'description': ''},

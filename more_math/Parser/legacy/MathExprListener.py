@@ -782,15 +782,6 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#SNormFunc.
-    def enterSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
-        pass
-
-    # Exit a parse tree produced by MathExprParser#SNormFunc.
-    def exitSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
-        pass
-
-
     # Enter a parse tree produced by MathExprParser#FloorFunc.
     def enterFloorFunc(self, ctx:MathExprParser.FloorFuncContext):
         pass
@@ -1337,6 +1328,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#TMaxFunc.
     def exitTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SNormFunc.
+    def enterSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SNormFunc.
+    def exitSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
         pass
 
 

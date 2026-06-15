@@ -439,11 +439,6 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#SNormFunc.
-    def visitSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MathExprParser#FloorFunc.
     def visitFloorFunc(self, ctx:MathExprParser.FloorFuncContext):
         return self.visitChildren(ctx)
@@ -746,6 +741,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#TMaxFunc.
     def visitTMaxFunc(self, ctx:MathExprParser.TMaxFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SNormFunc.
+    def visitSNormFunc(self, ctx:MathExprParser.SNormFuncContext):
         return self.visitChildren(ctx)
 
 

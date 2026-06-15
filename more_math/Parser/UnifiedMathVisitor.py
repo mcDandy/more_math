@@ -625,10 +625,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         if len(ctx.expr()) > 1:
             dim = self._to_int((yield ctx.expr(1)), ctx, "s_norm dimension")
             if self._is_tensor(val):
-                return F.normalize(val, p=2, dim=dim)
+                return torch.linalg.norm(val, dim=dim)
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: s_norm with dimension argument only supports tensors")
         if self._is_tensor(val):
-            res = torch.linalg.norm(val, dim=-1)
+            res = torch.linalg.norm(val)
             if res.numel() == 1:
                 return float(res.item())
             return res

@@ -347,7 +347,7 @@ def serializedATN():
         buf.write("\2\u01b5\u01b6\7\u00d1\2\2\u01b6\u02ff\3\2\2\2\u01b7\u01b8")
         buf.write("\7\24\2\2\u01b8\u01b9\7\u00d0\2\2\u01b9\u01ba\5\32\16")
         buf.write("\2\u01ba\u01bb\7\u00d1\2\2\u01bb\u02ff\3\2\2\2\u01bc\u01bd")
-        buf.write("\7\32\2\2\u01bd\u01be\7\u00d0\2\2\u01be\u01bf\5\32\16")
+        buf.write("\7\31\2\2\u01bd\u01be\7\u00d0\2\2\u01be\u01bf\5\32\16")
         buf.write("\2\u01bf\u01c0\7\u00d1\2\2\u01c0\u02ff\3\2\2\2\u01c1\u01c2")
         buf.write("\7\33\2\2\u01c2\u01c3\7\u00d0\2\2\u01c3\u01c4\5\32\16")
         buf.write("\2\u01c4\u01c5\7\u00d1\2\2\u01c5\u02ff\3\2\2\2\u01c6\u01c7")
@@ -518,7 +518,7 @@ def serializedATN():
         buf.write("\u045e\3\2\2\2\u0315\u0316\7\30\2\2\u0316\u0317\7\u00d0")
         buf.write("\2\2\u0317\u0318\5\32\16\2\u0318\u0319\7\u00d2\2\2\u0319")
         buf.write("\u031a\5\32\16\2\u031a\u031b\7\u00d1\2\2\u031b\u045e\3")
-        buf.write("\2\2\2\u031c\u031d\7\31\2\2\u031d\u031e\7\u00d0\2\2\u031e")
+        buf.write("\2\2\2\u031c\u031d\7\32\2\2\u031d\u031e\7\u00d0\2\2\u031e")
         buf.write("\u0321\5\32\16\2\u031f\u0320\7\u00d2\2\2\u0320\u0322\5")
         buf.write("\32\16\2\u0321\u031f\3\2\2\2\u0321\u0322\3\2\2\2\u0322")
         buf.write("\u0323\3\2\2\2\u0323\u0324\7\u00d1\2\2\u0324\u045e\3\2")
@@ -5459,8 +5459,8 @@ class MathExprParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def SNORM(self):
-            return self.getToken(MathExprParser.SNORM, 0)
+        def TNORM(self):
+            return self.getToken(MathExprParser.TNORM, 0)
         def LPAREN(self):
             return self.getToken(MathExprParser.LPAREN, 0)
         def expr(self):
@@ -7531,11 +7531,11 @@ class MathExprParser ( Parser ):
                 self.state = 440
                 self.match(MathExprParser.RPAREN)
                 pass
-            elif token in [MathExprParser.SNORM]:
+            elif token in [MathExprParser.TNORM]:
                 localctx = MathExprParser.TNormFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 18)
                 self.state = 442
-                self.match(MathExprParser.SNORM)
+                self.match(MathExprParser.TNORM)
                 self.state = 443
                 self.match(MathExprParser.LPAREN)
                 self.state = 444
@@ -8666,8 +8666,8 @@ class MathExprParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def TNORM(self):
-            return self.getToken(MathExprParser.TNORM, 0)
+        def SNORM(self):
+            return self.getToken(MathExprParser.SNORM, 0)
         def LPAREN(self):
             return self.getToken(MathExprParser.LPAREN, 0)
         def expr(self, i:int=None):
@@ -9976,11 +9976,11 @@ class MathExprParser ( Parser ):
                 self.state = 792
                 self.match(MathExprParser.RPAREN)
                 pass
-            elif token in [MathExprParser.TNORM]:
+            elif token in [MathExprParser.SNORM]:
                 localctx = MathExprParser.SNormFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 794
-                self.match(MathExprParser.TNORM)
+                self.match(MathExprParser.SNORM)
                 self.state = 795
                 self.match(MathExprParser.LPAREN)
                 self.state = 796

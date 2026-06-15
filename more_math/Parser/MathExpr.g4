@@ -168,9 +168,9 @@ func1:
         */
 	| EXP LPAREN expr RPAREN			# ExpFunc
         /**
-          snorm(x) - returns a frobenius norm of the tensor as a float number
+          tnorm(x) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. The slice is last dimension of the tensor.
         */
-	| SNORM LPAREN expr RPAREN			# TNormFunc
+	| TNORM LPAREN expr RPAREN			# TNormFunc
 	| FLOOR LPAREN expr RPAREN			# FloorFunc
 	| CEIL LPAREN expr RPAREN			# CeilFunc
 	| ROUND LPAREN expr RPAREN			# RoundFunc
@@ -238,9 +238,9 @@ func2:
         */
 	| TMAX LPAREN expr COMMA expr RPAREN			# TMaxFunc
         /**
-          tnorm(x,[dim]) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. The slice is last dimension of the tensor when not provided. If dim = None, it behaves the same as snorm.
+          snorm(x,[dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list
         */
-	| TNORM LPAREN expr (COMMA expr)? RPAREN		# SNormFunc
+	| SNORM LPAREN expr (COMMA expr)? RPAREN		# SNormFunc
 	| STEP LPAREN expr COMMA expr RPAREN			# StepFunc
 	| TOPK LPAREN expr COMMA expr RPAREN			# TopkFunc
 	| BOTK LPAREN expr COMMA expr RPAREN			# BotkFunc

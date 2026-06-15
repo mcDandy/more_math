@@ -614,14 +614,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         print(f"{val}")
         return val
 
-    def visitSNormFunc(self, ctx):
+    def visitTNormFunc(self, ctx):
         val = (yield ctx.expr())
         if self._is_tensor(val):
-            return F.normalize(val, p=2)
+            return F.normalize(val, p=2, dim=-1)
         return 1.0 if val != 0 else 0.0
 
-    def visitTNormFunc(self, ctx):
-        dim = -1
+    def visitSNormFunc(self, ctx):
         val = (yield ctx.expr(0))
         if len(ctx.expr()) > 1:
             dim = self._to_int((yield ctx.expr(1)), ctx, "s_norm dimension")

@@ -279,7 +279,7 @@ def serializedATN():
         207,0,0,431,765,1,0,0,0,432,433,5,17,0,0,433,434,5,206,0,0,434,435,
         3,24,12,0,435,436,5,207,0,0,436,765,1,0,0,0,437,438,5,18,0,0,438,
         439,5,206,0,0,439,440,3,24,12,0,440,441,5,207,0,0,441,765,1,0,0,
-        0,442,443,5,24,0,0,443,444,5,206,0,0,444,445,3,24,12,0,445,446,5,
+        0,442,443,5,23,0,0,443,444,5,206,0,0,444,445,3,24,12,0,445,446,5,
         207,0,0,446,765,1,0,0,0,447,448,5,25,0,0,448,449,5,206,0,0,449,450,
         3,24,12,0,450,451,5,207,0,0,451,765,1,0,0,0,452,453,5,26,0,0,453,
         454,5,206,0,0,454,455,3,24,12,0,455,456,5,207,0,0,456,765,1,0,0,
@@ -394,7 +394,7 @@ def serializedATN():
         784,5,208,0,0,784,785,3,24,12,0,785,786,5,207,0,0,786,1116,1,0,0,
         0,787,788,5,22,0,0,788,789,5,206,0,0,789,790,3,24,12,0,790,791,5,
         208,0,0,791,792,3,24,12,0,792,793,5,207,0,0,793,1116,1,0,0,0,794,
-        795,5,23,0,0,795,796,5,206,0,0,796,799,3,24,12,0,797,798,5,208,0,
+        795,5,24,0,0,795,796,5,206,0,0,796,799,3,24,12,0,797,798,5,208,0,
         0,798,800,3,24,12,0,799,797,1,0,0,0,799,800,1,0,0,0,800,801,1,0,
         0,0,801,802,5,207,0,0,802,1116,1,0,0,0,803,804,5,39,0,0,804,805,
         5,206,0,0,805,806,3,24,12,0,806,807,5,208,0,0,807,808,3,24,12,0,
@@ -5206,8 +5206,8 @@ class MathExprParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def SNORM(self):
-            return self.getToken(MathExprParser.SNORM, 0)
+        def TNORM(self):
+            return self.getToken(MathExprParser.TNORM, 0)
         def LPAREN(self):
             return self.getToken(MathExprParser.LPAREN, 0)
         def expr(self):
@@ -7278,11 +7278,11 @@ class MathExprParser ( Parser ):
                 self.state = 440
                 self.match(MathExprParser.RPAREN)
                 pass
-            elif token in [24]:
+            elif token in [23]:
                 localctx = MathExprParser.TNormFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 18)
                 self.state = 442
-                self.match(MathExprParser.SNORM)
+                self.match(MathExprParser.TNORM)
                 self.state = 443
                 self.match(MathExprParser.LPAREN)
                 self.state = 444
@@ -8413,8 +8413,8 @@ class MathExprParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def TNORM(self):
-            return self.getToken(MathExprParser.TNORM, 0)
+        def SNORM(self):
+            return self.getToken(MathExprParser.SNORM, 0)
         def LPAREN(self):
             return self.getToken(MathExprParser.LPAREN, 0)
         def expr(self, i:int=None):
@@ -9723,11 +9723,11 @@ class MathExprParser ( Parser ):
                 self.state = 792
                 self.match(MathExprParser.RPAREN)
                 pass
-            elif token in [23]:
+            elif token in [24]:
                 localctx = MathExprParser.SNormFuncContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 794
-                self.match(MathExprParser.TNORM)
+                self.match(MathExprParser.SNORM)
                 self.state = 795
                 self.match(MathExprParser.LPAREN)
                 self.state = 796

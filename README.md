@@ -154,7 +154,7 @@ You can also get the node from comfy manager under the name of More math.
 #### 2.1 Element-wise / Tensor Math
 - `tmin(x, y)`: element-wise minimum.
 - `tmax(x, y)`: element-wise maximum.
-- `tnorm(x)`: L2 normalization along the last dimension.
+- `tnorm(x,[dim])`: L2 normalization along the last dimension. If dimension is provided, it uses this dimension. Dimension list can be provided.
 - `snorm(x)`: scalar/tensor norm magnitude.
 - `cossim(a, b)` / `cosine_similarity`: cosine similarity.
 - `cov(x, y)`: covariance.

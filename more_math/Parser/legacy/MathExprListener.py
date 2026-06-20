@@ -845,6 +845,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#FractFunc.
+    def enterFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FractFunc.
+    def exitFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ReluFunc.
     def enterReluFunc(self, ctx:MathExprParser.ReluFuncContext):
         pass

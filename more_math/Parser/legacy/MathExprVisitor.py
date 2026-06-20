@@ -474,6 +474,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#FractFunc.
+    def visitFractFunc(self, ctx:MathExprParser.FractFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ReluFunc.
     def visitReluFunc(self, ctx:MathExprParser.ReluFuncContext):
         return self.visitChildren(ctx)

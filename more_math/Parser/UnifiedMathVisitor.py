@@ -2957,9 +2957,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_val = yield ctx.indexExpr()
 
         if self._is_list(shape_val):
-            shape = self._to_int(shape_val, ctx, "tensor")
+            shape = [self._to_int(v, ctx, "tensor") for v in shape_val]
         elif self._is_tensor(shape_val):
-            shape = self._to_int(shape_val, ctx, "tensor").flatten().tolist()
+            shape = [self._to_int(v, ctx, "tensor") for v in shape_val.flatten().tolist()]
         else:
             shape = [self._to_int(shape_val, ctx, "tensor")]
 

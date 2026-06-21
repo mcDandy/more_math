@@ -82,6 +82,8 @@ class StringMathNode(io.ComfyNode):
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
+        for k, val in V.items():
+            variables[k] = val if val is not None else ""
 
         tree = None
         if isinstance(Expression,str):

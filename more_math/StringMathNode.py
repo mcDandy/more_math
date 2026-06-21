@@ -61,7 +61,7 @@ class StringMathNode(io.ComfyNode):
     def execute(cls, V, F, Expression, batching=0, remember_stack=False, stack={}):
 
         variables = {
-            "a": V.get(0,""), "b": V.get(1,""), "c": V.get(2,""), "d": V.get(3,""),
+            "a": V.get("V0",""), "b": V.get("V1",""), "c": V.get("V2",""), "d": V.get("V3",""),
             "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
             "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
             "y": F.get("F2", 0.0) if F.get("F2") is not None else 0.0,
@@ -88,7 +88,8 @@ class StringMathNode(io.ComfyNode):
             tree = parse_expr(Expression)
         else:
             tree = Expression
-        visitor = UnifiedMathVisitor(variables, len(V[0]),torch.device("cpu"),state_storage=stack)
+
+        visitor = UnifiedMathVisitor(variables, len(V["V0"]),torch.device("cpu"),state_storage=stack)
         result = visitor.visit(tree)
 
         if batching == -1:

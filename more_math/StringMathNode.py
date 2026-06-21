@@ -35,7 +35,7 @@ class StringMathNode(io.ComfyNode):
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression to apply on weights",
                 ),
-                io.Int.Input(id="batching", default=0),
+                io.Int.Input(id="batching", default=0,min=-1),
                 io.Boolean.Input(
                     id="remember_stack",
                     default=False,
@@ -47,7 +47,7 @@ class StringMathNode(io.ComfyNode):
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
-                io.Audio.Output(is_output_list=True),
+                io.String.Output(is_output_list=True),
                 MrmthStack.Output(),
             ],
         )
@@ -90,8 +90,11 @@ class StringMathNode(io.ComfyNode):
             tree = Expression
         visitor = UnifiedMathVisitor(variables, len(V[0]),torch.device("cpu"),state_storage=stack)
         result = visitor.visit(tree)
-        result = str(result)
 
+        if batching == -1:
+            return (result, stack)
+
+        result = str(result)
         if batching and batching > 0:
             def chunks(s, n):
                 """Produce `n`-character chunks from `s`."""

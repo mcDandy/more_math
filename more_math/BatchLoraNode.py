@@ -1,3 +1,5 @@
+from email.mime import base
+
 from comfy_api.latest import io
 import folder_paths
 from .Stack import MrmthStack
@@ -15,9 +17,9 @@ class BatchLoraNode(io.ComfyNode):
     """
 
     @staticmethod
-    def _parse_strengths(Expression, stack,lora_list,lora_count):
+    def _parse_strengths(Expression, stack,lora_list,lora_count,base_model):
         tree = None
-        variables = {"lora_names": lora_list, "lora_count": lora_count}
+        variables = {"lora_names": lora_list, "lora_count": lora_count,"base_model": base_model}
         if isinstance(Expression,str):
             tree = parse_expr(Expression)
         else:
@@ -70,8 +72,8 @@ class BatchLoraNode(io.ComfyNode):
                 or os.path.normpath(lora).startswith(selected_folder + os.sep)
             ]
 
-        model_strengths, stack = cls._parse_strengths(model_strength, stack, lora_path, len(lora_path))
-        clip_strengths, stack = cls._parse_strengths(clip_strength, stack, lora_path, len(lora_path))
+        model_strengths, stack = cls._parse_strengths(model_strength, stack, lora_path, len(lora_path), add_no_lora)
+        clip_strengths, stack = cls._parse_strengths(clip_strength, stack, lora_path, len(lora_path), add_no_lora)
         print(stack)
         model_lora = [model] if add_no_lora else []
         clip_lora = [clip] if add_no_lora else []

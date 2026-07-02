@@ -223,7 +223,7 @@ You can also get the node from comfy manager under the name of More math.
   - supports up to `3` coordinate inputs,
   - uses sampling coordinates derived from the provided coordinate tensors,
   - intended for spatial remapping / resampling.
-- `get_value(tensor, position)`: read value at an N-D position using flat offset math.
+- `get_value(tensor, position)`: read value at an N-D position using flat offset math. Superseeded by tensor[position] indexing.
 
 ---
 
@@ -233,7 +233,7 @@ You can also get the node from comfy manager under the name of More math.
 - `blur(x, sigma)` / `gaussian`: Gaussian blur using separable convolution.
 - `edge(x, [kernel_size])`: Sobel-style edge detection.
 - `ezconvolution(tensor, ...)` / `ezconv`: convolution with auto layout handling.
-- `convolution(tensor, ...)` / `conv`: direct convolution.
+- `convolution(tensor, ...)` / `conv`: direct convolution. Expects [batch, channel, spatial...] layout.
 
 #### 3.2 Mask Morphology
 - `dilate(x, [kernel_size])`: dilation.
@@ -355,6 +355,12 @@ You can also get the node from comfy manager under the name of More math.
 - `timestamp()` / `now`: current Unix timestamp.
 - `int(x)`: convert to int32 or nested int values.
 - `float(x)`: convert to float or nested float values.
+
+___
+
+### Generators
+- `text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline])` - renders text to an 2D tensor
+
 
 ---
 

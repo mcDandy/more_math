@@ -1,8 +1,5 @@
-from re import S
 import time
-import numpy as np
 import os
-from numpy._core.multiarray import scalar
 import torch
 import math
 import inspect
@@ -17,6 +14,9 @@ _, _, MathExprVisitor = get_antlr_modules()
 from ..helper_functions import generate_dim_variables
 from .noise_utils import NoiseUtils
 import struct
+
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 
 class ReturnSignal:
@@ -2051,14 +2051,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         Renders text to a normalised float32 2D tensor [H, W] using Pillow.
         """
-        try:
-            from PIL import Image, ImageDraw, ImageFont
-        except ImportError:
-            raise ImportError(
-                f"{ctx.start.line}:{ctx.start.column}: "
-                "text_image() requires the 'Pillow' package. "
-                "Install it with: pip install Pillow"
-            )
 
         # --- Evaluate arguments ---
         def _to_str(v):
@@ -2461,7 +2453,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             img = img.rotate(angle, expand=True, fillcolor=0)
 
         # --- Convert to tensor on self.device ---
-        import numpy as np
         arr = np.array(img, dtype=np.float32) / 255.0
         return torch.from_numpy(arr).to(device=self.device)
 

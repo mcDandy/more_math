@@ -25,7 +25,7 @@ def _parse_strengths(Expression, stack):
     return (list(result), stack)
 
 class BatchLoraHooksNode(io.ComfyNode):
-    """Scale existing bypass LoRA injections on a model/clip pair."""
+    """Scale existing bypass LoRA injections on a model/clip pair. Works with models/loaders/Load lora (Bypass) (For Debugging) or more_math batch lora node."""
 
     @staticmethod
     def _get_bypass_hooks(injections):

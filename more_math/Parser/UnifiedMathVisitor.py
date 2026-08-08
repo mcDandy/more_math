@@ -1,5 +1,6 @@
 import time
 import os
+from PIL.XVThumbImagePlugin import r
 import torch
 import math
 import inspect
@@ -4673,3 +4674,43 @@ class UnifiedMathVisitor(MathExprVisitor):
         )
         target_shape = tuple(int(x) for x in shape)
         return noise.view(target_shape)
+
+    def visitAsNestedFunc(self, ctx):
+        val = yield ctx.expr()
+        if self._is_list(val):
+            return NestedTensor(val)
+        if self._is_tensor(val):
+            return NestedTensor([val])
+        if isinstance(val, (int, float)):
+            return NestedTensor([torch.tensor(val, device=self.device)])
+
+    def visitSvdFunc(self, ctx):
+        """svd(x) - singular value decomposition"""
+        x = self._promote_to_tensor((yield ctx.expr()))
+        if x.ndim < 2:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: svd expects at least 2D input, got shape {tuple(x.shape)}")
+        u, s, vh = torch.linalg.svd(x, full_matrices=True)
+        v = vh.mvector_transpose(-2, -1).conj()
+        result = [u, s, v]
+        return result
+
+    def visitDiagonalMatrixFunc(self, ctx):
+        """diagonal_matrix(x) - create a diagonal matrix from a vector"""
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        shape = self._get_shape_from_ctx(ctx, 1)
+        offset = 0
+        dim1 = -2
+        dim2 = -1
+
+        if len(ctx.expr()) > 2:
+            offset = yield ctx.expr(2)
+        if len(ctx.expr()) > 3:
+            dim1 = yield ctx.expr(3)
+        if len(ctx.expr()) > 4:
+            dim2 = yield ctx.expr(4)
+
+        res = torch.zeros(shape, dtype=x.dtype, device=x.device)
+        diag_view = torch.diagonal(res, offset=offset, dim1=dim1, dim2=dim2)
+        diag_view.copy_(x)
+
+        return res

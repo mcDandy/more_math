@@ -84,7 +84,10 @@ class LatentMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
-        # Identify all present tensors and their keys, expanding NestedTensors into component variables
+        # Identify all present tensors and their keys.
+        # NestedTensor inputs keep their original latent dict under the base key (V0, V1, ...)
+        # so downstream nodes receive the original NestedTensor, while individual components
+        # are also exposed as V0_0, V0_1, ... for math expressions.
         tensor_keys = []
         V_norm_samples = {}
         nested_component_keys = {}  # maps original key -> list of expanded component variable names
@@ -99,20 +102,20 @@ class LatentMathNode(io.ComfyNode):
                     V_norm_samples[comp_key] = t
                     component_names.append(comp_key)
                 nested_component_keys[k] = component_names
-                # Preserve the original key as a list of components for the V variable
+                # Keep the original NestedTensor under the base key so V0 returns it unchanged
                 tensor_keys.append(k)
-                V_norm_samples[k] = [V_norm_samples[comp] for comp in component_names]
+                V_norm_samples[k] = samples
             else:
                 tensor_keys.append(k)
                 V_norm_samples[k] = samples
 
-        # Normalize all together (only regular tensors; NestedTensor originals as lists are kept separate)
-        at_list = [V_norm_samples[k] for k in tensor_keys if not isinstance(V_norm_samples[k], list)]
+        # Normalize all together; NestedTensor base entries are skipped but other non-tensor values are still supported
+        at_list = [V_norm_samples[k] for k in tensor_keys if torch.is_tensor(V_norm_samples[k])]
         if at_list:
             normalized_samples = normalize_to_common_shape(*at_list, mode=length_mismatch)
             norm_iter = iter(normalized_samples)
             for key in tensor_keys:
-                if isinstance(V_norm_samples[key], list):
+                if not torch.is_tensor(V_norm_samples[key]):
                     continue
                 V_norm_samples[key] = next(norm_iter)
 
@@ -120,19 +123,16 @@ class LatentMathNode(io.ComfyNode):
         tensor_keys.extend([c for components in nested_component_keys.values() for c in components])
 
         def _resolve_alias(base):
-            value = V_norm_samples.get(base)
-            if isinstance(value, list):
-                return value[0] if value else None
-            if value is not None:
-                return value
+            # Aliases a/b/c/d should point to the first tensor component of a NestedTensor input
             components = nested_component_keys.get(base)
             if components:
                 return V_norm_samples[components[0]]
-            return None
+            return V_norm_samples.get(base)
 
         first_sample = next(iter(V_norm_samples.values()))
-        if isinstance(first_sample, list):
-            first_sample = first_sample[0]
+        if not torch.is_tensor(first_sample):
+            # If the first value is a NestedTensor, grab its first component for metadata
+            first_sample = first_sample.tensors[0]
         ae_res = _resolve_alias("V0")
         ae = ae_res if ae_res is not None else make_zero_like(first_sample)
         be_res = _resolve_alias("V1")
@@ -150,11 +150,9 @@ class LatentMathNode(io.ComfyNode):
                 sample = V_norm_samples.get(name)
                 if sample is None:
                     continue
-                if isinstance(sample, list):
-                    for comp in sample:
-                        if comp is not None and comp.shape[0] != ae.shape[0]:
-                            raise ValueError(f"Input '{name}' component has shape {comp.shape[0]}, expected {ae.shape[0]} to match input.")
-                elif sample.shape[0] != ae.shape[0]:
+                if not torch.is_tensor(sample):
+                    continue
+                if sample.shape[0] != ae.shape[0]:
                     raise ValueError(f"Input '{name}' has shape {sample.shape[0]}, expected {ae.shape[0]} to match input.")
 
         # parse expression once

@@ -97,6 +97,12 @@ class UnifiedMathVisitor(MathExprVisitor):
     def _is_tensor(self, val):
         return isinstance(val, torch.Tensor) or getattr(val, "is_nested", False)
 
+    def _is_plain_tensor(self, val):
+        return isinstance(val, torch.Tensor)
+
+    def _is_nested_tensor(self, val):
+        return getattr(val, "is_nested", False)
+
     def _is_list(self, val):
         return isinstance(val, (list, tuple))
 
@@ -116,9 +122,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         Generic binary operation handler.
         """
         try:
-            if self._is_tensor(a) and a.numel() == 1:
+            if self._is_plain_tensor(a) and a.numel() == 1:
                 a = float(a.flatten()[0].item())
-            if self._is_tensor(b) and b.numel() == 1:
+            if self._is_plain_tensor(b) and b.numel() == 1:
                 b = float(b.flatten()[0].item())
 
             # one of them is a list and one is tensor
@@ -153,6 +159,27 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return [self._bin_op(a, x, torch_op, scalar_op, ctx) for x in b]
 
             # Handle tensor operations
+            if self._is_nested_tensor(a) or self._is_nested_tensor(b):
+                # Treat NestedTensors as lists of components for arithmetic
+                a_comps = a.tensors if self._is_nested_tensor(a) else a
+                b_comps = b.tensors if self._is_nested_tensor(b) else b
+                if self._is_nested_tensor(a) and self._is_nested_tensor(b):
+                    if len(a_comps) != len(b_comps):
+                        raise ValueError("NestedTensor component counts must match")
+                    return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)]
+                if self._is_nested_tensor(a):
+                    if self._is_list(b_comps):
+                        if len(a_comps) != len(b_comps):
+                            raise ValueError("NestedTensor and list length mismatch")
+                        return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)]
+                    return [self._bin_op(x, b_comps, torch_op, scalar_op, ctx) for x in a_comps]
+                # b is nested
+                if self._is_list(a_comps):
+                    if len(a_comps) != len(b_comps):
+                        raise ValueError("List and NestedTensor length mismatch")
+                    return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)]
+                return [self._bin_op(a_comps, x, torch_op, scalar_op, ctx) for x in b_comps]
+
             if self._is_tensor(a) or self._is_tensor(b):
                 orig_dtype = None
 
@@ -190,7 +217,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
 
     def _unary_op(self, a, torch_op, scalar_op):
-        if self._is_tensor(a) and a.numel() == 1:
+        if self._is_plain_tensor(a) and a.numel() == 1:
             a = float(a.flatten()[0].item())
 
         if self._is_list(a):
@@ -213,11 +240,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         return scalar_op(a)
 
     def _reduction_op(self, val, torch_op, list_op):
-        if self._is_tensor(val):
+        if self._is_plain_tensor(val):
             res = torch_op(val)
-            if self._is_tensor(res) and res.numel() == 1:
+            if self._is_plain_tensor(res) and res.numel() == 1:
                 return float(res.item())
             return res
+        if self._is_nested_tensor(val):
+            return list_op(val.tensors)
         if self._is_list(val):
             return list_op(val)
         return val
@@ -350,6 +379,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             idx_tuple = tuple(indices)
             result = val[idx_tuple]
             if self._is_tensor(result):
+                if getattr(result, "is_nested", False):
+                    return result
                 if result.numel() == 1:
                     return result.item()
                 return result.contiguous()

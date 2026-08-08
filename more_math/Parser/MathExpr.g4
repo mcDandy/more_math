@@ -419,11 +419,11 @@ func1:
 		/**
 		  flow_angle(x) - computes the angle of optical flow (basically angle() but real and imaginery is separate in 2 dimensions)
 		*/
-	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc;
+	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc
 	    /**
 		    as_nested(x) - converts a list to a nested tensor (special object containing tensors of different shapes behaving like a tensor)
 		  */
-	| AS_NESTED LPAREN expr RPAREN	# AsNestedFunc;
+	| AS_NESTED LPAREN expr RPAREN	# AsNestedFunc
 	    /**
 		  svd(x) - computes the singular value decomposition of x. Returns a list of 3 tensors: U, S, V such that x = matmul(matmul(U, diagonal_matrix(S,shape(U))), V)
 		*/
@@ -604,8 +604,7 @@ func2:
 		/**
 		  interpolate_nearest_exact(x, y) - performs nearest neighbor interpolation X. Assumes that dim 0 is batch and dim 1 = channel
 		*/
-	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc
-	;
+	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc;
 
 
 func3:
@@ -724,7 +723,7 @@ func5:
 		/**
 		  remap(v, i_min, i_max, o_min, o_max) - remaps values from input range to output range
 		*/
-	REMAP LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN # RemapFunc;
+	REMAP LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN # RemapFunc
     	/**
 		  diagonal_matrix(x, shape, [offset], [dim1], [dim2]) - creates a diagonal matrix from x with specified shape. offset is the diagonal offset. dim1 and dim2 are the dimensions to place the diagonal on.
 		  */

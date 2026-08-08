@@ -1304,6 +1304,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#AsNestedFunc.
+    def enterAsNestedFunc(self, ctx:MathExprParser.AsNestedFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AsNestedFunc.
+    def exitAsNestedFunc(self, ctx:MathExprParser.AsNestedFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SvdFunc.
+    def enterSvdFunc(self, ctx:MathExprParser.SvdFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SvdFunc.
+    def exitSvdFunc(self, ctx:MathExprParser.SvdFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PowFunc.
     def enterPowFunc(self, ctx:MathExprParser.PowFuncContext):
         pass
@@ -1940,6 +1958,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#RemapFunc.
     def exitRemapFunc(self, ctx:MathExprParser.RemapFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DiagonalMatrixFunc.
+    def enterDiagonalMatrixFunc(self, ctx:MathExprParser.DiagonalMatrixFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DiagonalMatrixFunc.
+    def exitDiagonalMatrixFunc(self, ctx:MathExprParser.DiagonalMatrixFuncContext):
         pass
 
 

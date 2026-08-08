@@ -729,6 +729,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#AsNestedFunc.
+    def visitAsNestedFunc(self, ctx:MathExprParser.AsNestedFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SvdFunc.
+    def visitSvdFunc(self, ctx:MathExprParser.SvdFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PowFunc.
     def visitPowFunc(self, ctx:MathExprParser.PowFuncContext):
         return self.visitChildren(ctx)
@@ -1081,6 +1091,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#RemapFunc.
     def visitRemapFunc(self, ctx:MathExprParser.RemapFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DiagonalMatrixFunc.
+    def visitDiagonalMatrixFunc(self, ctx:MathExprParser.DiagonalMatrixFuncContext):
         return self.visitChildren(ctx)
 
 

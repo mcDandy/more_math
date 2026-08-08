@@ -418,23 +418,60 @@ def test_nested_tensor_support():
     nt_in = NestedTensor([t1, t2])
     l_in = {"samples": nt_in}
 
-    result_list, stack = node.execute(Expression="a + 1.0", V={"V0": l_in}, F={}, batching=0)
-    res_lat = result_list[0]["samples"]
+    # NestedTensor inputs are expanded into component variables (V0_0, V0_1, ...)
+    # so users can address each component explicitly instead of auto-stacking them.
+    result_list, stack = node.execute(Expression="V0_0 + 1.0", V={"V0": l_in}, F={}, batching=0)
+    res_0 = result_list[0]["samples"]
+    assert isinstance(res_0, torch.Tensor), f"Expected torch.Tensor, got {type(res_0)}"
+    assert not getattr(res_0, "is_nested", False), "Result should be a regular tensor, not NestedTensor"
+    assert torch.allclose(res_0, torch.full((1, 4, 32, 32), 2.0))
 
-    # NestedTensor is converted to regular tensor before passing to visitor
-    # Result should be a regular tensor (not NestedTensor)
-    # The unbind() operation concatenates the nested tensors into a single 5D tensor
-    assert isinstance(res_lat, torch.Tensor), f"Expected torch.Tensor, got {type(res_lat)}"
-    assert not getattr(res_lat, "is_nested", False), "Result should be a regular tensor, not NestedTensor"
+    result_list, stack = node.execute(Expression="V0_1 + 1.0", V={"V0": l_in}, F={}, batching=0)
+    res_1 = result_list[0]["samples"]
+    assert torch.allclose(res_1, torch.full((2, 4, 32, 32), 3.0))
 
-    # Verify the concatenated result contains the computed values
-    # NestedTensor([t1=(1,4,32,32), t2=(2,4,32,32)]) -> concatenated to (3,4,32,32)
-    # After a + 1.0: first (1,4,32,32) should be 2.0, next (2,4,32,32) should be 3.0
-    expected = torch.cat([
-        torch.full((1, 4, 32, 32), 2.0),  # 1.0 + 1.0
-        torch.full((2, 4, 32, 32), 3.0)   # 2.0 + 1.0
-    ], dim=0)
-    assert torch.allclose(res_lat, expected)
+
+def test_nested_tensor_support_position_v1():
+    from comfy.nested_tensor import NestedTensor
+
+    node = LatentMathNode()
+    t1 = torch.full((1, 4, 32, 32), 10.0)
+    t2 = torch.full((2, 4, 32, 32), 20.0)
+    nt_in = NestedTensor([t1, t2])
+    l_in = {"samples": nt_in}
+
+    base_latent = {"samples": torch.zeros((1, 4, 32, 32))}
+
+    # Component access for a NestedTensor at position V1
+    result_list, _ = node.execute(Expression="V1_0 + V1_1", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert torch.allclose(result_list[0]["samples"], torch.full((2, 4, 32, 32), 30.0))
+
+    # Legacy alias b should map to the first component of V1
+    result_list, _ = node.execute(Expression="b * 2.0", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert torch.allclose(result_list[0]["samples"], torch.full((1, 4, 32, 32), 20.0))
+
+    # Directly using V1 in an expression (without indexing) resolves to the list of components.
+    result_list, _ = node.execute(Expression="V1[0] + V1[1]", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert torch.allclose(result_list[0]["samples"], torch.full((2, 4, 32, 32), 30.0))
+
+    # V list variable should contain the original V inputs; NestedTensor V1 is a list of
+    # components, so V[1][0] accesses the first component.
+    result_list, _ = node.execute(Expression="V[1][0] + 5.0", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert torch.allclose(result_list[0]["samples"], torch.full((1, 4, 32, 32), 15.0))
+
+    # V0 is a regular latent (not NestedTensor) so V[0] is the tensor itself
+    result_list, _ = node.execute(Expression="V[0] + 5.0", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert torch.allclose(result_list[0]["samples"], torch.full((1, 4, 32, 32), 5.0))
+
+    # Using just V1 returns all components as separate latents
+    result_list, _ = node.execute(Expression="V1", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert len(result_list) == 2
+    assert torch.allclose(result_list[0]["samples"], torch.full((1, 4, 32, 32), 10.0))
+    assert torch.allclose(result_list[1]["samples"], torch.full((2, 4, 32, 32), 20.0))
+
+    # V1_0 and V1_1 are direct component variables
+    result_list, _ = node.execute(Expression="V1_1", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert torch.allclose(result_list[0]["samples"], torch.full((2, 4, 32, 32), 20.0))
 
 
 # ==========================================

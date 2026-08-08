@@ -24,6 +24,9 @@ def as_tensor(value, shape):
     if isinstance(value, (float, int)):
         value = (value,)
         return torch.broadcast_to(torch.Tensor(value).to(dtype=torch.float32), shape).contiguous()
+    if isinstance(value, (list, tuple)) and value and isinstance(value[0], torch.Tensor):
+        # Keep lists of tensors as-is (e.g. returning a NestedTensor as a list of components)
+        return value
     return torch.cat(value)
 
 
@@ -198,14 +201,15 @@ def normalize_to_common_shape(*tensors, mode="pad"):
 
 def get_v_variable(v_norm_dict, length_mismatch="error"):
     """
-    Collects V0, V1, ... from the dict, stacks them into a V tensor,
-    and returns (V_stacked, V_count).
+    Collects V0, V1, ... from the dict (ignoring NestedTensor component keys
+    like V0_0, V1_1), and returns them as a list and count.
     """
-    sorted_keys = sorted([k for k in v_norm_dict.keys() if k.startswith("V")], key=lambda x: int(x[1:]))
-    listt = list()
-    for i in range(0,len(sorted_keys)):
-        listt.append(v_norm_dict[sorted_keys[i]])
-    return listt,len(listt)
+    base_keys = sorted(
+        [k for k in v_norm_dict.keys() if re.fullmatch(r"V\d+", k)],
+        key=lambda x: int(x[1:])
+    )
+    listt = [v_norm_dict[k] for k in base_keys]
+    return listt, len(listt)
 
 def get_f_variable(f_dict):
     """
@@ -336,7 +340,11 @@ def checkLazyNew(Expression, V, F):
             needed.update(V.keys())
         if var == "F":
             needed.update(F.keys())
-        if re.match(r"[VF][0-9]+", norm):
+        # Handle NestedTensor component variables like V1_0 or F2_3 by mapping back to V1/F2
+        comp_match = re.fullmatch(r"([VF]\d+)_(\d+)", norm)
+        if comp_match:
+            needed.add(comp_match.group(1))
+        elif re.fullmatch(r"[VF][0-9]+", norm):
             needed.add(norm)
 
     return needed

@@ -13,7 +13,6 @@ from .helper_functions import (
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
-from comfy.nested_tensor import NestedTensor
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy
@@ -85,49 +84,78 @@ class LatentMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
-        # Identify if any input is a NestedTensor and track original sizes for restoration
-        stacked = False
-        orig_split_sizes = None
+        # Identify all present tensors and their keys, expanding NestedTensors into component variables
+        tensor_keys = []
+        V_norm_samples = {}
+        nested_component_keys = {}  # maps original key -> list of expanded component variable names
+        for k, v in V.items():
+            if v is None:
+                continue
+            samples = v.get("samples")
+            if getattr(samples, "is_nested", False):
+                component_names = []
+                for idx, t in enumerate(samples.tensors):
+                    comp_key = f"{k}_{idx}"
+                    V_norm_samples[comp_key] = t
+                    component_names.append(comp_key)
+                nested_component_keys[k] = component_names
+                # Preserve the original key as a list of components for the V variable
+                tensor_keys.append(k)
+                V_norm_samples[k] = [V_norm_samples[comp] for comp in component_names]
+            else:
+                tensor_keys.append(k)
+                V_norm_samples[k] = samples
 
-        # Check all present inputs for nested tensors
-        for item in V.values():
-            if item is not None:
-                samples = item.get("samples")
-                if getattr(samples, "is_nested", False):
-                    stacked = True
-                    # Store original split sizes (batch dimension) - assume all nested inputs share structure if mixed?
-                    # Or just take from the first one found.
-                    orig_split_sizes = [t.shape[0] for t in samples.tensors]
-                    break
+        # Normalize all together (only regular tensors; NestedTensor originals as lists are kept separate)
+        at_list = [V_norm_samples[k] for k in tensor_keys if not isinstance(V_norm_samples[k], list)]
+        if at_list:
+            normalized_samples = normalize_to_common_shape(*at_list, mode=length_mismatch)
+            norm_iter = iter(normalized_samples)
+            for key in tensor_keys:
+                if isinstance(V_norm_samples[key], list):
+                    continue
+                V_norm_samples[key] = next(norm_iter)
 
-        # Flatten nested tensors in V
-        if stacked:
-            for k, val in V.items():
-                if val is not None and getattr(val.get("samples"), "is_nested", False):
-                    new_val = val.copy()
-                    new_val["samples"] = torch.cat(new_val["samples"].tensors, dim=0)
-                    V[k] = new_val
+        # Add nested component variables to the list of available inputs for variable binding
+        tensor_keys.extend([c for components in nested_component_keys.values() for c in components])
 
-        # Identify all present tensors and their keys
-        tensor_keys = [k for k, v in V.items() if v is not None]
-        at_list = [V[k]["samples"] for k in tensor_keys]
+        def _resolve_alias(base):
+            value = V_norm_samples.get(base)
+            if isinstance(value, list):
+                return value[0] if value else None
+            if value is not None:
+                return value
+            components = nested_component_keys.get(base)
+            if components:
+                return V_norm_samples[components[0]]
+            return None
 
-        # Normalize all together
-        normalized_samples = normalize_to_common_shape(*at_list, mode=length_mismatch)
-        V_norm_samples = dict(zip(tensor_keys, normalized_samples))
-
-        ae = V_norm_samples.get("V0", make_zero_like(normalized_samples[0]))
-        be = V_norm_samples.get("V1", make_zero_like(ae))
-        ce = V_norm_samples.get("V2", make_zero_like(ae))
-        de = V_norm_samples.get("V3", make_zero_like(ae))
+        first_sample = next(iter(V_norm_samples.values()))
+        if isinstance(first_sample, list):
+            first_sample = first_sample[0]
+        ae_res = _resolve_alias("V0")
+        ae = ae_res if ae_res is not None else make_zero_like(first_sample)
+        be_res = _resolve_alias("V1")
+        be = be_res if be_res is not None else make_zero_like(ae)
+        ce_res = _resolve_alias("V2")
+        ce = ce_res if ce_res is not None else make_zero_like(ae)
+        de_res = _resolve_alias("V3")
+        de = de_res if de_res is not None else make_zero_like(ae)
 
         # Ensure legacy are normalized
         ae, be, ce, de = normalize_to_common_shape(ae, be, ce, de, mode=length_mismatch)
 
-        if(length_mismatch == "error"):
+        if length_mismatch == "error":
             for name in tensor_keys:
-                 if V[name]["samples"].shape[0] != ae.shape[0]:
-                      raise ValueError(f"Input '{name}' has shape {V[name]['samples'].shape[0]}, expected {ae.shape[0]} to match input.")
+                sample = V_norm_samples.get(name)
+                if sample is None:
+                    continue
+                if isinstance(sample, list):
+                    for comp in sample:
+                        if comp is not None and comp.shape[0] != ae.shape[0]:
+                            raise ValueError(f"Input '{name}' component has shape {comp.shape[0]}, expected {ae.shape[0]} to match input.")
+                elif sample.shape[0] != ae.shape[0]:
+                    raise ValueError(f"Input '{name}' has shape {sample.shape[0]}, expected {ae.shape[0]} to match input.")
 
         # parse expression once
         tree = None
@@ -192,31 +220,31 @@ class LatentMathNode(io.ComfyNode):
             variables[k] = v if v is not None else 0.0
 
         visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=stack)
-        result_t = as_tensor(visitor.visit(tree), ae.shape)
+        raw_result = visitor.visit(tree)
+        result_t = as_tensor(raw_result, ae.shape)
 
         result_latent = ref_latent.copy()
-        if(batching>0):
-            res = torch.split(result_t,batching)
-            results=[]
-            results1=[]
-            for i in range(len(res)):
-                result_tensor = res[i] if i<len(res) else torch.zeros([1])
-                results.append(result_tensor)
-            for result_t in results:
+        # If result is a list of tensors (e.g. user wrote just V1 for a NestedTensor),
+        # return each component as a separate latent output.
+        if isinstance(result_t, (list, tuple)) and result_t and isinstance(result_t[0], torch.Tensor):
+            results = []
+            for comp in result_t:
                 rl = result_latent.copy()
-                if stacked and orig_split_sizes is not None:
-                    # Restore original split sizes
-                    try:
-                        rl["samples"] = NestedTensor(torch.split(result_t, orig_split_sizes, dim=0))
-                    except Exception:
-                        # Fallback if split fails (e.g. result shape changed)
-                        rl["samples"] = result_t
-                else:
-                    rl["samples"] = result_t
-                results1.append(rl)
+                rl["samples"] = comp
+                results.append(rl)
                 stack = stack if remember_stack else copy.deepcopy(stack)
-            return (results1,stack)
+            return (results, stack)
+
+        if batching > 0:
+            res = torch.split(result_t, batching)
+            results = []
+            for result_tensor in res:
+                rl = result_latent.copy()
+                rl["samples"] = result_tensor
+                results.append(rl)
+                stack = stack if remember_stack else copy.deepcopy(stack)
+            return (results, stack)
         rl = result_latent.copy()
         rl["samples"] = result_t
         stack = stack if remember_stack else copy.deepcopy(stack)
-        return ([rl],stack)
+        return ([rl], stack)

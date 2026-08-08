@@ -427,6 +427,14 @@ def test_nested_tensor_support():
     assert torch.allclose(samples.tensors[1], torch.full((2, 4, 32, 32), 2.0))
 
     # Component access uses V0_0, V0_1, ...
+    # Arithmetic on the whole NestedTensor returns a single NestedTensor again
+    result_list, stack = node.execute(Expression="V0 * 0.5 + 0.1", V={"V0": l_in}, F={}, batching=0)
+    assert len(result_list) == 1
+    samples = result_list[0]["samples"]
+    assert getattr(samples, "is_nested", False), "Arithmetic on a NestedTensor should return a NestedTensor"
+    assert torch.allclose(samples.tensors[0], torch.full((1, 4, 32, 32), 0.6))
+    assert torch.allclose(samples.tensors[1], torch.full((2, 4, 32, 32), 1.1))
+
     result_list, stack = node.execute(Expression="V0_0 + 1.0", V={"V0": l_in}, F={}, batching=0)
     res_0 = result_list[0]["samples"]
     assert isinstance(res_0, torch.Tensor), f"Expected torch.Tensor, got {type(res_0)}"
@@ -456,6 +464,14 @@ def test_nested_tensor_support_position_v1():
     assert getattr(samples, "is_nested", False)
     assert torch.allclose(samples.tensors[0], torch.full((1, 4, 32, 32), 10.0))
     assert torch.allclose(samples.tensors[1], torch.full((2, 4, 32, 32), 20.0))
+
+    # Arithmetic over the whole NestedTensor returns a NestedTensor again
+    result_list, _ = node.execute(Expression="V1 * 0.5 + 0.1", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)
+    assert len(result_list) == 1
+    samples = result_list[0]["samples"]
+    assert getattr(samples, "is_nested", False)
+    assert torch.allclose(samples.tensors[0], torch.full((1, 4, 32, 32), 5.1))
+    assert torch.allclose(samples.tensors[1], torch.full((2, 4, 32, 32), 10.1))
 
     # Component access for a NestedTensor at position V1
     result_list, _ = node.execute(Expression="V1_0 + V1_1", V={"V0": base_latent, "V1": l_in}, F={}, batching=0)

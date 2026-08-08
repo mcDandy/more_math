@@ -13,6 +13,7 @@ from .helper_functions import (
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
+from comfy.nested_tensor import NestedTensor
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy
@@ -222,8 +223,16 @@ class LatentMathNode(io.ComfyNode):
         result_t = as_tensor(raw_result, ae.shape)
 
         result_latent = ref_latent.copy()
-        # If result is a list of tensors (e.g. user wrote just V1 for a NestedTensor),
-        # return each component as a separate latent output.
+
+        # If the visitor produced a NestedTensor (whole-tensor arithmetic on a NestedTensor
+        # input), propagate that through as a single downstream-compatible latent.
+        if getattr(result_t, "is_nested", False):
+            rl = result_latent.copy()
+            rl["samples"] = result_t
+            stack = stack if remember_stack else copy.deepcopy(stack)
+            return ([rl], stack)
+
+        # If the visitor produced a list/tuple, emit each element as a separate latent.
         if isinstance(result_t, (list, tuple)) and result_t and isinstance(result_t[0], torch.Tensor):
             results = []
             for comp in result_t:

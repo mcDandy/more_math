@@ -25,7 +25,7 @@ def as_tensor(value, shape):
         value = (value,)
         return torch.broadcast_to(torch.Tensor(value).to(dtype=torch.float32), shape).contiguous()
     if isinstance(value, (list, tuple)) and value and isinstance(value[0], torch.Tensor):
-        # Keep lists of tensors as-is (e.g. returning a NestedTensor as a list of components)
+        # Keep lists of tensors as-is (e.g. intentionally returning a list of latents).
         return value
     return torch.cat(value)
 
@@ -203,12 +203,20 @@ def get_v_variable(v_norm_dict, length_mismatch="error"):
     """
     Collects V0, V1, ... from the dict (ignoring NestedTensor component keys
     like V0_0, V1_1), and returns them as a list and count.
+    NestedTensor entries are represented as a list of their components so that
+    V[idx][comp] indexing works as expected.
     """
     base_keys = sorted(
         [k for k in v_norm_dict.keys() if re.fullmatch(r"V\d+", k)],
         key=lambda x: int(x[1:])
     )
-    listt = [v_norm_dict[k] for k in base_keys]
+    listt = []
+    for k in base_keys:
+        val = v_norm_dict[k]
+        if getattr(val, "is_nested", False):
+            listt.append(list(val.tensors))
+        else:
+            listt.append(val)
     return listt, len(listt)
 
 def get_f_variable(f_dict):

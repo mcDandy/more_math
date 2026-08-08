@@ -4,6 +4,7 @@ import torch
 import math
 import inspect
 import torch.nn.functional as F
+from comfy.nested_tensor import NestedTensor
 from . import optical_flow_utils as ofu
 from .Func import LambdaFunction
 from antlr4 import TerminalNode
@@ -160,25 +161,25 @@ class UnifiedMathVisitor(MathExprVisitor):
 
             # Handle tensor operations
             if self._is_nested_tensor(a) or self._is_nested_tensor(b):
-                # Treat NestedTensors as lists of components for arithmetic
+                # NestedTensor arithmetic is performed component-wise and re-wrapped as NestedTensor
                 a_comps = a.tensors if self._is_nested_tensor(a) else a
                 b_comps = b.tensors if self._is_nested_tensor(b) else b
                 if self._is_nested_tensor(a) and self._is_nested_tensor(b):
                     if len(a_comps) != len(b_comps):
                         raise ValueError("NestedTensor component counts must match")
-                    return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)]
+                    return NestedTensor([self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)])
                 if self._is_nested_tensor(a):
                     if self._is_list(b_comps):
                         if len(a_comps) != len(b_comps):
                             raise ValueError("NestedTensor and list length mismatch")
-                        return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)]
-                    return [self._bin_op(x, b_comps, torch_op, scalar_op, ctx) for x in a_comps]
+                        return NestedTensor([self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)])
+                    return NestedTensor([self._bin_op(x, b_comps, torch_op, scalar_op, ctx) for x in a_comps])
                 # b is nested
                 if self._is_list(a_comps):
                     if len(a_comps) != len(b_comps):
                         raise ValueError("List and NestedTensor length mismatch")
-                    return [self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)]
-                return [self._bin_op(a_comps, x, torch_op, scalar_op, ctx) for x in b_comps]
+                    return NestedTensor([self._bin_op(x, y, torch_op, scalar_op, ctx) for x, y in zip(a_comps, b_comps)])
+                return NestedTensor([self._bin_op(a_comps, x, torch_op, scalar_op, ctx) for x in b_comps])
 
             if self._is_tensor(a) or self._is_tensor(b):
                 orig_dtype = None
@@ -220,6 +221,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_plain_tensor(a) and a.numel() == 1:
             a = float(a.flatten()[0].item())
 
+        if self._is_nested_tensor(a):
+            return NestedTensor([self._unary_op(x, torch_op, scalar_op) for x in a.tensors])
         if self._is_list(a):
             return [self._unary_op(x, torch_op, scalar_op) for x in a]
         if self._is_tensor(a):
@@ -246,7 +249,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return float(res.item())
             return res
         if self._is_nested_tensor(val):
-            return list_op(val.tensors)
+            return NestedTensor([torch_op(t) for t in val.tensors])
         if self._is_list(val):
             return list_op(val)
         return val

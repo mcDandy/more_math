@@ -109,4 +109,4 @@ class StringMathNode(io.ComfyNode):
         else:
             stack = stack if remember_stack else copy.deepcopy(stack)
 
-            return (result, stack)
+            return ([result], stack)

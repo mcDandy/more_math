@@ -4686,10 +4686,11 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitSvdFunc(self, ctx):
         """svd(x) - singular value decomposition"""
-        x = self._promote_to_tensor((yield ctx.expr()))
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        full_matrices = yield ctx.expr(1) if len(ctx.expr()) > 1 else False
         if x.ndim < 2:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: svd expects at least 2D input, got shape {tuple(x.shape)}")
-        u, s, vh = torch.linalg.svd(x, full_matrices=True)
+        u, s, vh = torch.linalg.svd(x, full_matrices=full_matrices)
         v = vh.mvector_transpose(-2, -1).conj()
         result = [u, s, v]
         return result

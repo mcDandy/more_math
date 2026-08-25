@@ -1,6 +1,14 @@
 from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+import comfy
 import torch
+
+
+def _get_model_patcher(obj):
+    patcher = getattr(obj, "patcher", None)
+    if patcher is None and hasattr(obj, "model"):
+        patcher = getattr(obj.model, "patcher", None)
+    return patcher
 
 
 def get_effective_state_dict(obj):
@@ -20,9 +28,7 @@ def get_effective_state_dict(obj):
 
 
 def get_effective_weight(obj, key):
-    patcher = getattr(obj, "patcher", None)
-    if patcher is None and hasattr(obj, "model"):
-        patcher = getattr(obj.model, "patcher", None)
+    patcher = _get_model_patcher(obj)
     if patcher is not None and hasattr(patcher, "patch_weight_to_device"):
         try:
             return patcher.patch_weight_to_device(key, return_weight=True)
@@ -39,6 +45,29 @@ def get_effective_weight(obj, key):
     if sd is not None:
         return sd.get(key, None)
     return None
+
+
+def get_base_weight(obj, key):
+    patcher = _get_model_patcher(obj)
+    if patcher is not None and hasattr(patcher, "use_ejected") and hasattr(patcher, "model"):
+        try:
+            with patcher.use_ejected():
+                weight, _, _ = comfy.model_patcher.get_key_weight(patcher.model, key)
+                return weight
+        except Exception:
+            pass
+
+    sd = get_effective_state_dict(obj)
+    if sd is not None:
+        return sd.get(key, None)
+    return None
+
+
+def coerce_like(weight, reference):
+    if isinstance(weight, torch.Tensor) and isinstance(reference, torch.Tensor):
+        if weight.device != reference.device or weight.dtype != reference.dtype:
+            return weight.to(device=reference.device, dtype=reference.dtype)
+    return weight
 
 
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
@@ -116,6 +145,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
         # Inject weights for this key from V models
         valid_key = False
         ref_tensor = None
+        deltas = {}
 
         for v_name, v_val in V.items():
             if v_val is not None:
@@ -124,6 +154,14 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
                     variables[v_name] = w_tensor
                     ref_tensor = w_tensor
                     valid_key = True
+                    base_tensor = get_base_weight(v_val, key)
+                    if base_tensor is None:
+                        base_tensor = w_tensor
+                    base_tensor = coerce_like(base_tensor, w_tensor)
+                    try:
+                        deltas[v_name] = w_tensor - base_tensor
+                    except Exception:
+                        deltas[v_name] = torch.zeros_like(w_tensor)
                 else:
                     # Missing key in this model will be handled later (zero init)
                     pass
@@ -139,6 +177,9 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
         for v_name in V.keys():
             if v_name not in variables:
                 variables[v_name] = torch.zeros_like(ref_tensor)
+            if v_name not in deltas:
+                deltas[v_name] = torch.zeros_like(variables[v_name])
+            variables[f"{v_name}_d"] = deltas[v_name]
 
         # Populate aliases for V (a, b, c, d)
         for alias, target in mapping.items():
@@ -166,6 +207,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
              variables["F_count"] = float(f_cnt)
 
         variables = variables | generate_dim_variables(ref_tensor)
+        variables |= {f"{v_name}_d": variables[v_name] - variables["V0"] for v_name in V.keys() if v_name in variables and "V0" in variables}
 
         # Execute math
 

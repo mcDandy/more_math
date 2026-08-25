@@ -1016,6 +1016,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#RepeatFunc.
+    def enterRepeatFunc(self, ctx:MathExprParser.RepeatFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RepeatFunc.
+    def exitRepeatFunc(self, ctx:MathExprParser.RepeatFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#CumprodFunc.
     def enterCumprodFunc(self, ctx:MathExprParser.CumprodFuncContext):
         pass
@@ -1436,6 +1445,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#CossimFunc.
     def exitCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StartswithFunc.
+    def enterStartswithFunc(self, ctx:MathExprParser.StartswithFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StartswithFunc.
+    def exitStartswithFunc(self, ctx:MathExprParser.StartswithFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#EndswithFunc.
+    def enterEndswithFunc(self, ctx:MathExprParser.EndswithFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EndswithFunc.
+    def exitEndswithFunc(self, ctx:MathExprParser.EndswithFuncContext):
         pass
 
 
@@ -2021,6 +2048,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ReshapeFunc.
     def exitReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SqueezeFunc.
+    def enterSqueezeFunc(self, ctx:MathExprParser.SqueezeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SqueezeFunc.
+    def exitSqueezeFunc(self, ctx:MathExprParser.SqueezeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#UnsqueezeFunc.
+    def enterUnsqueezeFunc(self, ctx:MathExprParser.UnsqueezeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#UnsqueezeFunc.
+    def exitUnsqueezeFunc(self, ctx:MathExprParser.UnsqueezeFuncContext):
         pass
 
 

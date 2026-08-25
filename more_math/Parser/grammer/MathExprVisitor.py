@@ -569,6 +569,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#RepeatFunc.
+    def visitRepeatFunc(self, ctx:MathExprParser.RepeatFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#CumprodFunc.
     def visitCumprodFunc(self, ctx:MathExprParser.CumprodFuncContext):
         return self.visitChildren(ctx)
@@ -801,6 +806,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#CossimFunc.
     def visitCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#StartswithFunc.
+    def visitStartswithFunc(self, ctx:MathExprParser.StartswithFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#EndswithFunc.
+    def visitEndswithFunc(self, ctx:MathExprParser.EndswithFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -1126,6 +1141,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ReshapeFunc.
     def visitReshapeFunc(self, ctx:MathExprParser.ReshapeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SqueezeFunc.
+    def visitSqueezeFunc(self, ctx:MathExprParser.SqueezeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#UnsqueezeFunc.
+    def visitUnsqueezeFunc(self, ctx:MathExprParser.UnsqueezeFuncContext):
         return self.visitChildren(ctx)
 
 

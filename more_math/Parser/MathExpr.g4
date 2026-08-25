@@ -245,9 +245,9 @@ func1:
 		*/
 	| PINV LPAREN expr RPAREN			# PinvFunc
 		/**
-		  sum(x) - computes the sum of elements of x
+		  sum(x, [dims]) - computes the sum of elements of x, optionally along one or more dimensions
 		*/
-	| SUM LPAREN expr RPAREN			# SumFunc
+	| SUM LPAREN expr (COMMA expr)? RPAREN		# SumFunc
 		/**
 		  mean(x) - computes the arithmetic mean of elements of x
 		*/
@@ -285,13 +285,17 @@ func1:
 		*/
 	| MODE LPAREN expr RPAREN			# ModeFunc
 		/**
-		  cumsum(x) - computes the cumulative sum over first dimension.
+		  cumsum(x, [dim]) - computes the cumulative sum, defaulting to the first dimension.
 		*/
-	| CUMSUM LPAREN expr RPAREN			# CumsumFunc
+	| CUMSUM LPAREN expr (COMMA expr)? RPAREN	# CumsumFunc
 		/**
 		  count(x) - returns the number of elements in x
 		*/
 	| COUNT LPAREN expr RPAREN			# CountFunc
+		/**
+		  repeat(x, count, [dims]) - repeats tensor elements; count may be scalar or per-dim list
+		*/
+	| REPEAT LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RepeatFunc
 		/**
 		  cumprod(x) - computes the cumulative product over first dimension.
 		*/
@@ -313,17 +317,17 @@ func1:
 		*/
 	| GET LPAREN expr RPAREN			# GetFunc
 		/**
-		  argsort(x, [desc]) - returns the indices that would sort x. defaults to ascending. Uses last dimension to sort
+		  argsort(x, [desc], [dim]) - returns the indices that would sort x. desc defaults to ascending and dim defaults to the last dimension.
 		*/
-	| ARGSORT LPAREN expr (COMMA expr)? RPAREN	# ArgsortFunc
+	| ARGSORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# ArgsortFunc
 		/**
-		  argmin(x) - returns the index of the minimum value in flattened x
+		  argmin(x, [as_position]) - returns the minimum position in flattened x or coordinates as a list when requested
 		*/
-	| ARGMIN LPAREN expr RPAREN			# ArgminFunc
+	| ARGMIN LPAREN expr (COMMA expr)? RPAREN		# ArgminFunc
 		/**
-		  argmax(x) - returns the index of the maximum value in flattened x
+		  argmax(x, [as_position]) - returns the maximum position in flattened x or coordinates as a list when requested
 		*/
-	| ARGMAX LPAREN expr RPAREN			# ArgmaxFunc
+	| ARGMAX LPAREN expr (COMMA expr)? RPAREN		# ArgmaxFunc
 		/**
 		  softmax(x, [axis]) - applies the softmax function to x (sum of slice == 1.0 and max value <= 1.0). axis defaults to last.
 		*/
@@ -482,6 +486,14 @@ func2:
 		  cosine_similarity(x, y) - computes the cosine similarity between x and y.
 		*/
 	| COSSIM LPAREN expr COMMA expr RPAREN			# CossimFunc
+		/**
+		  startswith(text, prefix) - returns 1 if text starts with prefix, else 0
+		*/
+	| STARTSWITH LPAREN expr COMMA expr RPAREN		# StartswithFunc
+		/**
+		  endswith(text, suffix) - returns 1 if text ends with suffix, else 0
+		*/
+	| ENDSWITH LPAREN expr COMMA expr RPAREN			# EndswithFunc
 		/**
 		  flip(x, dims) - reverses the order of elements along the specified dimensions. Works also for text and list with dims=0
 		*/
@@ -756,6 +768,14 @@ funcN:
 		*/
 	| RESHAPE LPAREN expr COMMA expr RPAREN		# ReshapeFunc
 		/**
+		  squeeze(x, [dim]) - removes size-1 dimensions from tensor x, optionally at dim
+		*/
+	| SQUEEZE LPAREN expr (COMMA expr)? RPAREN		# SqueezeFunc
+		/**
+		  unsqueeze(x, dim) - inserts a size-1 dimension into tensor x at dim
+		*/
+	| UNSQUEEZE LPAREN expr COMMA expr RPAREN		# UnsqueezeFunc
+		/**
 		  concatenate(x1, x2, ..., dim) - concatenates tensors along the specified dimension
 		*/
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc;
@@ -927,6 +947,7 @@ DIST: 'dist' | 'distance';
 REMAP: 'remap';
 COSSIM: 'cossim' | 'cosine_similarity';
 COUNT: 'count' | 'cnt' | 'length';
+REPEAT: 'repeat';
 FLATTEN: 'flatten';
 APPEND: 'append';
 GET_VALUE: 'get_value';
@@ -1004,6 +1025,10 @@ SOFTMAX: 'softmax';
 SOFTMIN: 'softmin';
 UNIQUE: 'unique';
 FLIP: 'flip';
+STARTSWITH: 'startswith';
+ENDSWITH: 'endswith';
+SQUEEZE: 'squeeze';
+UNSQUEEZE: 'unsqueeze';
 ROLL: 'roll';
 COV: 'cov';
 CORR: 'corr' | 'correlation';

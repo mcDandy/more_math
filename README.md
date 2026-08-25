@@ -164,7 +164,7 @@ You can also get the node from comfy manager under the name of More math.
 - `swap(tensor, dim, i1, i2)`: swap two indices along dimension `dim`.
 
 #### 2.2 Reductions & Statistical Aggregates
-- `sum(x)`: sum.
+- `sum(x, [dims])`: sum; optional `dims` can be a single dimension or a list of dimensions.
 - `mean(x)`: mean.
 - `std(x)`: standard deviation.
 - `var(x)`: variance.
@@ -177,16 +177,16 @@ You can also get the node from comfy manager under the name of More math.
 - `any(x)`: `1.0` if any element is non-zero.
 - `all(x)`: `1.0` if all elements are non-zero.
 - `count(x)` / `length(x)` / `cnt(x)`: number of elements or length.
-- `cumsum(x)`: cumulative sum along dimension `0`.
+- `cumsum(x, [dim])`: cumulative sum; `dim` defaults to `0`.
 - `cumprod(x)`: cumulative product along dimension `0`.
-- `smin(x, ...)`: scalar minimum across inputs.
-- `smax(x, ...)`: scalar maximum across inputs.
+- `smin(x, ...[, dims])`: scalar minimum across inputs; optionally reduce the first tensor/list input across `dims`.
+- `smax(x, ...[, dims])`: scalar maximum across inputs; optionally reduce the first tensor/list input across `dims`.
 
 #### 2.3 Sorting / Selection / Indices
 - `sort(x)`: tensors are sorted along the last dimension (`dim=-1`); lists use Python sorting.
-- `argsort(x, [descending])`: returns indices along the last dimension, default `descending=false`.
-- `argmin(x)`: global minimum index for tensors; list index for lists.
-- `argmax(x)`: global maximum index for tensors; list index for lists.
+- `argsort(x, [descending], [dim])`: returns indices along `dim` (defaults to last dimension); `descending` defaults to `false`.
+- `argmin(x, [as_position])`: global minimum index for tensors; when `as_position` is truthy, returns coordinates as a list.
+- `argmax(x, [as_position])`: global maximum index for tensors; when `as_position` is truthy, returns coordinates as a list.
 - `topk(x, k)`: tensors keep the same shape and all non-top-k values are zeroed; lists return the sorted top-k slice.
 - `botk(x, k)`: same as `topk`, but for smallest values.
 - `topk_ind(x, k)` / `topk_indices`: global top-k indices from `flatten()`.
@@ -199,11 +199,14 @@ You can also get the node from comfy manager under the name of More math.
 - `shape(x)`: returns shape as a Python list.
 - `flatten(x)`: flattens tensor or nested list.
 - `reshape(tensor, shape)` / `rshp`: reshape with element-count validation.
+- `squeeze(x, [dim])`: removes singleton dimensions; optional `dim` follows PyTorch semantics.
+- `unsqueeze(x, dim)`: inserts a singleton dimension at `dim`.
 - `permute(tensor, dims)` / `perm`: reorder dimensions.
 - `crop(tensor, position, size)`: extract a region from tensor or string.
 - `pad(tensor, padding)`: pad tensor.
 - `overlay(base, overlay, offset, [opacity])`: overlay one value/tensor onto another.
 - `append(a, b)`: append or concatenate items, lists, and tensors.
+- `repeat(x, count, [dims])`: repeat values; tensor `count` can be a scalar or a per-dimension list when `dims` is provided.
 - `batch_shuffle(tensor, indices)` / `shuffle` / `select`: reorder along batch dimension.
 - `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists.
 - `roll(tensor, shifts, [dim])`: circular shift.
@@ -323,6 +326,8 @@ You can also get the node from comfy manager under the name of More math.
 - `substring(str, start, [length])` / `substr`: substring extraction.
 - `find(str, search)`: first match position.
 - `replace(str, search, replacement)`: replace occurrences.
+- `startswith(str, prefix)`: returns `1.0` if the string starts with `prefix`, otherwise `0.0`.
+- `endswith(str, suffix)`: returns `1.0` if the string ends with `suffix`, otherwise `0.0`.
 
 ---
 

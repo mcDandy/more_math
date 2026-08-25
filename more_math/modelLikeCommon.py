@@ -3,6 +3,44 @@ from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
 
 
+def get_effective_state_dict(obj):
+    if hasattr(obj, "patcher") and hasattr(obj.patcher, "model_state_dict"):
+        return obj.patcher.model_state_dict()
+    if hasattr(obj, "model_state_dict"):
+        return obj.model_state_dict()
+    if hasattr(obj, "model") and hasattr(obj.model, "patcher") and hasattr(obj.model.patcher, "model_state_dict"):
+        return obj.model.patcher.model_state_dict()
+    if hasattr(obj, "model") and hasattr(obj.model, "model_state_dict"):
+        return obj.model.model_state_dict()
+    if hasattr(obj, "model") and hasattr(obj.model, "state_dict"):
+        return obj.model.state_dict()
+    if hasattr(obj, "state_dict"):
+        return obj.state_dict()
+    return None
+
+
+def get_effective_weight(obj, key):
+    patcher = getattr(obj, "patcher", None)
+    if patcher is None and hasattr(obj, "model"):
+        patcher = getattr(obj.model, "patcher", None)
+    if patcher is not None and hasattr(patcher, "patch_weight_to_device"):
+        try:
+            return patcher.patch_weight_to_device(key, return_weight=True)
+        except Exception:
+            pass
+
+    if hasattr(obj, "patch_weight_to_device"):
+        try:
+            return obj.patch_weight_to_device(key, return_weight=True)
+        except Exception:
+            pass
+
+    sd = get_effective_state_dict(obj)
+    if sd is not None:
+        return sd.get(key, None)
+    return None
+
+
 def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
     """Legacy calculate_patches for backward compatibility."""
     return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, pbar=None, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"})
@@ -31,12 +69,11 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
         return {}
 
     for m in models:
-        if hasattr(m, "model") and hasattr(m.model, "state_dict"):
-            sd_keys = m.model.state_dict().keys()
-        elif hasattr(m, "state_dict"): # VAE might have state_dict directly?
-            sd_keys = m.state_dict().keys()
-        else:
+        sd = get_effective_state_dict(m)
+        if sd is None:
             sd_keys = []
+        else:
+            sd_keys = sd.keys()
 
         for key in sd_keys:
             if key not in seen_keys:
@@ -45,13 +82,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
 
     # Function to get weight from a valid object
     def get_weight(obj, key):
-        if hasattr(obj, "model") and hasattr(obj.model, "state_dict"):
-             sd = obj.model.state_dict()
-             return sd.get(key, None)
-        if hasattr(obj, "state_dict"):
-             sd = obj.state_dict()
-             return sd.get(key, None)
-        return None
+        return get_effective_weight(obj, key)
 
     tree = None
     if isinstance(Expr,str):

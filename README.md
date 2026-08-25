@@ -217,11 +217,12 @@ You can also get the node from comfy manager under the name of More math.
 - `matmul(a, b)`: matrix multiplication.
 - `cross(a, b)`: cross product; last dimension must be `3`.
 - `pinv(x)`: permutation inverse for permutation-like values.
-
+- `singular_value_decomposition(x,[full_matrices])`/`svd`: singular value decomposition.
+- `diagonal_matrix(x,shape,[offset],[dim1],[dim2])` / `diag`: create a diagonal matrix from a vector. The diagonal can be offset from the main diagonal using the `offset` parameter. The `dim1` and `dim2` parameters specify which dimensions to use for the diagonal.
 #### 2.6 Mapping / Sampling
 - `map(tensor, c1, ...)`: coordinate remapping via `grid_sample`.
   - supports up to `3` coordinate inputs,
-  - uses sampling coordinates derived from the provided coordinate tensors,
+  - uses sampling coordinates derived from the provided coordinate tensors or functions,
   - intended for spatial remapping / resampling.
 - `get_value(tensor, position)`: read value at an N-D position using flat offset math. Superseeded by tensor[position] indexing.
 
@@ -355,6 +356,7 @@ You can also get the node from comfy manager under the name of More math.
 - `timestamp()` / `now`: current Unix timestamp.
 - `int(x)`: convert to int32 or nested int values.
 - `float(x)`: convert to float or nested float values.
+- `as_nested(x)`: convert list to a nested tensor. Usefull for video+audio models. Values do not need to be in the same or compatible shape.
 
 ___
 
@@ -401,6 +403,8 @@ ___
    - `B` or `batch` - batch index
    - `T` or `batch_count` - number of batches
    - `N` or `channel_count` - channel count
+ - **LATENT**
+   - `V{N}_{M}` - In case of nested tensors, takes the M-th tensor from N-th input. For example, `V0_1` is the second tensor from the first input.
  - **IMAGE KERNEL**:
    - `kX`, `kY` - position in kernel, centered at `0.0`
    - `kW`, `kernel_width` - kernel width

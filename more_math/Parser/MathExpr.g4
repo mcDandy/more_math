@@ -984,8 +984,8 @@ INTERPOLATE_AREA: 'interpolate_area';
 INTERPOLATE_NEAREST: 'interpolate_nearest' | 'interpolate_nearest_exact';
 TEXT_IMAGE: 'text_image';
 AS_NESTED: 'as_nested_tensor';
-SVD: 'svd';
-DIAG: 'diagonal_matrix';
+SVD: 'svd'|'singular_value_decomposition';
+DIAG: 'diagonal_matrix'|'diag';
 
 IF: 'if';
 ELSE: 'else';

@@ -4974,3 +4974,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         diag_view.copy_(x)
 
         return res
+
+    def visitCoordsFunc(self, ctx):
+        """coords(shape) - generate a grid of coordinates"""
+        shape = self._get_shape_from_ctx(ctx, 0)
+        dim = ctx.expr(1)
+        dtype = ctx.expr(2).dtype if len(ctx.expr()) > 2 else torch.float32
+        return getIndexTensorAlongDim(torch.zeros(shape, dtype=dtype, device=self.device), dim)

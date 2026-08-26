@@ -42,7 +42,10 @@ def parse_expr(expr: str):
 
 def getIndexTensorAlongDim(tensor, dim):
     """Create a tensor of indices along a dimension, broadcasted to full shape."""
-    shape = tensor.shape
+    if tensor is torch.Tensor:
+        shape = tensor.shape
+    else:
+        shape = torch.Size(tensor)
     values = torch.arange(shape[dim], dtype=torch.float32, device=tensor.device)
     view_shape = [1] * len(shape)
     view_shape[dim] = shape[dim]

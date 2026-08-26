@@ -707,7 +707,11 @@ func3:
 		/**
 		  text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline]) - renders text to an 2D tensor
 		*/
-	| TEXT_IMAGE LPAREN expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# TextImageFunc;
+	| TEXT_IMAGE LPAREN expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# TextImageFunc
+	    /**
+		  coords(shape, dim, [dtype]) - generates a tensor with the specified shape whose values are the coordinates of each element along the specified dimension. The dtype can be specified to control the data type of the output tensor.
+		*/
+	| COORDS LPAREN expr COMMA expr (COMMA expr)? RPAREN	# CoordsFunc;
 
 func4:
 		/**
@@ -1035,6 +1039,7 @@ CORR: 'corr' | 'correlation';
 ENTROPY: 'entropy';
 CROP: 'crop';
 NONE: 'none'|'None'|'null'|'NULL';
+COORDS: 'coords'|'coordinates';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';

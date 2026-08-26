@@ -1934,6 +1934,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#CoordsFunc.
+    def enterCoordsFunc(self, ctx:MathExprParser.CoordsFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CoordsFunc.
+    def exitCoordsFunc(self, ctx:MathExprParser.CoordsFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SwapFunc.
     def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         pass

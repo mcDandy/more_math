@@ -367,6 +367,7 @@ ___
 
 ### Generators
 - `text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline])` - renders text to an 2D tensor
+- `coordinates(shape, dim, [dtype])` / `coords` - generates a tensor whose values are the coordinates of each element along the specified dimension. dtype is copied from tensor at that position. Default is float32.
 
 
 ---

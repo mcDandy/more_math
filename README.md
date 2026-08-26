@@ -411,6 +411,11 @@ ___
    - `N` or `channel_count` - channel count
  - **LATENT**
    - `V{N}_{M}` - In case of nested tensors, takes the M-th tensor from N-th input. For example, `V0_1` is the second tensor from the first input.
+ - **MODEL, VAE, CLIP**:
+   - `V{N}_d` - difference against the original input (for example applied lora)
+   - `K` or `key` - name of current layer. For example, `proj_out.bias`, `diffusion_model.blocks.5.attn.out_proj.weight` or `txtfusion.layerwise_blocks.0.prenorm.scale`.
+   - `L` or `layer` - index of current layer
+   - `LC` or `layer_count` - number of layers
  - **IMAGE KERNEL**:
    - `kX`, `kY` - position in kernel, centered at `0.0`
    - `kW`, `kernel_width` - kernel width

@@ -4966,8 +4966,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             full_matrices = self._to_bool((yield ctx.expr(1)), ctx, "svd full_matrices")
         if x.ndim < 2:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: svd expects at least 2D input, got shape {tuple(x.shape)}")
-        u, s, vh = torch.linalg.svd(x, full_matrices=full_matrices)
-        v = vh.mT.conj() if hasattr(vh, "mT") else vh.transpose(-2, -1).conj()
+        u, s, v = torch.linalg.svd(x, full_matrices=full_matrices)
         result = [u, s, v]
         return result
 

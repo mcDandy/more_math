@@ -31,7 +31,7 @@ class StringMathNode(io.ComfyNode):
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.String.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),
                 io.MultiType.Input(
-                    io.String.Input("Expression", default="", multiline=False),
+                    io.String.Input("Expression", default="V0", multiline=False),
                     types=[io.String,MrmthParseTree],
                     tooltip="Expression to apply on weights",
                 ),

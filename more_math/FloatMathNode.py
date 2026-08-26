@@ -33,7 +33,7 @@ class FloatMathNode(io.ComfyNode):
                     ),
                 ),
                 io.MultiType.Input(
-                    io.String.Input("FloatFunc", default="a*(1-w)+b*w", multiline=False),
+                    io.String.Input("FloatFunc", default="V0", multiline=False),
                     types=[io.String, MrmthParseTree],
                     tooltip="Expression to use on inputs",
                 ),

@@ -89,9 +89,6 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Functions
 
-> Functions are grouped by purpose.  
-> The descriptions below reflect the runtime behavior implemented in `UnifiedMathVisitor.py`.
-
 ### 1) Core Math
 
 #### 1.1 Elementary & Numeric
@@ -416,7 +413,7 @@ ___
    - `K` or `key` - name of current layer. For example, `proj_out.bias`, `diffusion_model.blocks.5.attn.out_proj.weight` or `txtfusion.layerwise_blocks.0.prenorm.scale`.
    - `L` or `layer` - index of current layer
    - `LC` or `layer_count` - number of layers
- - **IMAGE KERNEL**: in `conv`/`convolution` or `ezconv`/`ezconvolution` function kernel  input
+ - **IMAGE KERNEL**: in `conv`/`convolution` or `ezconv`/`ezconvolution` function kernel input
    - `kX`, `kY` - position in kernel, centered at `0.0`
    - `kW`, `kernel_width` - kernel width
    - `kH`, `kernel_height` - kernel height

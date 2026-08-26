@@ -4944,13 +4944,15 @@ class UnifiedMathVisitor(MathExprVisitor):
             return NestedTensor([torch.tensor(val, device=self.device)])
 
     def visitSvdFunc(self, ctx):
-        """svd(x) - singular value decomposition"""
+        """svd(x, [full_matrices]) - singular value decomposition"""
         x = self._promote_to_tensor((yield ctx.expr(0)))
-        full_matrices = yield ctx.expr(1) if len(ctx.expr()) > 1 else False
+        full_matrices = False
+        if len(ctx.expr()) > 1:
+            full_matrices = self._to_bool((yield ctx.expr(1)), ctx, "svd full_matrices")
         if x.ndim < 2:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: svd expects at least 2D input, got shape {tuple(x.shape)}")
         u, s, vh = torch.linalg.svd(x, full_matrices=full_matrices)
-        v = vh.mvector_transpose(-2, -1).conj()
+        v = vh.mT.conj() if hasattr(vh, "mT") else vh.transpose(-2, -1).conj()
         result = [u, s, v]
         return result
 

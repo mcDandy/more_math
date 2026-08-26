@@ -428,10 +428,10 @@ func1:
 		    as_nested(x) - converts a list to a nested tensor (special object containing tensors of different shapes behaving like a tensor)
 		  */
 	| AS_NESTED LPAREN expr RPAREN	# AsNestedFunc
-	    /**
-		  svd(x) - computes the singular value decomposition of x. Returns a list of 3 tensors: U, S, V such that x = matmul(matmul(U, diagonal_matrix(S,shape(U))), V)
+		/**
+		  svd(x, [full_matrices]) - computes the singular value decomposition of x. Returns a list of 3 tensors: U, S, V such that x = matmul(matmul(U, diagonal_matrix(S,shape(U))), V)
 		*/
-		| SVD LPAREN expr RPAREN	# SvdFunc;
+		| SVD LPAREN expr (COMMA expr)? RPAREN	# SvdFunc;
 
 func2:
 		/**

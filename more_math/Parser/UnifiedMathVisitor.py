@@ -274,6 +274,36 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             return int(float(x))
 
+    def _normalize_index_value(self, idx, size, ctx, context_name="index"):
+        if isinstance(idx, int):
+            if idx < 0:
+                idx += size
+            if idx < 0 or idx >= size:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for {context_name} of length {size}")
+            return idx
+        if self._is_tensor(idx):
+            if idx.numel() == 0:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Empty tensor for {context_name}")
+            idx = idx.long()
+            idx = torch.where(idx < 0, idx + size, idx)
+            if torch.any(idx < 0) or torch.any(idx >= size):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index out of bounds for {context_name} of length {size}")
+            return idx
+        if self._is_list(idx):
+            if len(idx) == 1:
+                return self._normalize_index_value(idx[0], size, ctx, context_name)
+            idx_tensor = torch.tensor(idx, dtype=torch.long, device=self.device)
+            idx_tensor = torch.where(idx_tensor < 0, idx_tensor + size, idx_tensor)
+            if torch.any(idx_tensor < 0) or torch.any(idx_tensor >= size):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index out of bounds for {context_name} of length {size}")
+            return idx_tensor
+        idx = int(idx)
+        if idx < 0:
+            idx += size
+        if idx < 0 or idx >= size:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for {context_name} of length {size}")
+        return idx
+
     def _normalize_shape_arg(self, shape_arg, ctx, context_name="random"):
         if isinstance(shape_arg, torch.Size):
             dims = list(shape_arg)
@@ -450,24 +480,11 @@ class UnifiedMathVisitor(MathExprVisitor):
             if len(indices) > val.ndim:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Expacted up to {val.ndim} dimensions but got {indices}.")
 
+            normalized_indices = []
             for dim, idx in enumerate(indices):
-                if isinstance(idx, int):
-                    size = val.shape[dim]
-                    if idx < 0 or idx >= size:
-                        raise ValueError(
-                            f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for dimension {dim} with size {size}"
-                        )
-                else:
-                    idx_tensor = idx
-                    if self._is_tensor(idx_tensor):
-                        if idx_tensor.numel() == 0:
-                            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Empty tensor for dimension {dim}")
-                        if torch.any(idx_tensor < 0) or torch.any(idx_tensor >= val.shape[dim]):
-                            raise ValueError(
-                                f"{ctx.start.line}:{ctx.start.column}: Index out of bounds for dimension {dim} with size {val.shape[dim]}"
-                            )
+                normalized_indices.append(self._normalize_index_value(idx, val.shape[dim], ctx, f"dimension {dim}"))
 
-            idx_tuple = tuple(indices)
+            idx_tuple = tuple(normalized_indices)
             result = val[idx_tuple]
             if self._is_tensor(result):
                 if getattr(result, "is_nested", False):
@@ -483,8 +500,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     if idx.numel() != 1:
                         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Too many indecies for string with 1 dimension. Got {idx.numel()}")
                     idx = int(idx.flatten()[0].item())
-                if idx >= len(current) or idx < 0:
-                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for string of length {len(current)}")
+                idx = self._normalize_index_value(idx, len(current), ctx, "string")
                 current = current[idx]
             return current
         elif self._is_list(val):
@@ -495,8 +511,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     if idx.numel() != 1:
                         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: List index must be a scalar. Got tensor with length of {idx.numel()}")
                     idx = int(idx.item())
-                if idx >= len(current) or idx < 0:
-                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for list of length {len(current)}")
+                idx = self._normalize_index_value(idx, len(current), ctx, "list")
                 current = current[idx]
             return current
         error_prefix = f"{ctx.start.line}:{ctx.start.column}:"

@@ -416,7 +416,7 @@ ___
    - `K` or `key` - name of current layer. For example, `proj_out.bias`, `diffusion_model.blocks.5.attn.out_proj.weight` or `txtfusion.layerwise_blocks.0.prenorm.scale`.
    - `L` or `layer` - index of current layer
    - `LC` or `layer_count` - number of layers
- - **IMAGE KERNEL**:
+ - **IMAGE KERNEL**: in `conv`/`convolution` or `ezconv`/`ezconvolution` function kernel  input
    - `kX`, `kY` - position in kernel, centered at `0.0`
    - `kW`, `kernel_width` - kernel width
    - `kH`, `kernel_height` - kernel height

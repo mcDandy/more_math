@@ -8,6 +8,39 @@ MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
 import re
 
+
+class LazyVariableDict(dict):
+    def __getitem__(self, key):
+        val = super().__getitem__(key)
+        if callable(val) and getattr(val, "is_lazy_var", False):
+            val = val()
+            self[key] = val
+        return val
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def copy(self):
+        return LazyVariableDict(self)
+
+    def __or__(self, other):
+        res = self.copy()
+        res.update(other)
+        return res
+
+    def __ror__(self, other):
+        res = LazyVariableDict(other)
+        res.update(self)
+        return res
+
+    def __ior__(self, other):
+        self.update(other)
+        return self
+
+
 class ThrowingErrorListener(ErrorListener):
     """Error listener that raises ValueError on syntax errors."""
 

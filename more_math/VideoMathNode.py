@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew, LazyVariableDict
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
 from .Stack import MrmthStack
@@ -86,7 +86,7 @@ class VideoMathNode(io.ComfyNode):
                 if tensor is not None and tensor.shape[0] != common_shape[0]:
                     raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {common_shape[0]} to match input.")
 
-        variables = {
+        variables = LazyVariableDict({
             "a": ae, "b": be, "c": ce, "d": de,
             "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
             "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
@@ -106,22 +106,27 @@ class VideoMathNode(io.ComfyNode):
             "batch_count": float(ae.shape[0]),
             "N": float(ae.shape[3]),
             "channel_count": float(ae.shape[3]),
-        } | generate_dim_variables(ae)
+        } | generate_dim_variables(ae) | V_norm | sample_rates)
 
-        v_stacked, v_cnt = get_v_variable(V_norm, length_mismatch=length_mismatch)
-        if v_stacked is not None:
-             variables["V"] = v_stacked
-             variables["Vcnt"] = float(v_cnt)
-             variables["V_count"] = float(v_cnt)
+        for v_name, v_tensor in V_norm.items():
+            variables[v_name] = (lambda t=v_tensor: t)
+            variables[v_name].is_lazy_var = True
+
+        def lazy_v_stack():
+            return get_v_variable(V_norm, length_mismatch=length_mismatch)[0]
+        lazy_v_stack.is_lazy_var = True
+        def lazy_v_count():
+            return float(get_v_variable(V_norm, length_mismatch=length_mismatch)[1])
+        lazy_v_count.is_lazy_var = True
+        variables["V"] = lazy_v_stack
+        variables["Vcnt"] = lazy_v_count
+        variables["V_count"] = lazy_v_count
 
         f_stacked, f_cnt = get_f_variable(F)
         if f_stacked is not None:
              variables["F"] = f_stacked
              variables["Fcnt"] = float(f_cnt)
              variables["F_count"] = float(f_cnt)
-
-        # Add all dynamic inputs
-        variables.update(V_norm)
 
         for k, val in F.items():
             variables[k] = val if val is not None else 0.0
@@ -163,7 +168,7 @@ class VideoMathNode(io.ComfyNode):
         # Ensure legacy are normalized
         a_w, b_w, c_w, d_w = normalize_to_common_shape(a_w, b_w, c_w, d_w, mode=length_mismatch)
 
-        variables = {
+        variables = LazyVariableDict({
             "a": a_w, "b": b_w, "c": c_w, "d": d_w,
             "w": F.get("F0", 0.0) if F.get("F0") is not None else 0.0,
             "x": F.get("F1", 0.0) if F.get("F1") is not None else 0.0,
@@ -179,14 +184,21 @@ class VideoMathNode(io.ComfyNode):
             "batch": getIndexTensorAlongDim(a_w, 0),
             "T": float(a_w.shape[0]),
             "batch_count": float(a_w.shape[0]),
-        } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
+        } | generate_dim_variables(a_w) | sample_rates)
 
-        v_stacked, v_cnt = get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)
-        if v_stacked is not None:
-             # This 'variables' is the one for the second eval in VideoMathNode
-             variables["V"] = v_stacked
-             variables["Vcnt"] = float(v_cnt)
-             variables["V_count"] = float(v_cnt)
+        for v_name, v_tensor in V_norm_waveforms.items():
+            variables[v_name] = (lambda t=v_tensor: t)
+            variables[v_name].is_lazy_var = True
+
+        def lazy_v_stack():
+            return get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)[0]
+        lazy_v_stack.is_lazy_var = True
+        def lazy_v_count():
+            return float(get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)[1])
+        lazy_v_count.is_lazy_var = True
+        variables["V"] = lazy_v_stack
+        variables["Vcnt"] = lazy_v_count
+        variables["V_count"] = lazy_v_count
 
         f_stacked, f_cnt = get_f_variable(F)
         if f_stacked is not None:

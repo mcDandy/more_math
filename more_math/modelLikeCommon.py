@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device
+from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import comfy
 import comfy.model_management
@@ -134,10 +134,17 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
     patches = {}
     original_device = None
     compute_device = comfy.model_management.get_torch_device() if use_compute_device else None
-    needs_deltas = isinstance(Expr, str) and "_d" in Expr or not isinstance(Expr, str)
+    needs_deltas = not (isinstance(Expr, str) and "_d" not in Expr)
+    const_f_vars = {k: val if val is not None else 0.0 for k, val in F.items()}
+    const_f_alias_vars = {
+        alias: (F[target] if F[target] is not None else 0.0)
+        for alias, target in mapping.items()
+        if target in F
+    }
+    mapping_items = tuple(mapping.items())
 
     current_state_dicts = {}
-    base_state_dicts = {}
+    base_state_dicts = {} if needs_deltas else None
     for v_name, v_val in V.items():
         if v_val is None:
             continue
@@ -158,17 +165,18 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
     # Just skip for utility or use if substantial.
     layer_count = len(all_keys_list)
+
+    def make_lazy(value_fn):
+        def lazy_eval():
+            return value_fn()
+        lazy_eval.is_lazy_var = True
+        return lazy_eval
+
     for layer_idx, key in enumerate(all_keys_list):
 
-        variables = {}
-        # Populate F variables (constants for all keys)
-        for k, val in F.items():
-            variables[k] = val if val is not None else 0.0
-
+        variables = LazyVariableDict(const_f_vars)
         # Also populate mapped aliases for F (w, x, y, z)
-        for alias, target in mapping.items():
-            if target in F:
-                variables[alias] = F[target] if F[target] is not None else 0.0
+        variables.update(const_f_alias_vars)
 
         variables["L"] = float(layer_idx)
         variables["layer"] = float(layer_idx)
@@ -180,7 +188,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
         # Inject weights for this key from V models
         valid_key = False
         ref_tensor = None
-        deltas = {}
+        present_weights = {}
 
         for v_name in V.keys():
             current_sd = current_state_dicts.get(v_name)
@@ -188,22 +196,10 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
                 continue
             w_tensor = current_sd.get(key, None)
             if w_tensor is not None:
-                variables[v_name] = w_tensor
-                ref_tensor = w_tensor
+                present_weights[v_name] = w_tensor
+                if ref_tensor is None:
+                    ref_tensor = w_tensor
                 valid_key = True
-                if needs_deltas:
-                    base_sd = base_state_dicts.get(v_name)
-                    base_tensor = base_sd.get(key, None) if base_sd is not None else None
-                    if base_tensor is None:
-                        base_tensor = w_tensor
-                    base_tensor = coerce_like(base_tensor, w_tensor, device=compute_device)
-                    try:
-                        deltas[v_name] = w_tensor - base_tensor
-                    except Exception:
-                        deltas[v_name] = torch.zeros_like(w_tensor)
-            else:
-                # Missing key in this model will be handled later (zero init)
-                pass
 
         if not valid_key:
             continue
@@ -212,32 +208,55 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
         if ref_tensor is None:
             continue # Should not happen if valid_key is true
 
-        # Fill missing models with zeros
+        # Fill missing models with lazy values so V[n] keeps working
+        v_cache = [None]
+
+        def lazy_v_stack():
+            if v_cache[0] is None:
+                v_cache[0] = get_v_variable(variables)
+            return v_cache[0][0]
+
+        lazy_v_stack.is_lazy_var = True
+
+        def lazy_v_count():
+            if v_cache[0] is None:
+                v_cache[0] = get_v_variable(variables)
+            return float(v_cache[0][1])
+
+        lazy_v_count.is_lazy_var = True
+
         for v_name in V.keys():
-            if v_name not in variables:
-                variables[v_name] = torch.zeros_like(ref_tensor)
-            if v_name not in deltas:
-                deltas[v_name] = torch.zeros_like(variables[v_name])
-            variables[f"{v_name}_d"] = deltas[v_name]
+            if v_name in present_weights:
+                w_tensor = present_weights[v_name]
+                variables[v_name] = make_lazy(lambda wt=w_tensor: wt)
+                if needs_deltas:
+                    base_sd = base_state_dicts.get(v_name)
+                    base_tensor = base_sd.get(key, None) if base_sd is not None else None
+                    if base_tensor is None:
+                        base_tensor = w_tensor
+                    base_tensor = coerce_like(base_tensor, w_tensor, device=compute_device)
+                    variables[f"{v_name}_d"] = make_lazy(lambda wt=w_tensor, bt=base_tensor: wt - bt)
+            else:
+                variables[v_name] = make_lazy(lambda rt=ref_tensor: torch.zeros_like(rt))
+                if needs_deltas:
+                    variables[f"{v_name}_d"] = make_lazy(lambda rt=ref_tensor: torch.zeros_like(rt))
 
         # Populate aliases for V (a, b, c, d)
-        for alias, target in mapping.items():
+        for alias, target in mapping_items:
             if target in variables:
                 variables[alias] = variables[target]
             elif target in V:
                 # V key exists in input dict but this specific layer key is missing
-                variables[alias] = torch.zeros_like(ref_tensor)
+                variables[alias] = make_lazy(lambda rt=ref_tensor: torch.zeros_like(rt))
             else:
                 # Target doesn't exist at all (e.g., V1 not provided)
                 # Check if it's a V-key pattern and zero-fill
                 if target.startswith("V") and target[1:].isdigit():
-                    variables[alias] = torch.zeros_like(ref_tensor)
+                    variables[alias] = make_lazy(lambda rt=ref_tensor: torch.zeros_like(rt))
 
-        v_stacked, v_cnt = get_v_variable(variables)
-        if v_stacked is not None:
-             variables["V"] = v_stacked
-             variables["Vcnt"] = float(v_cnt)
-             variables["V_count"] = float(v_cnt)
+        variables["V"] = lazy_v_stack
+        variables["Vcnt"] = lazy_v_count
+        variables["V_count"] = lazy_v_count
 
         f_stacked, f_cnt = get_f_variable(F)
         if f_stacked is not None:
@@ -246,7 +265,6 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
              variables["F_count"] = float(f_cnt)
 
         variables = variables | generate_dim_variables(ref_tensor)
-        variables |= {f"{v_name}_d": variables[v_name] - variables["V0"] for v_name in V.keys() if v_name in variables and "V0" in variables}
 
         # Execute math
 

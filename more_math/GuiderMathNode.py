@@ -8,7 +8,8 @@ from .helper_functions import (
     make_zero_like,
     as_tensor,
     get_v_variable,
-    get_f_variable
+    get_f_variable,
+    LazyVariableDict,
 )
 from comfy_api.latest import io
 import comfy.sampler_helpers
@@ -19,38 +20,6 @@ import comfy.samplers
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy
-
-
-class LazyVariableDict(dict):
-    def __getitem__(self, key):
-        val = super().__getitem__(key)
-        if callable(val) and getattr(val, "is_lazy_var", False):
-            val = val()
-            self[key] = val
-        return val
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def copy(self):
-        return LazyVariableDict(self)
-
-    def __or__(self, other):
-        res = self.copy()
-        res.update(other)
-        return res
-
-    def __ror__(self, other):
-        res = LazyVariableDict(other)
-        res.update(self)
-        return res
-
-    def __ior__(self, other):
-        self.update(other)
-        return self
 
 
 class GuiderMathNode(io.ComfyNode):
@@ -180,6 +149,10 @@ class MathGuider:
 
         frame_count = eval_samples.shape[time_dim] if time_dim is not None else 1
 
+        def make_lazy_var(value_fn):
+            value_fn.is_lazy_var = True
+            return value_fn
+
         variables = LazyVariableDict()
         variables.update({
             "w": self.F.get("F0", 0.0),
@@ -206,37 +179,23 @@ class MathGuider:
             for k, func in g_results.items():
                 variables[k] = func
 
-            def lazy_a(): return variables["V0"] if "V0" in g_results else make_zero_like(eval_samples)
-            lazy_a.is_lazy_var = True
-            variables["a"] = lazy_a
-
-            def lazy_b(): return variables["V1"] if "V1" in g_results else make_zero_like(eval_samples)
-            lazy_b.is_lazy_var = True
-            variables["b"] = lazy_b
-
-            def lazy_c(): return variables["V2"] if "V2" in g_results else make_zero_like(eval_samples)
-            lazy_c.is_lazy_var = True
-            variables["c"] = lazy_c
-
-            def lazy_d(): return variables["V3"] if "V3" in g_results else make_zero_like(eval_samples)
-            lazy_d.is_lazy_var = True
-            variables["d"] = lazy_d
+            variables["a"] = make_lazy_var(lambda: variables["V0"] if "V0" in g_results else make_zero_like(eval_samples))
+            variables["b"] = make_lazy_var(lambda: variables["V1"] if "V1" in g_results else make_zero_like(eval_samples))
+            variables["c"] = make_lazy_var(lambda: variables["V2"] if "V2" in g_results else make_zero_like(eval_samples))
+            variables["d"] = make_lazy_var(lambda: variables["V3"] if "V3" in g_results else make_zero_like(eval_samples))
 
             def lazy_stacked_v():
                 evaluated_g_results = {k: variables[k] for k in g_results.keys()}
                 v_stacked, v_cnt = get_v_variable(evaluated_g_results)
                 return v_stacked
-            lazy_stacked_v.is_lazy_var = True
+            variables["V"] = make_lazy_var(lazy_stacked_v)
 
             def lazy_v_cnt():
                 evaluated_g_results = {k: variables[k] for k in g_results.keys()}
                 v_stacked, v_cnt = get_v_variable(evaluated_g_results)
                 return float(v_cnt)
-            lazy_v_cnt.is_lazy_var = True
-
-            variables["V"] = lazy_stacked_v
-            variables["Vcnt"] = lazy_v_cnt
-            variables["V_count"] = lazy_v_cnt
+            variables["Vcnt"] = make_lazy_var(lazy_v_cnt)
+            variables["V_count"] = variables["Vcnt"]
 
         for k, v in self.F.items():
             variables[k] = v if v is not None else 0.0

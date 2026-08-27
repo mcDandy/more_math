@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict
+from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict, checkLazyNew
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import comfy
 import comfy.model_management
@@ -102,6 +102,11 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
     if F is None: F = {}
     if mapping is None: mapping = {}
 
+    needed_vars = checkLazyNew(Expr, V, F)
+    needed_v_names = [v_name for v_name in V.keys() if v_name in needed_vars]
+    if not needed_v_names:
+        needed_v_names = [v_name for v_name in V.keys() if V.get(v_name) is not None]
+
     # Collect all unique keys from all models, preserving order from first model
     all_keys_list = []  # Preserves order
     seen_keys = set()   # Fast O(1) duplicate checking
@@ -145,7 +150,8 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
 
     current_state_dicts = {}
     base_state_dicts = {} if needs_deltas else None
-    for v_name, v_val in V.items():
+    for v_name in needed_v_names:
+        v_val = V.get(v_name)
         if v_val is None:
             continue
         current_sd = get_effective_state_dict(v_val)

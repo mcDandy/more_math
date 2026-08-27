@@ -61,16 +61,22 @@ class VideoMathNode(io.ComfyNode):
         if not tensor_keys:
              raise ValueError("At least one input is required.")
 
-        tensors = [V[k][0] for k in tensor_keys]
+        needed_vars = checkLazyNew(Expression, V, F) | checkLazyNew(Expression_pi, V, F)
+        needed_tensor_keys = [k for k in tensor_keys if k in needed_vars]
+        if not needed_tensor_keys:
+            needed_tensor_keys = tensor_keys
+
+        tensors = [V[k][0] for k in needed_tensor_keys]
 
         # Normalize all tensors together to find the common target shape
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
-        V_norm = dict(zip(tensor_keys, normalized_tensors))
+        V_norm = dict(zip(needed_tensor_keys, normalized_tensors))
 
         # Use first normalized tensor to establish the reference shape
         ref_tensor = normalized_tensors[0]
         common_shape = ref_tensor.shape
         stack = copy.deepcopy(stack) if stack is not None else {}
+        sample_rates = {k + "sr": V[k].get("sample_rate", 44100) for k in needed_tensor_keys}
 
         # Setup legacy variables a, b, c, d
         ae = V_norm.get("V0", make_zero_like(ref_tensor))
@@ -143,19 +149,18 @@ class VideoMathNode(io.ComfyNode):
 
 
 
-        waveforms = {k: V[k]["waveform"] for k in tensor_keys}
-        sample_rates = {k + "sr": V[k].get("sample_rate", 44100) for k in tensor_keys}
+        waveforms = {k: V[k]["waveform"] for k in needed_tensor_keys}
 
         # Normalize all waveforms together
         normalized_waveforms = normalize_to_common_shape(*waveforms.values(), mode=length_mismatch)
-        V_norm_waveforms = dict(zip(tensor_keys, normalized_waveforms))
+        V_norm_waveforms = dict(zip(needed_tensor_keys, normalized_waveforms))
 
         ref_waveform = normalized_waveforms[0]
         common_shape = ref_waveform.shape
-        sample_rate = V[tensor_keys[0]].get("sample_rate", 44100)
+        sample_rate = V[needed_tensor_keys[0]].get("sample_rate", 44100)
 
         if(length_mismatch == "error"):
-            for name in tensor_keys:
+            for name in needed_tensor_keys:
                 if waveforms[name].shape != common_shape:
                      raise ValueError(f"Input '{name}' has shape ({waveforms[name].shape[0]}, {waveforms[name].shape[2]}), expected ({common_shape[0]}, {common_shape[2]}) to match input.")
 

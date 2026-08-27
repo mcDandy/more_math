@@ -81,11 +81,16 @@ class ConditioningMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
+        needed_vars = checkLazyNew(Expression, V, F) | checkLazyNew(Expression_pi, V, F)
+        needed_tensor_keys = [k for k in tensor_keys if k in needed_vars]
+        if not needed_tensor_keys:
+             needed_tensor_keys = tensor_keys
+
         # Extract tensors and pooled outputs
         original_tensor = None
         tensors = {}
         pooled_outputs = {}
-        for key in tensor_keys:
+        for key in needed_tensor_keys:
              conditioning = V[key]
              tensors[key] = conditioning[0][0]
              if original_tensor is None:
@@ -101,14 +106,14 @@ class ConditioningMathNode(io.ComfyNode):
         # Extract tensors and pooled outputs
         tensors = {}
         pooled_outputs = {}
-        for key in tensor_keys:
+        for key in needed_tensor_keys:
              conditioning = working_V[key]
              tensors[key] = conditioning[0][0]
              pooled_outputs[key] = conditioning[0][1].get("pooled_output")
 
         # Normalize main tensors
         norm_tensors_batch = normalize_to_common_shape(*tensors.values(), mode=length_mismatch)
-        V_norm_tensors = dict(zip(tensor_keys, norm_tensors_batch))
+        V_norm_tensors = dict(zip(needed_tensor_keys, norm_tensors_batch))
 
         ref_tensor = norm_tensors_batch[0]
 

@@ -9,9 +9,12 @@ from .helper_functions import (
     make_zero_like,
     get_v_variable,
     get_f_variable,
-    checkLazyNew
+    checkLazyNew,
+    get_tensor_device,
+    move_to_device,
 )
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+import comfy
 import torch
 from comfy.nested_tensor import NestedTensor
 from .Stack import MrmthStack
@@ -57,6 +60,12 @@ class LatentMathNode(io.ComfyNode):
                         "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
                     ),
                 ),
+                io.Boolean.Input(
+                    id="use_compute_device",
+                    default=True,
+                    display_name="Move tensors to GPU",
+                    tooltip="Temporarily copies latent tensors to the compute device for math and moves the result back afterwards.",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -69,11 +78,11 @@ class LatentMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",remember_stack=False,stack={}):
+    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",remember_stack=False,use_compute_device=True,stack={}):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression,batching, length_mismatch="tile",remember_stack=False,stack={}) -> io.NodeOutput:
+    def execute(cls, V, F, Expression,batching, length_mismatch="tile",remember_stack=False,use_compute_device=True,stack={}) -> io.NodeOutput:
         # Determine reference latent
         ref_latent = None
         for lat in V.values():
@@ -84,6 +93,9 @@ class LatentMathNode(io.ComfyNode):
         if ref_latent is None:
              raise ValueError("At least one input is required.")
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        original_device = get_tensor_device(ref_latent.get("samples"))
+        compute_device = comfy.model_management.get_torch_device() if use_compute_device else original_device
+        working_V = move_to_device(V, compute_device) if compute_device is not None and compute_device != original_device else V
 
         # Identify all present tensors and their keys.
         # NestedTensor inputs keep their original latent dict under the base key (V0, V1, ...)
@@ -92,7 +104,7 @@ class LatentMathNode(io.ComfyNode):
         tensor_keys = []
         V_norm_samples = {}
         nested_component_keys = {}  # maps original key -> list of expanded component variable names
-        for k, v in V.items():
+        for k, v in working_V.items():
             if v is None:
                 continue
             samples = v.get("samples")
@@ -222,6 +234,7 @@ class LatentMathNode(io.ComfyNode):
         raw_result = visitor.visit(tree)
         result_t = as_tensor(raw_result, ae.shape)
 
+        result_t = move_to_device(result_t, original_device)
         result_latent = ref_latent.copy()
 
         # If the visitor produced a NestedTensor (whole-tensor arithmetic on a NestedTensor
@@ -230,7 +243,7 @@ class LatentMathNode(io.ComfyNode):
             rl = result_latent.copy()
             rl["samples"] = result_t
             stack = stack if remember_stack else copy.deepcopy(stack)
-            return ([rl], stack)
+            return (move_to_device([rl], original_device), stack)
 
         # If the visitor produced a list/tuple, emit each element as a separate latent.
         if isinstance(result_t, (list, tuple)) and result_t and isinstance(result_t[0], torch.Tensor):
@@ -240,7 +253,7 @@ class LatentMathNode(io.ComfyNode):
                 rl["samples"] = comp
                 results.append(rl)
                 stack = stack if remember_stack else copy.deepcopy(stack)
-            return (results, stack)
+            return (move_to_device(results, original_device), stack)
 
         if batching > 0:
             res = torch.split(result_t, batching)
@@ -250,8 +263,8 @@ class LatentMathNode(io.ComfyNode):
                 rl["samples"] = result_tensor
                 results.append(rl)
                 stack = stack if remember_stack else copy.deepcopy(stack)
-            return (results, stack)
+            return (move_to_device(results, original_device), stack)
         rl = result_latent.copy()
         rl["samples"] = result_t
         stack = stack if remember_stack else copy.deepcopy(stack)
-        return ([rl], stack)
+        return (move_to_device([rl], original_device), stack)

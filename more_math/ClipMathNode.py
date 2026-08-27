@@ -4,6 +4,7 @@ from .helper_functions import checkLazyNew
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy
+import comfy
 import comfy.utils
 
 
@@ -34,6 +35,12 @@ class CLIPMathNode(io.ComfyNode):
                     default="error",
                     tooltip="How to handle mismatched layer counts."
                 ),
+                io.Boolean.Input(
+                    id="use_compute_device",
+                    default=True,
+                    display_name="Move tensors to GPU",
+                    tooltip="Temporarily copies CLIP patch tensors to the compute device for math and moves the patches back afterwards.",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -45,12 +52,12 @@ class CLIPMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",use_compute_device=True,stack={}):
         return checkLazyNew(Expression,V,F)
 
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack={}) -> io.NodeOutput:
+    def execute(cls, V, F, Expression, length_mismatch="tile",use_compute_device=True,stack={}) -> io.NodeOutput:
         # Determine reference CLIP
         a = V.get("V0")
         stack = copy.deepcopy(stack) if stack is not None else {}
@@ -75,7 +82,7 @@ class CLIPMathNode(io.ComfyNode):
         pbar = comfy.utils.ProgressBar(layer_count)
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 
-        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F,pbar=pbar, mapping=aliases,stack=stack)
+        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F,pbar=pbar, mapping=aliases,stack=stack,use_compute_device=use_compute_device)
 
         out_clip = a.clone()
         if patches:

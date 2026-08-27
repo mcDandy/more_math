@@ -1,7 +1,8 @@
 import torch
-from .helper_functions import checkLazyNew, generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable
+from .helper_functions import checkLazyNew, generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, get_tensor_device, move_to_device
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
+import comfy
 import copy
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
@@ -51,6 +52,12 @@ class ConditioningMathNode(io.ComfyNode):
                         "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
                     ),
                 ),
+                io.Boolean.Input(
+                    id="use_compute_device",
+                    default=True,
+                    display_name="Move tensors to GPU",
+                    tooltip="Temporarily copies conditioning tensors to the compute device for math and moves the result back afterwards.",
+                ),
                 MrmthStack.Input(id="stack",optional=True)
             ],
             outputs=[
@@ -60,14 +67,14 @@ class ConditioningMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0,remember_stack=False, stack={}):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0,remember_stack=False,use_compute_device=True, stack={}):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression_pi,V,F)
         return d|b
 
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0,remember_stack=False, stack={}):
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0,remember_stack=False,use_compute_device=True, stack={}):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
@@ -75,13 +82,28 @@ class ConditioningMathNode(io.ComfyNode):
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
         # Extract tensors and pooled outputs
+        original_tensor = None
         tensors = {}
         pooled_outputs = {}
         for key in tensor_keys:
              conditioning = V[key]
              tensors[key] = conditioning[0][0]
+             if original_tensor is None:
+                 original_tensor = conditioning[0][0]
              # pooled_output is optional in the dict
 
+             pooled_outputs[key] = conditioning[0][1].get("pooled_output")
+
+        original_device = get_tensor_device(original_tensor)
+        compute_device = comfy.model_management.get_torch_device() if use_compute_device else original_device
+        working_V = move_to_device(V, compute_device) if compute_device is not None and compute_device != original_device else V
+
+        # Extract tensors and pooled outputs
+        tensors = {}
+        pooled_outputs = {}
+        for key in tensor_keys:
+             conditioning = working_V[key]
+             tensors[key] = conditioning[0][0]
              pooled_outputs[key] = conditioning[0][1].get("pooled_output")
 
         # Normalize main tensors
@@ -225,4 +247,4 @@ class ConditioningMathNode(io.ComfyNode):
             res_list = [base]
 
         stack = stack if remember_stack else copy.deepcopy(stack)
-        return (res_list,stack)
+        return (move_to_device(res_list, original_device),stack)

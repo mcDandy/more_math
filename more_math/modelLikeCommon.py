@@ -1,6 +1,7 @@
-from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable
+from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import comfy
+import comfy.model_management
 import torch
 
 
@@ -63,18 +64,30 @@ def get_base_weight(obj, key):
     return None
 
 
-def coerce_like(weight, reference):
+def get_base_state_dict(obj):
+    patcher = _get_model_patcher(obj)
+    if patcher is not None and hasattr(patcher, "use_ejected") and hasattr(patcher, "model"):
+        try:
+            with patcher.use_ejected():
+                return get_effective_state_dict(obj)
+        except Exception:
+            pass
+    return get_effective_state_dict(obj)
+
+
+def coerce_like(weight, reference, device=None):
     if isinstance(weight, torch.Tensor) and isinstance(reference, torch.Tensor):
-        if weight.device != reference.device or weight.dtype != reference.dtype:
-            return weight.to(device=reference.device, dtype=reference.dtype)
+        target_device = device if device is not None else reference.device
+        if weight.device != target_device or weight.dtype != reference.dtype:
+            return weight.to(device=target_device, dtype=reference.dtype)
     return weight
 
 
-def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0):
+def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0.0, use_compute_device=False):
     """Legacy calculate_patches for backward compatibility."""
-    return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, pbar=None, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"})
+    return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, pbar=None, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}, use_compute_device=use_compute_device)
 
-def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
+def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
@@ -119,6 +132,28 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
     else:
         tree = Expr
     patches = {}
+    original_device = None
+    compute_device = comfy.model_management.get_torch_device() if use_compute_device else None
+    needs_deltas = isinstance(Expr, str) and "_d" in Expr or not isinstance(Expr, str)
+
+    current_state_dicts = {}
+    base_state_dicts = {}
+    for v_name, v_val in V.items():
+        if v_val is None:
+            continue
+        current_sd = get_effective_state_dict(v_val)
+        if current_sd is None:
+            continue
+        if original_device is None:
+            original_device = get_tensor_device(current_sd)
+        if compute_device is not None and original_device is not None and compute_device != original_device:
+            current_sd = move_to_device(current_sd, compute_device)
+        current_state_dicts[v_name] = current_sd
+        if needs_deltas:
+            base_sd = get_base_state_dict(v_val)
+            if base_sd is not None and compute_device is not None and original_device is not None and compute_device != original_device:
+                base_sd = move_to_device(base_sd, compute_device)
+            base_state_dicts[v_name] = base_sd
 
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
     # Just skip for utility or use if substantial.
@@ -147,24 +182,28 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
         ref_tensor = None
         deltas = {}
 
-        for v_name, v_val in V.items():
-            if v_val is not None:
-                w_tensor = get_weight(v_val, key)
-                if w_tensor is not None:
-                    variables[v_name] = w_tensor
-                    ref_tensor = w_tensor
-                    valid_key = True
-                    base_tensor = get_base_weight(v_val, key)
+        for v_name in V.keys():
+            current_sd = current_state_dicts.get(v_name)
+            if current_sd is None:
+                continue
+            w_tensor = current_sd.get(key, None)
+            if w_tensor is not None:
+                variables[v_name] = w_tensor
+                ref_tensor = w_tensor
+                valid_key = True
+                if needs_deltas:
+                    base_sd = base_state_dicts.get(v_name)
+                    base_tensor = base_sd.get(key, None) if base_sd is not None else None
                     if base_tensor is None:
                         base_tensor = w_tensor
-                    base_tensor = coerce_like(base_tensor, w_tensor)
+                    base_tensor = coerce_like(base_tensor, w_tensor, device=compute_device)
                     try:
                         deltas[v_name] = w_tensor - base_tensor
                     except Exception:
                         deltas[v_name] = torch.zeros_like(w_tensor)
-                else:
-                    # Missing key in this model will be handled later (zero init)
-                    pass
+            else:
+                # Missing key in this model will be handled later (zero init)
+                pass
 
         if not valid_key:
             continue
@@ -227,5 +266,11 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[]):
 
         if pbar is not None:
             pbar.update(1)
+
+    if compute_device is not None and original_device is not None and original_device != compute_device:
+        patches = {
+            key: ((value[0].to(device=original_device),) if isinstance(value, tuple) and value and torch.is_tensor(value[0]) else value)
+            for key, value in patches.items()
+        }
 
     return patches

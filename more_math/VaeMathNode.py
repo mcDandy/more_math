@@ -32,6 +32,12 @@ class VAEMathNode(io.ComfyNode):
                     default="error",
                     tooltip="How to handle mismatched layer counts. For models, this usually defaults to broadcast (zero for missing layers)."
                 ),
+                io.Boolean.Input(
+                    id="use_compute_device",
+                    default=True,
+                    display_name="Move tensors to GPU",
+                    tooltip="Temporarily copies VAE tensors to the compute device for math and moves the patches back afterwards.",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -43,11 +49,11 @@ class VAEMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",use_compute_device=True,stack={}):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack={}) -> io.NodeOutput:
+    def execute(cls, V, F, Expression, length_mismatch="tile",use_compute_device=True,stack={}) -> io.NodeOutput:
         # Determine reference VAE
         a = V.get("V0")
         if a is None:
@@ -72,7 +78,7 @@ class VAEMathNode(io.ComfyNode):
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
         layer_count = V.get("V0").model.state_dict().__len__() if hasattr(V.get("V0"), "model") and hasattr(V.get("V0").model, "state_dict") else 0
         pbar = comfy.utils.ProgressBar(layer_count)
-        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F, pbar=pbar, mapping=aliases, stack=stack)
+        patches = calculate_patches_autogrow(Expression, V=patchers_V, F=F, pbar=pbar, mapping=aliases, stack=stack, use_compute_device=use_compute_device)
 
         # VAE does not have a clone method, so we shallow copy and clone the patcher
         out_vae = copy.copy(a)

@@ -1,6 +1,7 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew, get_tensor_device, move_to_device
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io
+import comfy
 import torch
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
@@ -47,6 +48,12 @@ class ImageMathNode(io.ComfyNode):
                         "If enabled, stack is copied at output leading to changes being remembered during batch operations (node runs multiple times in sucession). If disabled each batch gets it's own copy of the stack."
                     ),
                 ),
+                io.Boolean.Input(
+                    id="use_compute_device",
+                    default=True,
+                    display_name="Move tensors to GPU",
+                    tooltip="Temporarily copies image tensors to the compute device for math and moves the result back afterwards.",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -56,11 +63,11 @@ class ImageMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,use_compute_device=True,stack={}):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="error",batching=0,remember_stack=False,stack={}):
+    def execute(cls, V, F, Expression, length_mismatch="error",batching=0,remember_stack=False,use_compute_device=True,stack={}):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Identify all present tensors and their keys
@@ -69,6 +76,10 @@ class ImageMathNode(io.ComfyNode):
              raise ValueError("At least one input is required.")
 
         tensors = [V[k] for k in tensor_keys]
+        original_device = get_tensor_device(tensors[0])
+        compute_device = comfy.model_management.get_torch_device() if use_compute_device else original_device
+        working_V = move_to_device(V, compute_device) if compute_device is not None and compute_device != original_device else V
+        tensors = [working_V[k] for k in tensor_keys]
         stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
 
         # Normalize all tensors together to find the common target shape
@@ -141,6 +152,7 @@ class ImageMathNode(io.ComfyNode):
         visitor = UnifiedMathVisitor(variables, ae.shape,ae.device,state_storage=stack)
         result = visitor.visit(tree)
         result = as_tensor(result, ae.shape)
+        result = move_to_device(result, original_device)
 
         if batching and batching > 0:
             res = torch.split(result, batching, dim=0)

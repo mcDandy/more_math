@@ -134,6 +134,63 @@ def make_zero_like(ref):
     return None
 
 
+def get_tensor_device(value):
+    if torch.is_tensor(value):
+        return value.device
+    if getattr(value, "is_nested", False):
+        for tensor in value.tensors:
+            if torch.is_tensor(tensor):
+                return tensor.device
+    if isinstance(value, dict):
+        for item in value.values():
+            device = get_tensor_device(item)
+            if device is not None:
+                return device
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            device = get_tensor_device(item)
+            if device is not None:
+                return device
+    return None
+
+
+def move_to_device(value, device):
+    if value is None or device is None:
+        return value
+
+    if torch.is_tensor(value):
+        return value.to(device=device)
+
+    if getattr(value, "is_nested", False):
+        from comfy.nested_tensor import NestedTensor
+
+        return NestedTensor([move_to_device(t, device) for t in value.tensors])
+
+    if isinstance(value, dict):
+        return {k: move_to_device(v, device) for k, v in value.items()}
+
+    if isinstance(value, list):
+        return [move_to_device(v, device) for v in value]
+
+    if isinstance(value, tuple):
+        return tuple(move_to_device(v, device) for v in value)
+
+    if hasattr(value, "images") and hasattr(value, "audio"):
+        images = move_to_device(getattr(value, "images", None), device)
+        audio = move_to_device(getattr(value, "audio", None), device)
+        try:
+            return type(value)(
+                images=images,
+                audio=audio,
+                frame_rate=getattr(value, "frame_rate", None),
+                metadata=getattr(value, "metadata", None),
+            )
+        except Exception:
+            return value
+
+    return value
+
+
 def normalize_to_common_shape(*tensors, mode="pad"):
     """
     Normalize multiple tensors to a common shape.

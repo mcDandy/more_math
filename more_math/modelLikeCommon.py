@@ -2,6 +2,8 @@ from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import comfy
 import comfy.model_management
+import comfy.model_patcher
+import comfy.lora
 import torch
 
 
@@ -49,14 +51,24 @@ def get_effective_weight(obj, key):
 
 
 def get_base_weight(obj, key):
+    """True pre-patch weight for `key`, regardless of whether the patcher
+    currently has this key's patches baked into the live model (`backup`
+    holds the pristine value whenever that happened; `use_ejected` does not
+    undo weight patches, only injections, so it can't be relied on here)."""
     patcher = _get_model_patcher(obj)
-    if patcher is not None and hasattr(patcher, "use_ejected") and hasattr(patcher, "model"):
-        try:
-            with patcher.use_ejected():
-                weight, _, _ = comfy.model_patcher.get_key_weight(patcher.model, key)
+    if patcher is not None:
+        backup = getattr(patcher, "backup", None)
+        if backup is not None:
+            bk = backup.get(key, None)
+            if bk is not None:
+                return bk.weight
+        model = getattr(patcher, "model", None)
+        if model is not None:
+            try:
+                weight, _, _ = comfy.model_patcher.get_key_weight(model, key)
                 return weight
-        except Exception:
-            pass
+            except Exception:
+                pass
 
     sd = get_effective_state_dict(obj)
     if sd is not None:
@@ -64,15 +76,22 @@ def get_base_weight(obj, key):
     return None
 
 
-def get_base_state_dict(obj):
+def get_patched_weight(obj, key, base_weight):
+    """Fully patched weight for `key`, computed fresh from `base_weight` so
+    the result never depends on whether the model happens to be baked
+    in-place already (reusing an already-baked weight as input would
+    double-apply patches whose strength_model != 1.0)."""
+    if base_weight is None:
+        return None
     patcher = _get_model_patcher(obj)
-    if patcher is not None and hasattr(patcher, "use_ejected") and hasattr(patcher, "model"):
-        try:
-            with patcher.use_ejected():
-                return get_effective_state_dict(obj)
-        except Exception:
-            pass
-    return get_effective_state_dict(obj)
+    if patcher is not None:
+        patches = getattr(patcher, "patches", None)
+        if patches is not None and key in patches:
+            try:
+                return comfy.lora.calculate_weight(patches[key], base_weight.clone(), key)
+            except Exception:
+                pass
+    return base_weight
 
 
 def coerce_like(weight, reference, device=None):
@@ -149,7 +168,6 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
     mapping_items = tuple(mapping.items())
 
     current_state_dicts = {}
-    base_state_dicts = {} if needs_deltas else None
     for v_name in needed_v_names:
         v_val = V.get(v_name)
         if v_val is None:
@@ -162,11 +180,6 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
         if compute_device is not None and original_device is not None and compute_device != original_device:
             current_sd = move_to_device(current_sd, compute_device)
         current_state_dicts[v_name] = current_sd
-        if needs_deltas:
-            base_sd = get_base_state_dict(v_val)
-            if base_sd is not None and compute_device is not None and original_device is not None and compute_device != original_device:
-                base_sd = move_to_device(base_sd, compute_device)
-            base_state_dicts[v_name] = base_sd
 
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
     # Just skip for utility or use if substantial.
@@ -195,16 +208,28 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
         valid_key = False
         ref_tensor = None
         present_weights = {}
+        present_bases = {}
 
         for v_name in V.keys():
             current_sd = current_state_dicts.get(v_name)
             if current_sd is None:
                 continue
-            w_tensor = current_sd.get(key, None)
-            if w_tensor is not None:
-                present_weights[v_name] = w_tensor
+            raw_tensor = current_sd.get(key, None)
+            if raw_tensor is not None:
+                v_val = V.get(v_name)
+                base_tensor = get_base_weight(v_val, key) if v_val is not None else None
+                if base_tensor is None:
+                    base_tensor = raw_tensor
+                base_tensor = coerce_like(base_tensor, raw_tensor, device=compute_device)
+                patched_tensor = get_patched_weight(v_val, key, base_tensor) if v_val is not None else None
+                if patched_tensor is None:
+                    patched_tensor = raw_tensor
+                patched_tensor = coerce_like(patched_tensor, raw_tensor, device=compute_device)
+                present_weights[v_name] = patched_tensor
+                if needs_deltas:
+                    present_bases[v_name] = base_tensor
                 if ref_tensor is None:
-                    ref_tensor = w_tensor
+                    ref_tensor = patched_tensor
                 valid_key = True
 
         if not valid_key:
@@ -236,11 +261,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
                 w_tensor = present_weights[v_name]
                 variables[v_name] = make_lazy(lambda wt=w_tensor: wt)
                 if needs_deltas:
-                    base_sd = base_state_dicts.get(v_name)
-                    base_tensor = base_sd.get(key, None) if base_sd is not None else None
-                    if base_tensor is None:
-                        base_tensor = w_tensor
-                    base_tensor = coerce_like(base_tensor, w_tensor, device=compute_device)
+                    base_tensor = present_bases.get(v_name, w_tensor)
                     variables[f"{v_name}_d"] = make_lazy(lambda wt=w_tensor, bt=base_tensor: wt - bt)
             else:
                 variables[v_name] = make_lazy(lambda rt=ref_tensor: torch.zeros_like(rt))

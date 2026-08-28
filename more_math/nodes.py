@@ -21,6 +21,7 @@ from .VideoMathNode import VideoMathNode
 from .ModelMathNode import ModelMathNode
 from .VaeMathNode import VAEMathNode
 from .ClipMathNode import CLIPMathNode
+from .LoraMathNode import LoraMathNode
 from .SpectrogramToAudioNode import SpectrogramToAudio
 from .AudioToSpectrogramNode import AudioToSpectrogram
 
@@ -151,6 +152,7 @@ class MoreMathExtension(ComfyExtension):
             CLIPMathNodeOLD,
             VAEMathNode,
             VAEMathNodeOLD,
+            LoraMathNode,
             LatentMathNode,
             LatentMathNodeOLD,
             ImageMathNode,

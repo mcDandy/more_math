@@ -261,15 +261,15 @@ func1:
 		*/
 	| VAR LPAREN expr RPAREN			# VarFunc
 		/**
-		  sort(x) - returns a sorted version of x (If input is tensor, it sorts the last dimension)
+		  sort(x, [desc], [dim]) - returns a sorted version of x (If input is tensor, it sorts the last dimension)
 		*/
-	| SORT LPAREN expr RPAREN			# SortFunc
+	| SORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN			# SortFunc
 		/**
-		  any(x) - returns true if any element of x is non-zero
+		  any(x) - returns 1 if any element of x is non-zero otherwise 0
 		*/
 	| ANY LPAREN expr RPAREN			# AnyFunc
 		/**
-		  all(x) - returns true if all elements of x are non-zero
+		  all(x) - returns 1 if all elements of x are non-zero otherwise 0
 		*/
 	| ALL LPAREN expr RPAREN			# AllFunc
 		/**

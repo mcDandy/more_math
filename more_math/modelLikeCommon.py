@@ -8,6 +8,9 @@ import torch
 
 
 def _get_model_patcher(obj):
+    # A MODEL input *is* a ModelPatcher already - not something wrapping one.
+    if isinstance(obj, comfy.model_patcher.ModelPatcher):
+        return obj
     patcher = getattr(obj, "patcher", None)
     if patcher is None and hasattr(obj, "model"):
         patcher = getattr(obj.model, "patcher", None)

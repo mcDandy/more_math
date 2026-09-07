@@ -239,6 +239,51 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#SliceWithStep.
+    def visitSliceWithStep(self, ctx:MathExprParser.SliceWithStepContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Slice.
+    def visitSlice(self, ctx:MathExprParser.SliceContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SliceColonStartStep.
+    def visitSliceColonStartStep(self, ctx:MathExprParser.SliceColonStartStepContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SliceColonStart.
+    def visitSliceColonStart(self, ctx:MathExprParser.SliceColonStartContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SliceExprColonStep.
+    def visitSliceExprColonStep(self, ctx:MathExprParser.SliceExprColonStepContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SliceExpr.
+    def visitSliceExpr(self, ctx:MathExprParser.SliceExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SliceColonStep.
+    def visitSliceColonStep(self, ctx:MathExprParser.SliceColonStepContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SliceOnly.
+    def visitSliceOnly(self, ctx:MathExprParser.SliceOnlyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#IndexOnly.
+    def visitIndexOnly(self, ctx:MathExprParser.IndexOnlyContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#Func0Exp.
     def visitFunc0Exp(self, ctx:MathExprParser.Func0ExpContext):
         return self.visitChildren(ctx)

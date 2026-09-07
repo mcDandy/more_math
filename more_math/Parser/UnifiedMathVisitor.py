@@ -455,37 +455,92 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitToIndex(self, ctx):
         return (yield ctx.indexExpr())
 
-    def visitIndexExp(self, ctx):
-        val = (yield ctx.indexExpr())
-        raw_index_nodes = ctx.expr()
+    def _process_slice_element(self, slice_elem_ctx):
+        """Process a sliceElement context and return either an index (int) or a slice object."""
+        # Get the context class name to determine which type of element this is
+        ctx_type = type(slice_elem_ctx).__name__
 
-        indices = []
-        for node in raw_index_nodes:
-            idx_val = (yield node)
-
+        if ctx_type == "IndexOnlyContext":
+            # Regular index: expr
+            idx_val = yield slice_elem_ctx.expr(0)
             if self._is_tensor(idx_val):
                 if idx_val.numel() == 1:
-                    indices.append(int(idx_val.flatten()[0].item()))
+                    return int(idx_val.flatten()[0].item())
                 else:
-                    # Fancy indexing with tensor
-                    indices.append(idx_val.long())
+                    return idx_val.long()
             elif self._is_list(idx_val):
-                # Fancy indexing with list - convert to tensor
-                indices.append(torch.tensor(idx_val, dtype=torch.long, device=self.device))
+                return torch.tensor(idx_val, dtype=torch.long, device=self.device)
             else:
-                indices.append(int(idx_val))
+                return int(idx_val)
 
-        # Use standard PyTorch/list indexing
+        # Handle slice expressions - all cases with colons
+        exprs = slice_elem_ctx.expr() if hasattr(slice_elem_ctx, 'expr') else []
+
+        start = None
+        stop = None
+        step = None
+
+        if ctx_type == "SliceContext":
+            # expr COLON expr -> [start:stop]
+            start = yield exprs[0]
+            stop = yield exprs[1]
+        elif ctx_type == "SliceWithStepContext":
+            # expr COLON expr COLON expr -> [start:stop:step]
+            start = yield exprs[0]
+            stop = yield exprs[1]
+            step = yield exprs[2]
+        elif ctx_type == "SliceExprContext":
+            # expr COLON -> [start:]
+            start = yield exprs[0]
+        elif ctx_type == "SliceColonStartContext":
+            # COLON expr -> [:stop]
+            stop = yield exprs[0]
+        elif ctx_type == "SliceColonStartStepContext":
+            # COLON expr COLON expr -> [:stop:step]
+            stop = yield exprs[0]
+            step = yield exprs[1]
+        elif ctx_type == "SliceColonStepContext":
+            # COLON COLON expr -> [::step]
+            step = yield exprs[0]
+        elif ctx_type == "SliceExprColonStepContext":
+            # expr COLON COLON expr -> [start::step]
+            start = yield exprs[0]
+            step = yield exprs[1]
+        elif ctx_type == "SliceOnlyContext":
+            # COLON -> [:]
+            pass
+
+        # Normalize start, stop, step to int or None
+        start_val = None if start is None else int(start) if not isinstance(start, torch.Tensor) else int(start.item())
+        stop_val = None if stop is None else int(stop) if not isinstance(stop, torch.Tensor) else int(stop.item())
+        step_val = None if step is None else int(step) if not isinstance(step, torch.Tensor) else int(step.item())
+
+        return slice(start_val, stop_val, step_val)
+
+    def visitIndexExp(self, ctx):
+        val = (yield ctx.indexExpr())
+        slice_elem_nodes = ctx.sliceElement()
+
+        indices = []
+        for node in slice_elem_nodes:
+            elem = yield self._process_slice_element(node)
+            indices.append(elem)
+
+        # Use standard PyTorch/list indexing and slicing
         if self._is_tensor(val):
             if len(indices) > val.ndim:
-                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Expacted up to {val.ndim} dimensions but got {indices}.")
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Expected up to {val.ndim} dimensions but got {len(indices)}.")
 
-            normalized_indices = []
+            # Build index tuple, handling both regular indices and slices
+            idx_tuple = []
             for dim, idx in enumerate(indices):
-                normalized_indices.append(self._normalize_index_value(idx, val.shape[dim], ctx, f"dimension {dim}"))
+                if isinstance(idx, slice):
+                    idx_tuple.append(idx)
+                else:
+                    # Normalize scalar index
+                    idx_tuple.append(self._normalize_index_value(idx, val.shape[dim], ctx, f"dimension {dim}"))
 
-            idx_tuple = tuple(normalized_indices)
-            result = val[idx_tuple]
+            result = val[tuple(idx_tuple)]
             if self._is_tensor(result):
                 if getattr(result, "is_nested", False):
                     return result
@@ -496,26 +551,72 @@ class UnifiedMathVisitor(MathExprVisitor):
         elif isinstance(val, str):
             current = val
             for idx in indices:
-                if isinstance(idx, torch.Tensor):
+                if isinstance(idx, slice):
+                    current = current[idx]
+                elif isinstance(idx, torch.Tensor):
                     if idx.numel() != 1:
-                        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Too many indecies for string with 1 dimension. Got {idx.numel()}")
+                        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Too many indices for string with 1 dimension. Got {idx.numel()}")
                     idx = int(idx.flatten()[0].item())
-                idx = self._normalize_index_value(idx, len(current), ctx, "string")
-                current = current[idx]
+                    idx = self._normalize_index_value(idx, len(current), ctx, "string")
+                    current = current[idx]
+                else:
+                    idx = self._normalize_index_value(idx, len(current), ctx, "string")
+                    current = current[idx]
             return current
         elif self._is_list(val):
-            # Navigate through nested lists
+            # Navigate through nested lists, supporting both indexing and slicing
             current = val
             for idx in indices:
-                if isinstance(idx, torch.Tensor):
+                if isinstance(idx, slice):
+                    current = current[idx]
+                elif isinstance(idx, torch.Tensor):
                     if idx.numel() != 1:
                         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: List index must be a scalar. Got tensor with length of {idx.numel()}")
                     idx = int(idx.item())
-                idx = self._normalize_index_value(idx, len(current), ctx, "list")
-                current = current[idx]
+                    idx = self._normalize_index_value(idx, len(current), ctx, "list")
+                    current = current[idx]
+                else:
+                    idx = self._normalize_index_value(idx, len(current), ctx, "list")
+                    current = current[idx]
             return current
         error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
         raise ValueError(f"{error_prefix} Indexing only supported on tensors, lists, and strings (found {type(val).__name__})")
+
+    def visitIndexOnly(self, ctx):
+        """Visit slice element that is just an index expression."""
+        return (yield ctx.expr(0))
+
+    def visitSlice(self, ctx):
+        """Visit slice element with start and stop: expr COLON expr"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceWithStep(self, ctx):
+        """Visit slice element with start, stop, and step: expr COLON expr COLON expr"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceColonStart(self, ctx):
+        """Visit slice element with stop only: COLON expr"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceColonStartStep(self, ctx):
+        """Visit slice element with stop and step: COLON expr COLON expr"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceExpr(self, ctx):
+        """Visit slice element with start only: expr COLON"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceColonStep(self, ctx):
+        """Visit slice element with step only: COLON COLON expr"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceExprColonStep(self, ctx):
+        """Visit slice element with start and step: expr COLON COLON expr"""
+        return None  # Handled by _process_slice_element
+
+    def visitSliceOnly(self, ctx):
+        """Visit slice element with no bounds: COLON"""
+        return None  # Handled by _process_slice_element
 
     def visitToAtom(self, ctx):
         return (yield ctx.atom())
@@ -1632,14 +1733,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         return float(torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a,ctx),k,torch.pow,pow,ctx)).item())/x.numel()
 
     def visitSortFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr(0)))
-        desc = False
-        dim = -1
-        if len(ctx.expr()) > 1:
-            desc = bool((yield ctx.expr(1)))
-        if len(ctx.expr()) > 2:
-            dim = int((yield ctx.expr(2)))
-        sorted_val, _ = torch.sort(val, descending=desc, dim=dim)
+        val = self._promote_to_tensor((yield ctx.expr()))
+        sorted_val, _ = torch.sort(val)
         return sorted_val
 
     def visitCossimFunc(self, ctx):
@@ -1652,9 +1747,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             return F.cosine_similarity(a.float(), b.float(), dim=-1)
         except RuntimeError as e:
             error_msg = f"{ctx.start.line}:{ctx.start.column}: cossim({a.shape}, {b.shape}): Incompatible shapes for cosine similarity - {str(e)}"
-            raise ValueError(error_msg)
-        except ValueError as e:
-            error_msg = f"{ctx.start.line}:{ctx.start.column}: cossim({a.shape}, {b.shape}): {str(e)}"
             raise ValueError(error_msg)
 
     def visitRifeFunc(self, ctx):

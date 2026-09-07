@@ -80,8 +80,19 @@ unaryExpr:
 	| indexExpr			# ToIndex;
 
 indexExpr:
-	indexExpr LBRACKET expr (COMMA expr)* RBRACKET	# IndexExp
+	indexExpr LBRACKET sliceElement (COMMA sliceElement)* RBRACKET	# IndexExp
 	| atom								# ToAtom;
+
+sliceElement:
+	expr COLON expr COLON expr		# SliceWithStep
+	| expr COLON expr				# Slice
+	| COLON expr COLON expr			# SliceColonStartStep
+	| COLON expr					# SliceColonStart
+	| expr COLON COLON expr			# SliceExprColonStep
+	| expr COLON					# SliceExpr
+	| COLON COLON expr				# SliceColonStep
+	| COLON						# SliceOnly
+	| expr							# IndexOnly;
 
 // Atoms: function calls, variable, number, constant, or parenthesized expression
 atom:

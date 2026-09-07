@@ -422,6 +422,87 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#SliceWithStep.
+    def enterSliceWithStep(self, ctx:MathExprParser.SliceWithStepContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceWithStep.
+    def exitSliceWithStep(self, ctx:MathExprParser.SliceWithStepContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Slice.
+    def enterSlice(self, ctx:MathExprParser.SliceContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Slice.
+    def exitSlice(self, ctx:MathExprParser.SliceContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SliceColonStartStep.
+    def enterSliceColonStartStep(self, ctx:MathExprParser.SliceColonStartStepContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceColonStartStep.
+    def exitSliceColonStartStep(self, ctx:MathExprParser.SliceColonStartStepContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SliceColonStart.
+    def enterSliceColonStart(self, ctx:MathExprParser.SliceColonStartContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceColonStart.
+    def exitSliceColonStart(self, ctx:MathExprParser.SliceColonStartContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SliceExprColonStep.
+    def enterSliceExprColonStep(self, ctx:MathExprParser.SliceExprColonStepContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceExprColonStep.
+    def exitSliceExprColonStep(self, ctx:MathExprParser.SliceExprColonStepContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SliceExpr.
+    def enterSliceExpr(self, ctx:MathExprParser.SliceExprContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceExpr.
+    def exitSliceExpr(self, ctx:MathExprParser.SliceExprContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SliceColonStep.
+    def enterSliceColonStep(self, ctx:MathExprParser.SliceColonStepContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceColonStep.
+    def exitSliceColonStep(self, ctx:MathExprParser.SliceColonStepContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SliceOnly.
+    def enterSliceOnly(self, ctx:MathExprParser.SliceOnlyContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SliceOnly.
+    def exitSliceOnly(self, ctx:MathExprParser.SliceOnlyContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IndexOnly.
+    def enterIndexOnly(self, ctx:MathExprParser.IndexOnlyContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IndexOnly.
+    def exitIndexOnly(self, ctx:MathExprParser.IndexOnlyContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#Func0Exp.
     def enterFunc0Exp(self, ctx:MathExprParser.Func0ExpContext):
         pass

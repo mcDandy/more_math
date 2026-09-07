@@ -104,6 +104,21 @@ class MathGuider:
 
         return None
 
+    @property
+    def cfg(self):
+        """Delegate cfg to the primary guider."""
+        for v in self.V.values():
+            if v is not None and hasattr(v, "cfg"):
+                return v.cfg
+        return 1.0  # Default value if no guider has cfg
+
+    @cfg.setter
+    def cfg(self, value):
+        """Set cfg on all guiders that support it."""
+        for v in self.V.values():
+            if v is not None and hasattr(v, "cfg"):
+                v.cfg = value
+
     def __call__(self, x, sigma, model_options={}, seed=None):
         lazy_g_results = {}
 

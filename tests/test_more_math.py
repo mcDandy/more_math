@@ -667,6 +667,46 @@ def test_text_replace():
     assert result == "hello python"
 
 
+def test_dict_literal_and_stringification():
+    from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
+    from more_math.helper_functions import parse_expr
+
+    expr = '{a:1, b:"two", nested:{c:3}}'
+    tree = parse_expr(expr)
+    visitor = UnifiedMathVisitor({}, (1,))
+    result = visitor.visit(tree)
+
+    assert result["a"] == 1.0
+    assert result["b"] == "two"
+    assert result["nested"]["c"] == 3.0
+    assert str(result) == "{a:1.0, b:two, nested:{c:3.0}}"
+
+
+def test_dict_index_assignment_and_get():
+    from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor, MathDict
+    from more_math.helper_functions import parse_expr
+
+    expr = 'd["b"] = 2; d["b"]'
+    tree = parse_expr(expr)
+    visitor = UnifiedMathVisitor({"d": MathDict({"a": 1.0})}, (1,))
+    result = visitor.visit(tree)
+
+    assert result == 2.0
+    assert visitor.variables["d"]["b"] == 2.0
+
+
+def test_dict_add_remove_key_helpers():
+    from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor, MathDict
+    from more_math.helper_functions import parse_expr
+
+    expr = 'add_key(d, "b", 2); remove_kay(d, "a"); d'
+    tree = parse_expr(expr)
+    visitor = UnifiedMathVisitor({"d": MathDict({"a": 1.0})}, (1,))
+    result = visitor.visit(tree)
+
+    assert result == {"b": 2.0} or str(result) == "{b:2.0}"
+
+
 # ==========================================
 # Crop Function Tests
 # ==========================================

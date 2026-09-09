@@ -161,6 +161,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#dictEntryList.
+    def enterDictEntryList(self, ctx:MathExprParser.DictEntryListContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#dictEntryList.
+    def exitDictEntryList(self, ctx:MathExprParser.DictEntryListContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#dictEntry.
+    def enterDictEntry(self, ctx:MathExprParser.DictEntryContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#dictEntry.
+    def exitDictEntry(self, ctx:MathExprParser.DictEntryContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#breakStmt.
     def enterBreakStmt(self, ctx:MathExprParser.BreakStmtContext):
         pass
@@ -644,6 +662,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ListExp.
     def exitListExp(self, ctx:MathExprParser.ListExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DictExp.
+    def enterDictExp(self, ctx:MathExprParser.DictExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DictExp.
+    def exitDictExp(self, ctx:MathExprParser.DictExpContext):
         pass
 
 
@@ -1583,6 +1610,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#AddKeyFunc.
+    def enterAddKeyFunc(self, ctx:MathExprParser.AddKeyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AddKeyFunc.
+    def exitAddKeyFunc(self, ctx:MathExprParser.AddKeyFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PermuteFunc.
     def enterPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         pass
@@ -1814,6 +1850,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
     def exitInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RemoveKeyFunc.
+    def enterRemoveKeyFunc(self, ctx:MathExprParser.RemoveKeyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RemoveKeyFunc.
+    def exitRemoveKeyFunc(self, ctx:MathExprParser.RemoveKeyFuncContext):
         pass
 
 

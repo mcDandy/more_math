@@ -17,7 +17,7 @@ grammar MathExpr;
 start: (funcDef | varDef | stmt)* expr SEMICOLON? EOF;
 
 funcDef:
-	VARIABLE LPAREN paramList? RPAREN ARROW (block | expr) SEMICOLON # FunctionDef;
+	VARIABLE LPAREN paramList? RPAREN ARROW (expr | block) SEMICOLON # FunctionDef;
 
 varDef:
 	VARIABLE (LBRACKET expr (COMMA expr)* RBRACKET)* (EQUEALS | PLUS_EQ | MINUS_EQ | MULT_EQ | DIV_EQ | MOD_EQ) expr SEMICOLON;
@@ -39,6 +39,12 @@ ifStmt: IF LPAREN expr RPAREN stmt (ELSE stmt)?;
 whileStmt: WHILE LPAREN expr RPAREN stmt;
 forStmt: FOR LPAREN VARIABLE IN expr RPAREN stmt;
 block: LBRACE stmt* RBRACE;
+
+dictEntryList: dictEntry (COMMA dictEntry)*;
+dictEntry: VARIABLE COLON expr
+	| STRING COLON expr
+	| NUMBER COLON expr;
+
 breakStmt: BREAK SEMICOLON;
 continueStmt: CONTINUE SEMICOLON;
 returnStmt: RETURN expr? SEMICOLON;
@@ -108,11 +114,12 @@ atom:
 	| NUMBER						# NumberExp
 	| CONSTANT						# ConstantExp
 	| STRING						# StringExp
-	| LPAREN paramList RPAREN ARROW (block | expr)	# LambdaExp
+	| LPAREN paramList RPAREN ARROW (expr | block)	# LambdaExp
 	| LPAREN expr RPAREN			# ParenExp
 	| LPAREN expr RPAREN			# ParenExp
 	| PIPE expr PIPE				# AbsExp
 	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
+	| LBRACE dictEntryList? RBRACE	# DictExp
 	| VARIABLE LPAREN exprList? RPAREN	# CallExp
 	| NONE							# NoneExp
 	| BREAK							# BreakExp
@@ -520,11 +527,15 @@ func2:
 		/**
 		  append(x, y) - appends y to the end of x. If inputs are tensors use concatenate(x,...,dim)
 		*/
-	| APPEND LPAREN expr COMMA expr RPAREN			# AppendFunc
-		/**
-		  permute(x, dims) - permutes the dimensions of tensor x according to dims
-		*/
-	| PERM LPAREN expr COMMA expr RPAREN			# PermuteFunc
+		| APPEND LPAREN expr COMMA expr RPAREN			# AppendFunc
+			/**
+			  add_key(dict, key, value) - adds or replaces a dictionary entry and returns the updated dictionary
+			*/
+		| ADD_KEY LPAREN expr COMMA expr COMMA expr RPAREN	# AddKeyFunc
+			/**
+			  permute(x, dims) - permutes the dimensions of tensor x according to dims
+			*/
+		| PERM LPAREN expr COMMA expr RPAREN			# PermuteFunc
 		/**
 		  gaussian(x, sigma, [reshape]) - applies a Gaussian blur to x with specified sigma. if reshape has value of 1.0, then it tries orienting the input such that channel is in the direction of filter. Otherwise it expect color dimension to be the last.
 		*/
@@ -627,7 +638,11 @@ func2:
 		/**
 		  interpolate_nearest_exact(x, y) - performs nearest neighbor interpolation X. Assumes that dim 0 is batch and dim 1 = channel
 		*/
-	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc;
+	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc
+		/**
+		  remove_key(dict, key) - removes a dictionary entry and returns the updated dictionary
+		*/
+	| REMOVE_KEY LPAREN expr COMMA expr RPAREN	# RemoveKeyFunc;
 
 
 func3:
@@ -986,6 +1001,8 @@ BAND: 'band' | 'bitwise_and';
 XOR: 'bxor' | 'bitwise_xor';
 BOR: 'bor' | 'bitwise_or';
 TENSOR: 'tensor';
+ADD_KEY: 'add_key';
+REMOVE_KEY: 'remove_key' | 'remove_kay';
 PUSH: 'stack_push';
 POP: 'stack_pop';
 CLEAR: 'stack_clear';

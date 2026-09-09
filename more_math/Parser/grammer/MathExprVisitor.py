@@ -94,6 +94,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#dictEntryList.
+    def visitDictEntryList(self, ctx:MathExprParser.DictEntryListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#dictEntry.
+    def visitDictEntry(self, ctx:MathExprParser.DictEntryContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#breakStmt.
     def visitBreakStmt(self, ctx:MathExprParser.BreakStmtContext):
         return self.visitChildren(ctx)
@@ -361,6 +371,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ListExp.
     def visitListExp(self, ctx:MathExprParser.ListExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DictExp.
+    def visitDictExp(self, ctx:MathExprParser.DictExpContext):
         return self.visitChildren(ctx)
 
 
@@ -884,6 +899,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#AddKeyFunc.
+    def visitAddKeyFunc(self, ctx:MathExprParser.AddKeyFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PermuteFunc.
     def visitPermuteFunc(self, ctx:MathExprParser.PermuteFuncContext):
         return self.visitChildren(ctx)
@@ -1011,6 +1031,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#InterpolateNearestExactFunc.
     def visitInterpolateNearestExactFunc(self, ctx:MathExprParser.InterpolateNearestExactFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RemoveKeyFunc.
+    def visitRemoveKeyFunc(self, ctx:MathExprParser.RemoveKeyFuncContext):
         return self.visitChildren(ctx)
 
 

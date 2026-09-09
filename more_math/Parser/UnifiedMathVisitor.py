@@ -32,6 +32,12 @@ class BreakSignal:
 class ContinueSignal:
     pass
 
+class MathDict(dict):
+    def __str__(self):
+        return "{" + ", ".join(f"{k}:{v}" for k, v in self.items()) + "}"
+
+    __repr__ = __str__
+
 class UnifiedMathVisitor(MathExprVisitor):
     def __init__(self, variables, shape=None, device=None, functions=None, depth=0, state_storage=None):
 
@@ -107,6 +113,9 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def _is_list(self, val):
         return isinstance(val, (list, tuple))
+
+    def _decode_string_literal(self, text):
+        return text[1:-1].replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\').replace('\\"', '"').replace("\\'", "'")
 
     def _promote_to_tensor(self, val,brodcast=False):
         if self._is_tensor(val):
@@ -435,10 +444,24 @@ class UnifiedMathVisitor(MathExprVisitor):
             res.append((yield e))
         return res
 
+    def visitDictExp(self, ctx):
+        res = MathDict()
+        entries = ctx.dictEntryList().dictEntry() if ctx.dictEntryList() else []
+        for entry in entries:
+            if entry.VARIABLE():
+                key = entry.VARIABLE().getText()
+            elif entry.STRING():
+                key = self._decode_string_literal(entry.STRING().getText())
+            else:
+                key_text = entry.NUMBER().getText()
+                key = float(key_text) if any(ch in key_text for ch in ".eE") else int(key_text)
+            value = yield entry.expr()
+            res[key] = value
+        return res
+
     def visitStringExp(self, ctx):
        val = yield ctx.STRING().getText()
-       val = val[1:-1].replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\').replace('\\"', '"').replace("\\'", "'")
-       return val
+       return self._decode_string_literal(val)
 
     def visitParenExp(self, ctx):
         return (yield ctx.expr())
@@ -456,22 +479,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         return (yield ctx.indexExpr())
 
     def _process_slice_element(self, slice_elem_ctx):
-        """Process a sliceElement context and return either an index (int) or a slice object."""
+        """Process a sliceElement context and return either an index value or a slice object."""
         # Get the context class name to determine which type of element this is
         ctx_type = type(slice_elem_ctx).__name__
 
         if ctx_type == "IndexOnlyContext":
             # Regular index: expr
-            idx_val = yield slice_elem_ctx.expr(0)
-            if self._is_tensor(idx_val):
-                if idx_val.numel() == 1:
-                    return int(idx_val.flatten()[0].item())
-                else:
-                    return idx_val.long()
-            elif self._is_list(idx_val):
-                return torch.tensor(idx_val, dtype=torch.long, device=self.device)
-            else:
-                return int(idx_val)
+            return (yield slice_elem_ctx.expr())
 
         # Handle slice expressions - all cases with colons
         exprs = slice_elem_ctx.expr() if hasattr(slice_elem_ctx, 'expr') else []
@@ -523,22 +537,29 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         indices = []
         for node in slice_elem_nodes:
-            elem = yield self._process_slice_element(node)
+            elem = yield from self._process_slice_element(node)
             indices.append(elem)
 
-        # Use standard PyTorch/list indexing and slicing
+        # Use standard PyTorch/list/string/dictionary indexing and slicing
         if self._is_tensor(val):
             if len(indices) > val.ndim:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Expected up to {val.ndim} dimensions but got {len(indices)}.")
 
-            # Build index tuple, handling both regular indices and slices
             idx_tuple = []
             for dim, idx in enumerate(indices):
                 if isinstance(idx, slice):
                     idx_tuple.append(idx)
+                    continue
+                if self._is_tensor(idx):
+                    if idx.numel() == 1:
+                        idx = int(idx.flatten()[0].item())
+                    else:
+                        idx = idx.long()
+                elif self._is_list(idx):
+                    idx = torch.tensor(idx, dtype=torch.long, device=self.device)
                 else:
-                    # Normalize scalar index
-                    idx_tuple.append(self._normalize_index_value(idx, val.shape[dim], ctx, f"dimension {dim}"))
+                    idx = int(idx)
+                idx_tuple.append(self._normalize_index_value(idx, val.shape[dim], ctx, f"dimension {dim}"))
 
             result = val[tuple(idx_tuple)]
             if self._is_tensor(result):
@@ -553,38 +574,48 @@ class UnifiedMathVisitor(MathExprVisitor):
             for idx in indices:
                 if isinstance(idx, slice):
                     current = current[idx]
-                elif isinstance(idx, torch.Tensor):
+                elif self._is_tensor(idx):
                     if idx.numel() != 1:
                         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Too many indices for string with 1 dimension. Got {idx.numel()}")
                     idx = int(idx.flatten()[0].item())
                     idx = self._normalize_index_value(idx, len(current), ctx, "string")
                     current = current[idx]
                 else:
-                    idx = self._normalize_index_value(idx, len(current), ctx, "string")
+                    idx = self._normalize_index_value(int(idx), len(current), ctx, "string")
                     current = current[idx]
             return current
         elif self._is_list(val):
-            # Navigate through nested lists, supporting both indexing and slicing
             current = val
             for idx in indices:
                 if isinstance(idx, slice):
                     current = current[idx]
-                elif isinstance(idx, torch.Tensor):
+                elif self._is_tensor(idx):
                     if idx.numel() != 1:
                         raise ValueError(f"{ctx.start.line}:{ctx.start.column}: List index must be a scalar. Got tensor with length of {idx.numel()}")
                     idx = int(idx.item())
                     idx = self._normalize_index_value(idx, len(current), ctx, "list")
                     current = current[idx]
                 else:
-                    idx = self._normalize_index_value(idx, len(current), ctx, "list")
+                    idx = self._normalize_index_value(int(idx), len(current), ctx, "list")
                     current = current[idx]
             return current
+        elif isinstance(val, dict):
+            current = val
+            for idx in indices:
+                if isinstance(idx, slice):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Dictionary indexing does not support slices")
+                if self._is_tensor(idx):
+                    if idx.numel() != 1:
+                        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Dictionary keys must be scalar values")
+                    idx = idx.item()
+                current = current[idx]
+            return current
         error_prefix = f"{ctx.start.line}:{ctx.start.column}:"
-        raise ValueError(f"{error_prefix} Indexing only supported on tensors, lists, and strings (found {type(val).__name__})")
+        raise ValueError(f"{error_prefix} Indexing only supported on tensors, lists, strings, and dictionaries (found {type(val).__name__})")
 
     def visitIndexOnly(self, ctx):
         """Visit slice element that is just an index expression."""
-        return (yield ctx.expr(0))
+        return (yield ctx.expr())
 
     def visitSlice(self, ctx):
         """Visit slice element with start and stop: expr COLON expr"""
@@ -2093,6 +2124,29 @@ class UnifiedMathVisitor(MathExprVisitor):
             b = [b]
 
         return a + b
+
+    def visitAddKeyFunc(self, ctx):
+        target = yield ctx.expr(0)
+        key = yield ctx.expr(1)
+        value = yield ctx.expr(2)
+
+        if not isinstance(target, dict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: add_key() requires a dictionary")
+
+        target[key] = value
+        return target
+
+    def visitRemoveKeyFunc(self, ctx):
+        target = yield ctx.expr(0)
+        key = yield ctx.expr(1)
+
+        if not isinstance(target, dict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: remove_key() requires a dictionary")
+
+        if key in target:
+            del target[key]
+        return target
+
     def visitStart(self, ctx):
         count = ctx.getChildCount()
         last_res = None
@@ -2324,6 +2378,39 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return new_val
             else:
                 curr[real_idx] = assigned_val
+                return assigned_val
+        elif isinstance(target, dict):
+            curr = target
+            for idx in indices[:-1]:
+                if self._is_tensor(idx):
+                    if idx.numel() != 1:
+                        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Dictionary keys must be scalar values")
+                    idx = idx.item()
+                curr = curr[idx]
+                if not isinstance(curr, dict):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Dictionary indexing can only traverse through dictionaries")
+            key = indices[-1]
+            if self._is_tensor(key):
+                if key.numel() != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Dictionary keys must be scalar values")
+                key = key.item()
+
+            if assign_op != "=":
+                existing_val = curr[key]
+                if assign_op == "+=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.add, lambda a, b: a + b, ctx)
+                elif assign_op == "-=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.sub, lambda a, b: a - b, ctx)
+                elif assign_op == "*=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.mul, lambda a, b: a * b, ctx)
+                elif assign_op == "/=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.div, lambda a, b: a / b, ctx)
+                elif assign_op == "%=":
+                    new_val = self._bin_op(existing_val, assigned_val, torch.remainder, lambda a, b: a % b, ctx)
+                curr[key] = new_val
+                return new_val
+            else:
+                curr[key] = assigned_val
                 return assigned_val
         else:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment not supported for {type(target)}")

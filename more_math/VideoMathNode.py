@@ -1,9 +1,48 @@
 from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew, LazyVariableDict
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from comfy_api.latest import io
+from comfy_api.latest import io, InputImpl, Types
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy
+
+
+def _get_video_components(video):
+    if hasattr(video, "get_components"):
+        return video.get_components()
+    if isinstance(video, dict):
+        return video
+    raise TypeError(f"Unsupported video input type: {type(video).__name__}")
+
+
+def _get_video_tensor(video):
+    components = _get_video_components(video)
+    return components["images"] if isinstance(components, dict) else components.images
+
+
+def _get_video_audio(video):
+    components = _get_video_components(video)
+    audio = components.get("audio") if isinstance(components, dict) else components.audio
+    if audio is None:
+        return None
+    return audio["waveform"] if isinstance(audio, dict) else audio.waveform
+
+
+def _get_video_sample_rate(video):
+    components = _get_video_components(video)
+    audio = components.get("audio") if isinstance(components, dict) else components.audio
+    if isinstance(audio, dict):
+        return audio.get("sample_rate", 44100)
+    if audio is not None:
+        return getattr(audio, "sample_rate", 44100)
+    return 44100
+
+
+def _build_video_output(images, waveform, sample_rate, source_video):
+    components = _get_video_components(source_video)
+    metadata = components.get("metadata") if isinstance(components, dict) else components.metadata
+    frame_rate = components.get("frame_rate") if isinstance(components, dict) else components.frame_rate
+    audio = {"waveform": waveform, "sample_rate": sample_rate} if waveform is not None else None
+    return InputImpl.VideoFromComponents(Types.VideoComponents(images=images, audio=audio, frame_rate=frame_rate, metadata=metadata))
 
 class VideoMathNode(io.ComfyNode):
     """
@@ -66,7 +105,7 @@ class VideoMathNode(io.ComfyNode):
         if not needed_tensor_keys:
             needed_tensor_keys = tensor_keys
 
-        tensors = [V[k][0] for k in needed_tensor_keys]
+        tensors = [_get_video_tensor(V[k]) for k in needed_tensor_keys]
 
         # Normalize all tensors together to find the common target shape
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
@@ -76,7 +115,7 @@ class VideoMathNode(io.ComfyNode):
         ref_tensor = normalized_tensors[0]
         common_shape = ref_tensor.shape
         stack = copy.deepcopy(stack) if stack is not None else {}
-        sample_rates = {k + "sr": V[k].get("sample_rate", 44100) for k in needed_tensor_keys}
+        sample_rates = {k + "sr": _get_video_sample_rate(V[k]) for k in needed_tensor_keys}
 
         # Setup legacy variables a, b, c, d
         ae = V_norm.get("V0", make_zero_like(ref_tensor))
@@ -88,9 +127,9 @@ class VideoMathNode(io.ComfyNode):
         ae, be, ce, de = normalize_to_common_shape(ae, be, ce, de, mode=length_mismatch)
 
         if(length_mismatch == "error"):
-            for name, tensor in V.items():
-                if tensor is not None and tensor.shape[0] != common_shape[0]:
-                    raise ValueError(f"Input '{name}' has shape {tensor.shape[0]}, expected {common_shape[0]} to match input.")
+            for name, video in V.items():
+                if video is not None and _get_video_tensor(video).shape[0] != common_shape[0]:
+                    raise ValueError(f"Input '{name}' has shape {_get_video_tensor(video).shape[0]}, expected {common_shape[0]} to match input.")
 
         variables = LazyVariableDict({
             "a": ae, "b": be, "c": ce, "d": de,
@@ -149,7 +188,12 @@ class VideoMathNode(io.ComfyNode):
 
 
 
-        waveforms = {k: V[k]["waveform"] for k in needed_tensor_keys}
+        waveforms = {}
+        for k in needed_tensor_keys:
+            waveform = _get_video_audio(V[k])
+            if waveform is None:
+                raise ValueError(f"Input '{k}' does not contain audio data.")
+            waveforms[k] = waveform
 
         # Normalize all waveforms together
         normalized_waveforms = normalize_to_common_shape(*waveforms.values(), mode=length_mismatch)
@@ -157,7 +201,7 @@ class VideoMathNode(io.ComfyNode):
 
         ref_waveform = normalized_waveforms[0]
         common_shape = ref_waveform.shape
-        sample_rate = V[needed_tensor_keys[0]].get("sample_rate", 44100)
+        sample_rate = _get_video_sample_rate(V[needed_tensor_keys[0]])
 
         if(length_mismatch == "error"):
             for name in needed_tensor_keys:
@@ -223,4 +267,4 @@ class VideoMathNode(io.ComfyNode):
         result_waveform = visitor.visit(tree_pi)
         result_waveform = as_tensor(result_waveform, a_w.shape)
 
-        return ([result_video,{"waveform":result_waveform,"sample_rate":sample_rate}],stack)
+        return (_build_video_output(result_video, result_waveform, sample_rate, V[needed_tensor_keys[0]]), stack)

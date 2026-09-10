@@ -16,7 +16,7 @@ class VAEMathNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_ag_VAEMathNode",
             display_name="VAE Math",
-            category="More math",
+            category="More math/math",
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Vae.Input("values"), prefix="V", min=1, max=50)),
                 io.Autogrow.Input(id="F", template=io.Autogrow.TemplatePrefix(io.Float.Input("float", default=0.0, optional=True, lazy=True, force_input=True), prefix="F", min=1, max=50)),

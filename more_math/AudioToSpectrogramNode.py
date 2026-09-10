@@ -15,7 +15,7 @@ class AudioToSpectrogram(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_AudioToImageSpectrogram",
-            category="More math",
+            category="More math/converters",
             display_name="Audio -> Spectrogram",
             inputs=[
                 io.Audio.Input(id="audio", tooltip="Input audio"),

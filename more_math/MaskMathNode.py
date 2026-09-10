@@ -21,7 +21,7 @@ class MaskMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_ag_MaskMathNode",
-            category="More math",
+            category="More math/math",
             display_name="Mask math",
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Mask.Input("values"), prefix="V", min=1, max=50)),

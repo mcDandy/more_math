@@ -19,7 +19,7 @@ class SigmasMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_ag_SigmasMathNode",
-            category="More math",
+            category="More math/math",
             display_name="Sigmas math",
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Sigmas.Input("values"), prefix="V", min=1, max=50)),

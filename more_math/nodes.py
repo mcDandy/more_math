@@ -49,7 +49,7 @@ class IntToFloatNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_IntToFloat",
             display_name="Int -> Float",
-            category="More math",
+            category="More math/converters",
             inputs=[
                 io.Int.Input(id="value", default=0),
             ],
@@ -73,7 +73,7 @@ class FloatToIntNode(io.ComfyNode):
         """ """
         return io.Schema(
             node_id="mrmth_FloatToInt",
-            category="More math",
+            category="More math/converters",
             display_name="Float -> Int",
             inputs=[
                 io.Float.Input(id="value", default=0.0),
@@ -98,7 +98,7 @@ class BoolToIntNode(io.ComfyNode):
         return io.Schema(
             node_id="mrmth_BoolToInt",
             display_name="Bool -> Int",
-            category="More math",
+            category="More math/converters",
             inputs=[
                 io.Boolean.Input(id="value", default=0),
             ],
@@ -122,7 +122,7 @@ class IntToBoolNode(io.ComfyNode):
         """ """
         return io.Schema(
             node_id="mrmth_IntToBool",
-            category="More math",
+            category="More math/converters",
             display_name="Int -> bool",
             inputs=[
                 io.Int.Input(id="value", default=0.0),

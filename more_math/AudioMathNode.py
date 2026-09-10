@@ -33,7 +33,7 @@ class AudioMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_ag_AudioMathNode",
-            category="More math",
+            category="More math/math",
             display_name="Audio math",
             inputs=[
                 io.Autogrow.Input(id="V",template=io.Autogrow.TemplatePrefix(io.Audio.Input("values", optional=True), prefix="V", min=1, max=50)),

@@ -185,7 +185,7 @@ You can also get the node from comfy manager under the name of More math.
 - `smax(x, ...[, dims])`: scalar maximum across inputs; optionally reduce the first tensor/list input across `dims`.
 
 #### 2.3 Sorting / Selection / Indices
-- `sort(x)`: tensors are sorted along the last dimension (`dim=-1`); lists use Python sorting.
+- `sort(x, [descending], [dim])`: tensors are sorted along the specified dimension (`dim`); if `dim` is not specified, it defaults to the last dimension (`dim=-1`); lists use Python sorting.
 - `argsort(x, [descending], [dim])`: returns indices along `dim` (defaults to last dimension); `descending` defaults to `false`.
 - `argmin(x, [as_position])`: global minimum index for tensors; when `as_position` is truthy, returns coordinates as a list.
 - `argmax(x, [as_position])`: global maximum index for tensors; when `as_position` is truthy, returns coordinates as a list.

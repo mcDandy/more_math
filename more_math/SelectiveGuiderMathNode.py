@@ -17,7 +17,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_ag_SelectiveGuiderMathNode",
-            category="More math",
+            category="More math/math",
             display_name="Selective guider math",
             inputs=[
                 io.Guider.Input("V"),

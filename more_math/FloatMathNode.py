@@ -23,7 +23,7 @@ class FloatMathNode(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             node_id="mrmth_ag_FloatMathNode",
-            category="More math",
+            category="More math/math",
             display_name="Float math",
             inputs=[
                 io.Autogrow.Input(

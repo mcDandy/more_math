@@ -36,6 +36,11 @@ You can also get the node from comfy manager under the name of More math.
   - supports multidimensional tensors and nested lists,
   - scalar values and 1-element tensors/lists fill the selected slice,
   - leading singleton dimensions are squeezed when needed to match target rank.
+- python-like slicing
+  - `a[start:end]` or `a[start:end:step]` for 1D slices,
+  - `a[start1:end1, start2:end2, ...]` for N-D slices (step can also be specified),
+  - negative indices count from the end of the dimension.
+- json-like dictionary literals `{key1: value1, key2: value2, ...}` for structured data. Keys can be strings or numbers or variables (variable will be evaluated to its value), values can be any expression. Indexing using [].
 - Control flow:
   - `if/else`
   - `while`
@@ -375,6 +380,10 @@ ___
 - `stack_get(id)`: read top value without removing it.
 - `stack_clear(id)`: clear stack slot.
 - `stack_has(id)`: check whether slot exists and is non-empty.
+
+### 12) Dictionary 
+ - `add_key(dict, key, value)` - add a key-value pair to a dictionary.
+ - `remove_key(dict, key)` / `rm_key` - remove a key-value pair from a dictionary.
 
 ## Variables
 

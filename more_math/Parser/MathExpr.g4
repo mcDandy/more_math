@@ -1002,7 +1002,7 @@ XOR: 'bxor' | 'bitwise_xor';
 BOR: 'bor' | 'bitwise_or';
 TENSOR: 'tensor';
 ADD_KEY: 'add_key';
-REMOVE_KEY: 'remove_key' | 'remove_kay';
+REMOVE_KEY: 'remove_key' | 'rm_kay';
 PUSH: 'stack_push';
 POP: 'stack_pop';
 CLEAR: 'stack_clear';

@@ -1,294 +1,482 @@
+<#
+.SYNOPSIS
+    Build script for the more_math ANTLR grammar and its generated symbol tables.
+
+.DESCRIPTION
+    1. Compiles more_math/Parser/MathExpr.g4 into more_math/Parser/grammer
+       (the parser antlr_router.py loads for current antlr4-python3-runtime
+       versions), using whatever ANTLR toolchain is available on this
+       machine (an 'antlr4' launcher on PATH, or 'java -jar <jar>').
+    2. Parses MathExpr.g4 itself (keywords, constants, function tokens and
+       their doc-comment signatures/descriptions) and regenerates:
+         - more_math/Parser/inbuilt_symbols.py
+         - web/inbuilt_symbols.js
+       so that the Python interpreter and the web autocomplete UI both read
+       an up-to-date, identical view of the language's built-in symbols.
+
+.PARAMETER SkipAntlr
+    Skip step 1 (grammar compilation) and only regenerate the symbol tables.
+
+.PARAMETER AntlrJar
+    Path to an antlr-*-complete.jar to use for step 1. Defaults to
+    $env:ANTLR_JAR, then tools\antlr.jar next to this script.
+
+.PARAMETER AntlrLegacyJar
+    Optional path to an ANTLR 4.9.x complete jar. When given (and Java is
+    available), also regenerates more_math/Parser/legacy for the old
+    antlr4-python3-runtime==4.9.x compatibility path used by antlr_router.py.
+    Defaults to $env:ANTLR_LEGACY_JAR. Skipped entirely if not supplied.
+
+.PARAMETER AntlrVersion
+    ANTLR release to use when the 'antlr4' launcher comes from the
+    antlr4-tools pip package (it otherwise queries Maven Central for the
+    latest release on every run). Defaults to $env:ANTLR4_TOOLS_ANTLR_VERSION,
+    then '4.13.2' to match the version more_math/Parser/grammer was last
+    generated with. Ignored when using a plain jar/java invocation.
+#>
+[CmdletBinding()]
 param(
-    [switch]$SkipAntlr
+    [switch]$SkipAntlr,
+    [string]$AntlrJar = $env:ANTLR_JAR,
+    [string]$AntlrLegacyJar = $env:ANTLR_LEGACY_JAR,
+    [string]$AntlrVersion = $(if ($env:ANTLR4_TOOLS_ANTLR_VERSION) { $env:ANTLR4_TOOLS_ANTLR_VERSION } else { '4.13.2' })
 )
 
-if (-not $SkipAntlr) {
-    Write-Host "===================================================" -ForegroundColor Cyan
-    Write-Host "1/2 Compiling ANTLR Grammars" -ForegroundColor Cyan
-    Write-Host "===================================================" -ForegroundColor Cyan
+$ErrorActionPreference = 'Stop'
 
-    Write-Host "Compiling legacy version (ANTLR 4.9.3)..." -ForegroundColor Yellow
-    antlr4 -v 4.9.3 -Dlanguage=Python3 -visitor -o ./legacy MathExpr.g4
+# This script lives at more_math/Parser/compile.ps1, two levels under the
+# node root (more_math/Parser -> more_math -> node root).
+$ParserDir     = $PSScriptRoot
+$NodeRoot      = Split-Path (Split-Path $ParserDir -Parent) -Parent
+$GrammarFile   = Join-Path $ParserDir 'MathExpr.g4'
+$GrammarOutDir = Join-Path $ParserDir 'grammer'
+$LegacyOutDir  = Join-Path $ParserDir 'legacy'
+$WebDir        = Join-Path $NodeRoot 'web'
+$PySymbolsPath = Join-Path $ParserDir 'inbuilt_symbols.py'
+$JsSymbolsPath = Join-Path $WebDir 'inbuilt_symbols.js'
 
-    Write-Host "Compiling modern version (ANTLR 4.13.2)..." -ForegroundColor Yellow
-    antlr4 -v 4.13.2 -Dlanguage=Python3 -visitor -o ./grammer MathExpr.g4
+if (-not (Test-Path $GrammarFile)) {
+    throw "Grammar file not found: $GrammarFile"
 }
 
-Write-Host ""
-Write-Host "===================================================" -ForegroundColor Cyan
-Write-Host "2/2 Generating Python and JS Token Sets" -ForegroundColor Cyan
-Write-Host "===================================================" -ForegroundColor Cyan
+# ---------------------------------------------------------------------------
+# Step 1: ANTLR compilation
+# ---------------------------------------------------------------------------
 
-$scriptRoot = $PSScriptRoot
-if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
-    $scriptRoot = Split-Path -Parent $PSCommandPath
-}
-if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
-    $scriptRoot = (Get-Location).Path
-}
+function Invoke-AntlrCompile {
+    # Runs with cwd = $ParserDir and passes ANTLR just the grammar's leaf
+    # filename, so the "# Generated from MathExpr.g4 by ANTLR ..." header it
+    # writes into the output files stays a plain relative name instead of
+    # embedding this machine's local absolute path.
+    param(
+        [Parameter(Mandatory)][string]$Grammar,
+        [Parameter(Mandatory)][string]$OutDir,
+        [string]$Jar
+    )
 
-$g4Path = Join-Path $scriptRoot "MathExpr.g4"
-if (-not (Test-Path $g4Path)) {
-    Write-Error "MathExpr.g4 not found!"
-    exit 1
-}
+    $grammarLeaf = Split-Path -Leaf $Grammar
 
-$rawContent = [System.IO.File]::ReadAllText($g4Path, [System.Text.Encoding]::UTF8)
-$content = $rawContent -replace '//.*', ''
-
-function Get-LexerNames([string]$grammarText) {
-    $map = @{}
-    foreach ($line in ($grammarText -split "`r?`n")) {
-        $t = $line.Trim()
-        if ($t -notmatch '^([A-Z][A-Z0-9_]*)\s*:\s*(.+);\s*$') { continue }
-        $token = $matches[1]
-        $rhs = $matches[2]
-        $names = @(
-            [regex]::Matches($rhs, "'([^']*)'") | ForEach-Object { $_.Groups[1].Value.ToLower() }
-        ) | Sort-Object -Unique
-        if ($names.Count -gt 0) {
-            $map[$token] = $names
+    $antlrCmd = Get-Command antlr4 -ErrorAction SilentlyContinue
+    if ($antlrCmd) {
+        # antlr4-tools (the pip-installed launcher) otherwise hits Maven
+        # Central on every invocation to resolve "latest"; pin it so the
+        # build is reproducible and doesn't need that network call.
+        $previousVersionEnv = $env:ANTLR4_TOOLS_ANTLR_VERSION
+        $env:ANTLR4_TOOLS_ANTLR_VERSION = $AntlrVersion
+        Push-Location $ParserDir
+        try {
+            Write-Host "[antlr] antlr4 (v$AntlrVersion) -Dlanguage=Python3 -visitor -o `"$OutDir`" `"$grammarLeaf`""
+            & $antlrCmd.Source -Dlanguage=Python3 -visitor -o $OutDir $grammarLeaf
+            if ($LASTEXITCODE -ne 0) { throw "antlr4 failed with exit code $LASTEXITCODE" }
+        } finally {
+            Pop-Location
+            $env:ANTLR4_TOOLS_ANTLR_VERSION = $previousVersionEnv
         }
+        return $true
     }
-    return $map
+
+    $javaCmd = Get-Command java -ErrorAction SilentlyContinue
+    if (-not $javaCmd) {
+        return $false
+    }
+
+    if (-not $Jar) {
+        $default = Join-Path $NodeRoot 'tools\antlr.jar'
+        if (Test-Path $default) { $Jar = $default }
+    }
+
+    if (-not $Jar -or -not (Test-Path $Jar)) {
+        return $false
+    }
+
+    Push-Location $ParserDir
+    try {
+        Write-Host "[antlr] java -jar `"$Jar`" -Dlanguage=Python3 -visitor -o `"$OutDir`" `"$grammarLeaf`""
+        & $javaCmd.Source -jar $Jar -Dlanguage=Python3 -visitor -o $OutDir $grammarLeaf
+        if ($LASTEXITCODE -ne 0) { throw "ANTLR jar invocation failed with exit code $LASTEXITCODE" }
+    } finally {
+        Pop-Location
+    }
+    return $true
 }
 
-function Get-ArgBounds([string]$inner) {
-    $inner = $inner.Trim()
-    if ([string]::IsNullOrWhiteSpace($inner)) {
-        return @{ min = 0; max = 0 }
+if ($SkipAntlr) {
+    Write-Host "[antlr] Skipping grammar compilation (-SkipAntlr)."
+} else {
+    $ok = Invoke-AntlrCompile -Grammar $GrammarFile -OutDir $GrammarOutDir -Jar $AntlrJar
+    if (-not $ok) {
+        Write-Warning ("ANTLR toolchain not found (no 'antlr4' on PATH and no usable jar). " +
+            "Skipping grammar compilation; '$GrammarOutDir' was left untouched. " +
+            "Install Java + antlr4-tools ('pip install antlr4-tools'), or set `$env:ANTLR_JAR " +
+            "to an antlr-*-complete.jar, then re-run.")
     }
 
-    $exprCount = ([regex]::Matches($inner, '\b(expr|indexExpr)\b')).Count
-    $optExpr = 0
-    foreach ($g in [regex]::Matches($inner, '\([^()]*\)\?')) {
-        $optExpr += ([regex]::Matches($g.Value, '\b(expr|indexExpr)\b')).Count
-    }
-
-    $hasStar = $inner -match '\(COMMA (expr|indexExpr)\)\*'
-    $hasPlus = $inner -match '\(COMMA (expr|indexExpr)\)\+'
-
-    $min = $exprCount - $optExpr
-    if ($hasStar) {
-        $min = [Math]::Max(1, $exprCount - 1 - $optExpr)
-        return @{ min = $min; max = $null }
-    }
-    if ($hasPlus) {
-        $min = [Math]::Max(1, $exprCount - $optExpr)
-        return @{ min = $min; max = $null }
-    }
-
-    return @{ min = $min; max = $exprCount }
-}
-
-function New-Snippet([string]$name) {
-    return "${name}()"
-}
-
-function Get-FunctionNames([hashtable]$lexerMap, [string]$token) {
-    $names = @()
-    if ($lexerMap.ContainsKey($token)) {
-        $rawNames = $lexerMap[$token]
-        foreach ($name in @($rawNames)) {
-            if ($null -eq $name) { continue }
-            if ($name -is [System.Collections.IDictionary]) { continue }
-            $text = [string]$name
-            if ([string]::IsNullOrWhiteSpace($text)) { continue }
-            if ($text -match '^System\.Collections\.') { continue }
-            $names += $text.ToLowerInvariant()
-        }
-    }
-
-    if ($names.Count -eq 0) {
-        $names = @($token.ToLowerInvariant())
-    }
-
-    return $names | Sort-Object -Unique
-}
-
-# Pomocná funkce pro vyčištění ANTLR docstringu do jednoho čistého řádku textu
-function Clean-Docstring([string]$doc) {
-    if ([string]::IsNullOrEmpty($doc)) { return "" }
-    $lines = $doc -split "`r?`n"
-    $cleanLines = @()
-    foreach ($l in $lines) {
-        $t = $l.Trim().TrimStart('/*').TrimEnd('*/').TrimStart('*').Trim()
-        if ($t) { $cleanLines += $t }
-    }
-    return ($cleanLines -join " ") -replace '"', '\"'
-}
-
-function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$line, [string]$currentDoc) {
-    $clean = (($line -split '\s+#')[0]).Trim().TrimEnd(';')
-    if ($clean -notmatch 'LPAREN') { return }
-    if ($clean -notmatch '(?:^\s*\|\s*)?(\w+)\s+LPAREN\s*(.*?)\s+RPAREN\s*$') { return }
-
-    $token = $matches[1]
-    $inner = $matches[2].Trim()
-    $bounds = Get-ArgBounds $inner
-    $names = Get-FunctionNames $lexerMap $token
-    if ($names.Count -eq 0) { return }
-
-    $cleanDoc = Clean-Docstring $currentDoc
-    $minArgs = if ($null -eq $bounds.min) { 0 } else { [int]$bounds.min }
-    $maxArgs = $null
-    if ($null -ne $bounds.max) {
-        $maxArgs = [int]$bounds.max
-    }
-
-    foreach ($fn in $names) {
-        $entry = @{
-            minArgs     = $minArgs
-            snippet     = (New-Snippet $fn)
-            description = $cleanDoc
-        }
-        $entry.maxArgs = $maxArgs
-        $meta[$fn] = $entry
-    }
-}
-
-function Get-FunctionMeta([string]$grammarText, [hashtable]$lexerMap) {
-    $meta = @{}
-    $inFunc = $false
-    $inDocBlock = $false
-    $currentDoc = ""
-
-    foreach ($line in ($grammarText -split "`r?`n")) {
-        # Zachytávání docstringů před pravidly
-        if ($line -match '^\s*/\*\*') {
-            $currentDoc = $line
-            if ($line -notmatch '\*/\s*$') {
-                # Pokud je komentář víceřádkový, podržíme ho, dokud neskončí
-                $inDocBlock = $true
-                continue
+    if ($AntlrLegacyJar) {
+        if (Test-Path $AntlrLegacyJar) {
+            $javaCmd = Get-Command java -ErrorAction SilentlyContinue
+            if ($javaCmd) {
+                $grammarLeaf = Split-Path -Leaf $GrammarFile
+                Push-Location $ParserDir
+                try {
+                    Write-Host "[antlr] java -jar `"$AntlrLegacyJar`" -Dlanguage=Python3 -visitor -o `"$LegacyOutDir`" `"$grammarLeaf`" (ANTLR 4.9 target)"
+                    & $javaCmd.Source -jar $AntlrLegacyJar -Dlanguage=Python3 -visitor -o $LegacyOutDir $grammarLeaf
+                    if ($LASTEXITCODE -ne 0) { throw "Legacy ANTLR jar invocation failed with exit code $LASTEXITCODE" }
+                } finally {
+                    Pop-Location
+                }
+            } else {
+                Write-Warning "AntlrLegacyJar was given but Java is not available; skipping legacy grammar regeneration."
             }
-        }
-        if ($inDocBlock) {
-            $currentDoc += "`n" + $line
-            if ($line -match '\*/\s*$') { $inDocBlock = $false }
-            continue
-        }
-
-        if ($line -match '^\s*//\s*LEXER') { $inFunc = $false }
-        if ($line -match '^\s*(func0|func1|func2|func3|func4|func5|funcN|funcNoise)\s*:\s*(.*)$') {
-            $inFunc = $true
-            $inline = $matches[2].Trim()
-            if ($inline -and $inline -match 'LPAREN') {
-                Add-FunctionRuleLine $meta $lexerMap $inline $currentDoc
-                $currentDoc = "" # Reset po spotřebování docstringu
-            }
-            continue
-        }
-        if (-not $inFunc) { 
-            # Pokud řádek není prázdný a není to komentář, resetujeme docstring, pokud nepatří k funkci
-            if ($line.Trim() -and $line -notmatch '^\s*\|') { $currentDoc = "" }
-            continue 
-        }
-
-        Add-FunctionRuleLine $meta $lexerMap $line $currentDoc
-        $currentDoc = "" # Reset po spotřebování
-    }
-
-    return $meta
-}
-# 1. Extract quoted symbols for keyword/function lists
-$matches = [regex]::Matches($content, "'([a-zA-Z_][a-zA-Z0-9_]*)'")
-$allSymbols = @()
-foreach ($m in $matches) {
-    $allSymbols += $m.Groups[1].Value
-}
-$allSymbols = $allSymbols | Sort-Object -Unique
-
-# 2. Fixed sets
-$keywords = @('if', 'else', 'while', 'for', 'in', 'break', 'continue', 'return', 'none', 'None', 'null', 'NULL') | Sort-Object -Unique
-$constants = @('pi', 'PI', 'e', 'E') | Sort-Object -Unique
-
-$functions = @()
-foreach ($sym in $allSymbols) {
-    if ($sym -notin $keywords -and $sym -notin $constants) {
-        $functions += $sym.ToLower()
-    }
-}
-$functions = $functions | Sort-Object -Unique
-
-# 3. Function metadata from grammar rules
-$lexerMap = Get-LexerNames $content
-$functionMeta = Get-FunctionMeta $content $lexerMap
-
-# Ensure every listed function has meta (fallback: variadic unknown)
-foreach ($fn in $functions) {
-    if (-not $functionMeta.ContainsKey($fn)) {
-        $functionMeta[$fn] = @{
-            minArgs = 1
-            maxArgs = $null
-            snippet = (New-Snippet $fn)
-            description = ""
+        } else {
+            Write-Warning "AntlrLegacyJar '$AntlrLegacyJar' does not exist; skipping legacy grammar regeneration."
         }
     }
 }
 
-$sortedMetaKeys = $functionMeta.Keys | Sort-Object
+# ---------------------------------------------------------------------------
+# Step 2: parse MathExpr.g4 for its built-in symbol table
+# ---------------------------------------------------------------------------
 
-# 4. Python export
-$pyMetaLines = @()
-foreach ($key in $sortedMetaKeys) {
-    $m = $functionMeta[$key]
-    $maxPart = if ($null -eq $m.maxArgs) { "None" } else { [string]$m.maxArgs }
-    $pyMetaLines += "    '$key': {'min_args': $($m.minArgs), 'max_args': $maxPart, 'snippet': '$($m.snippet)', 'description': '$($m.description)'},"
+function Get-GrammarSections {
+    param([Parameter(Mandatory)][string]$Text)
+
+    $funcStart = $Text.IndexOf('func0:')
+    $lexerMarker = '// LEXER RULES'
+    $lexerStart = $Text.IndexOf($lexerMarker)
+    if ($funcStart -lt 0 -or $lexerStart -lt 0 -or $lexerStart -le $funcStart) {
+        throw "Could not locate expected grammar sections ('func0:' / '$lexerMarker') - has MathExpr.g4's layout changed?"
+    }
+
+    [pscustomobject]@{
+        FuncSection  = $Text.Substring($funcStart, $lexerStart - $funcStart)
+        LexerSection = $Text.Substring($lexerStart)
+    }
 }
 
-$pyPath = Join-Path $scriptRoot "inbuilt_symbols.py"
-$pyContent = @(
-    "# Generated automatically by compile.ps1. Do not edit.",
-    "INBUILT_KEYWORDS = {" + (($keywords | ForEach-Object { "'$_'" }) -join ", ") + "}",
-    "INBUILT_CONSTANTS = {" + (($constants | ForEach-Object { "'$_'" }) -join ", ") + "}",
-    "INBUILT_FUNCTIONS = {" + (($functions | ForEach-Object { "'$_'" }) -join ", ") + "}",
-    "",
-    "INBUILT_FUNCTION_META = {",
-    ($pyMetaLines -join [Environment]::NewLine),
-    "}"
-) -join [Environment]::NewLine
+function Get-LexerTokens {
+    # Returns an ordered map of TOKEN_NAME -> raw string-literal alternatives,
+    # for every lexer rule that defines at least one word-like literal
+    # (i.e. skips punctuation/operator tokens and regex-only tokens like
+    # NUMBER/STRING/VARIABLE/WS/comments, which have no literal alternatives).
+    param([Parameter(Mandatory)][string]$LexerSection)
 
-[System.IO.File]::WriteAllText($pyPath, $pyContent, [System.Text.Encoding]::UTF8)
-Write-Host "-> Exported Python symbols to root: $pyPath" -ForegroundColor Green
+    $tokenRegex = [regex]'(?ms)^[ \t]*([A-Z][A-Z0-9_]*)[ \t]*:[ \t]*(.*?);'
+    $literalRegex = [regex]"'([a-zA-Z_][a-zA-Z0-9_]*)'"
 
-# 5. JavaScript export
-$jsDir = Join-Path $scriptRoot "..\..\web"
-if (-not (Test-Path $jsDir)) {
-    New-Item -ItemType Directory -Force -Path $jsDir | Out-Null
+    $tokens = [ordered]@{}
+    foreach ($m in $tokenRegex.Matches($LexerSection)) {
+        $name = $m.Groups[1].Value
+        $body = $m.Groups[2].Value
+        $literals = @($literalRegex.Matches($body) | ForEach-Object { $_.Groups[1].Value })
+        if ($literals.Count -gt 0) {
+            $tokens[$name] = $literals
+        }
+    }
+    return $tokens
 }
-$jsPath = Join-Path $jsDir "inbuilt_symbols.js"
 
-$jsMetaLines = @()
-foreach ($key in $sortedMetaKeys) {
-    $m = $functionMeta[$key]
-    if ($null -eq $m.maxArgs) {
-        $jsMetaLines += "    $key`: { minArgs: $($m.minArgs), maxArgs: null, snippet: `"$($m.snippet)`", description: `"$($m.description)`" },"
+function Get-FunctionTokenNames {
+    # A token counts as a "function" token when it is used as `TOKEN LPAREN`
+    # inside the func0..funcNoise rules (the atom productions for calls).
+    # This deliberately excludes structural keywords like IF/WHILE/FOR, which
+    # are also followed by LPAREN but in ifStmt/whileStmt/forStmt, outside
+    # this section.
+    param([Parameter(Mandatory)][string]$FuncSection)
+
+    $names = New-Object System.Collections.Generic.HashSet[string]
+    foreach ($m in [regex]::Matches($FuncSection, '\b([A-Z][A-Z0-9_]*)\s+LPAREN\b')) {
+        [void]$names.Add($m.Groups[1].Value)
+    }
+    return $names
+}
+
+function Get-UniqueLowerWords {
+    # De-duplicates literal alternatives that only differ by case (e.g.
+    # 'pi'/'PI', 'none'/'None'/'null'/'NULL') down to one lowercase spelling
+    # per distinct word, preserving first-seen order.
+    param([string[]]$Words)
+
+    $seen = New-Object System.Collections.Generic.HashSet[string]
+    $result = New-Object System.Collections.Generic.List[string]
+    foreach ($w in $Words) {
+        $lw = $w.ToLowerInvariant()
+        if ($seen.Add($lw)) { [void]$result.Add($lw) }
+    }
+    return $result
+}
+
+function Get-FunctionDocEntries {
+    # Pairs each `/** ... */` doc comment in the func section with the
+    # lexer token of the call it documents (the `TOKEN LPAREN` that follows
+    # the comment, skipping over an optional leading `|` alternation).
+    param([Parameter(Mandatory)][string]$FuncSection)
+
+    $pattern = [regex]'(?s)/\*\*(?<doc>.*?)\*/\s*\|?\s*(?<token>[A-Z][A-Z0-9_]*)\s+LPAREN'
+    $entries = New-Object System.Collections.Generic.List[object]
+    foreach ($m in $pattern.Matches($FuncSection)) {
+        $lines = @($m.Groups['doc'].Value -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+        if ($lines.Count -eq 0) { continue }
+        $entries.Add([pscustomobject]@{
+            Token     = $m.Groups['token'].Value
+            FirstLine = $lines[0]
+        })
+    }
+    return $entries
+}
+
+function Split-ArgSpec {
+    # Parses a comma-separated arg list like "x, [dims]" or "x, ..." into
+    # min/max argument counts and display names (brackets/ellipsis stripped).
+    param([string]$ArgsText)
+
+    if ([string]::IsNullOrWhiteSpace($ArgsText)) {
+        return [pscustomobject]@{ Min = 0; Max = 0; Variadic = $false; Display = @() }
+    }
+
+    $min = 0
+    $max = 0
+    $variadic = $false
+    $display = New-Object System.Collections.Generic.List[string]
+
+    foreach ($raw in ($ArgsText -split ',')) {
+        $p = $raw.Trim()
+        if ($p -eq '') { continue }
+        if ($p -eq '...') { $variadic = $true; [void]$display.Add('...'); continue }
+        $isOptional = $p.StartsWith('[') -and $p.EndsWith(']')
+        $clean = $p.Trim('[', ']').Trim()
+        [void]$display.Add($clean)
+        $max++
+        if (-not $isOptional) { $min++ }
+    }
+
+    [pscustomobject]@{ Min = $min; Max = $max; Variadic = $variadic; Display = $display.ToArray() }
+}
+
+function ConvertTo-FunctionSignature {
+    # Parses a doc-comment first line such as:
+    #   "sum(x, [dims]) - computes the sum of elements of x, ..."
+    #   "rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts ..."
+    # into arg-count bounds, display arg names (from the first signature) and
+    # the trailing description text.
+    param([Parameter(Mandatory)][string]$Line)
+
+    $sigMatch = [regex]::Match($Line, '^[a-zA-Z_][a-zA-Z0-9_]*\((?<args>.*?)\)')
+    if (-not $sigMatch.Success) { return $null }
+
+    $rest = $Line.Substring($sigMatch.Index + $sigMatch.Length)
+    $spec1 = Split-ArgSpec -ArgsText $sigMatch.Groups['args'].Value
+
+    # Some functions document two call forms separated by " / "; fold the
+    # second form's bounds in so min/max cover both (e.g. rgb_to_hsv).
+    $altMatch = [regex]::Match($rest, '^\s*/\s*[a-zA-Z_][a-zA-Z0-9_]*\((?<args>.*?)\)')
+    $spec2 = $null
+    if ($altMatch.Success) {
+        $spec2 = Split-ArgSpec -ArgsText $altMatch.Groups['args'].Value
+        $rest = $rest.Substring($altMatch.Index + $altMatch.Length)
+    }
+
+    $descMatch = [regex]::Match($rest, '^\s*-\s*(?<desc>.*)$')
+    $desc = if ($descMatch.Success) { $descMatch.Groups['desc'].Value.Trim() } else { $rest.Trim() }
+
+    $min = $spec1.Min
+    $variadic = $spec1.Variadic
+    $max = $spec1.Max
+    if ($spec2) {
+        if ($spec2.Min -lt $min) { $min = $spec2.Min }
+        if ($spec2.Variadic) { $variadic = $true }
+        if ($spec2.Max -gt $max) { $max = $spec2.Max }
+    }
+
+    [pscustomobject]@{
+        MinArgs     = $min
+        MaxArgs     = if ($variadic) { $null } else { $max }
+        ArgNames    = $spec1.Display
+        Description = $desc
+    }
+}
+
+Write-Host "[symbols] Parsing $GrammarFile"
+$grammarText = Get-Content -Raw -LiteralPath $GrammarFile
+$sections = Get-GrammarSections -Text $grammarText
+$allTokens = Get-LexerTokens -LexerSection $sections.LexerSection
+$functionTokenNames = Get-FunctionTokenNames -FuncSection $sections.FuncSection
+
+$constantWords = @()
+$keywordWords = New-Object System.Collections.Generic.List[string]
+$functionWords = New-Object System.Collections.Generic.List[string]
+$functionTokenToWords = [ordered]@{}
+
+$tokenNames = @($allTokens.psbase.Keys)
+foreach ($name in $tokenNames) {
+    $words = Get-UniqueLowerWords -Words $allTokens[$name]
+    if ($name -eq 'CONSTANT') {
+        $constantWords = $words
+        continue
+    }
+    if ($functionTokenNames.Contains($name)) {
+        $functionTokenToWords[$name] = $words
+        foreach ($w in $words) { [void]$functionWords.Add($w) }
     } else {
-        $jsMetaLines += "    $key`: { minArgs: $($m.minArgs), maxArgs: $($m.maxArgs), snippet: `"$($m.snippet)`", description: `"$($m.description)`" },"
+        foreach ($w in $words) { [void]$keywordWords.Add($w) }
     }
 }
 
+$KEYWORDS  = @($keywordWords  | Sort-Object -Unique)
+$CONSTANTS = @($constantWords | Sort-Object -Unique)
+$FUNCTIONS = @($functionWords | Sort-Object -Unique)
 
-$jsContent = @(
-    "// Generated automatically by compile.ps1. Do not edit.",
-    "",
-    "export const KEYWORDS = new Set([" + (($keywords | ForEach-Object { "`"$_`"" }) -join ", ") + "]);",
-    "",
-    "export const CONSTANTS = new Set([" + (($constants | ForEach-Object { "`"$_`"" }) -join ", ") + "]);",
-    "",
-    "export const FUNCTIONS = new Set([" + (($functions | ForEach-Object { "`"$_`"" }) -join ", ") + "]);",
-    "",
-    "export const FUNCTION_META = {",
-    ($jsMetaLines -join [Environment]::NewLine),
-    "};"
-) -join [Environment]::NewLine
+$docEntries = Get-FunctionDocEntries -FuncSection $sections.FuncSection
+$sigByToken = @{}
+foreach ($e in $docEntries) {
+    $sig = ConvertTo-FunctionSignature -Line $e.FirstLine
+    if ($sig) { $sigByToken[$e.Token] = $sig }
+}
 
-[System.IO.File]::WriteAllText($jsPath, $jsContent, [System.Text.Encoding]::UTF8)
-Write-Host "-> Exported JS symbols to: $jsPath" -ForegroundColor Green
-Write-Host "-> Function metadata entries: $($sortedMetaKeys.Count)" -ForegroundColor Green
+$functionTokens = @($functionTokenToWords.psbase.Keys)
+$undocumented = @($functionTokens | Where-Object { -not $sigByToken.ContainsKey($_) })
+if ($undocumented.Count -gt 0) {
+    Write-Warning "No parsable doc comment found for function token(s): $($undocumented -join ', '). They will get placeholder metadata."
+}
 
-Write-Host ""
-Write-Host "===================================================" -ForegroundColor Cyan
-Write-Host "Compilation and Generation Successful!" -ForegroundColor Cyan
-Write-Host "===================================================" -ForegroundColor Cyan
+$FUNCTION_META = [ordered]@{}
+foreach ($token in $functionTokens) {
+    $sig = $sigByToken[$token]
+    foreach ($alias in $functionTokenToWords[$token]) {
+        if ($sig) {
+            $snippet = if ($sig.ArgNames.Count -gt 0) { "$alias($($sig.ArgNames -join ', '))" } else { "$alias()" }
+            $FUNCTION_META[$alias] = [pscustomobject]@{
+                MinArgs     = $sig.MinArgs
+                MaxArgs     = $sig.MaxArgs
+                Snippet     = $snippet
+                Description = $sig.Description
+            }
+        } else {
+            $FUNCTION_META[$alias] = [pscustomobject]@{
+                MinArgs     = 0
+                MaxArgs     = $null
+                Snippet     = "$alias()"
+                Description = ''
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Step 3: emit the generated files
+# ---------------------------------------------------------------------------
+
+function Set-Utf8NoBom {
+    # Windows PowerShell 5.1's Set-Content has no utf8NoBOM encoding, so write
+    # the file directly via .NET to avoid a BOM in the generated .py/.js files.
+    param([string]$Path, [string]$Content)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+}
+
+function ConvertTo-JsString {
+    param([string]$Value)
+    $escaped = $Value.Replace('\', '\\').Replace('"', '\"')
+    return '"' + $escaped + '"'
+}
+
+function ConvertTo-PyString {
+    param([string]$Value)
+    $escaped = $Value.Replace('\', '\\').Replace("'", "\'")
+    return "'" + $escaped + "'"
+}
+
+function Write-JsSymbols {
+    param(
+        [string]$Path,
+        [string[]]$Keywords,
+        [string[]]$Constants,
+        [string[]]$Functions,
+        [System.Collections.Specialized.OrderedDictionary]$FunctionMeta
+    )
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('// Generated automatically by compile.ps1. Do not edit.')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('export const KEYWORDS = new Set([')
+    [void]$sb.AppendLine(($Keywords  | ForEach-Object { ConvertTo-JsString $_ }) -join ', ')
+    [void]$sb.AppendLine(']);')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('export const CONSTANTS = new Set([')
+    [void]$sb.AppendLine(($Constants | ForEach-Object { ConvertTo-JsString $_ }) -join ', ')
+    [void]$sb.AppendLine(']);')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('export const FUNCTIONS = new Set([')
+    [void]$sb.AppendLine(($Functions | ForEach-Object { ConvertTo-JsString $_ }) -join ', ')
+    [void]$sb.AppendLine(']);')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('export const FUNCTION_META = {')
+    foreach ($name in @($FunctionMeta.psbase.Keys)) {
+        $meta = $FunctionMeta[$name]
+        $maxArgsJs = if ($null -eq $meta.MaxArgs) { 'null' } else { $meta.MaxArgs }
+        [void]$sb.AppendLine("    $(ConvertTo-JsString $name): { minArgs: $($meta.MinArgs), maxArgs: $maxArgsJs, snippet: $(ConvertTo-JsString $meta.Snippet), description: $(ConvertTo-JsString $meta.Description) },")
+    }
+    [void]$sb.AppendLine('};')
+
+    Set-Utf8NoBom -Path $Path -Content $sb.ToString()
+}
+
+function Write-PySymbols {
+    param(
+        [string]$Path,
+        [string[]]$Keywords,
+        [string[]]$Constants,
+        [string[]]$Functions,
+        [System.Collections.Specialized.OrderedDictionary]$FunctionMeta
+    )
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine('# Generated automatically by compile.ps1. Do not edit.')
+    [void]$sb.AppendLine('INBUILT_KEYWORDS = {')
+    [void]$sb.AppendLine(($Keywords  | ForEach-Object { ConvertTo-PyString $_ }) -join ', ')
+    [void]$sb.AppendLine('}')
+    [void]$sb.AppendLine('INBUILT_CONSTANTS = {')
+    [void]$sb.AppendLine(($Constants | ForEach-Object { ConvertTo-PyString $_ }) -join ', ')
+    [void]$sb.AppendLine('}')
+    [void]$sb.AppendLine('INBUILT_FUNCTIONS = {')
+    [void]$sb.AppendLine(($Functions | ForEach-Object { ConvertTo-PyString $_ }) -join ', ')
+    [void]$sb.AppendLine('}')
+    [void]$sb.AppendLine()
+    [void]$sb.AppendLine('INBUILT_FUNCTION_META = {')
+    foreach ($name in @($FunctionMeta.psbase.Keys)) {
+        $meta = $FunctionMeta[$name]
+        $maxArgsPy = if ($null -eq $meta.MaxArgs) { 'None' } else { $meta.MaxArgs }
+        [void]$sb.AppendLine("    $(ConvertTo-PyString $name): {'min_args': $($meta.MinArgs), 'max_args': $maxArgsPy, 'snippet': $(ConvertTo-PyString $meta.Snippet), 'description': $(ConvertTo-PyString $meta.Description)},")
+    }
+    [void]$sb.AppendLine('}')
+
+    Set-Utf8NoBom -Path $Path -Content $sb.ToString()
+}
+
+Write-Host "[symbols] Writing $PySymbolsPath"
+Write-PySymbols -Path $PySymbolsPath -Keywords $KEYWORDS -Constants $CONSTANTS -Functions $FUNCTIONS -FunctionMeta $FUNCTION_META
+
+Write-Host "[symbols] Writing $JsSymbolsPath"
+Write-JsSymbols -Path $JsSymbolsPath -Keywords $KEYWORDS -Constants $CONSTANTS -Functions $FUNCTIONS -FunctionMeta $FUNCTION_META
+
+Write-Host "[symbols] $($FUNCTIONS.Count) functions, $($KEYWORDS.Count) keywords, $($CONSTANTS.Count) constants."
+Write-Host 'Done.'

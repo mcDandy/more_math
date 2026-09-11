@@ -842,7 +842,7 @@ def serializedATN():
         buf.write("\7g\2\2\u05b8\u05b9\7a\2\2\u05b9\u05ba\7m\2\2\u05ba\u05bb")
         buf.write("\7g\2\2\u05bb\u05c3\7{\2\2\u05bc\u05bd\7t\2\2\u05bd\u05be")
         buf.write("\7o\2\2\u05be\u05bf\7a\2\2\u05bf\u05c0\7m\2\2\u05c0\u05c1")
-        buf.write("\7c\2\2\u05c1\u05c3\7{\2\2\u05c2\u05b2\3\2\2\2\u05c2\u05bc")
+        buf.write("\7g\2\2\u05c1\u05c3\7{\2\2\u05c2\u05b2\3\2\2\2\u05c2\u05bc")
         buf.write("\3\2\2\2\u05c3\u00e4\3\2\2\2\u05c4\u05c5\7u\2\2\u05c5")
         buf.write("\u05c6\7v\2\2\u05c6\u05c7\7c\2\2\u05c7\u05c8\7e\2\2\u05c8")
         buf.write("\u05c9\7m\2\2\u05c9\u05ca\7a\2\2\u05ca\u05cb\7r\2\2\u05cb")

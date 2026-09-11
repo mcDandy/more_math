@@ -1810,8 +1810,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         return float(torch.sum(self._bin_op(self._bin_op(x,a,torch.sub,lambda x, a: x - a,ctx),k,torch.pow,pow,ctx)).item())/x.numel()
 
     def visitSortFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr()))
-        sorted_val, _ = torch.sort(val)
+        val = (yield ctx.expr(0))
+        descending = False
+        dim = -1
+        if len(ctx.expr()) > 1:
+            descending = self._to_bool((yield ctx.expr(1)), ctx, "sort descending")
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "sort dim", strict=True)
+        if self._is_list(val):
+            return sorted(val, reverse=descending)
+        val = self._promote_to_tensor(val)
+        sorted_val, _ = torch.sort(val, dim=dim, descending=descending)
         return sorted_val
 
     def visitCossimFunc(self, ctx):

@@ -699,7 +699,7 @@ def test_dict_add_remove_key_helpers():
     from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor, MathDict
     from more_math.helper_functions import parse_expr
 
-    expr = 'add_key(d, "b", 2); remove_kay(d, "a"); d'
+    expr = 'add_key(d, "b", 2); remove_key(d, "a"); d'
     tree = parse_expr(expr)
     visitor = UnifiedMathVisitor({"d": MathDict({"a": 1.0})}, (1,))
     result = visitor.visit(tree)

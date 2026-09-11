@@ -84,7 +84,8 @@ class CLIPMathNode(io.ComfyNode):
         # Call autogrow patch calculation
         from .modelLikeCommon import calculate_patches_autogrow, calculate_patches_dict_mode
 
-        layer_count = V.get("V0").model.state_dict().__len__() if hasattr(V.get("V0"), "model") and hasattr(V.get("V0").model, "state_dict") else 0
+        ref_patcher = getattr(V.get("V0"), "patcher", None)
+        layer_count = ref_patcher.model.state_dict().__len__() if ref_patcher is not None and hasattr(ref_patcher, "model") and hasattr(ref_patcher.model, "state_dict") else 0
         pbar = comfy.utils.ProgressBar(layer_count)
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
 

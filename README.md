@@ -383,7 +383,8 @@ ___
 
 ### 12) Dictionary 
  - `add_key(dict, key, value)` - add a key-value pair to a dictionary.
- - `remove_key(dict, key)` / `rm_key` - remove a key-value pair from a dictionary.
+ - `remove_key(dict, key)` / `rm_kay` - remove a key-value pair from a dictionary.
+ - `keys(dict)` - returns a list of dictionary keys in insertion order.
 
 ## Variables
 

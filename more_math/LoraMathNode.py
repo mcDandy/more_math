@@ -1,6 +1,7 @@
 from inspect import cleandoc
 from comfy_api.latest import io
 import copy
+import comfy.utils
 from .helper_functions import checkLazyNew
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
@@ -64,7 +65,16 @@ class LoraMathNode(io.ComfyNode):
             raise ValueError("At least one input LoRA is required.")
         stack = copy.deepcopy(stack) if stack is not None else {}
 
+        ref_lora = V.get("V0")
+        if ref_lora is None:
+            for m in V.values():
+                if m is not None:
+                    ref_lora = m
+                    break
+        layer_count = len(ref_lora) if ref_lora is not None else 0
+        pbar = comfy.utils.ProgressBar(layer_count)
+
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
         calculate_lora_dict = calculate_lora_dict_dict_mode if dict_mode else calculate_lora_dict_autogrow
-        result = calculate_lora_dict(Expression, V=V, F=F, mapping=aliases, stack=stack, use_compute_device=use_compute_device)
+        result = calculate_lora_dict(Expression, V=V, F=F, pbar=pbar, mapping=aliases, stack=stack, use_compute_device=use_compute_device)
         return (result, stack)

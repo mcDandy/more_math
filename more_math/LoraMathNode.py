@@ -4,7 +4,7 @@ import copy
 from .helper_functions import checkLazyNew
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
-from .loraDictCommon import calculate_lora_dict_autogrow
+from .loraDictCommon import calculate_lora_dict_autogrow, calculate_lora_dict_dict_mode
 
 
 class LoraMathNode(io.ComfyNode):
@@ -33,6 +33,12 @@ class LoraMathNode(io.ComfyNode):
                     tooltip="Expression to apply on LoRA tensors",
                 ),
                 io.Boolean.Input(
+                    id="dict_mode",
+                    default=False,
+                    display_name="Dictionary mode",
+                    tooltip="Evaluates LoRA tensors as dictionaries. Per-layer and dimension variables are unavailable.",
+                ),
+                io.Boolean.Input(
                     id="use_compute_device",
                     default=True,
                     display_name="Move tensors to GPU",
@@ -49,15 +55,16 @@ class LoraMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, use_compute_device=True, stack={}):
+    def check_lazy_status(cls, Expression, V, F, use_compute_device=True, stack={}, dict_mode=False):
         return checkLazyNew(Expression, V, F)
 
     @classmethod
-    def execute(cls, V, F, Expression, use_compute_device=True, stack={}) -> io.NodeOutput:
+    def execute(cls, V, F, Expression, use_compute_device=True, stack={}, dict_mode=False) -> io.NodeOutput:
         if not any(v is not None for v in V.values()):
             raise ValueError("At least one input LoRA is required.")
         stack = copy.deepcopy(stack) if stack is not None else {}
 
         aliases = {"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}
-        result = calculate_lora_dict_autogrow(Expression, V=V, F=F, mapping=aliases, stack=stack, use_compute_device=use_compute_device)
+        calculate_lora_dict = calculate_lora_dict_dict_mode if dict_mode else calculate_lora_dict_autogrow
+        result = calculate_lora_dict(Expression, V=V, F=F, mapping=aliases, stack=stack, use_compute_device=use_compute_device)
         return (result, stack)

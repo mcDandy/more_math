@@ -263,3 +263,6 @@ export const FUNCTION_META = {
     where: { minArgs: 3, maxArgs: 3, snippet: "where()", description: "where(condition, x, y) - returns x if condition is true, else y. Runs per element." },
     worley: { minArgs: 2, maxArgs: 5, snippet: "worley()", description: "cellular_noise(seed, scale, [jitter], [offset], [shape]) - generates Cellular/Voronoi noise" },
 };
+
+FUNCTIONS.add("keys");
+FUNCTION_META.keys = { minArgs: 1, maxArgs: 1, snippet: "keys()", description: "keys(x) - returns dictionary keys in insertion order" };

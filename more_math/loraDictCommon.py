@@ -1,5 +1,5 @@
 from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict, checkLazyNew
-from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from .Parser.UnifiedMathVisitor import MathDict, UnifiedMathVisitor
 import comfy.model_management
 import torch
 
@@ -153,3 +153,74 @@ def calculate_lora_dict_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], 
             pbar.update(1)
 
     return result
+
+
+def calculate_lora_dict_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+    if V is None:
+        V = {}
+    if F is None:
+        F = {}
+    if mapping is None:
+        mapping = {}
+
+    needed_vars = checkLazyNew(Expr, V, F)
+    needed_v_names = [name for name in V if name in needed_vars]
+    if "V0" in V and "V0" not in needed_v_names:
+        needed_v_names.append("V0")
+    if not needed_v_names:
+        needed_v_names = [name for name, value in V.items() if value is not None]
+
+    input_dicts = {name: V[name] for name in needed_v_names if V.get(name) is not None}
+    if not input_dicts:
+        return {}
+
+    all_keys = []
+    seen_keys = set()
+    for value in input_dicts.values():
+        for key in value:
+            if key not in seen_keys:
+                seen_keys.add(key)
+                all_keys.append(key)
+
+    compute_device = comfy.model_management.get_torch_device() if use_compute_device else None
+    original_device = get_tensor_device(next(iter(input_dicts.values())))
+    if compute_device is not None and original_device is not None and compute_device != original_device:
+        input_dicts = {name: move_to_device(value, compute_device) for name, value in input_dicts.items()}
+
+    references = {}
+    for key in all_keys:
+        for value in input_dicts.values():
+            tensor = value.get(key)
+            if tensor is not None:
+                references[key] = tensor
+                break
+
+    def weight_dict(name):
+        value = input_dicts.get(name, {})
+        return MathDict({key: value.get(key, torch.zeros_like(references[key])) for key in all_keys})
+
+    variables = LazyVariableDict({name: value if value is not None else 0.0 for name, value in F.items()})
+    for alias, target in mapping.items():
+        if target in F:
+            variables[alias] = F[target] if F[target] is not None else 0.0
+    for name in needed_v_names:
+        variables[name] = weight_dict(name)
+    for alias, target in mapping.items():
+        if target in V:
+            variables[alias] = variables.get(target, weight_dict(target))
+
+    visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
+    result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(parse_expr(Expr) if isinstance(Expr, str) else Expr)
+    if not isinstance(result, MathDict):
+        if isinstance(result, (float, int)):
+            result = MathDict({key: torch.full_like(reference, result) for key, reference in references.items()})
+        else:
+            raise ValueError("Dictionary mode expressions must return a dictionary")
+    if tuple(result) != tuple(all_keys):
+        raise ValueError("Dictionary mode expressions must preserve all LoRA keys")
+
+    if compute_device is not None and original_device is not None and original_device != compute_device:
+        result = {key: value.to(device=original_device) for key, value in result.items()}
+    if pbar is not None:
+        pbar.update(len(result))
+    return dict(result)

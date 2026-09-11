@@ -114,6 +114,28 @@ class UnifiedMathVisitor(MathExprVisitor):
     def _is_list(self, val):
         return isinstance(val, (list, tuple))
 
+    def _is_math_dict(self, val):
+        return isinstance(val, MathDict)
+
+    def _map_math_dict(self, op, *values):
+        dictionaries = [value for value in values if self._is_math_dict(value)]
+        if not dictionaries:
+            return op(*values)
+
+        keys = tuple(dictionaries[0])
+        if any(tuple(value) != keys for value in dictionaries[1:]):
+            raise ValueError("Dictionary operations require matching keys")
+
+        return MathDict({key: op(*(value[key] if self._is_math_dict(value) else value for value in values)) for key in keys})
+
+    def _where_value(self, condition, true_value, false_value):
+        if self._is_tensor(condition) or self._is_tensor(true_value) or self._is_tensor(false_value):
+            condition_tensor = self._promote_to_tensor(condition)
+            if condition_tensor.dtype != torch.bool:
+                condition_tensor = condition_tensor != 0
+            return torch.where(condition_tensor, self._promote_to_tensor(true_value), self._promote_to_tensor(false_value)).contiguous()
+        return true_value if bool(condition) else false_value
+
     def _decode_string_literal(self, text):
         return text[1:-1].replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r').replace('\\\\', '\\').replace('\\"', '"').replace("\\'", "'")
 
@@ -133,6 +155,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         Generic binary operation handler.
         """
         try:
+            if self._is_math_dict(a) or self._is_math_dict(b):
+                return self._map_math_dict(lambda left, right: self._bin_op(left, right, torch_op, scalar_op, ctx), a, b)
             if self._is_plain_tensor(a) and a.numel() == 1:
                 a = float(a.flatten()[0].item())
             if self._is_plain_tensor(b) and b.numel() == 1:
@@ -228,6 +252,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
 
     def _unary_op(self, a, torch_op, scalar_op):
+        if self._is_math_dict(a):
+            return self._map_math_dict(lambda value: self._unary_op(value, torch_op, scalar_op), a)
         if self._is_plain_tensor(a) and a.numel() == 1:
             a = float(a.flatten()[0].item())
 
@@ -1092,6 +1118,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         b = (yield ctx.expr(1))
         w = (yield ctx.expr(2))
 
+        if self._is_math_dict(a) or self._is_math_dict(b) or self._is_math_dict(w):
+            return self._map_math_dict(self._lerp_helper, a, b, w)
         if self._is_list(w):
              return [self._lerp_helper(a[i] if self._is_list(a) else a,
                                       b[i] if self._is_list(b) else b,
@@ -1594,11 +1622,19 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitCountFunc(self, ctx):
         val = yield ctx.expr()
+        if isinstance(val, dict):
+            return float(len(val))
         if self._is_list(val):
             return float(len(val))
         if self._is_tensor(val):
             return val.numel()
         return 1.0
+
+    def visitKeysFunc(self, ctx):
+        val = yield ctx.expr()
+        if not isinstance(val, dict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: keys() requires a dictionary")
+        return list(val)
 
     def visitMeanFunc(self, ctx):
         return self._reduction_op(
@@ -2430,6 +2466,15 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitCallExp(self, ctx):
         func_name = ctx.VARIABLE().getText()
+
+        if func_name == "keys":
+            args = ctx.exprList().expr() if ctx.exprList() else []
+            if len(args) != 1:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: keys() expects 1 argument")
+            value = yield args[0]
+            if not isinstance(value, dict):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: keys() requires a dictionary")
+            return list(value)
 
         # 1) Pokud proměnná existuje a je to lambda uložená v variables, aplikuj ji
         if func_name in self.variables and isinstance(self.variables[func_name], LambdaFunction):
@@ -4703,6 +4748,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         a = (yield ctx.expr(1))
         b = (yield ctx.expr(2))
 
+        if self._is_math_dict(cond) or self._is_math_dict(a) or self._is_math_dict(b):
+            return self._map_math_dict(self._where_value, cond, a, b)
         if self._is_tensor(cond) or self._is_tensor(a) or self._is_tensor(b):
             cond_t = self._promote_to_tensor(cond)
             if cond_t.dtype != torch.bool:

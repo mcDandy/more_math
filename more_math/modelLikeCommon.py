@@ -1,10 +1,11 @@
 from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict, checkLazyNew
-from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from .Parser.UnifiedMathVisitor import MathDict, UnifiedMathVisitor
 import comfy
 import comfy.model_management
 import comfy.model_patcher
 import comfy.lora
 import torch
+from collections import defaultdict
 
 
 def _get_model_patcher(obj):
@@ -321,4 +322,137 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
             for key, value in patches.items()
         }
 
+    return patches
+
+
+def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+    if V is None:
+        V = {}
+    if F is None:
+        F = {}
+    if mapping is None:
+        mapping = {}
+
+    needed_vars = checkLazyNew(Expr, V, F)
+    needed_v_names = [name for name in V if name in needed_vars or f"{name}_d" in needed_vars]
+    if "V0" in V and "V0" not in needed_v_names:
+        needed_v_names.append("V0")
+    if not needed_v_names:
+        needed_v_names = [name for name, value in V.items() if value is not None]
+
+    models = [value for value in V.values() if value is not None]
+    if not models:
+        return {}
+
+    all_keys = []
+    seen_keys = set()
+    for model in models:
+        state_dict = get_effective_state_dict(model)
+        if state_dict is None:
+            continue
+        for key in state_dict:
+            if key not in seen_keys:
+                seen_keys.add(key)
+                all_keys.append(key)
+
+    tree = parse_expr(Expr) if isinstance(Expr, str) else Expr
+    compute_device = comfy.model_management.get_torch_device() if use_compute_device else None
+    original_device = None
+    state_dicts = {}
+    for name in needed_v_names:
+        value = V.get(name)
+        if value is None:
+            continue
+        state_dict = get_effective_state_dict(value)
+        if state_dict is None:
+            continue
+        if original_device is None:
+            original_device = get_tensor_device(state_dict)
+        if compute_device is not None and original_device is not None and compute_device != original_device:
+            state_dict = move_to_device(state_dict, compute_device)
+        state_dicts[name] = state_dict
+
+    if not state_dicts:
+        return {}
+
+    all_keys = [key for key in all_keys if any(key in state_dict for state_dict in state_dicts.values())]
+
+    delta_names = {name for name in needed_v_names if f"{name}_d" in needed_vars}
+    weights = {name: {} for name in needed_v_names}
+    bases = {name: {} for name in delta_names}
+    references = {}
+
+    for key in all_keys:
+        for name in needed_v_names:
+            state_dict = state_dicts.get(name)
+            raw_weight = state_dict.get(key) if state_dict is not None else None
+            if raw_weight is None:
+                continue
+            model = V[name]
+            base_weight = get_base_weight(model, key)
+            if base_weight is None:
+                base_weight = raw_weight
+            base_weight = coerce_like(base_weight, raw_weight, device=compute_device)
+            patched_weight = get_patched_weight(model, key, base_weight)
+            if patched_weight is None:
+                patched_weight = raw_weight
+            patched_weight = coerce_like(patched_weight, raw_weight, device=compute_device)
+            weights[name][key] = patched_weight
+            if name in delta_names:
+                bases[name][key] = base_weight
+            if key not in references:
+                references[key] = patched_weight
+
+    if not references:
+        return {}
+
+    def weight_dict(name):
+        return MathDict({key: weights[name].get(key, torch.zeros_like(references[key])) for key in all_keys})
+
+    variables = LazyVariableDict({name: value if value is not None else 0.0 for name, value in F.items()})
+    for alias, target in mapping.items():
+        if target in F:
+            variables[alias] = F[target] if F[target] is not None else 0.0
+
+    for name in needed_v_names:
+        variables[name] = weight_dict(name)
+
+    for alias, target in mapping.items():
+        if target in V:
+            variables[alias] = variables.get(target, weight_dict(target))
+
+    for name in delta_names:
+        def make_delta_dict(name=name):
+            return MathDict({
+                key: weights[name][key] - bases[name][key] if key in weights[name] else torch.zeros_like(references[key])
+                for key in all_keys
+            })
+
+        make_delta_dict.is_lazy_var = True
+        variables[f"{name}_d"] = make_delta_dict
+
+    visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
+    result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(tree)
+    if not isinstance(result, MathDict):
+        if isinstance(result, (float, int)):
+            result = MathDict({key: torch.full_like(reference, result) for key, reference in references.items()})
+        else:
+            raise ValueError("Dictionary mode expressions must return a dictionary")
+
+    if tuple(result) != tuple(all_keys):
+        raise ValueError("Dictionary mode expressions must preserve all model keys")
+
+    originals = variables.get("V0", MathDict({key: torch.zeros_like(reference) for key, reference in references.items()}))
+    patches = {}
+    for key, value in result.items():
+        if not torch.is_tensor(value):
+            value = torch.full_like(references[key], value)
+        diff = value - originals[key]
+        if not torch.all(diff == 0):
+            patches[key] = (diff,)
+        if pbar is not None:
+            pbar.update(1)
+
+    if compute_device is not None and original_device is not None and original_device != compute_device:
+        patches = {key: (value[0].to(device=original_device),) for key, value in patches.items()}
     return patches

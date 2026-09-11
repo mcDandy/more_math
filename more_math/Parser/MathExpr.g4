@@ -311,6 +311,10 @@ func1:
 		*/
 	| COUNT LPAREN expr RPAREN			# CountFunc
 		/**
+		  keys(x) - returns a list of dictionary keys in insertion order
+		*/
+	| KEYS LPAREN expr RPAREN			# KeysFunc
+		/**
 		  repeat(x, count, [dims]) - repeats tensor elements; count may be scalar or per-dim list
 		*/
 	| REPEAT LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RepeatFunc
@@ -977,6 +981,7 @@ DIST: 'dist' | 'distance';
 REMAP: 'remap';
 COSSIM: 'cossim' | 'cosine_similarity';
 COUNT: 'count' | 'cnt' | 'length';
+KEYS: 'keys';
 REPEAT: 'repeat';
 FLATTEN: 'flatten';
 APPEND: 'append';

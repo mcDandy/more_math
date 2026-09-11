@@ -76,8 +76,10 @@ You can also get the node from comfy manager under the name of More math.
 
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (abs / norm-style magnitude)
 - Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
+  - also works on indexed targets, for example `a[i] += 1;` or `a[i, j] = expression;`.
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
+- Ternary: `condition ? a : b`
 - Constants: `pi`/`PI`, `e`/`E` (case-insensitive).
 - `none` / `None` / `null` / `NULL`: empty/no-value literal.
 - Bitwise shifts: `<<`, `>>`
@@ -159,7 +161,7 @@ You can also get the node from comfy manager under the name of More math.
 - `tmin(x, y)`: element-wise minimum.
 - `tmax(x, y)`: element-wise maximum.
 - `tnorm(x,[dim])`: L2 normalization along the last dimension. If dimension is provided, it uses this dimension. Dimension list can be provided.
-- `snorm(x)`: scalar/tensor norm magnitude.
+- `snorm(x, [dim])`: scalar/tensor norm magnitude. Frobenius norm along `dim` if specified (`dim` can be a single dimension or a list of dimensions); otherwise over the whole tensor.
 - `cossim(a, b)` / `cosine_similarity`: cosine similarity.
 - `cov(x, y)`: covariance.
 - `corr(x, y)` / `correlation`: Pearson correlation.
@@ -238,7 +240,7 @@ You can also get the node from comfy manager under the name of More math.
 ### 3) Imaging & Spatial Processing
 
 #### 3.1 Filters & Convolution
-- `blur(x, sigma)` / `gaussian`: Gaussian blur using separable convolution.
+- `blur(x, sigma, [reshape])` / `gaussian`: Gaussian blur using separable convolution. If `reshape` is truthy, tries orienting the input such that channel is in the direction of the filter; otherwise it expects the color dimension to be last.
 - `edge(x, [kernel_size])`: Sobel-style edge detection.
 - `ezconvolution(tensor, ...)` / `ezconv`: convolution with auto layout handling.
 - `convolution(tensor, ...)` / `conv`: direct convolution. Expects [batch, channel, spatial...] layout.
@@ -367,7 +369,7 @@ You can also get the node from comfy manager under the name of More math.
 - `timestamp()` / `now`: current Unix timestamp.
 - `int(x)`: convert to int32 or nested int values.
 - `float(x)`: convert to float or nested float values.
-- `as_nested(x)`: convert list to a nested tensor. Usefull for video+audio models. Values do not need to be in the same or compatible shape.
+- `as_nested(x)` / `as_nested_tensor`: convert list to a nested tensor. Usefull for video+audio models. Values do not need to be in the same or compatible shape.
 
 ___
 
@@ -387,7 +389,7 @@ ___
 
 ### 12) Dictionary 
  - `add_key(dict, key, value)` - add a key-value pair to a dictionary.
- - `remove_key(dict, key)` / `rm_kay` - remove a key-value pair from a dictionary.
+ - `remove_key(dict, key)` / `rm_key` - remove a key-value pair from a dictionary.
  - `keys(dict)` - returns a list of dictionary keys in insertion order.
 
 ## Variables
@@ -428,7 +430,7 @@ ___
    - `L` or `layer` - index of current layer
    - `LC` or `layer_count` - number of layers
  - **IMAGE KERNEL**: in `conv`/`convolution` or `ezconv`/`ezconvolution` function kernel input
-   - `kX`, `kY` - position in kernel, centered at `0.0`
+   - `kX`, `kY`, `kZ` (also lowercase `kx`, `ky`, `kz`) - position in kernel, centered at `0.0`; `kZ`/`kz` is only set for 3D kernels
    - `kW`, `kernel_width` - kernel width
    - `kH`, `kernel_height` - kernel height
    - `kD`, `kernel_depth` - kernel depth

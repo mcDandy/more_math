@@ -206,8 +206,8 @@ def calculate_lora_dict_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[],
     for name in needed_v_names:
         variables[name] = weight_dict(name)
     for alias, target in mapping.items():
-        if target in V:
-            variables[alias] = variables.get(target, weight_dict(target))
+        if target in variables:
+            variables[alias] = variables[target]
 
     visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
     result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(parse_expr(Expr) if isinstance(Expr, str) else Expr)

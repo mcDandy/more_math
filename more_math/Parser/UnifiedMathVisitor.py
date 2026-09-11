@@ -123,7 +123,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             return op(*values)
 
         keys = tuple(dictionaries[0])
-        if any(tuple(value) != keys for value in dictionaries[1:]):
+        key_set = set(keys)
+        if any(set(value) != key_set for value in dictionaries[1:]):
             raise ValueError("Dictionary operations require matching keys")
 
         return MathDict({key: op(*(value[key] if self._is_math_dict(value) else value for value in values)) for key in keys})

@@ -444,5 +444,12 @@ def checkLazyNew(Expression, V, F):
             needed.add(comp_match.group(1))
         elif re.fullmatch(r"[VF][0-9]+", norm):
             needed.add(norm)
+        elif norm.endswith("_d"):
+            # Delta references like V0_d or the aliased a_d still require
+            # their underlying model, even when the bare name is never
+            # referenced elsewhere in the expression.
+            delta_base = aliases.get(norm[:-2], norm[:-2])
+            if re.fullmatch(r"[VF][0-9]+", delta_base):
+                needed.add(delta_base)
 
     return needed

@@ -5,7 +5,6 @@ import comfy.model_management
 import comfy.model_patcher
 import comfy.lora
 import torch
-from collections import defaultdict
 
 
 def _get_model_patcher(obj):
@@ -334,7 +333,7 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
         mapping = {}
 
     needed_vars = checkLazyNew(Expr, V, F)
-    needed_v_names = [name for name in V if name in needed_vars or f"{name}_d" in needed_vars]
+    needed_v_names = [name for name in V if name in needed_vars]
     if "V0" in V and "V0" not in needed_v_names:
         needed_v_names.append("V0")
     if not needed_v_names:
@@ -377,7 +376,12 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
 
     all_keys = [key for key in all_keys if any(key in state_dict for state_dict in state_dicts.values())]
 
-    delta_names = {name for name in needed_v_names if f"{name}_d" in needed_vars}
+    # Mirrors calculate_patches_autogrow's needs_deltas: a plain substring
+    # check on the expression text, since checkLazyNew's returned variable
+    # names never carry "_d" suffixes (only bare V{n}/alias names), so a
+    # membership test against needed_vars can never match here.
+    needs_deltas = not (isinstance(Expr, str) and "_d" not in Expr)
+    delta_names = set(needed_v_names) if needs_deltas else set()
     weights = {name: {} for name in needed_v_names}
     bases = {name: {} for name in delta_names}
     references = {}
@@ -418,8 +422,8 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
         variables[name] = weight_dict(name)
 
     for alias, target in mapping.items():
-        if target in V:
-            variables[alias] = variables.get(target, weight_dict(target))
+        if target in variables:
+            variables[alias] = variables[target]
 
     for name in delta_names:
         def make_delta_dict(name=name):

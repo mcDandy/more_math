@@ -19,7 +19,15 @@ Write-Host "===================================================" -ForegroundColo
 Write-Host "2/2 Generating Python and JS Token Sets" -ForegroundColor Cyan
 Write-Host "===================================================" -ForegroundColor Cyan
 
-$g4Path = "MathExpr.g4"
+$scriptRoot = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
+    $scriptRoot = Split-Path -Parent $PSCommandPath
+}
+if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
+    $scriptRoot = (Get-Location).Path
+}
+
+$g4Path = Join-Path $scriptRoot "MathExpr.g4"
 if (-not (Test-Path $g4Path)) {
     Write-Error "MathExpr.g4 not found!"
     exit 1
@@ -77,6 +85,27 @@ function New-Snippet([string]$name) {
     return "${name}()"
 }
 
+function Get-FunctionNames([hashtable]$lexerMap, [string]$token) {
+    $names = @()
+    if ($lexerMap.ContainsKey($token)) {
+        $rawNames = $lexerMap[$token]
+        foreach ($name in @($rawNames)) {
+            if ($null -eq $name) { continue }
+            if ($name -is [System.Collections.IDictionary]) { continue }
+            $text = [string]$name
+            if ([string]::IsNullOrWhiteSpace($text)) { continue }
+            if ($text -match '^System\.Collections\.') { continue }
+            $names += $text.ToLowerInvariant()
+        }
+    }
+
+    if ($names.Count -eq 0) {
+        $names = @($token.ToLowerInvariant())
+    }
+
+    return $names | Sort-Object -Unique
+}
+
 # Pomocná funkce pro vyčištění ANTLR docstringu do jednoho čistého řádku textu
 function Clean-Docstring([string]$doc) {
     if ([string]::IsNullOrEmpty($doc)) { return "" }
@@ -97,22 +126,23 @@ function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$l
     $token = $matches[1]
     $inner = $matches[2].Trim()
     $bounds = Get-ArgBounds $inner
-    $names = $lexerMap[$token]
-    if (-not $names) { return }
+    $names = Get-FunctionNames $lexerMap $token
+    if ($names.Count -eq 0) { return }
 
     $cleanDoc = Clean-Docstring $currentDoc
+    $minArgs = if ($null -eq $bounds.min) { 0 } else { [int]$bounds.min }
+    $maxArgs = $null
+    if ($null -ne $bounds.max) {
+        $maxArgs = [int]$bounds.max
+    }
 
     foreach ($fn in $names) {
         $entry = @{
-            minArgs     = $bounds.min
+            minArgs     = $minArgs
             snippet     = (New-Snippet $fn)
             description = $cleanDoc
         }
-        if ($null -eq $bounds.max) {
-            $entry.maxArgs = $null
-        } else {
-            $entry.maxArgs = $bounds.max
-        }
+        $entry.maxArgs = $maxArgs
         $meta[$fn] = $entry
     }
 }
@@ -120,6 +150,7 @@ function Add-FunctionRuleLine([hashtable]$meta, [hashtable]$lexerMap, [string]$l
 function Get-FunctionMeta([string]$grammarText, [hashtable]$lexerMap) {
     $meta = @{}
     $inFunc = $false
+    $inDocBlock = $false
     $currentDoc = ""
 
     foreach ($line in ($grammarText -split "`r?`n")) {
@@ -191,6 +222,7 @@ foreach ($fn in $functions) {
             minArgs = 1
             maxArgs = $null
             snippet = (New-Snippet $fn)
+            description = ""
         }
     }
 }
@@ -205,7 +237,7 @@ foreach ($key in $sortedMetaKeys) {
     $pyMetaLines += "    '$key': {'min_args': $($m.minArgs), 'max_args': $maxPart, 'snippet': '$($m.snippet)', 'description': '$($m.description)'},"
 }
 
-$pyPath = "inbuilt_symbols.py"
+$pyPath = Join-Path $scriptRoot "inbuilt_symbols.py"
 $pyContent = @(
     "# Generated automatically by compile.ps1. Do not edit.",
     "INBUILT_KEYWORDS = {" + (($keywords | ForEach-Object { "'$_'" }) -join ", ") + "}",
@@ -221,7 +253,7 @@ $pyContent = @(
 Write-Host "-> Exported Python symbols to root: $pyPath" -ForegroundColor Green
 
 # 5. JavaScript export
-$jsDir = "..\..\web"
+$jsDir = Join-Path $scriptRoot "..\..\web"
 if (-not (Test-Path $jsDir)) {
     New-Item -ItemType Directory -Force -Path $jsDir | Out-Null
 }

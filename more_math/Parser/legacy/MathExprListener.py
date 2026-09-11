@@ -1124,6 +1124,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#KeysFunc.
+    def enterKeysFunc(self, ctx:MathExprParser.KeysFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#KeysFunc.
+    def exitKeysFunc(self, ctx:MathExprParser.KeysFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#RepeatFunc.
     def enterRepeatFunc(self, ctx:MathExprParser.RepeatFuncContext):
         pass

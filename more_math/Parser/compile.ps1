@@ -22,10 +22,11 @@
     $env:ANTLR_JAR, then tools\antlr.jar next to this script.
 
 .PARAMETER AntlrLegacyJar
-    Optional path to an ANTLR 4.9.x complete jar. When given (and Java is
-    available), also regenerates more_math/Parser/legacy for the old
-    antlr4-python3-runtime==4.9.x compatibility path used by antlr_router.py.
-    Defaults to $env:ANTLR_LEGACY_JAR. Skipped entirely if not supplied.
+    Optional path to an ANTLR 4.9.x complete jar to use for regenerating
+    more_math/Parser/legacy (the antlr4-python3-runtime==4.9.x compatibility
+    path used by antlr_router.py). Defaults to $env:ANTLR_LEGACY_JAR. When
+    not given, the 'antlr4' launcher (antlr4-tools) is tried instead, pinned
+    to -AntlrLegacyVersion, same as the main grammar target.
 
 .PARAMETER AntlrVersion
     ANTLR release to use when the 'antlr4' launcher comes from the
@@ -33,13 +34,19 @@
     latest release on every run). Defaults to $env:ANTLR4_TOOLS_ANTLR_VERSION,
     then '4.13.2' to match the version more_math/Parser/grammer was last
     generated with. Ignored when using a plain jar/java invocation.
+
+.PARAMETER AntlrLegacyVersion
+    Same as -AntlrVersion, but for the more_math/Parser/legacy (ANTLR 4.9.x)
+    target. Defaults to $env:ANTLR4_TOOLS_ANTLR_LEGACY_VERSION, then '4.9.3'
+    to match the version more_math/Parser/legacy was last generated with.
 #>
 [CmdletBinding()]
 param(
     [switch]$SkipAntlr,
     [string]$AntlrJar = $env:ANTLR_JAR,
     [string]$AntlrLegacyJar = $env:ANTLR_LEGACY_JAR,
-    [string]$AntlrVersion = $(if ($env:ANTLR4_TOOLS_ANTLR_VERSION) { $env:ANTLR4_TOOLS_ANTLR_VERSION } else { '4.13.2' })
+    [string]$AntlrVersion = $(if ($env:ANTLR4_TOOLS_ANTLR_VERSION) { $env:ANTLR4_TOOLS_ANTLR_VERSION } else { '4.13.2' }),
+    [string]$AntlrLegacyVersion = $(if ($env:ANTLR4_TOOLS_ANTLR_LEGACY_VERSION) { $env:ANTLR4_TOOLS_ANTLR_LEGACY_VERSION } else { '4.9.3' })
 )
 
 $ErrorActionPreference = 'Stop'
@@ -71,7 +78,8 @@ function Invoke-AntlrCompile {
     param(
         [Parameter(Mandatory)][string]$Grammar,
         [Parameter(Mandatory)][string]$OutDir,
-        [string]$Jar
+        [string]$Jar,
+        [string]$Version = $AntlrVersion
     )
 
     $grammarLeaf = Split-Path -Leaf $Grammar
@@ -82,10 +90,10 @@ function Invoke-AntlrCompile {
         # Central on every invocation to resolve "latest"; pin it so the
         # build is reproducible and doesn't need that network call.
         $previousVersionEnv = $env:ANTLR4_TOOLS_ANTLR_VERSION
-        $env:ANTLR4_TOOLS_ANTLR_VERSION = $AntlrVersion
+        $env:ANTLR4_TOOLS_ANTLR_VERSION = $Version
         Push-Location $ParserDir
         try {
-            Write-Host "[antlr] antlr4 (v$AntlrVersion) -Dlanguage=Python3 -visitor -o `"$OutDir`" `"$grammarLeaf`""
+            Write-Host "[antlr] antlr4 (v$Version) -Dlanguage=Python3 -visitor -o `"$OutDir`" `"$grammarLeaf`""
             & $antlrCmd.Source -Dlanguage=Python3 -visitor -o $OutDir $grammarLeaf
             if ($LASTEXITCODE -ne 0) { throw "antlr4 failed with exit code $LASTEXITCODE" }
         } finally {
@@ -131,25 +139,16 @@ if ($SkipAntlr) {
             "to an antlr-*-complete.jar, then re-run.")
     }
 
-    if ($AntlrLegacyJar) {
-        if (Test-Path $AntlrLegacyJar) {
-            $javaCmd = Get-Command java -ErrorAction SilentlyContinue
-            if ($javaCmd) {
-                $grammarLeaf = Split-Path -Leaf $GrammarFile
-                Push-Location $ParserDir
-                try {
-                    Write-Host "[antlr] java -jar `"$AntlrLegacyJar`" -Dlanguage=Python3 -visitor -o `"$LegacyOutDir`" `"$grammarLeaf`" (ANTLR 4.9 target)"
-                    & $javaCmd.Source -jar $AntlrLegacyJar -Dlanguage=Python3 -visitor -o $LegacyOutDir $grammarLeaf
-                    if ($LASTEXITCODE -ne 0) { throw "Legacy ANTLR jar invocation failed with exit code $LASTEXITCODE" }
-                } finally {
-                    Pop-Location
-                }
-            } else {
-                Write-Warning "AntlrLegacyJar was given but Java is not available; skipping legacy grammar regeneration."
-            }
-        } else {
-            Write-Warning "AntlrLegacyJar '$AntlrLegacyJar' does not exist; skipping legacy grammar regeneration."
-        }
+    if ($AntlrLegacyJar -and -not (Test-Path $AntlrLegacyJar)) {
+        Write-Warning "AntlrLegacyJar '$AntlrLegacyJar' does not exist; falling back to the antlr4 launcher for the legacy target."
+        $AntlrLegacyJar = $null
+    }
+
+    $legacyOk = Invoke-AntlrCompile -Grammar $GrammarFile -OutDir $LegacyOutDir -Jar $AntlrLegacyJar -Version $AntlrLegacyVersion
+    if (-not $legacyOk) {
+        Write-Warning ("ANTLR toolchain not found for the legacy (ANTLR 4.9.x) target. " +
+            "Skipping legacy grammar compilation; '$LegacyOutDir' was left untouched. " +
+            "Install antlr4-tools, or set `$env:ANTLR_LEGACY_JAR to an antlr-4.9.x-complete.jar, then re-run.")
     }
 }
 

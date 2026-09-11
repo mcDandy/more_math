@@ -405,7 +405,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         result = tensor
         for dim in sorted(set(normalized_dims), reverse=True):
             result = reducer(result, dim)
-            if hasattr(result, "values"):
+            # torch.min/max(..., dim=...) return a torch.return_types
+            # named tuple with a .values field; unwrap it. A plain
+            # torch.Tensor is NOT a tuple, but it always exposes a
+            # (sparse-tensor) .values *method*, so hasattr(result, "values")
+            # alone can't tell the two apart - checking isinstance(..., tuple)
+            # first avoids mistaking an already-reduced Tensor for one.
+            if isinstance(result, tuple) and hasattr(result, "values"):
                 result = result.values
         return result
 
@@ -911,9 +917,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         return val
 
     def visitTNormFunc(self, ctx):
-        val = (yield ctx.expr())
+        val = (yield ctx.expr(0))
+        dim = -1
+        if len(ctx.expr()) > 1:
+            dim = self._to_int((yield ctx.expr(1)), ctx, "tnorm dimension")
         if self._is_tensor(val):
-            return F.normalize(val, p=2, dim=-1)
+            return F.normalize(val, p=2, dim=dim)
         return 1.0 if val != 0 else 0.0
 
     def visitSNormFunc(self, ctx):

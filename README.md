@@ -75,9 +75,11 @@ You can also get the node from comfy manager under the name of More math.
 ## Operators
 
 - Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (abs / norm-style magnitude)
-- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `=`
+- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
+- Constants: `pi`/`PI`, `e`/`E` (case-insensitive).
+- `none` / `None` / `null` / `NULL`: empty/no-value literal.
 - Bitwise shifts: `<<`, `>>`
 - Indexing: `x[i]` or `x[i, j, ...]`
   - works on tensors, nested lists, and strings,
@@ -172,8 +174,8 @@ You can also get the node from comfy manager under the name of More math.
 - `var(x)`: variance.
 - `median(x)`: median.
 - `mode(x)`: mode.
-- `quartile(x, k)`: quartile (`k` in `0..4`).
-- `percentile(x, p)`: percentile (`p` in `0..100`).
+- `quartile(x, k)` / `quartil`: quartile (`k` in `0..4`).
+- `percentile(x, p)` / `prcnt`: percentile (`p` in `0..100`).
 - `quantile(x, q)`: quantile (`q` in `0..1`).
 - `moment(x, a, k)`: k-th moment around center `a`.
 - `any(x)`: `1.0` if any element is non-zero.
@@ -215,7 +217,7 @@ You can also get the node from comfy manager under the name of More math.
 - `tensor(shape, [value, [type]])`: create a filled tensor; `type` a tensor to copy its dtype to self when being created.
 - `interpolate_linear(tensor, scale)`: linear interpolation-based resizing. Scale can be a single float or a list. When it is a list, it is interpreted as the target output size.
 - `interpolate_area(tensor, scale)`: area interpolation-based resizing.
-- `interpolate_nearest(tensor, scale)`: nearest neighbor interpolation-based resizing.
+- `interpolate_nearest(tensor, scale)` / `interpolate_nearest_exact`: nearest neighbor interpolation-based resizing.
 
 #### 2.5 Linear Algebra
 - `dot(a, b)`: dot product after flattening.
@@ -250,7 +252,10 @@ You can also get the node from comfy manager under the name of More math.
 ---
 
 ### 4) Optical Flow
-- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: compute optical flow.
+- `rife(img1, img2, [tiling_size, iterations, multi_scale])`: compute optical flow using a RAFT-based model.
+  - `tiling_size` chunks the image into overlapping `tiling_size`x`tiling_size` tiles to conserve memory; defaults to `0` (auto-enables `1024`x`1024` tiling above 2MPx); a value between `0` and `1` is taken as a fraction of the resolution instead.
+  - `iterations` defaults to `12`.
+  - `multi_scale` (default `false`) also runs a low-resolution pass of the base image to help catch large movements.
 - `motion_mask(flow)`: motion/occlusion mask from flow.
 - `flow_to_image(flow)`: visualize flow as RGB.
 - `flow_apply(image, flow)`: warp image by flow.
@@ -270,23 +275,22 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 6.1 Random Distributions
 - All random generators are seeded and deterministic for a given seed.
-- All use the current node shape by default (based on shape of input to the node), but an optional `shape` argument can be provided to specify a different output shape.
-- all use `rand<dist>(seed, [shape])` / `random_<distribution>` naming convention. `noise`/`randn`/`random_normal` is the same generator as in `Random Noise` node.
-- If `shape` is omitted, the current node shape is used.
-- `noise` / `randn` / `random_normal`: normal distribution.
-- `rand` / `randu` / `random_uniform`: uniform distribution.
-- `rande` / `random_exponential`: exponential distribution.
-- `randc` / `random_cauchy`: Cauchy distribution.
-- `randln` / `random_log_normal`: log-normal distribution.
-- `randb` / `random_bernoulli`: Bernoulli distribution.
-- `randp` / `random_poisson`: Poisson distribution.
-- `randg` / `random_gamma`: gamma distribution.
-- `randbeta` / `random_beta`: beta distribution.
-- `randl` / `random_laplace`: Laplace distribution.
-- `randgumbel` / `random_gumbel`: Gumbel distribution.
-- `randw` / `random_weibull`: Weibull distribution.
-- `randchi2` / `random_chi2`: chi-squared distribution.
-- `randt` / `random_studentt`: Student’s t distribution.
+- All use the current node shape by default (based on shape of input to the node), but an optional trailing `shape` argument can be provided to specify a different output shape.
+- All use a `rand<dist>(...)` / `random_<distribution>(...)` naming convention, but the argument list before `[shape]` differs per distribution - see each entry below.
+- `noise(seed, [shape])` / `randn` / `random_normal`: normal distribution. Same generator as in `Random Noise` node.
+- `rand(seed, [shape])` / `randu` / `random_uniform`: uniform distribution.
+- `rande(seed, lambda, [shape])` / `random_exponential`: exponential distribution.
+- `randc(seed, median, sigma, [shape])` / `random_cauchy`: Cauchy distribution.
+- `randln(seed, mean, std, [shape])` / `random_log_normal`: log-normal distribution.
+- `randb(seed, probability, [shape])` / `random_bernoulli`: Bernoulli distribution.
+- `randp(seed, lambda, [shape])` / `random_poisson`: Poisson distribution.
+- `randg(seed, shape_param, scale, [shape])` / `random_gamma`: gamma distribution.
+- `randbeta(seed, alpha, beta, [shape])` / `random_beta`: beta distribution.
+- `randl(seed, loc, scale, [shape])` / `random_laplace`: Laplace distribution.
+- `randgumbel(seed, loc, scale, [shape])` / `random_gumbel`: Gumbel distribution.
+- `randw(seed, scale, concentration, [shape])` / `random_weibull`: Weibull distribution.
+- `randchi2(seed, df, [shape])` / `random_chi2`: chi-squared distribution.
+- `randt(seed, df, [shape])` / `random_studentt`: Student’s t distribution.
 
 #### 6.2 Procedural Noise
 - `perlin(seed, scale, [octaves, [offset, [shape]]])` / `perlin_noise`:
@@ -336,10 +340,10 @@ You can also get the node from comfy manager under the name of More math.
 ### 9) Color
 - `rgb_to_hsv(...)`: convert RGB to HSV.
   - accepts packed tensor/list input or separate `r, g, b`,
-  - optional fourth boolean argument enables hue in degrees.
+  - optional trailing boolean argument enables hue in degrees - the 2nd argument in packed mode (`rgb, [degrees]`), the 4th in separate mode (`r, g, b, [degrees]`).
 - `hsv_to_rgb(...)`: convert HSV to RGB.
   - accepts packed tensor/list input or separate `h, s, v`,
-  - optional fourth boolean argument treats hue as degrees.
+  - optional trailing boolean argument treats hue as degrees - the 2nd argument in packed mode (`hsv, [degrees]`), the 4th in separate mode (`h, s, v, [degrees]`).
 - `rgb_to_oklab(...)`: convert RGB to OKLab.
    - accepts packed tensor/list input or separate `r, g, b`.
 - `oklab_to_rgb(...)`: convert OKLab to RGB.

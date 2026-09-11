@@ -203,9 +203,9 @@ func1:
 		*/
 	| EXP LPAREN expr RPAREN			# ExpFunc
 		/**
-		  tnorm(x) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. The slice is last dimension of the tensor.
+		  tnorm(x, [dim]) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. Defaults to the last dimension; dim selects a different slicing dimension.
 		*/
-	| TNORM LPAREN expr RPAREN			# TNormFunc
+	| TNORM LPAREN expr (COMMA expr)? RPAREN			# TNormFunc
 		/**
 		  floor(x) - returns the largest integer less than or equal to x
 		*/
@@ -501,7 +501,7 @@ func2:
 		*/
 	| QUANTILE LPAREN expr COMMA expr RPAREN		# QuantileFunc
 		/**
-		  dot(x, y) - computes the dot product of x and y. Last dimension must be 3.
+		  dot(x, y) - computes the dot product of x and y after flattening both to 1D. Use cross(x, y) if you need a per-vector product with the last dimension kept.
 		*/
 	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
 		/**
@@ -585,10 +585,10 @@ func2:
 		*/
 	| FLOW_APPLY LPAREN expr COMMA expr RPAREN		# FlowApplyFunc
 		/**
-		  rife(image1, image2, [tile_size], [iterations], [multi_scale]) - computes an intermediate frame between image1 and image2 using RIFE
-		  - tile_size: chuncks image to overlapping tile_size*tile_size parts to conserve memory Default is 1024x1024 when over 2MPx. When tiling size is between 0 - 1 it takes as a fraction of the resolution
-		  - iterations: how many times to run RIFE model. Default 12
-		  - multi_scale: also use low resolution of base image for giant movements
+		  rife(image1, image2, [tiling_size], [iterations], [multi_scale]) - computes the optical flow field ([H, W, 2]) between image1 and image2 using a RAFT-based model
+		  - tiling_size: chuncks image to overlapping tiling_size*tiling_size parts to conserve memory. Default is 0 (auto: enables 1024x1024 tiling when over 2MPx). When tiling_size is between 0 - 1 it takes as a fraction of the resolution
+		  - iterations: how many times to run the flow model. Default 12
+		  - multi_scale: also use low resolution of base image for giant movements. Default false
 		*/
 	| RIFE LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN # RifeFunc
 		/**
@@ -612,7 +612,7 @@ func2:
 		*/
 	| JOIN LPAREN expr (COMMA expr)? RPAREN			# JoinFunc
 		/**
-		  substring(s, start, [end]) - returns a substring of s from start to end. If end is not supplied, it uses end of string
+		  substring(s, start, [length]) - returns length characters of s starting at start. If length is not supplied, it returns the rest of the string
 		*/
 	| SUBSTRING LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
 		/**
@@ -691,7 +691,7 @@ func3:
 		*/
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN		# CropFunc
 		/**
-		  ifft(x, [axis]) - inverse fast Fourier transform
+		  ifft(x, [shape]) - inverse fast Fourier transform of x. shape (defaults to the node's tensor shape) sizes the K/Kx/Ky/.../frequency variables made available while evaluating x, it does not resize x itself.
 		*/
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
 		/**
@@ -778,11 +778,11 @@ func5:
 // N-argument functions
 funcN:
 		/**
-		  smin(x, ...) - computes the minimum of inputs or elements. Tensors must have the same size or be broadcastable to same size.
+		  smin(x, ...) - computes the minimum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smin(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
 		*/
 	SMIN LPAREN expr (COMMA expr)* RPAREN		# SMinFunc
 		/**
-		  smax(x, ...) - computes the maximum of inputs or elements. Tensors must have the same size or be broadcastable to same size.
+		  smax(x, ...) - computes the maximum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smax(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
 		*/
 	| SMAX LPAREN expr (COMMA expr)* RPAREN		# SMaxFunc
 		/**
@@ -1041,7 +1041,7 @@ INTERPOLATE_LINEAR: 'interpolate_linear';
 INTERPOLATE_AREA: 'interpolate_area';
 INTERPOLATE_NEAREST: 'interpolate_nearest' | 'interpolate_nearest_exact';
 TEXT_IMAGE: 'text_image';
-AS_NESTED: 'as_nested_tensor';
+AS_NESTED: 'as_nested_tensor' | 'as_nested';
 SVD: 'svd'|'singular_value_decomposition';
 DIAG: 'diagonal_matrix'|'diag';
 

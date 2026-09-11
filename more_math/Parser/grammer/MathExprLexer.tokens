@@ -347,7 +347,6 @@ WS=234
 'interpolate_linear'=142
 'interpolate_area'=143
 'text_image'=145
-'as_nested_tensor'=146
 'if'=149
 'else'=150
 'while'=151

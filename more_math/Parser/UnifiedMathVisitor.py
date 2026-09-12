@@ -573,6 +573,28 @@ class UnifiedMathVisitor(MathExprVisitor):
             elem = yield from self._process_slice_element(node)
             indices.append(elem)
 
+        # NestedTensor in this codebase is a container of subtensors.
+        # Treat a single scalar index as selecting a subtensor instead of
+        # indexing every subtensor elementwise.
+        if self._is_nested_tensor(val) and len(indices) == 1 and not isinstance(indices[0], slice):
+            idx = indices[0]
+            if self._is_tensor(idx):
+                if idx.numel() != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Nested tensor index must be a scalar")
+                idx = int(idx.flatten()[0].item())
+            elif self._is_list(idx):
+                if len(idx) != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Nested tensor index must be a scalar")
+                idx = int(idx[0])
+            else:
+                idx = int(idx)
+
+            if idx < 0:
+                idx += len(val.tensors)
+            if idx < 0 or idx >= len(val.tensors):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for nested tensor of length {len(val.tensors)}")
+            return val.tensors[idx]
+
         # Use standard PyTorch/list/string/dictionary indexing and slicing
         if self._is_tensor(val):
             if len(indices) > val.ndim:

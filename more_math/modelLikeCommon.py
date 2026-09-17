@@ -297,12 +297,20 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
         variables = variables | generate_dim_variables(ref_tensor)
 
         # Execute math
+        # Store original V0 before visiting, since visitor may modify it
+        original_v0 = variables.get("V0")
+        if original_v0 is not None:
+            # If it's a tensor, clone it; if it's a dict, copy its items
+            if isinstance(original_v0, torch.Tensor):
+                original_v0 = original_v0.clone()
+            elif isinstance(original_v0, dict):
+                original_v0 = MathDict({k: (v.clone() if isinstance(v, torch.Tensor) else v) for k, v in original_v0.items()})
 
         visitor = UnifiedMathVisitor(variables, ref_tensor.shape,state_storage=stack)
         res = visitor.visit(tree)
         res = as_tensor(res, ref_tensor.shape)
 
-        original = variables.get("V0")
+        original = original_v0
         if original is None:
             original = torch.zeros_like(res)
 
@@ -436,6 +444,9 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
         variables[f"{name}_d"] = make_delta_dict
 
     visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
+    # Store a copy of V0 BEFORE visiting, since the visitor may modify it
+    v0_dict = variables.get("V0", MathDict({key: torch.zeros_like(reference) for key, reference in references.items()}))
+    originals = MathDict({k: (v.clone() if isinstance(v, torch.Tensor) else v) for k, v in v0_dict.items()})
     result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(tree)
     if not isinstance(result, MathDict):
         if isinstance(result, (float, int)):
@@ -445,8 +456,6 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
 
     if tuple(result) != tuple(all_keys):
         raise ValueError("Dictionary mode expressions must preserve all model keys")
-
-    originals = variables.get("V0", MathDict({key: torch.zeros_like(reference) for key, reference in references.items()}))
     patches = {}
     for key, value in result.items():
         if not torch.is_tensor(value):

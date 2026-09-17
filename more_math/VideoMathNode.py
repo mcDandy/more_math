@@ -1,9 +1,10 @@
-from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew, LazyVariableDict
+from .helper_functions import generate_dim_variables, parse_expr, getIndexTensorAlongDim, as_tensor, normalize_to_common_shape, make_zero_like, get_v_variable, get_f_variable, checkLazyNew, LazyVariableDict, get_tensor_device, move_to_device
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from comfy_api.latest import io, InputImpl, Types
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy
+import comfy
 
 
 def _get_video_components(video):
@@ -80,6 +81,12 @@ class VideoMathNode(io.ComfyNode):
                     default="error",
                     tooltip="How to handle mismatched video lengths. tile: repeat shorter inputs; error: raise error on mismatch; pad: treat missing frames as zero."
                 ),
+                io.Boolean.Input(
+                    id="use_compute_device",
+                    default=True,
+                    display_name="Move tensors to GPU",
+                    tooltip="Temporarily copies video tensors to the compute device for math and moves the result back afterwards.",
+                ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes",optional=True)
             ],
             outputs=[
@@ -89,13 +96,13 @@ class VideoMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile",stack={}):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile",use_compute_device=True,stack={}):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression_pi,V,F)
         return d|b
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile",stack={}):
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile",use_compute_device=True,stack={}):
         tensor_keys = [k for k, v in V.items() if v is not None]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
@@ -106,8 +113,12 @@ class VideoMathNode(io.ComfyNode):
             needed_tensor_keys = tensor_keys
 
         tensors = [_get_video_tensor(V[k]) for k in needed_tensor_keys]
+        original_device = get_tensor_device(tensors[0])
+        compute_device = comfy.model_management.get_torch_device() if use_compute_device else original_device
+        working_V = move_to_device(V, compute_device) if compute_device is not None and compute_device != original_device else V
 
         # Normalize all tensors together to find the common target shape
+        tensors = [_get_video_tensor(working_V[k]) for k in needed_tensor_keys]
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
         V_norm = dict(zip(needed_tensor_keys, normalized_tensors))
 
@@ -190,7 +201,7 @@ class VideoMathNode(io.ComfyNode):
 
         waveforms = {}
         for k in needed_tensor_keys:
-            waveform = _get_video_audio(V[k])
+            waveform = _get_video_audio(working_V[k])
             if waveform is None:
                 raise ValueError(f"Input '{k}' does not contain audio data.")
             waveforms[k] = waveform
@@ -266,5 +277,7 @@ class VideoMathNode(io.ComfyNode):
         visitor = UnifiedMathVisitor(variables, a_w.shape,a_w.device,state_storage=stack)
         result_waveform = visitor.visit(tree_pi)
         result_waveform = as_tensor(result_waveform, a_w.shape)
+        result_waveform = move_to_device(result_waveform, original_device)
+        result_video = move_to_device(result_video, original_device)
 
         return (_build_video_output(result_video, result_waveform, sample_rate, V[needed_tensor_keys[0]]), stack)

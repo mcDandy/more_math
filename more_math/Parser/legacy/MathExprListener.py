@@ -2222,6 +2222,42 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#GetChangedKeysFunc.
+    def enterGetChangedKeysFunc(self, ctx:MathExprParser.GetChangedKeysFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetChangedKeysFunc.
+    def exitGetChangedKeysFunc(self, ctx:MathExprParser.GetChangedKeysFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GetAddedKeysFunc.
+    def enterGetAddedKeysFunc(self, ctx:MathExprParser.GetAddedKeysFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetAddedKeysFunc.
+    def exitGetAddedKeysFunc(self, ctx:MathExprParser.GetAddedKeysFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GetRemovedKeysFunc.
+    def enterGetRemovedKeysFunc(self, ctx:MathExprParser.GetRemovedKeysFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetRemovedKeysFunc.
+    def exitGetRemovedKeysFunc(self, ctx:MathExprParser.GetRemovedKeysFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GetUnchangedKeysFunc.
+    def enterGetUnchangedKeysFunc(self, ctx:MathExprParser.GetUnchangedKeysFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GetUnchangedKeysFunc.
+    def exitGetUnchangedKeysFunc(self, ctx:MathExprParser.GetUnchangedKeysFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#NoiseFunc.
     def enterNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
         pass

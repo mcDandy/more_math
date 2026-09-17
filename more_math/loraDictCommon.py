@@ -211,7 +211,7 @@ def calculate_lora_dict_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[],
 
     visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
     result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(parse_expr(Expr) if isinstance(Expr, str) else Expr)
-    if not isinstance(result, MathDict):
+    if not isinstance(result, (MathDict, dict)):
         if isinstance(result, (float, int)):
             result = MathDict({key: torch.full_like(reference, result) for key, reference in references.items()})
         else:

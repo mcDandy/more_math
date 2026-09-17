@@ -178,7 +178,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return isinstance(val, (list, tuple))
 
     def _is_math_dict(self, val):
-        return isinstance(val, MathDict)
+        return isinstance(val, (MathDict, ChangeTrackingDict))
 
     def _map_math_dict(self, op, *values):
         dictionaries = [value for value in values if self._is_math_dict(value)]
@@ -190,7 +190,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         if any(set(value) != key_set for value in dictionaries[1:]):
             raise ValueError("Dictionary operations require matching keys")
 
-        return MathDict({key: op(*(value[key] if self._is_math_dict(value) else value for value in values)) for key in keys})
+        # Determine result type: if any input is ChangeTrackingDict, create ChangeTrackingDict
+        result_dict = {key: op(*(value[key] if self._is_math_dict(value) else value for value in values)) for key in keys}
+        if any(isinstance(value, ChangeTrackingDict) for value in dictionaries):
+            return ChangeTrackingDict(result_dict)
+        return MathDict(result_dict)
 
     def _where_value(self, condition, true_value, false_value):
         if self._is_tensor(condition) or self._is_tensor(true_value) or self._is_tensor(false_value):
@@ -224,13 +228,19 @@ class UnifiedMathVisitor(MathExprVisitor):
             if self._is_math_dict(a) and not self._is_math_dict(b):
                 if not self._is_tensor(b) and not self._is_list(b):
                     # a is dict, b is scalar - apply op directly to all dict values
-                    return MathDict({key: (torch_op(a[key], b) if torch_op else scalar_op(a[key], b)) 
-                                     for key in a})
+                    result = {key: (torch_op(a[key], b) if torch_op else scalar_op(a[key], b)) 
+                                     for key in a}
+                    if isinstance(a, ChangeTrackingDict):
+                        return ChangeTrackingDict(result)
+                    return MathDict(result)
             elif self._is_math_dict(b) and not self._is_math_dict(a):
                 if not self._is_tensor(a) and not self._is_list(a):
                     # b is dict, a is scalar - apply op directly to all dict values
-                    return MathDict({key: (torch_op(a, b[key]) if torch_op else scalar_op(a, b[key])) 
-                                     for key in b})
+                    result = {key: (torch_op(a, b[key]) if torch_op else scalar_op(a, b[key])) 
+                                     for key in b}
+                    if isinstance(b, ChangeTrackingDict):
+                        return ChangeTrackingDict(result)
+                    return MathDict(result)
 
             if self._is_math_dict(a) or self._is_math_dict(b):
                 return self._map_math_dict(lambda left, right: self._bin_op(left, right, torch_op, scalar_op, ctx), a, b)
@@ -1744,6 +1754,30 @@ class UnifiedMathVisitor(MathExprVisitor):
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: keys() requires a dictionary")
         return list(val)
 
+    def visitGetChangedKeysFunc(self, ctx):
+        val = yield ctx.expr()
+        if not isinstance(val, ChangeTrackingDict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: get_changed_keys() requires a ChangeTrackingDict")
+        return list(val.get_changed_keys())
+
+    def visitGetAddedKeysFunc(self, ctx):
+        val = yield ctx.expr()
+        if not isinstance(val, ChangeTrackingDict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: get_added_keys() requires a ChangeTrackingDict")
+        return list(val.get_added_keys())
+
+    def visitGetRemovedKeysFunc(self, ctx):
+        val = yield ctx.expr()
+        if not isinstance(val, ChangeTrackingDict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: get_removed_keys() requires a ChangeTrackingDict")
+        return list(val.get_removed_keys())
+
+    def visitGetUnchangedKeysFunc(self, ctx):
+        val = yield ctx.expr()
+        if not isinstance(val, ChangeTrackingDict):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: get_unchanged_keys() requires a ChangeTrackingDict")
+        return list(val.get_unchanged_keys())
+
     def visitMeanFunc(self, ctx):
         return self._reduction_op(
             (yield ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0
@@ -2583,15 +2617,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitCallExp(self, ctx):
         func_name = ctx.VARIABLE().getText()
-
-        if func_name == "keys":
-            args = ctx.exprList().expr() if ctx.exprList() else []
-            if len(args) != 1:
-                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: keys() expects 1 argument")
-            value = yield args[0]
-            if not isinstance(value, dict):
-                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: keys() requires a dictionary")
-            return list(value)
 
         # 1) Pokud proměnná existuje a je to lambda uložená v variables, aplikuj ji
         if func_name in self.variables and isinstance(self.variables[func_name], LambdaFunction):

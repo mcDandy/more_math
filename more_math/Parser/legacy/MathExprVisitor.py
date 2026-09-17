@@ -1239,6 +1239,26 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#GetChangedKeysFunc.
+    def visitGetChangedKeysFunc(self, ctx:MathExprParser.GetChangedKeysFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GetAddedKeysFunc.
+    def visitGetAddedKeysFunc(self, ctx:MathExprParser.GetAddedKeysFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GetRemovedKeysFunc.
+    def visitGetRemovedKeysFunc(self, ctx:MathExprParser.GetRemovedKeysFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GetUnchangedKeysFunc.
+    def visitGetUnchangedKeysFunc(self, ctx:MathExprParser.GetUnchangedKeysFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#NoiseFunc.
     def visitNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
         return self.visitChildren(ctx)

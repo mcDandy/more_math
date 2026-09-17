@@ -812,7 +812,23 @@ funcN:
 		/**
 		  concatenate(x1, x2, ..., dim) - concatenates tensors along the specified dimension
 		*/
-	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc;
+	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc
+		/**
+		  get_changed_keys(d) - returns list of keys that were modified or added in ChangeTrackingDict d
+		*/
+	| GET_CHANGED_KEYS LPAREN expr RPAREN		# GetChangedKeysFunc
+		/**
+		  get_added_keys(d) - returns list of keys that were added (newly created) in ChangeTrackingDict d
+		*/
+	| GET_ADDED_KEYS LPAREN expr RPAREN			# GetAddedKeysFunc
+		/**
+		  get_removed_keys(d) - returns list of keys that were removed from ChangeTrackingDict d
+		*/
+	| GET_REMOVED_KEYS LPAREN expr RPAREN		# GetRemovedKeysFunc
+		/**
+		  get_unchanged_keys(d) - returns list of keys that remain unchanged in ChangeTrackingDict d
+		*/
+	| GET_UNCHANGED_KEYS LPAREN expr RPAREN		# GetUnchangedKeysFunc;
 
 funcNoise:
 		/**
@@ -982,6 +998,10 @@ REMAP: 'remap';
 COSSIM: 'cossim' | 'cosine_similarity';
 COUNT: 'count' | 'cnt' | 'length';
 KEYS: 'keys';
+GET_CHANGED_KEYS: 'get_changed_keys' | 'changed_keys';
+GET_ADDED_KEYS: 'get_added_keys' | 'added_keys';
+GET_REMOVED_KEYS: 'get_removed_keys' | 'removed_keys';
+GET_UNCHANGED_KEYS: 'get_unchanged_keys' | 'unchanged_keys';
 REPEAT: 'repeat';
 FLATTEN: 'flatten';
 APPEND: 'append';

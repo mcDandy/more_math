@@ -498,7 +498,7 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
     v0_dict = variables.get("V0", MathDict({key: torch.zeros_like(reference) for key, reference in references.items()}))
     originals = MathDict({k: (v.clone() if isinstance(v, torch.Tensor) else v) for k, v in v0_dict.items()})
     result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(tree)
-    if not isinstance(result, MathDict):
+    if not isinstance(result, (MathDict, dict)):
         if isinstance(result, (float, int)):
             result = MathDict({key: torch.full_like(reference, result) for key, reference in references.items()})
         else:

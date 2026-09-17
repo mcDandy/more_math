@@ -634,6 +634,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#EnableTrackingFunc.
+    def visitEnableTrackingFunc(self, ctx:MathExprParser.EnableTrackingFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DisableTrackingFunc.
+    def visitDisableTrackingFunc(self, ctx:MathExprParser.DisableTrackingFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ResetTrackingFunc.
+    def visitResetTrackingFunc(self, ctx:MathExprParser.ResetTrackingFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#RepeatFunc.
     def visitRepeatFunc(self, ctx:MathExprParser.RepeatFuncContext):
         return self.visitChildren(ctx)

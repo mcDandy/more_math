@@ -315,6 +315,18 @@ func1:
 		*/
 	| KEYS LPAREN expr RPAREN			# KeysFunc
 		/**
+		  enable_tracking(d) - enables change tracking for ChangeTrackingDict d (returns d)
+		*/
+	| ENABLE_TRACKING LPAREN expr RPAREN	# EnableTrackingFunc
+		/**
+		  disable_tracking(d) - disables change tracking for ChangeTrackingDict d (returns d)
+		*/
+	| DISABLE_TRACKING LPAREN expr RPAREN	# DisableTrackingFunc
+		/**
+		  reset_tracking(d) - resets change tracking state for ChangeTrackingDict d (returns d)
+		*/
+	| RESET_TRACKING LPAREN expr RPAREN		# ResetTrackingFunc
+		/**
 		  repeat(x, count, [dims]) - repeats tensor elements; count may be scalar or per-dim list
 		*/
 	| REPEAT LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RepeatFunc
@@ -998,6 +1010,9 @@ REMAP: 'remap';
 COSSIM: 'cossim' | 'cosine_similarity';
 COUNT: 'count' | 'cnt' | 'length';
 KEYS: 'keys';
+ENABLE_TRACKING: 'enable_tracking' | 'track_on';
+DISABLE_TRACKING: 'disable_tracking' | 'track_off';
+RESET_TRACKING: 'reset_tracking' | 'track_reset';
 GET_CHANGED_KEYS: 'get_changed_keys' | 'changed_keys';
 GET_ADDED_KEYS: 'get_added_keys' | 'added_keys';
 GET_REMOVED_KEYS: 'get_removed_keys' | 'removed_keys';

@@ -1133,6 +1133,33 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#EnableTrackingFunc.
+    def enterEnableTrackingFunc(self, ctx:MathExprParser.EnableTrackingFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#EnableTrackingFunc.
+    def exitEnableTrackingFunc(self, ctx:MathExprParser.EnableTrackingFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DisableTrackingFunc.
+    def enterDisableTrackingFunc(self, ctx:MathExprParser.DisableTrackingFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DisableTrackingFunc.
+    def exitDisableTrackingFunc(self, ctx:MathExprParser.DisableTrackingFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ResetTrackingFunc.
+    def enterResetTrackingFunc(self, ctx:MathExprParser.ResetTrackingFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ResetTrackingFunc.
+    def exitResetTrackingFunc(self, ctx:MathExprParser.ResetTrackingFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#RepeatFunc.
     def enterRepeatFunc(self, ctx:MathExprParser.RepeatFuncContext):
         pass

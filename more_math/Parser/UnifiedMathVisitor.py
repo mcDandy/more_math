@@ -1778,6 +1778,24 @@ class UnifiedMathVisitor(MathExprVisitor):
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: get_unchanged_keys() requires a ChangeTrackingDict")
         return list(val.get_unchanged_keys())
 
+    def visitEnableTrackingFunc(self, ctx):
+        val = yield ctx.expr()
+        if isinstance(val, ChangeTrackingDict):
+            val.enable_tracking()
+        return val
+
+    def visitDisableTrackingFunc(self, ctx):
+        val = yield ctx.expr()
+        if isinstance(val, ChangeTrackingDict):
+            val.disable_tracking()
+        return val
+
+    def visitResetTrackingFunc(self, ctx):
+        val = yield ctx.expr()
+        if isinstance(val, ChangeTrackingDict):
+            val.reset_tracking()
+        return val
+
     def visitMeanFunc(self, ctx):
         return self._reduction_op(
             (yield ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0

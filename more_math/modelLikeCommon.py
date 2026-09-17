@@ -1,5 +1,5 @@
 from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict, checkLazyNew
-from .Parser.UnifiedMathVisitor import MathDict, UnifiedMathVisitor
+from .Parser.UnifiedMathVisitor import MathDict, ChangeTrackingDict, UnifiedMathVisitor
 import comfy
 import comfy.model_management
 import comfy.model_patcher
@@ -113,6 +113,18 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
+
+    In autogrow mode:
+    - The expression is evaluated once PER KEY (per-layer iteration)
+    - V0, V1, V2, V3 contain only the weight tensor for the current key (not all keys)
+    - Expression must return a TENSOR (the patch for this key)
+    - Returning a dict will raise an error; use dict_mode=True instead
+
+    Performance note:
+    - If expression applies the same operation to all keys (e.g., V0 *= 2), it will iterate
+      through each key in Python, making it O(num_keys) in Python overhead
+    - For efficiency with bulk operations on multiple keys, use dict_mode=True instead
+    - dict_mode evaluates the expression once with V0 as a complete dict, allowing batch operations
 
     Args:
         Expr: The math expression string or parse tree.
@@ -308,9 +320,23 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
 
         visitor = UnifiedMathVisitor(variables, ref_tensor.shape,state_storage=stack)
         res = visitor.visit(tree)
+
+        # In autogrow mode, expression must return a single tensor (patch for this key)
+        # If a dict is returned, that's an error - use dict_mode instead
+        if isinstance(res, dict) and not isinstance(res, torch.Tensor):
+            raise ValueError(f"Autogrow mode expects tensor output, got dict. Use dict_mode=True for dict output.")
+
         res = as_tensor(res, ref_tensor.shape)
 
-        original = original_v0
+        # Extract original for this specific key
+        original = None
+        if original_v0 is not None:
+            if isinstance(original_v0, torch.Tensor):
+                original = original_v0
+            elif isinstance(original_v0, dict):
+                # Should not happen in autogrow mode - V0 is always a tensor
+                original = original_v0.get(key)
+
         if original is None:
             original = torch.zeros_like(res)
 
@@ -333,6 +359,28 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
 
 
 def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+    """
+    Calculate patches for model-like objects (Model, VAE, CLIP) using Dictionary mode.
+    Evaluates the expression once for all keys simultaneously.
+
+    In dict_mode:
+    - The expression is evaluated ONCE (not per-key)
+    - V0, V1, V2, V3 are MathDict objects containing all weights across all keys
+    - Expression can modify individual keys: V0[key] *= 2
+    - Expression can apply bulk operations: V0 *= 2
+    - Expression must return a DICT/MATHDICT with exactly the same keys as the input models
+    - The returned dict must preserve the original key structure (cannot add/remove keys)
+
+    Performance:
+    - More efficient than autogrow_mode for bulk operations since evaluation is done once
+    - Suitable for complex transformations that need access to all keys simultaneously
+
+    Args:
+        Expr: The math expression string or parse tree.
+        V: Dictionary of input models (Dict Mode Input).
+        F: Dictionary of input floats (Dict Mode Float).
+        mapping: Optional dict mapping legacy alias names to V keys.
+    """
     if V is None:
         V = {}
     if F is None:
@@ -419,7 +467,9 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
         return {}
 
     def weight_dict(name):
-        return MathDict({key: weights[name].get(key, torch.zeros_like(references[key])) for key in all_keys})
+        """Create a ChangeTrackingDict that monitors changes to weights"""
+        tracking_dict = ChangeTrackingDict({key: weights[name].get(key, torch.zeros_like(references[key])) for key in all_keys})
+        return tracking_dict
 
     variables = LazyVariableDict({name: value if value is not None else 0.0 for name, value in F.items()})
     for alias, target in mapping.items():
@@ -456,13 +506,33 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
 
     if tuple(result) != tuple(all_keys):
         raise ValueError("Dictionary mode expressions must preserve all model keys")
+
     patches = {}
-    for key, value in result.items():
+
+    # Optimization: if result is a ChangeTrackingDict, only process changed keys
+    changed_keys_set = None
+    if isinstance(result, ChangeTrackingDict):
+        changed_keys_set = result.get_changed_keys()
+        keys_to_process = changed_keys_set
+    else:
+        # Fallback: process all keys
+        keys_to_process = all_keys
+
+    for key in keys_to_process:
+        value = result.get(key)
+        if value is None:
+            # Key was removed or doesn't exist
+            if pbar is not None:
+                pbar.update(1)
+            continue
+
         if not torch.is_tensor(value):
             value = torch.full_like(references[key], value)
+
         diff = value - originals[key]
         if not torch.all(diff == 0):
             patches[key] = (diff,)
+
         if pbar is not None:
             pbar.update(1)
 

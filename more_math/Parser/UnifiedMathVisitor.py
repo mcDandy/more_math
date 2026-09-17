@@ -38,6 +38,69 @@ class MathDict(dict):
 
     __repr__ = __str__
 
+
+class ChangeTrackingDict(dict):
+    """
+    A dict subclass that tracks which keys have been modified after initialization.
+    Used in dict_mode to identify which patches need to be computed.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Record initial keys and values for change tracking
+        self._initial_keys = set(self.keys())
+        self._initial_values = {k: v for k, v in self.items()}
+        self._changed_keys = set()
+        self._tracking_enabled = True
+
+    def __setitem__(self, key, value):
+        if self._tracking_enabled:
+            # Check if this is a modification (key exists and value changed)
+            if key in self._initial_keys:
+                # Key existed before - check if value changed
+                if key in self._initial_values:
+                    initial = self._initial_values[key]
+                    # For tensors, compare identity and value
+                    if isinstance(value, torch.Tensor) and isinstance(initial, torch.Tensor):
+                        if value is not initial and not torch.equal(value, initial):
+                            self._changed_keys.add(key)
+                    else:
+                        if value is not initial:
+                            self._changed_keys.add(key)
+            else:
+                # New key - mark as changed (can be added key)
+                self._changed_keys.add(key)
+
+        super().__setitem__(key, value)
+
+    def get_changed_keys(self):
+        """Return set of keys that were modified or added"""
+        return self._changed_keys.copy()
+
+    def get_added_keys(self):
+        """Return set of keys that were added (didn't exist initially)"""
+        return {k for k in self._changed_keys if k not in self._initial_keys}
+
+    def get_removed_keys(self):
+        """Return set of keys that were removed (existed initially but not now)"""
+        return {k for k in self._initial_keys if k not in self}
+
+    def get_unchanged_keys(self):
+        """Return set of keys that remain unchanged"""
+        return {k for k in self._initial_keys if k in self and k not in self._changed_keys}
+
+    def disable_tracking(self):
+        """Disable change tracking (for internal operations)"""
+        self._tracking_enabled = False
+
+    def enable_tracking(self):
+        """Enable change tracking"""
+        self._tracking_enabled = True
+
+    def reset_tracking(self):
+        """Reset change tracking (clear all tracked changes)"""
+        self._changed_keys = set()
+
+
 class UnifiedMathVisitor(MathExprVisitor):
     def __init__(self, variables, shape=None, device=None, functions=None, depth=0, state_storage=None):
 
@@ -156,6 +219,19 @@ class UnifiedMathVisitor(MathExprVisitor):
         Generic binary operation handler.
         """
         try:
+            # OPTIMIZATION: If one argument is MathDict and the other is scalar, apply directly
+            # without recursive calls to _bin_op for each key
+            if self._is_math_dict(a) and not self._is_math_dict(b):
+                if not self._is_tensor(b) and not self._is_list(b):
+                    # a is dict, b is scalar - apply op directly to all dict values
+                    return MathDict({key: (torch_op(a[key], b) if torch_op else scalar_op(a[key], b)) 
+                                     for key in a})
+            elif self._is_math_dict(b) and not self._is_math_dict(a):
+                if not self._is_tensor(a) and not self._is_list(a):
+                    # b is dict, a is scalar - apply op directly to all dict values
+                    return MathDict({key: (torch_op(a, b[key]) if torch_op else scalar_op(a, b[key])) 
+                                     for key in b})
+
             if self._is_math_dict(a) or self._is_math_dict(b):
                 return self._map_math_dict(lambda left, right: self._bin_op(left, right, torch_op, scalar_op, ctx), a, b)
             if self._is_plain_tensor(a) and a.numel() == 1:

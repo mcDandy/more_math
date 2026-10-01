@@ -2,9 +2,11 @@ from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get
 from .Parser.UnifiedMathVisitor import MathDict, UnifiedMathVisitor
 import comfy.model_management
 import torch
+from collections.abc import Mapping
 
 
 def calculate_lora_dict_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+
     """
     Calculate a new LORA_MODEL dict[str, Tensor] from math expressions applied
     over the UNION of keys from all input LoRA dicts, using Autogrow inputs.
@@ -211,7 +213,7 @@ def calculate_lora_dict_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[],
 
     visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
     result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(parse_expr(Expr) if isinstance(Expr, str) else Expr)
-    if not isinstance(result, (MathDict, dict)):
+    if not isinstance(result, Mapping):
         if isinstance(result, (float, int)):
             result = MathDict({key: torch.full_like(reference, result) for key, reference in references.items()})
         else:

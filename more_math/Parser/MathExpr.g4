@@ -753,7 +753,19 @@ func3:
 	    /**
 		  coords(shape, dim, [dtype]) - generates a tensor with the specified shape whose values are the coordinates of each element along the specified dimension. The dtype can be specified to control the data type of the output tensor.
 		*/
-	| COORDS LPAREN expr COMMA expr (COMMA expr)? RPAREN	# CoordsFunc;
+	| COORDS LPAREN expr COMMA expr (COMMA expr)? RPAREN	# CoordsFunc
+	    /**
+		   gather(x, dim, idx) - gathers elements along dim using the indices specified in idx. The output tensor has the same shape as idx.
+		   */
+	| GATHER LPAREN expr COMMA expr COMMA expr RPAREN	# GatherFunc
+	    /**
+		  scatter(x, dim, idx, src) - scatters elements from src into x along dim using the indices specified in idx. The output tensor has the same shape as x.
+		*/
+	| SCATTER LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ScatterFunc
+		/**
+		  scatter_add(x, dim, idx, src) - scatters elements from src into x along dim using the indices specified in idx, adding to existing values. The output tensor has the same shape as x.
+		*/
+	| SCATTER_ADD LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ScatterAddFunc;
 
 func4:
 		/**
@@ -1108,6 +1120,9 @@ ENTROPY: 'entropy';
 CROP: 'crop';
 NONE: 'none'|'None'|'null'|'NULL';
 COORDS: 'coords'|'coordinates';
+GATHER: 'gather';
+SCATTER: 'scatter';
+SCATTER_ADD: 'scatter_add';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
 RAND: 'rand' | 'randu' | 'random_uniform';

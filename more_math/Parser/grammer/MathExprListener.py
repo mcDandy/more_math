@@ -2105,6 +2105,33 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#GatherFunc.
+    def enterGatherFunc(self, ctx:MathExprParser.GatherFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GatherFunc.
+    def exitGatherFunc(self, ctx:MathExprParser.GatherFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ScatterFunc.
+    def enterScatterFunc(self, ctx:MathExprParser.ScatterFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ScatterFunc.
+    def exitScatterFunc(self, ctx:MathExprParser.ScatterFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ScatterAddFunc.
+    def enterScatterAddFunc(self, ctx:MathExprParser.ScatterAddFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ScatterAddFunc.
+    def exitScatterAddFunc(self, ctx:MathExprParser.ScatterAddFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SwapFunc.
     def enterSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         pass

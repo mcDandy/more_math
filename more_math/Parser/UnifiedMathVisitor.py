@@ -228,7 +228,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             if self._is_math_dict(a) and not self._is_math_dict(b):
                 if not self._is_tensor(b) and not self._is_list(b):
                     # a is dict, b is scalar - apply op directly to all dict values
-                    result = {key: (torch_op(a[key], b) if torch_op else scalar_op(a[key], b)) 
+                    result = {key: (torch_op(a[key], b) if torch_op else scalar_op(a[key], b))
                                      for key in a}
                     if isinstance(a, ChangeTrackingDict):
                         return ChangeTrackingDict(result)
@@ -236,7 +236,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             elif self._is_math_dict(b) and not self._is_math_dict(a):
                 if not self._is_tensor(a) and not self._is_list(a):
                     # b is dict, a is scalar - apply op directly to all dict values
-                    result = {key: (torch_op(a, b[key]) if torch_op else scalar_op(a, b[key])) 
+                    result = {key: (torch_op(a, b[key]) if torch_op else scalar_op(a, b[key]))
                                      for key in b}
                     if isinstance(b, ChangeTrackingDict):
                         return ChangeTrackingDict(result)
@@ -5404,3 +5404,21 @@ class UnifiedMathVisitor(MathExprVisitor):
         view_shape = [1] * len(shape)
         view_shape[dim] = shape[dim]
         return values.view(*view_shape).expand(*shape)
+
+    def visitScatterFunc(self, ctx):
+        """scatter(x, dim, index, src) - scatter values along an axis"""
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        dim_val = yield ctx.expr(1)
+        dim = self._to_int(dim_val, ctx, "scatter dim", strict=True)
+        index = self._promote_to_tensor((yield ctx.expr(2))).long()
+        src = self._promote_to_tensor((yield ctx.expr(3)))
+        return torch.scatter(x, dim, index, src)
+
+    def visitScatterAddFunc(self, ctx):
+        """scatter_add(x, dim, index, src) - scatter add values along an axis"""
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        dim_val = yield ctx.expr(1)
+        dim = self._to_int(dim_val, ctx, "scatter_add dim", strict=True)
+        index = self._promote_to_tensor((yield ctx.expr(2))).long()
+        src = self._promote_to_tensor((yield ctx.expr(3)))
+        return torch.scatter_add(x, dim, index, src)

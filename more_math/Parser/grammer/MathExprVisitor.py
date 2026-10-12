@@ -1174,6 +1174,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#GatherFunc.
+    def visitGatherFunc(self, ctx:MathExprParser.GatherFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ScatterFunc.
+    def visitScatterFunc(self, ctx:MathExprParser.ScatterFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ScatterAddFunc.
+    def visitScatterAddFunc(self, ctx:MathExprParser.ScatterAddFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SwapFunc.
     def visitSwapFunc(self, ctx:MathExprParser.SwapFuncContext):
         return self.visitChildren(ctx)

@@ -204,11 +204,31 @@ func1:
 		/**
 		  exp(x) - applies e^x to value (per element)
 		*/
-	| EXP LPAREN expr RPAREN			# ExpFunc
+		| EXP LPAREN expr RPAREN			# ExpFunc
+			/**
+			  log1p(x) - applies ln(1+x) accurately for values near zero
+			*/
+		| LOG1P LPAREN expr RPAREN			# Log1pFunc
+			/**
+			  expm1(x) - applies exp(x)-1 accurately for values near zero
+			*/
+		| EXPM1 LPAREN expr RPAREN			# Expm1Func
+			/**
+			  isnan(x) - returns 1.0 for NaN values and 0.0 otherwise
+			*/
+		| ISNAN LPAREN expr RPAREN			# IsnanFunc
+			/**
+			  isinf(x) - returns 1.0 for infinite values and 0.0 otherwise
+			*/
+		| ISINF LPAREN expr RPAREN			# IsinfFunc
+			/**
+			  isfinite(x) - returns 1.0 for finite values and 0.0 otherwise
+			*/
+		| ISFINITE LPAREN expr RPAREN			# IsfiniteFunc
 		/**
 		  tnorm(x, [dim]) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. Defaults to the last dimension; dim selects a different slicing dimension.
 		*/
-	| TNORM LPAREN expr (COMMA expr)? RPAREN			# TNormFunc
+		| TNORM LPAREN expr (COMMA expr)? RPAREN			# TNormFunc
 		/**
 		  floor(x) - returns the largest integer less than or equal to x
 		*/
@@ -270,17 +290,21 @@ func1:
 		*/
 	| SUM LPAREN expr (COMMA expr)? RPAREN		# SumFunc
 		/**
-		  mean(x) - computes the arithmetic mean of elements of x
+		  mean(x, [dims]) - computes the arithmetic mean of elements of x globally or along one or more dimensions
 		*/
-	| MEAN LPAREN expr RPAREN			# MeanFunc
+	| MEAN LPAREN expr (COMMA expr)? RPAREN		# MeanFunc
 		/**
-		  std(x) - computes the standard deviation of elements of x
+		  std(x, [dims]) - computes the sample standard deviation of elements of x globally or along one or more dimensions
 		*/
-	| STD LPAREN expr RPAREN			# StdFunc
+	| STD LPAREN expr (COMMA expr)? RPAREN		# StdFunc
 		/**
-		  var(x) - computes the variance of elements of x
+		  var(x, [dims]) - computes the sample variance of elements of x globally or along one or more dimensions
 		*/
-	| VAR LPAREN expr RPAREN			# VarFunc
+	| VAR LPAREN expr (COMMA expr)? RPAREN		# VarFunc
+		/**
+		  prod(x, [dims]) - computes the product of elements of x globally or along one or more dimensions
+		*/
+	| PROD LPAREN expr (COMMA expr)? RPAREN		# ProdFunc
 		/**
 		  sort(x, [desc], [dim]) - returns a sorted version of x (If input is tensor, it sorts the last dimension)
 		*/
@@ -479,6 +503,14 @@ func2:
 		  atan2(y, x) - computes the arc tangent of y/x, using the signs of both arguments to determine the quadrant
 		*/
 	| ATAN2 LPAREN expr COMMA expr RPAREN			# Atan2Func
+		/**
+		  isclose(a, b, [rtol], [atol]) - elementwise approximate equality test
+		*/
+	| ISCLOSE LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# IscloseFunc
+		/**
+		  allclose(a, b, [rtol], [atol]) - returns 1.0 if all elements are approximately equal, else 0.0
+		*/
+	| ALLCLOSE LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# AllcloseFunc
 		/**
 		  tmin(x, y) - elementwise minimum of tensor or list. min(x,y) when inputs are floats
 		*/
@@ -967,6 +999,11 @@ SQRT: 'sqrt';
 LN: 'ln';
 LOG: 'log';
 EXP: 'exp';
+LOG1P: 'log1p';
+EXPM1: 'expm1';
+ISNAN: 'isnan';
+ISINF: 'isinf';
+ISFINITE: 'isfinite';
 SMIN: 'smin';
 SMAX: 'smax';
 TMIN: 'tmin';
@@ -1011,6 +1048,9 @@ SUM: 'sum';
 MEAN: 'mean';
 STD: 'std';
 VAR: 'var';
+PROD: 'prod';
+ISCLOSE: 'isclose';
+ALLCLOSE: 'allclose';
 QUARTILE: 'quartile' | 'quartil';
 PERCENTILE: 'percentile' | 'prcnt';
 QUANTILE: 'quantile';

@@ -403,6 +403,32 @@ class UnifiedMathVisitor(MathExprVisitor):
             return list_op(val)
         return val
 
+    def _normalize_dims(self, dims, ndim, ctx, context_name="dimension"):
+        if self._is_tensor(dims):
+            if dims.numel() == 0:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {context_name} list cannot be empty")
+            raw_dims = [int(x) for x in dims.flatten().tolist()]
+        elif self._is_list(dims):
+            if len(dims) == 0:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {context_name} list cannot be empty")
+            raw_dims = [self._to_int(x, ctx, context_name, strict=True) for x in dims]
+        else:
+            raw_dims = [self._to_int(dims, ctx, context_name, strict=True)]
+
+        normalized = []
+        seen = set()
+        for dim in raw_dims:
+            if dim < 0:
+                dim += ndim
+            if dim < 0 or dim >= ndim:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {context_name} {dim} out of range for tensor with {ndim} dimensions")
+            if dim in seen:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: {context_name} list contains duplicate dimension {dim}")
+            seen.add(dim)
+            normalized.append(dim)
+
+        return sorted(normalized, reverse=True)
+
     def _to_int(self, x, ctx, context_name="operation", strict=False):
         """Convert value to int, handling tensors and nested lists recursively"""
         if self._is_tensor(x):
@@ -505,17 +531,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         return result
 
     def _reduce_tensor_along_dims(self, tensor, dims, reducer, ctx, context_name="operation"):
+        if not self._is_tensor(tensor):
+            return tensor
         dim_list = self._normalize_dim_list(dims, ctx, context_name)
         if not dim_list:
             return reducer(tensor)
 
-        normalized_dims = []
-        for dim in dim_list:
-            norm_dim = dim if dim >= 0 else tensor.ndim + dim
-            normalized_dims.append(norm_dim)
-
         result = tensor
-        for dim in sorted(set(normalized_dims), reverse=True):
+        for dim in self._normalize_dims(dim_list, tensor.ndim, ctx, context_name):
             result = reducer(result, dim)
             # torch.min/max(..., dim=...) return a torch.return_types
             # named tuple with a .values field; unwrap it. A plain
@@ -1016,6 +1039,21 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitExpFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.exp, math.exp)
 
+    def visitLog1pFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), torch.log1p, math.log1p)
+
+    def visitExpm1Func(self, ctx):
+        return self._unary_op((yield ctx.expr()), torch.expm1, math.expm1)
+
+    def visitIsnanFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), lambda x: torch.isnan(x).to(torch.float32), lambda x: 1.0 if math.isnan(float(x)) else 0.0)
+
+    def visitIsinfFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), lambda x: torch.isinf(x).to(torch.float32), lambda x: 1.0 if math.isinf(float(x)) else 0.0)
+
+    def visitIsfiniteFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), lambda x: torch.isfinite(x).to(torch.float32), lambda x: 1.0 if math.isfinite(float(x)) else 0.0)
+
     def visitFloorFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.floor, math.floor)
 
@@ -1088,6 +1126,60 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitAtan2Func(self, ctx):
         return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.atan2, math.atan2,ctx)
+
+    def visitIscloseFunc(self, ctx):
+        a = yield ctx.expr(0)
+        b = yield ctx.expr(1)
+        rtol = 1e-05
+        atol = 1e-08
+        if len(ctx.expr()) > 2:
+            rtol_val = yield ctx.expr(2)
+            rtol = float(rtol_val.item() if self._is_tensor(rtol_val) else rtol_val)
+        if len(ctx.expr()) > 3:
+            atol_val = yield ctx.expr(3)
+            atol = float(atol_val.item() if self._is_tensor(atol_val) else atol_val)
+
+        def compare(left, right):
+            if self._is_list(left) and self._is_list(right):
+                if len(left) != len(right):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: isclose list length mismatch")
+                return [compare(l, r) for l, r in zip(left, right)]
+            if self._is_list(left):
+                return [compare(l, right) for l in left]
+            if self._is_list(right):
+                return [compare(left, r) for r in right]
+            if self._is_tensor(left) or self._is_tensor(right):
+                return torch.isclose(self._promote_to_tensor(left), self._promote_to_tensor(right), rtol=rtol, atol=atol).to(torch.float32)
+            return 1.0 if math.isclose(float(left), float(right), rel_tol=rtol, abs_tol=atol) else 0.0
+
+        return compare(a, b)
+
+    def visitAllcloseFunc(self, ctx):
+        a = yield ctx.expr(0)
+        b = yield ctx.expr(1)
+        rtol = 1e-05
+        atol = 1e-08
+        if len(ctx.expr()) > 2:
+            rtol_val = yield ctx.expr(2)
+            rtol = float(rtol_val.item() if self._is_tensor(rtol_val) else rtol_val)
+        if len(ctx.expr()) > 3:
+            atol_val = yield ctx.expr(3)
+            atol = float(atol_val.item() if self._is_tensor(atol_val) else atol_val)
+
+        def compare(left, right):
+            if self._is_list(left) and self._is_list(right):
+                if len(left) != len(right):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: allclose list length mismatch")
+                return all(compare(l, r) for l, r in zip(left, right))
+            if self._is_list(left):
+                return all(compare(l, right) for l in left)
+            if self._is_list(right):
+                return all(compare(left, r) for r in right)
+            if self._is_tensor(left) or self._is_tensor(right):
+                return bool(torch.allclose(self._promote_to_tensor(left), self._promote_to_tensor(right), rtol=rtol, atol=atol))
+            return math.isclose(float(left), float(right), rel_tol=rtol, abs_tol=atol)
+
+        return 1.0 if compare(a, b) else 0.0
 
     def visitTMinFunc(self, ctx):
         return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.minimum, min,ctx)
@@ -1467,24 +1559,6 @@ class UnifiedMathVisitor(MathExprVisitor):
             return res.item()
         return res
 
-    def visitAnyFunc(self, ctx):
-        val = (yield ctx.expr())
-        if self._is_tensor(val):
-            return 1.0 if bool(torch.any(val).item()) else 0.0
-        if self._is_list(val):
-            flat = self._flatten_list(val)
-            return 1.0 if any(item != 0 for item in flat) else 0.0
-        return 1.0 if val else 0.0
-
-    def visitAllFunc(self, ctx):
-        val = (yield ctx.expr())
-        if self._is_tensor(val):
-            return 1.0 if bool(torch.all(val).item()) else 0.0
-        if self._is_list(val):
-            flat = self._flatten_list(val)
-            return 1.0 if all(item != 0 for item in flat) else 0.0
-        return 1.0 if val else 0.0
-
     def visitSMaxFunc(self, ctx):
         args = []
         for e in ctx.expr():
@@ -1787,8 +1861,86 @@ class UnifiedMathVisitor(MathExprVisitor):
             dims = (yield ctx.expr(1))
             if self._is_tensor(val) or self._is_list(val):
                 tsr = self._promote_to_tensor(val)
-                return self._reduce_tensor_along_dims(tsr, dims, lambda t, dim: torch.sum(t, dim=dim), ctx, "sum")
+                res = self._reduce_tensor_along_dims(tsr, dims, lambda t, dim: torch.sum(t, dim=dim), ctx, "sum")
+                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
         return self._reduction_op(val, torch.sum, sum)
+
+    def visitProdFunc(self, ctx):
+        val = (yield ctx.expr(0))
+        if len(ctx.expr()) > 1:
+            dims = (yield ctx.expr(1))
+            if self._is_tensor(val) or self._is_list(val):
+                tsr = self._promote_to_tensor(val)
+                res = self._reduce_tensor_along_dims(tsr, dims, lambda t, dim: torch.prod(t, dim=dim), ctx, "prod")
+                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
+        if self._is_tensor(val):
+            res = torch.prod(val)
+            return float(res.item()) if res.numel() == 1 else res
+        if self._is_list(val):
+            return math.prod(val)
+        return val
+
+    def visitMeanFunc(self, ctx):
+        val = (yield ctx.expr(0))
+        if len(ctx.expr()) > 1:
+            dims = (yield ctx.expr(1))
+            if self._is_tensor(val) or self._is_list(val):
+                tsr = self._promote_to_tensor(val)
+                normalized_dims = self._normalize_dims(dims, tsr.ndim, ctx, "mean dimension")
+                res = torch.mean(tsr.float(), dim=tuple(normalized_dims))
+                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
+        return self._reduction_op(val, lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0)
+
+    def visitStdFunc(self, ctx):
+        def list_std(val):
+            if len(val) < 2:
+                return 0.0
+            mean = sum(val) / len(val)
+            variance = sum((x - mean) ** 2 for x in val) / (len(val) - 1)
+            return math.sqrt(variance)
+
+        val = (yield ctx.expr(0))
+        if len(ctx.expr()) > 1:
+            dims = (yield ctx.expr(1))
+            if self._is_tensor(val) or self._is_list(val):
+                tsr = self._promote_to_tensor(val)
+                normalized_dims = self._normalize_dims(dims, tsr.ndim, ctx, "std dimension")
+                res = torch.std(tsr.float(), dim=tuple(normalized_dims))
+                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
+        if self._is_tensor(val):
+            res = torch.std(val.float())
+            if self._is_tensor(res) and res.numel() == 1:
+                return float(res.item())
+            return res
+        elif self._is_list(val):
+            return list_std(val)
+        else:
+            return val
+
+    def visitVarFunc(self, ctx):
+        def list_var(val):
+            if len(val) < 2:
+                return 0.0
+            mean = sum(val) / len(val)
+            return sum((x - mean) ** 2 for x in val) / (len(val) - 1)
+
+        val = (yield ctx.expr(0))
+        if len(ctx.expr()) > 1:
+            dims = (yield ctx.expr(1))
+            if self._is_tensor(val) or self._is_list(val):
+                tsr = self._promote_to_tensor(val)
+                normalized_dims = self._normalize_dims(dims, tsr.ndim, ctx, "var dimension")
+                res = torch.var(tsr.float(), dim=tuple(normalized_dims))
+                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
+        if self._is_tensor(val):
+            res = torch.var(val.float())
+            if self._is_tensor(res) and res.numel() == 1:
+                return float(res.item())
+            return res
+        elif self._is_list(val):
+            return list_var(val)
+        else:
+            return val
 
     def visitCountFunc(self, ctx):
         val = yield ctx.expr()
@@ -1847,48 +1999,6 @@ class UnifiedMathVisitor(MathExprVisitor):
         if isinstance(val, ChangeTrackingDict):
             val.reset_tracking()
         return val
-
-    def visitMeanFunc(self, ctx):
-        return self._reduction_op(
-            (yield ctx.expr()), lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0
-        )
-
-    def visitStdFunc(self, ctx):
-        def list_std(val):
-            if len(val) < 2:
-                return 0.0
-            mean = sum(val) / len(val)
-            variance = sum((x - mean) ** 2 for x in val) / (len(val) - 1)
-            return math.sqrt(variance)
-
-        val = (yield ctx.expr())
-        if self._is_tensor(val):
-            res = torch.std(val.float())
-            if self._is_tensor(res) and res.numel() == 1:
-                return float(res.item())
-            return res
-        elif self._is_list(val):
-            return list_std(val)
-        else:
-            return val
-
-    def visitVarFunc(self, ctx):
-        def list_var(val):
-            if len(val) < 2:
-                return 0.0
-            mean = sum(val) / len(val)
-            return sum((x - mean) ** 2 for x in val) / (len(val) - 1)
-
-        val = (yield ctx.expr())
-        if self._is_tensor(val):
-            res = torch.var(val.float())
-            if self._is_tensor(res) and res.numel() == 1:
-                return float(res.item())
-            return res
-        elif self._is_list(val):
-            return list_var(val)
-        else:
-            return val
 
     def _manual_quantile(self, val, q):
         """Fallback implementation using sort for when torch.quantile fails on large tensors."""
@@ -2687,6 +2797,10 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitCallExp(self, ctx):
         func_name = ctx.VARIABLE().getText()
+
+        builtin_visit = f"visit{func_name[:1].upper()}{func_name[1:]}Func"
+        if hasattr(self, builtin_visit):
+            return (yield getattr(self, builtin_visit)(ctx))
 
         # 1) Pokud proměnná existuje a je to lambda uložená v variables, aplikuj ji
         if func_name in self.variables and isinstance(self.variables[func_name], LambdaFunction):

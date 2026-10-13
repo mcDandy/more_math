@@ -106,6 +106,13 @@ You can also get the node from comfy manager under the name of More math.
 - `ln(x)`: natural logarithm.
 - `log(x)`: base-10 logarithm.
 - `exp(x)`: exponential `e^x`.
+- `log1p(x)`: numerically stable `ln(1 + x)`.
+- `expm1(x)`: numerically stable `exp(x) - 1`.
+- `isnan(x)`: per-element NaN test.
+- `isinf(x)`: per-element infinity test.
+- `isfinite(x)`: per-element finite-value test.
+- `isclose(a, b, [rtol], [atol])`: elementwise approximate comparison.
+- `allclose(a, b, [rtol], [atol])`: returns `1.0` when all values are approximately equal, otherwise `0.0`.
 - `pow(x, y)`: power `x^y`.
 - `floor(x)`: round down.
 - `ceil(x)`: round up.
@@ -171,9 +178,10 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 2.2 Reductions & Statistical Aggregates
 - `sum(x, [dims])`: sum; optional `dims` can be a single dimension or a list of dimensions.
-- `mean(x)`: mean.
-- `std(x)`: standard deviation.
-- `var(x)`: variance.
+- `mean(x, [dims])`: mean globally or along dimensions.
+- `std(x, [dims])`: sample standard deviation globally or along dimensions.
+- `var(x, [dims])`: sample variance globally or along dimensions.
+- `prod(x, [dims])`: product globally or along dimensions.
 - `median(x)`: median.
 - `mode(x)`: mode.
 - `quartile(x, k)` / `quartil`: quartile (`k` in `0..4`).
@@ -203,6 +211,7 @@ You can also get the node from comfy manager under the name of More math.
 - `gather(tensor, dim, indices)`: gather values along `dim` using `indices`
 - `scatter(tensor, dim, indices)`: scatter values along `dim` using `indices`
 - `scatter_add(tensor, dim, indices)`: scatter-add values along `dim` using `indices`
+- `nonzero(x)`: returns coordinate indices for non-zero elements.
 
 #### 2.4 Shape / Structure / Layout
 - `shape(x)`: returns shape as a Python list.
@@ -210,6 +219,7 @@ You can also get the node from comfy manager under the name of More math.
 - `reshape(tensor, shape)` / `rshp`: reshape with element-count validation.
 - `squeeze(x, [dim])`: removes singleton dimensions; optional `dim` follows PyTorch semantics.
 - `unsqueeze(x, dim)`: inserts a singleton dimension at `dim`.
+- `transpose(x, dim0, dim1)` / `swapaxes`: swaps two dimensions.
 - `permute(tensor, dims)` / `perm`: reorder dimensions.
 - `crop(tensor, position, size)`: extract a region from tensor or string.
 - `pad(tensor, padding)`: pad tensor.
@@ -218,6 +228,7 @@ You can also get the node from comfy manager under the name of More math.
 - `repeat(x, count, [dims])`: repeat values; tensor `count` can be a scalar or a per-dimension list when `dims` is provided.
 - `batch_shuffle(tensor, indices)` / `shuffle` / `select`: reorder along batch dimension.
 - `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists.
+- `stack(tensors, [dim])`: stack a non-empty list of tensors along a new dimension.
 - `roll(tensor, shifts, [dim])`: circular shift.
 - `tensor(shape, [value, [type]])`: create a filled tensor; `type` a tensor to copy its dtype to self when being created.
 - `interpolate_linear(tensor, scale)`: linear interpolation-based resizing. Scale can be a single float or a list. When it is a list, it is interpreted as the target output size.

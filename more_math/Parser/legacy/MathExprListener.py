@@ -890,6 +890,51 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#Log1pFunc.
+    def enterLog1pFunc(self, ctx:MathExprParser.Log1pFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Log1pFunc.
+    def exitLog1pFunc(self, ctx:MathExprParser.Log1pFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#Expm1Func.
+    def enterExpm1Func(self, ctx:MathExprParser.Expm1FuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Expm1Func.
+    def exitExpm1Func(self, ctx:MathExprParser.Expm1FuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IsnanFunc.
+    def enterIsnanFunc(self, ctx:MathExprParser.IsnanFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IsnanFunc.
+    def exitIsnanFunc(self, ctx:MathExprParser.IsnanFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IsinfFunc.
+    def enterIsinfFunc(self, ctx:MathExprParser.IsinfFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IsinfFunc.
+    def exitIsinfFunc(self, ctx:MathExprParser.IsinfFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IsfiniteFunc.
+    def enterIsfiniteFunc(self, ctx:MathExprParser.IsfiniteFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IsfiniteFunc.
+    def exitIsfiniteFunc(self, ctx:MathExprParser.IsfiniteFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#TNormFunc.
     def enterTNormFunc(self, ctx:MathExprParser.TNormFuncContext):
         pass
@@ -1058,6 +1103,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#VarFunc.
     def exitVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ProdFunc.
+    def enterProdFunc(self, ctx:MathExprParser.ProdFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ProdFunc.
+    def exitProdFunc(self, ctx:MathExprParser.ProdFuncContext):
         pass
 
 
@@ -1499,6 +1553,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#Atan2Func.
     def exitAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#IscloseFunc.
+    def enterIscloseFunc(self, ctx:MathExprParser.IscloseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#IscloseFunc.
+    def exitIscloseFunc(self, ctx:MathExprParser.IscloseFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#AllcloseFunc.
+    def enterAllcloseFunc(self, ctx:MathExprParser.AllcloseFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#AllcloseFunc.
+    def exitAllcloseFunc(self, ctx:MathExprParser.AllcloseFuncContext):
         pass
 
 

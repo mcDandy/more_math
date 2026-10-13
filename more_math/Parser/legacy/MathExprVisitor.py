@@ -499,6 +499,31 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#Log1pFunc.
+    def visitLog1pFunc(self, ctx:MathExprParser.Log1pFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#Expm1Func.
+    def visitExpm1Func(self, ctx:MathExprParser.Expm1FuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#IsnanFunc.
+    def visitIsnanFunc(self, ctx:MathExprParser.IsnanFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#IsinfFunc.
+    def visitIsinfFunc(self, ctx:MathExprParser.IsinfFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#IsfiniteFunc.
+    def visitIsfiniteFunc(self, ctx:MathExprParser.IsfiniteFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#TNormFunc.
     def visitTNormFunc(self, ctx:MathExprParser.TNormFuncContext):
         return self.visitChildren(ctx)
@@ -591,6 +616,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#VarFunc.
     def visitVarFunc(self, ctx:MathExprParser.VarFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ProdFunc.
+    def visitProdFunc(self, ctx:MathExprParser.ProdFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -836,6 +866,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#Atan2Func.
     def visitAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#IscloseFunc.
+    def visitIscloseFunc(self, ctx:MathExprParser.IscloseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#AllcloseFunc.
+    def visitAllcloseFunc(self, ctx:MathExprParser.AllcloseFuncContext):
         return self.visitChildren(ctx)
 
 

@@ -142,7 +142,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     return "attn1"
                 if r in ("attn2", "cross", "cross_attn", "cross_attention", "self_attn_2"):
                     return "attn2"
-                return "attn_unknown"
 
             if isinstance(raw, (int, float)):
                 if int(raw) == 0:
@@ -188,6 +187,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 names = ("double_layers", "double_blocks", "blocks", "transformer_blocks")
             elif block_type in ("single", "single_block"):
                 names = ("single_layers", "single_blocks")
+            elif block_type == "block":
+                names = ("blocks", "transformer_blocks", "double_layers", "single_layers")
             else:
                 names = ()
             for name in names:
@@ -220,7 +221,11 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             return idx == x
 
         def target_indices(block_type: str):
-            stage = "double" if block_type == "double_block" else "single"
+            stage = {
+                "double_block": "double",
+                "single_block": "single",
+                "block": "block",
+            }[block_type]
             topts = {"block_type": stage}
             target = resolve_x(None, "dit", topts)
             return [target] if target >= 0 else []
@@ -356,55 +361,72 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         def register_dit(patched_dict, forced_side=None):
             topts = patched_dict["transformer_options"]
 
-            def dit_wrap(args, extra_args):
-                idx = int(args.get("transformer_options", {}).get("block_index", -1))
-                total_blocks = args.get("transformer_options", {}).get("total_blocks", None)
+            def make_dit_wrap(block_type, target_idx):
+                def dit_wrap(args, extra_args):
+                    transformer_options = args.get("transformer_options") or {}
+                    idx = int(transformer_options.get("block_index", target_idx))
+                    if idx != target_idx:
+                        return extra_args["original_block"](args)
 
-                if not match_index(idx, total_blocks, "dit", args.get("transformer_options", {}), "dit_block"):
-                    return extra_args["original_block"](args)
-                if not hit_flags["dit"]:
-                    dbg(f"DIT HIT idx={idx} total={total_blocks}")
-                    hit_flags["dit"] = True
-                btype = args.get("transformer_options", {}).get("block_type", "dit")
-                co = args.get("transformer_options", {}).get("cond_or_uncond", None)
-                auto_side, auto_idx = side_from_cond_or_uncond(co)
-                side = forced_side if forced_side is not None else auto_side
-                idx_side = 0 if side == "positive" else (1 if side == "negative" else auto_idx)
+                    count_options = dict(transformer_options)
+                    count_options.setdefault("block_type", {
+                        "double_block": "double",
+                        "single_block": "single",
+                        "block": "block",
+                    }[block_type])
+                    total_blocks = resolve_total_blocks("dit", count_options)
+                    if not hit_flags["dit"]:
+                        dbg(f"DIT HIT idx={idx} total={total_blocks}")
+                        hit_flags["dit"] = True
+                    btype = transformer_options.get("block_type", block_type)
+                    co = transformer_options.get("cond_or_uncond", None)
+                    auto_side, auto_idx = side_from_cond_or_uncond(co)
+                    side = forced_side if forced_side is not None else auto_side
+                    idx_side = 0 if side == "positive" else (1 if side == "negative" else auto_idx)
 
-                out = extra_args["original_block"](args)
+                    out = extra_args["original_block"](args)
+                    out_key = next(
+                        (key for key in ("img", "vid", "x", "hidden_states")
+                         if isinstance(out, dict) and isinstance(out.get(key), torch.Tensor)),
+                        None,
+                    )
+                    activations = out[out_key] if out_key is not None else out
+                    meta = {
+                        "hook_kind": "dit_block",
+                        "hook_domain": "diffusion",
+                        "attn_kind": "none",
+                        "is_dit": 1.0,
+                        "is_attn1": 0.0,
+                        "is_attn2": 0.0,
+                        "layer_id": float(idx),
+                        "layer": float(idx),
+                        "i": float(idx),
+                        "total_blocks": float(total_blocks) if total_blocks is not None else -1.0,
+                        "block_name": btype,
+                        "layer_key": f"dit.{btype}.{idx}",
+                        "has_qkv": 0.0,
+                        "cond_side": side,
+                        "cond_index": float(idx_side),
+                        "is_positive": 1.0 if side == "positive" else 0.0,
+                        "is_negative": 1.0 if side == "negative" else 0.0,
+                        "activations_shape": tensor_shape(activations),
+                    }
 
-                meta = {
-                    "hook_kind": "dit_block",
-                    "hook_domain": "diffusion",
-                    "attn_kind": "none",
-                    "is_dit": 1.0,
-                    "is_attn1": 0.0,
-                    "is_attn2": 0.0,
-                    "layer_id": float(idx),
-                    "layer": float(idx),
-                    "i": float(idx),
-                    "total_blocks": float(total_blocks) if total_blocks is not None else -1.0,
-                    "block_name": btype,
-                    "layer_key": f"dit.{btype}.{idx}",
-                    "has_qkv": 0.0,
-                    "cond_side": side,
-                    "cond_index": float(idx_side),
-                    "is_positive": 1.0 if side == "positive" else 0.0,
-                    "is_negative": 1.0 if side == "negative" else 0.0,
-                    "activations_shape": tensor_shape(out["img"]) if isinstance(out, dict) and "img" in out else [],
-                }
+                    if out_key is not None:
+                        out2 = dict(out)
+                        out2[out_key] = run_expr(activations, meta)
+                        return out2
+                    if isinstance(out, torch.Tensor):
+                        return run_expr(out, meta)
+                    return out
 
-                if isinstance(out, dict) and "img" in out:
-                    out2 = dict(out)
-                    out2["img"] = run_expr(out["img"], meta)
-                    return out2
-                return out
+                return dit_wrap
 
             patches_replace = topts.get("patches_replace", {}).copy()
             dit_map = patches_replace.get("dit", {}).copy()
-            for block_type in ("double_block", "single_block"):
+            for block_type in ("double_block", "single_block", "block"):
                 for li in target_indices(block_type):
-                    dit_map[(block_type, li)] = dit_wrap
+                    dit_map[(block_type, li)] = make_dit_wrap(block_type, li)
             patches_replace["dit"] = dit_map
             topts["patches_replace"] = patches_replace
             patched_dict["transformer_options"] = topts
@@ -623,8 +645,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             return patched_dict
 
         def build_transformers_for_side(side_label=None):
-            p = comfy.model_patcher.create_model_options_clone(V.model_options)
-            p.setdefault("transformer_options", {})
+            p = {"transformer_options": {}}
             if hook_target in ("all", "dit_block"):
                 register_dit(p, forced_side=side_label)
             if hook_target in ("all", "unet_block"):

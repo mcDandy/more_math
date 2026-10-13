@@ -467,9 +467,10 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
         return {}
 
     def weight_dict(name):
-        """Create a ChangeTrackingDict that monitors changes to weights"""
-        tracking_dict = ChangeTrackingDict({key: weights[name].get(key, torch.zeros_like(references[key])) for key in all_keys})
-        return tracking_dict
+        values = {key: weights[name].get(key, torch.zeros_like(references[key])) for key in all_keys}
+        if name == "V0":
+            return ChangeTrackingDict(values)
+        return MathDict(values)
 
     variables = LazyVariableDict({name: value if value is not None else 0.0 for name, value in F.items()})
     for alias, target in mapping.items():

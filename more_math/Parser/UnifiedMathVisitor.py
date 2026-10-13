@@ -1,6 +1,5 @@
 import time
 import os
-from PIL.XVThumbImagePlugin import r
 import torch
 import math
 import inspect
@@ -52,22 +51,49 @@ class ChangeTrackingDict(dict):
         self._changed_keys = set()
         self._tracking_enabled = True
 
+    @staticmethod
+    def _values_equal(left, right):
+        if isinstance(left, torch.Tensor) or isinstance(right, torch.Tensor):
+            if not isinstance(left, torch.Tensor) or not isinstance(right, torch.Tensor):
+                return False
+            try:
+                return torch.equal(left, right)
+            except RuntimeError:
+                return False
+        if isinstance(left, (list, tuple)) or isinstance(right, (list, tuple)):
+            return (
+                isinstance(left, (list, tuple))
+                and isinstance(right, (list, tuple))
+                and len(left) == len(right)
+                and all(ChangeTrackingDict._values_equal(a, b) for a, b in zip(left, right))
+            )
+        try:
+            return bool(left == right)
+        except (TypeError, ValueError, RuntimeError):
+            return left is right
+
+    @classmethod
+    def from_result(cls, values, source):
+        result = cls(values)
+        result._initial_keys = source._initial_keys.copy()
+        result._initial_values = source._initial_values.copy()
+        result._tracking_enabled = source._tracking_enabled
+        if result._tracking_enabled:
+            result._changed_keys = {
+                key for key, value in result.items()
+                if key not in result._initial_keys
+                or not cls._values_equal(value, result._initial_values[key])
+            }
+        return result
+
     def __setitem__(self, key, value):
         if self._tracking_enabled:
-            # Check if this is a modification (key exists and value changed)
             if key in self._initial_keys:
-                # Key existed before - check if value changed
-                if key in self._initial_values:
-                    initial = self._initial_values[key]
-                    # For tensors, compare identity and value
-                    if isinstance(value, torch.Tensor) and isinstance(initial, torch.Tensor):
-                        if value is not initial and not torch.equal(value, initial):
-                            self._changed_keys.add(key)
-                    else:
-                        if value is not initial:
-                            self._changed_keys.add(key)
+                if key in self._initial_values and self._values_equal(value, self._initial_values[key]):
+                    self._changed_keys.discard(key)
+                else:
+                    self._changed_keys.add(key)
             else:
-                # New key - mark as changed (can be added key)
                 self._changed_keys.add(key)
 
         super().__setitem__(key, value)
@@ -190,10 +216,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         if any(set(value) != key_set for value in dictionaries[1:]):
             raise ValueError("Dictionary operations require matching keys")
 
-        # Determine result type: if any input is ChangeTrackingDict, create ChangeTrackingDict
         result_dict = {key: op(*(value[key] if self._is_math_dict(value) else value for value in values)) for key in keys}
-        if any(isinstance(value, ChangeTrackingDict) for value in dictionaries):
-            return ChangeTrackingDict(result_dict)
+        tracking_source = next((value for value in dictionaries if isinstance(value, ChangeTrackingDict)), None)
+        if tracking_source is not None:
+            return ChangeTrackingDict.from_result(result_dict, tracking_source)
         return MathDict(result_dict)
 
     def _where_value(self, condition, true_value, false_value):
@@ -218,6 +244,45 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.full(t,val,device=self.device)
         return torch.tensor(val, device=self.device)
 
+    @staticmethod
+    def _float8_dtypes():
+        return {
+            dtype for dtype in (
+                getattr(torch, "float8_e4m3fn", None),
+                getattr(torch, "float8_e4m3fnuz", None),
+                getattr(torch, "float8_e5m2", None),
+                getattr(torch, "float8_e5m2fnuz", None),
+            )
+            if dtype is not None
+        }
+
+    def _apply_binary_operation(self, a, b, torch_op, scalar_op):
+        float8_dtypes = self._float8_dtypes()
+        original_dtype = None
+        if self._is_plain_tensor(a) and a.dtype in float8_dtypes:
+            original_dtype = a.dtype
+            a = a.to(torch.float16)
+        if self._is_plain_tensor(b) and b.dtype in float8_dtypes:
+            if original_dtype is None:
+                original_dtype = b.dtype
+            b = b.to(torch.float16)
+
+        result = torch_op(a, b).contiguous() if torch_op else scalar_op(a, b)
+        if original_dtype is not None and self._is_plain_tensor(result):
+            result = result.to(original_dtype)
+        return result
+
+    def _apply_unary_operation(self, value, torch_op, scalar_op):
+        original_dtype = None
+        if self._is_plain_tensor(value) and value.dtype in self._float8_dtypes():
+            original_dtype = value.dtype
+            value = value.to(torch.float16)
+
+        result = torch_op(value).contiguous() if torch_op else scalar_op(value)
+        if original_dtype is not None and self._is_plain_tensor(result):
+            result = result.to(original_dtype)
+        return result
+
     def _bin_op(self, a, b, torch_op, scalar_op, ctx):
         """
         Generic binary operation handler.
@@ -228,18 +293,18 @@ class UnifiedMathVisitor(MathExprVisitor):
             if self._is_math_dict(a) and not self._is_math_dict(b):
                 if not self._is_tensor(b) and not self._is_list(b):
                     # a is dict, b is scalar - apply op directly to all dict values
-                    result = {key: (torch_op(a[key], b) if torch_op else scalar_op(a[key], b))
+                    result = {key: self._apply_binary_operation(a[key], b, torch_op, scalar_op)
                                      for key in a}
                     if isinstance(a, ChangeTrackingDict):
-                        return ChangeTrackingDict(result)
+                        return ChangeTrackingDict.from_result(result, a)
                     return MathDict(result)
             elif self._is_math_dict(b) and not self._is_math_dict(a):
                 if not self._is_tensor(a) and not self._is_list(a):
                     # b is dict, a is scalar - apply op directly to all dict values
-                    result = {key: (torch_op(a, b[key]) if torch_op else scalar_op(a, b[key]))
+                    result = {key: self._apply_binary_operation(a, b[key], torch_op, scalar_op)
                                      for key in b}
                     if isinstance(b, ChangeTrackingDict):
-                        return ChangeTrackingDict(result)
+                        return ChangeTrackingDict.from_result(result, b)
                     return MathDict(result)
 
             if self._is_math_dict(a) or self._is_math_dict(b):
@@ -303,34 +368,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return NestedTensor([self._bin_op(a_comps, x, torch_op, scalar_op, ctx) for x in b_comps])
 
             if self._is_tensor(a) or self._is_tensor(b):
-                orig_dtype = None
-
-                # Promote float8 to float16 if needed
-                if self._is_tensor(a):
-                    if hasattr(torch, "float8_e4m3fn") and a.dtype == torch.float8_e4m3fn:
-                        orig_dtype = a.dtype
-                        a = a.to(torch.float16)
-                    elif hasattr(torch, "float8_e5m2") and a.dtype == torch.float8_e5m2:
-                        orig_dtype = a.dtype
-                        a = a.to(torch.float16)
-
-                if self._is_tensor(b):
-                    if hasattr(torch, "float8_e4m3fn") and b.dtype == torch.float8_e4m3fn:
-                        orig_dtype = b.dtype if orig_dtype is None else orig_dtype
-                        b = b.to(torch.float16)
-                    elif hasattr(torch, "float8_e5m2") and b.dtype == torch.float8_e5m2:
-                        orig_dtype = b.dtype if orig_dtype is None else orig_dtype
-                        b = b.to(torch.float16)
-
-                if torch_op:
-                    res = torch_op(a, b).contiguous()
-                else:
-                    res = scalar_op(a, b)
-
-                if orig_dtype is not None and self._is_tensor(res):
-                    res = res.to(orig_dtype)
-
-                return res
+                return self._apply_binary_operation(a, b, torch_op, scalar_op)
 
             return scalar_op(a, b)
         except (ArithmeticError) as e:
@@ -349,19 +387,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_list(a):
             return [self._unary_op(x, torch_op, scalar_op) for x in a]
         if self._is_tensor(a):
-            orig_dtype = None
-            if hasattr(torch, "float8_e4m3fn") and a.dtype == torch.float8_e4m3fn:
-                orig_dtype = a.dtype
-                a = a.to(torch.float16)
-            elif hasattr(torch, "float8_e5m2") and a.dtype == torch.float8_e5m2:
-                orig_dtype = a.dtype
-                a = a.to(torch.float16)
-
-            res = torch_op(a).contiguous() if torch_op else scalar_op(a)
-
-            if orig_dtype is not None and self._is_tensor(res):
-                res = res.to(orig_dtype)
-            return res
+            return self._apply_unary_operation(a, torch_op, scalar_op)
 
         return scalar_op(a)
 
@@ -2654,10 +2680,15 @@ class UnifiedMathVisitor(MathExprVisitor):
                 for e in ctx.exprList().expr():
                     args.append((yield e))
 
+            if len(args) != len(lam.params):
+                raise ValueError(
+                    f"{ctx.start.line}:{ctx.start.column}: Lambda expects {len(lam.params)} arguments, got {len(args)}"
+                )
+
             # připrav nový scope na základě uzávěrky
             new_vars = lam.env.copy()
             for i, p in enumerate(lam.params):
-                new_vars[p] = args[i] if i < len(args) else None
+                new_vars[p] = args[i]
 
             # push/pop scope stejným stylem jako pro pojmenované funkce
             self._scope_stack.append(self.variables)
@@ -2746,7 +2777,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         text       = _to_str((yield ctx.expr(0)))
         font_name  = _to_str((yield ctx.expr(1)))
-        size       = max(1, self._to_int((yield ctx.expr(2)), ctx,"text_image", strict=True))
         size       = max(1, self._to_int((yield ctx.expr(2)), ctx,"text_image", strict=True))
         max_width  = self._to_int((yield ctx.expr(3)), ctx,"text_image", strict=True) if len(ctx.expr()) > 3 else 0
         weight_val = self._to_int((yield ctx.expr(4)), ctx,"text_image", strict=True) if len(ctx.expr()) > 4 else 400

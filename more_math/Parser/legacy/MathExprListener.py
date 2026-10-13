@@ -224,12 +224,12 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#LtExp.
-    def enterLtExp(self, ctx:MathExprParser.LtExpContext):
+    # Enter a parse tree produced by MathExprParser#ToRelational.
+    def enterToRelational(self, ctx:MathExprParser.ToRelationalContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#LtExp.
-    def exitLtExp(self, ctx:MathExprParser.LtExpContext):
+    # Exit a parse tree produced by MathExprParser#ToRelational.
+    def exitToRelational(self, ctx:MathExprParser.ToRelationalContext):
         pass
 
 
@@ -242,12 +242,30 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#ToAdd.
-    def enterToAdd(self, ctx:MathExprParser.ToAddContext):
+    # Enter a parse tree produced by MathExprParser#NeExp.
+    def enterNeExp(self, ctx:MathExprParser.NeExpContext):
         pass
 
-    # Exit a parse tree produced by MathExprParser#ToAdd.
-    def exitToAdd(self, ctx:MathExprParser.ToAddContext):
+    # Exit a parse tree produced by MathExprParser#NeExp.
+    def exitNeExp(self, ctx:MathExprParser.NeExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToShift.
+    def enterToShift(self, ctx:MathExprParser.ToShiftContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToShift.
+    def exitToShift(self, ctx:MathExprParser.ToShiftContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LtExp.
+    def enterLtExp(self, ctx:MathExprParser.LtExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LtExp.
+    def exitLtExp(self, ctx:MathExprParser.LtExpContext):
         pass
 
 
@@ -266,15 +284,6 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#LeExp.
     def exitLeExp(self, ctx:MathExprParser.LeExpContext):
-        pass
-
-
-    # Enter a parse tree produced by MathExprParser#NeExp.
-    def enterNeExp(self, ctx:MathExprParser.NeExpContext):
-        pass
-
-    # Exit a parse tree produced by MathExprParser#NeExp.
-    def exitNeExp(self, ctx:MathExprParser.NeExpContext):
         pass
 
 
@@ -314,15 +323,6 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MathExprParser#ToShift.
-    def enterToShift(self, ctx:MathExprParser.ToShiftContext):
-        pass
-
-    # Exit a parse tree produced by MathExprParser#ToShift.
-    def exitToShift(self, ctx:MathExprParser.ToShiftContext):
-        pass
-
-
     # Enter a parse tree produced by MathExprParser#MulExp.
     def enterMulExp(self, ctx:MathExprParser.MulExpContext):
         pass
@@ -350,6 +350,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#ToPow.
+    def enterToPow(self, ctx:MathExprParser.ToPowContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToPow.
+    def exitToPow(self, ctx:MathExprParser.ToPowContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ToAdd.
+    def enterToAdd(self, ctx:MathExprParser.ToAddContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToAdd.
+    def exitToAdd(self, ctx:MathExprParser.ToAddContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#RShiftExp.
     def enterRShiftExp(self, ctx:MathExprParser.RShiftExpContext):
         pass
@@ -365,15 +383,6 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#LShiftExp.
     def exitLShiftExp(self, ctx:MathExprParser.LShiftExpContext):
-        pass
-
-
-    # Enter a parse tree produced by MathExprParser#ToPow.
-    def enterToPow(self, ctx:MathExprParser.ToPowContext):
-        pass
-
-    # Exit a parse tree produced by MathExprParser#ToPow.
-    def exitToPow(self, ctx:MathExprParser.ToPowContext):
         pass
 
 

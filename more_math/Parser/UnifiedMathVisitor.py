@@ -846,17 +846,17 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitMulExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
         return self._bin_op(a, b, torch.mul, lambda a, b: a * b, ctx)
 
     def visitDivExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
         return self._bin_op(a, b, torch.div, lambda a, b: a / b, ctx)
 
     def visitModExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.shiftExpr()
+        b = yield ctx.powExpr()
         return self._bin_op(a, b, torch.remainder, lambda a, b: a % b, ctx)
 
     def visitPowExp(self, ctx):
@@ -875,33 +875,36 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitNeExp(self, ctx):
         a = yield ctx.compExpr()
-        b = yield ctx.addExpr()
+        b = yield ctx.relationalExpr()
         return self._bool_op(a, b, torch.ne, lambda a, b: a != b, ctx)
 
     def visitEqExp(self, ctx):
         a = yield ctx.compExpr()
-        b = yield ctx.addExpr()
+        b = yield ctx.relationalExpr()
         return self._bool_op(a, b, torch.eq, lambda a, b: a == b, ctx)
 
     def visitGtExp(self, ctx):
-        a = yield ctx.compExpr()
-        b = yield ctx.addExpr()
+        a = yield ctx.relationalExpr()
+        b = yield ctx.shiftExpr()
         return self._bool_op(a, b, torch.gt, lambda a, b: a > b, ctx)
 
     def visitLtExp(self, ctx):
-        a = yield ctx.compExpr()
-        b = yield ctx.addExpr()
+        a = yield ctx.relationalExpr()
+        b = yield ctx.shiftExpr()
         return self._bool_op(a, b, torch.lt, lambda a, b: a < b, ctx)
 
     def visitGeExp(self, ctx):
-        a = yield ctx.compExpr()
-        b = yield ctx.addExpr()
+        a = yield ctx.relationalExpr()
+        b = yield ctx.shiftExpr()
         return self._bool_op(a, b, torch.ge, lambda a, b: a >= b, ctx)
 
     def visitLeExp(self, ctx):
-        a = yield ctx.compExpr()
-        b = yield ctx.addExpr()
+        a = yield ctx.relationalExpr()
+        b = yield ctx.shiftExpr()
         return self._bool_op(a, b, torch.le, lambda a, b: a <= b, ctx)
+
+    def visitToRelational(self, ctx):
+        return (yield ctx.relationalExpr())
 
     def visitToAdd(self, ctx):
         return (yield ctx.addExpr())
@@ -3750,12 +3753,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitLShiftExp(self, ctx):
         a = yield ctx.shiftExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.addExpr()
         return self._bitwise_op(a, b, torch.bitwise_left_shift, self._scalar_bitwise_lshift,ctx)
 
     def visitRShiftExp(self, ctx):
         a = yield ctx.shiftExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.addExpr()
         return self._bitwise_op(a, b, torch.bitwise_right_shift, self._scalar_bitwise_rshift,ctx)
 
     def visitBitAndFunc(self, ctx):

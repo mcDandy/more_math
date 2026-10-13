@@ -8,7 +8,7 @@
  * - A wide range of mathematical functions (trigonometric, hyperbolic, etc.)
  * - Tensor operations (matmul, dot, reshape, etc.)
  * - Noise functions (perlin, cellular, etc.)
- * - Basic arithmetic, logical, and bitwise operations
+  * - Basic arithmetic, comparison, and bitwise function operations
  */
 grammar MathExpr;
 
@@ -49,18 +49,21 @@ breakStmt: BREAK SEMICOLON;
 continueStmt: CONTINUE SEMICOLON;
 returnStmt: RETURN expr? SEMICOLON;
 
-expr: ternaryExpr | atom | compExpr;
+expr: ternaryExpr | compExpr;
 
 ternaryExpr: compExpr QUESTION expr COLON expr # TernaryExp;
 
 compExpr:
-	compExpr GT addExpr		# GtExp
-	| compExpr GE addExpr	# GeExp
-	| compExpr LT addExpr	# LtExp
-	| compExpr LE addExpr	# LeExp
-	| compExpr EQ addExpr	# EqExp
-	| compExpr NE addExpr	# NeExp
-	| addExpr			# ToAdd;
+	compExpr EQ relationalExpr	# EqExp
+	| compExpr NE relationalExpr	# NeExp
+	| relationalExpr		# ToRelational;
+
+relationalExpr:
+	relationalExpr GT shiftExpr	# GtExp
+	| relationalExpr GE shiftExpr	# GeExp
+	| relationalExpr LT shiftExpr	# LtExp
+	| relationalExpr LE shiftExpr	# LeExp
+	| shiftExpr			# ToShift;
 
 addExpr:
 	addExpr PLUS mulExpr	# AddExp
@@ -68,15 +71,15 @@ addExpr:
 	| mulExpr			# ToMul;
 
 mulExpr:
-	mulExpr MULT shiftExpr	# MulExp
-	| mulExpr DIV shiftExpr	# DivExp
-	| mulExpr MOD shiftExpr	# ModExp
-	| shiftExpr			# ToShift;
+	mulExpr MULT powExpr	# MulExp
+	| mulExpr DIV powExpr	# DivExp
+	| mulExpr MOD powExpr	# ModExp
+	| powExpr			# ToPow;
 
 shiftExpr:
-	shiftExpr LSHIFT powExpr	# LShiftExp
-	| shiftExpr RSHIFT powExpr	# RShiftExp
-	| powExpr			# ToPow;
+	shiftExpr LSHIFT addExpr	# LShiftExp
+	| shiftExpr RSHIFT addExpr	# RShiftExp
+	| addExpr			# ToAdd;
 
 powExpr: unaryExpr POW powExpr # PowExp | unaryExpr # ToUnary;
 
@@ -812,7 +815,7 @@ funcN:
 		/**
 		  map(tensor, coord1, [coord2], [coord3]) - samples/remaps input tensor using coordinates
 		*/
-	| MAP LPAREN expr (COMMA expr)+ RPAREN		# MapFunc
+	| MAP LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN		# MapFunc
 		/**
 		  ezconvolution(tensor, [kernel_sizes...], kernel) - applies convolution with kernel. Attempts to correctly convolve over size dimensions.
 		*/
@@ -834,7 +837,7 @@ funcN:
 		*/
 	| UNSQUEEZE LPAREN expr COMMA expr RPAREN		# UnsqueezeFunc
 		/**
-		  concatenate(x1, x2, ..., dim) - concatenates tensors along the specified dimension
+		  concatenate(x, ..., dim) - concatenates one or more tensors along the specified dimension
 		*/
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc
 		/**

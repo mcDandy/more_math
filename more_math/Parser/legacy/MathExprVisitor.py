@@ -129,8 +129,8 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#LtExp.
-    def visitLtExp(self, ctx:MathExprParser.LtExpContext):
+    # Visit a parse tree produced by MathExprParser#ToRelational.
+    def visitToRelational(self, ctx:MathExprParser.ToRelationalContext):
         return self.visitChildren(ctx)
 
 
@@ -139,8 +139,18 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#ToAdd.
-    def visitToAdd(self, ctx:MathExprParser.ToAddContext):
+    # Visit a parse tree produced by MathExprParser#NeExp.
+    def visitNeExp(self, ctx:MathExprParser.NeExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ToShift.
+    def visitToShift(self, ctx:MathExprParser.ToShiftContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LtExp.
+    def visitLtExp(self, ctx:MathExprParser.LtExpContext):
         return self.visitChildren(ctx)
 
 
@@ -151,11 +161,6 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#LeExp.
     def visitLeExp(self, ctx:MathExprParser.LeExpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#NeExp.
-    def visitNeExp(self, ctx:MathExprParser.NeExpContext):
         return self.visitChildren(ctx)
 
 
@@ -179,11 +184,6 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MathExprParser#ToShift.
-    def visitToShift(self, ctx:MathExprParser.ToShiftContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MathExprParser#MulExp.
     def visitMulExp(self, ctx:MathExprParser.MulExpContext):
         return self.visitChildren(ctx)
@@ -199,6 +199,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ToPow.
+    def visitToPow(self, ctx:MathExprParser.ToPowContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ToAdd.
+    def visitToAdd(self, ctx:MathExprParser.ToAddContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#RShiftExp.
     def visitRShiftExp(self, ctx:MathExprParser.RShiftExpContext):
         return self.visitChildren(ctx)
@@ -206,11 +216,6 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#LShiftExp.
     def visitLShiftExp(self, ctx:MathExprParser.LShiftExpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MathExprParser#ToPow.
-    def visitToPow(self, ctx:MathExprParser.ToPowContext):
         return self.visitChildren(ctx)
 
 

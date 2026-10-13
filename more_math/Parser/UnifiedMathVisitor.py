@@ -4820,11 +4820,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(val): return torch.stack([r.to(torch.float)/256, g.to(torch.float)/256, b.to(torch.float)/256], dim=-1).contiguous()
         return [r/256, g/256, b/256]
 
-    def visitInt_to_rgb(self,ctx):
+    def visitInt_to_rgbFunc(self, ctx):
         val = (yield ctx.expr())
         return self.i2rgb(val)
 
-    def visitRgb_to_int(self,ctx):
+    def visitRgb_to_intFunc(self, ctx):
         def clamp255_scaled(x):
             return max(0, min(255, int(float(x) * 256)))
 

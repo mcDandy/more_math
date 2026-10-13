@@ -1097,6 +1097,26 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitReluFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.relu, lambda x: max(0.0, x))
 
+    def visitSoftsignFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), lambda x: x / (1 + torch.abs(x)), lambda x: x / (1 + abs(x)))
+
+    def visitLeakyReluFunc(self, ctx):
+        val = (yield ctx.expr(0))
+        negative_slope = 0.01
+        if len(ctx.expr()) > 1:
+            negative_slope = (yield ctx.expr(1))
+            if self._is_tensor(negative_slope):
+                if negative_slope.numel() != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: leaky_relu negative_slope must be a scalar")
+                negative_slope = float(negative_slope.item())
+            elif self._is_list(negative_slope):
+                if len(negative_slope) != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: leaky_relu negative_slope must be a scalar")
+                negative_slope = float(negative_slope[0])
+            else:
+                negative_slope = float(negative_slope)
+        return self._unary_op(val, lambda x: F.leaky_relu(x, negative_slope), lambda x: x if x >= 0 else negative_slope * x)
+
     def visitSoftplusFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), F.softplus, lambda x: math.log(1.0 + math.exp(x)))
 
@@ -3845,6 +3865,93 @@ class UnifiedMathVisitor(MathExprVisitor):
             shape = [self._to_int(shape_val, ctx, "tensor")]
 
         return torch.full(shape, value, device=self.device,dtype=type)
+
+    def _filled_tensor(self, ctx, value):
+        shape = self._normalize_shape_arg((yield ctx.expr(0)), ctx, "tensor shape")
+        dtype = torch.float32
+        if len(ctx.expr()) > 1:
+            template = (yield ctx.expr(1))
+            if not self._is_tensor(template):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: dtype_template must be a tensor")
+            dtype = template.dtype
+        return torch.full(shape, value, dtype=dtype, device=self.device)
+
+    def visitZerosFunc(self, ctx):
+        return (yield from self._filled_tensor(ctx, 0.0))
+
+    def visitOnesFunc(self, ctx):
+        return (yield from self._filled_tensor(ctx, 1.0))
+
+    def visitEyeFunc(self, ctx):
+        n = self._to_int((yield ctx.expr(0)), ctx, "eye size", strict=True)
+        if n < 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: eye size must be non-negative")
+        dtype = torch.float32
+        if len(ctx.expr()) > 1:
+            template = (yield ctx.expr(1))
+            if not self._is_tensor(template):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: dtype_template must be a tensor")
+            dtype = template.dtype
+        return torch.eye(n, dtype=dtype, device=self.device)
+
+    def visitOneHotFunc(self, ctx):
+        indices = self._promote_to_tensor((yield ctx.expr(0)))
+        num_classes = self._to_int((yield ctx.expr(1)), ctx, "one_hot classes", strict=True)
+        if num_classes <= 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: one_hot classes must be positive")
+        if indices.is_floating_point():
+            numeric_indices = indices.float()
+            if not torch.equal(numeric_indices, numeric_indices.round()):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: one_hot indices must be integers")
+        indices = indices.long()
+        if torch.any(indices < 0) or torch.any(indices >= num_classes):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: one_hot index is outside the class range")
+        return F.one_hot(indices, num_classes=num_classes).to(dtype=torch.float32)
+
+    def _loss_metric(self, ctx, absolute):
+        left = self._promote_to_tensor((yield ctx.expr(0))).float()
+        right = self._promote_to_tensor((yield ctx.expr(1))).float()
+        left, right = torch.broadcast_tensors(left, right)
+        error = left - right
+        values = error.abs() if absolute else error.square()
+        reduction = "mean"
+        if len(ctx.expr()) > 2:
+            reduction = (yield ctx.expr(2))
+        if not isinstance(reduction, str):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reduction must be 'none', 'mean', or 'sum'")
+        reduction = reduction.strip().lower()
+        if reduction == "none":
+            return values
+        if reduction == "mean":
+            return values.mean()
+        if reduction == "sum":
+            return values.sum()
+        raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reduction must be 'none', 'mean', or 'sum'")
+
+    def visitMseFunc(self, ctx):
+        return (yield from self._loss_metric(ctx, absolute=False))
+
+    def visitMaeFunc(self, ctx):
+        return (yield from self._loss_metric(ctx, absolute=True))
+
+    def visitPsnrFunc(self, ctx):
+        left = self._promote_to_tensor((yield ctx.expr(0))).float()
+        right = self._promote_to_tensor((yield ctx.expr(1))).float()
+        left, right = torch.broadcast_tensors(left, right)
+        data_range = 1.0
+        if len(ctx.expr()) > 2:
+            data_range = (yield ctx.expr(2))
+            if self._is_tensor(data_range):
+                if data_range.numel() != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: psnr data_range must be a scalar")
+                data_range = float(data_range.item())
+            data_range = float(data_range)
+        if not math.isfinite(data_range) or data_range <= 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: psnr data_range must be positive and finite")
+        mse = (left - right).square().mean()
+        if mse.item() == 0:
+            return torch.tensor(float("inf"), dtype=torch.float32, device=left.device)
+        return 20.0 * math.log10(data_range) - 10.0 * torch.log10(mse)
 
     def visitSoftmaxFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0))).float()

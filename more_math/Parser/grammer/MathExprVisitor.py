@@ -579,6 +579,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#SoftsignFunc.
+    def visitSoftsignFunc(self, ctx:MathExprParser.SoftsignFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SoftplusFunc.
     def visitSoftplusFunc(self, ctx:MathExprParser.SoftplusFuncContext):
         return self.visitChildren(ctx)
@@ -1041,6 +1046,46 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#EmptyTensorFunc.
     def visitEmptyTensorFunc(self, ctx:MathExprParser.EmptyTensorFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ZerosFunc.
+    def visitZerosFunc(self, ctx:MathExprParser.ZerosFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#OnesFunc.
+    def visitOnesFunc(self, ctx:MathExprParser.OnesFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#EyeFunc.
+    def visitEyeFunc(self, ctx:MathExprParser.EyeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#OneHotFunc.
+    def visitOneHotFunc(self, ctx:MathExprParser.OneHotFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MseFunc.
+    def visitMseFunc(self, ctx:MathExprParser.MseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#MaeFunc.
+    def visitMaeFunc(self, ctx:MathExprParser.MaeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PsnrFunc.
+    def visitPsnrFunc(self, ctx:MathExprParser.PsnrFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LeakyReluFunc.
+    def visitLeakyReluFunc(self, ctx:MathExprParser.LeakyReluFuncContext):
         return self.visitChildren(ctx)
 
 

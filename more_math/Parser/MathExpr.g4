@@ -270,6 +270,10 @@ func1:
 		*/
 	| RELU LPAREN expr RPAREN			# ReluFunc
 		/**
+		  softsign(x) - applies x / (1 + abs(x)) element-wise
+		*/
+	| SOFTSIGN LPAREN expr RPAREN			# SoftsignFunc
+		/**
 		  softplus(x) - applies the softplus function: ln(1 + exp(x))
 		*/
 	| SOFTPLUS LPAREN expr RPAREN			# SoftplusFunc
@@ -643,6 +647,38 @@ func2:
 		  tensor(shape, [value], [dtype_template]) - creates a tensor with specified shape and optional value/type. Default value is 0 and default format FP32
 		*/
 	| TENSOR LPAREN indexExpr (COMMA expr (COMMA expr)? )? RPAREN	# EmptyTensorFunc
+		/**
+		  zeros(shape, [dtype_template]) - creates a zero-filled tensor on the current device
+		*/
+	| ZEROS LPAREN expr (COMMA expr)? RPAREN	# ZerosFunc
+		/**
+		  ones(shape, [dtype_template]) - creates a one-filled tensor on the current device
+		*/
+	| ONES LPAREN expr (COMMA expr)? RPAREN		# OnesFunc
+		/**
+		  eye(n, [dtype_template]) - creates an n-by-n identity matrix
+		*/
+	| EYE LPAREN expr (COMMA expr)? RPAREN		# EyeFunc
+		/**
+		  one_hot(indices, classes) - converts integer class indices to float32 one-hot vectors
+		*/
+	| ONE_HOT LPAREN expr COMMA expr RPAREN		# OneHotFunc
+		/**
+		  mse(a, b, [reduction]) - mean squared error; reduction is mean (default), sum, or none
+		*/
+	| MSE LPAREN expr COMMA expr (COMMA expr)? RPAREN	# MseFunc
+		/**
+		  mae(a, b, [reduction]) - mean absolute error; reduction is mean (default), sum, or none
+		*/
+	| MAE LPAREN expr COMMA expr (COMMA expr)? RPAREN	# MaeFunc
+		/**
+		  psnr(a, b, [data_range]) - peak signal-to-noise ratio in dB; data_range defaults to 1
+		*/
+	| PSNR LPAREN expr COMMA expr (COMMA expr)? RPAREN	# PsnrFunc
+		/**
+		  leaky_relu(x, [negative_slope]) - applies leaky ReLU element-wise; negative_slope defaults to 0.01
+		*/
+	| LEAKY_RELU LPAREN expr (COMMA expr)? RPAREN		# LeakyReluFunc
 		/**
 		  pad(x, padding) - pads tensor x with specified padding (dim 0 neg, dim 0 pos, dim 1 ...)
 		*/
@@ -1057,6 +1093,8 @@ STEP: 'step';
 SMOOTHSTEP: 'smoothstep';
 FRACT: 'fract';
 RELU: 'relu';
+SOFTSIGN: 'softsign';
+LEAKY_RELU: 'leaky_relu';
 SOFTPLUS: 'softplus';
 GELU: 'gelu';
 SIGN: 'sign';
@@ -1144,6 +1182,13 @@ BAND: 'band' | 'bitwise_and';
 XOR: 'bxor' | 'bitwise_xor';
 BOR: 'bor' | 'bitwise_or';
 TENSOR: 'tensor';
+ZEROS: 'zeros';
+ONES: 'ones';
+EYE: 'eye';
+ONE_HOT: 'one_hot';
+MSE: 'mse';
+MAE: 'mae';
+PSNR: 'psnr';
 ADD_KEY: 'add_key';
 REMOVE_KEY: 'remove_key' | 'rm_key';
 PUSH: 'stack_push';

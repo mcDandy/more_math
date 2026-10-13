@@ -148,7 +148,9 @@ You can also get the node from comfy manager under the name of More math.
 #### 1.4 Activation / ML
 - `relu(x)`: `max(0, x)`.
 - `gelu(x)`: Gaussian Error Linear Unit.
+- `leaky_relu(x, [negative_slope])`: Leaky ReLU; `negative_slope` defaults to `0.01`.
 - `softplus(x)`: smooth ReLU-like function.
+- `softsign(x)`: bounded activation `x / (1 + abs(x))`.
 - `sigm(x)`: sigmoid.
 - `softmax(x, [dim])`: softmax normalization.
 - `softmin(x, [dim])`: softmin normalization.
@@ -221,6 +223,7 @@ You can also get the node from comfy manager under the name of More math.
 - `scatter(tensor, dim, indices)`: scatter values along `dim` using `indices`
 - `scatter_add(tensor, dim, indices)`: scatter-add values along `dim` using `indices`
 - `nonzero(x)`: returns coordinate indices for non-zero elements.
+- `one_hot(indices, classes)`: converts integer class indices into float32 one-hot vectors; indices must be in `0..classes-1`.
 
 #### 2.4 Shape / Structure / Layout
 - `shape(x)`: returns shape as a Python list.
@@ -240,6 +243,8 @@ You can also get the node from comfy manager under the name of More math.
 - `stack(tensors, [dim])`: stack a non-empty list of tensors along a new dimension.
 - `roll(tensor, shifts, [dim])`: circular shift.
 - `tensor(shape, [value, [type]])`: create a filled tensor; `type` a tensor to copy its dtype to self when being created.
+- `zeros(shape, [dtype_template])` / `ones(shape, [dtype_template])`: create zero- or one-filled tensors; an optional tensor supplies the output dtype.
+- `eye(n, [dtype_template])`: create an `n`-by-`n` identity matrix; an optional tensor supplies the output dtype.
 - `interpolate_linear(tensor, scale)`: linear interpolation-based resizing. Scale can be a single float or a list. When it is a list, it is interpreted as the target output size.
 - `interpolate_area(tensor, scale)`: area interpolation-based resizing.
 - `interpolate_nearest(tensor, scale)` / `interpolate_nearest_exact`: nearest neighbor interpolation-based resizing.
@@ -257,6 +262,11 @@ You can also get the node from comfy manager under the name of More math.
   - uses sampling coordinates derived from the provided coordinate tensors or functions,
   - intended for spatial remapping / resampling.
 - `get_value(tensor, position)`: read value at an N-D position using flat offset math. Superseeded by tensor[position] indexing.
+
+#### 2.7 Losses / Image Metrics
+- `mse(a, b, [reduction])`: mean squared error; reduction is `mean` (default), `sum`, or `none` (`none` returns element-wise values).
+- `mae(a, b, [reduction])`: mean absolute error; reduction is `mean` (default), `sum`, or `none` (`none` returns element-wise values).
+- `psnr(a, b, [data_range])`: peak signal-to-noise ratio in decibels; `data_range` defaults to `1` and must be positive.
 
 ---
 

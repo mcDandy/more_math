@@ -2,6 +2,7 @@ import torch
 import sys
 import os
 import math
+import pytest
 
 # Ensure test runner usage (Visual Studio) can import the package regardless of working dir.
 _here = os.path.abspath(os.path.dirname(__file__))
@@ -108,6 +109,48 @@ def test_added_math_and_logical_functions():
     assert torch.allclose(eval_expr("hypot(A, B)", {"A": torch.tensor([3.0, 5.0]), "B": torch.tensor([4.0, 12.0])}), torch.tensor([5.0, 13.0]))
     assert torch.allclose(eval_expr("logical_or(A, B)", {"A": torch.tensor([0.0, 1.0]), "B": torch.tensor([0.0, 0.0])}), torch.tensor([0.0, 1.0]))
     assert torch.allclose(eval_expr("degrees(T)", {"T": torch.tensor([0.0, math.pi])}), torch.tensor([0.0, 180.0]))
+
+def test_tensor_constructors_and_one_hot():
+    template = torch.empty((), dtype=torch.float64)
+    zeros = eval_expr("zeros([2, 3], T)", {"T": template})
+    assert zeros.shape == (2, 3)
+    assert zeros.dtype == torch.float64
+    assert torch.count_nonzero(zeros) == 0
+    assert torch.equal(eval_expr("ones([2])"), torch.ones(2))
+    assert torch.equal(eval_expr("eye(3)"), torch.eye(3))
+    assert torch.equal(eval_expr("eye(2, T)", {"T": template}), torch.eye(2, dtype=torch.float64))
+    assert torch.equal(
+        eval_expr("one_hot([0, 2], 3)"),
+        torch.tensor([[1.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+    )
+    assert "one_hot" in INBUILT_FUNCTIONS
+    with pytest.raises(ValueError, match="outside the class range"):
+        eval_expr("one_hot([3], 3)")
+    with pytest.raises(ValueError, match="must be integers"):
+        eval_expr("one_hot([0.5], 3)")
+
+def test_loss_metrics_and_psnr():
+    a = torch.tensor([1.0, 3.0])
+    b = torch.tensor([2.0, 1.0])
+    variables = {"a": a, "b": b}
+    assert math.isclose(eval_expr("mse(a, b)", variables).item(), 2.5)
+    assert math.isclose(eval_expr("mse(a, b, 'sum')", variables).item(), 5.0)
+    assert torch.equal(eval_expr("mse(a, b, 'none')", variables), torch.tensor([1.0, 4.0]))
+    assert math.isclose(eval_expr("mae(a, b)", variables).item(), 1.5)
+    assert math.isclose(eval_expr("mae(a, b, 'sum')", variables).item(), 3.0)
+    assert math.isclose(eval_expr("psnr(a, b)", variables).item(), 10.0 * math.log10(0.4), rel_tol=1e-6)
+    assert math.isinf(eval_expr("psnr(a, a)", variables).item())
+    assert "mse" in INBUILT_FUNCTIONS and "mae" in INBUILT_FUNCTIONS and "psnr" in INBUILT_FUNCTIONS
+    with pytest.raises(ValueError, match="reduction must be"):
+        eval_expr("mse(a, b, 'median')", variables)
+    with pytest.raises(ValueError, match="data_range must be positive"):
+        eval_expr("psnr(a, b, 0)", variables)
+
+def test_leaky_relu_and_softsign():
+    assert eval_expr("leaky_relu([-2, 0, 2])") == [-0.02, 0.0, 2.0]
+    assert eval_expr("leaky_relu(-2, 0.2)") == -0.4
+    assert eval_expr("softsign([-2, 0, 2])") == [-2.0 / 3.0, 0.0, 2.0 / 3.0]
+    assert "leaky_relu" in INBUILT_FUNCTIONS and "softsign" in INBUILT_FUNCTIONS
 
 if __name__ == "__main__":
     test_logic_functions()

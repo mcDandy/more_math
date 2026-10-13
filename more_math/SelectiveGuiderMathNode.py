@@ -161,20 +161,69 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
             return "attn_unknown"
 
-        def resolve_x(total_blocks: int | None) -> int:
+        def resolve_total_blocks(stage: str, transformer_options: dict | None = None) -> int | None:
+            if transformer_options is not None:
+                total = transformer_options.get("total_blocks", None)
+                if total is not None:
+                    return int(total)
+
+            patcher = getattr(V, "model_patcher", None)
+            if patcher is None or not hasattr(patcher, "get_model_object"):
+                return None
+            try:
+                diffusion_model = patcher.get_model_object("diffusion_model")
+            except Exception:
+                return None
+
+            if stage in ("input", "output"):
+                blocks = getattr(diffusion_model, f"{stage}_blocks", None)
+                return len(blocks) if blocks is not None else None
+            if stage == "middle":
+                return 1 if getattr(diffusion_model, "middle_block", None) is not None else 0
+            if stage == "time_emb":
+                return 1
+
+            block_type = (transformer_options or {}).get("block_type", stage)
+            if block_type in ("double", "double_block"):
+                names = ("double_layers", "double_blocks", "blocks", "transformer_blocks")
+            elif block_type in ("single", "single_block"):
+                names = ("single_layers", "single_blocks")
+            else:
+                names = ()
+            for name in names:
+                blocks = getattr(diffusion_model, name, None)
+                if blocks is not None:
+                    return len(blocks)
+            return None
+
+        def resolve_x(total_blocks: int | None, stage: str, topts: dict) -> int:
             x = int(layer_x)
-            if x < 0 and total_blocks is not None:
-                x = total_blocks + x
+            if x >= 0:
+                if total_blocks is not None:
+                    if total_blocks <= 0:
+                        return -1
+                    return max(0, min(x, total_blocks - 1))
+                return x
+
+            if total_blocks is None:
+                total_blocks = resolve_total_blocks(stage, topts)
             if total_blocks is not None:
-                x = max(0, min(x, total_blocks - 1))
+                if total_blocks <= 0:
+                    return -1
+                x = total_blocks + x
+                if x < 0 or x >= total_blocks:
+                    return -1
             return x
 
         def match_index(idx: int, total_blocks: int | None, stage: str, topts: dict, hook_kind: str) -> bool:
-            x = resolve_x(total_blocks)
+            x = resolve_x(total_blocks, stage, topts)
             return idx == x
 
-        def target_indices():
-            return [int(layer_x)]
+        def target_indices(block_type: str):
+            stage = "double" if block_type == "double_block" else "single"
+            topts = {"block_type": stage}
+            target = resolve_x(None, "dit", topts)
+            return [target] if target >= 0 else []
 
         def side_from_cond_or_uncond(cond_or_uncond):
             if isinstance(cond_or_uncond, (list, tuple)) and len(cond_or_uncond) > 0:
@@ -322,6 +371,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 side = forced_side if forced_side is not None else auto_side
                 idx_side = 0 if side == "positive" else (1 if side == "negative" else auto_idx)
 
+                out = extra_args["original_block"](args)
+
                 meta = {
                     "hook_kind": "dit_block",
                     "hook_domain": "diffusion",
@@ -343,7 +394,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "activations_shape": tensor_shape(out["img"]) if isinstance(out, dict) and "img" in out else [],
                 }
 
-                out = extra_args["original_block"](args)
                 if isinstance(out, dict) and "img" in out:
                     out2 = dict(out)
                     out2["img"] = run_expr(out["img"], meta)
@@ -352,9 +402,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
             patches_replace = topts.get("patches_replace", {}).copy()
             dit_map = patches_replace.get("dit", {}).copy()
-            for li in target_indices():
-                dit_map[("double_block", li)] = dit_wrap
-                dit_map[("single_block", li)] = dit_wrap
+            for block_type in ("double_block", "single_block"):
+                for li in target_indices(block_type):
+                    dit_map[(block_type, li)] = dit_wrap
             patches_replace["dit"] = dit_map
             topts["patches_replace"] = patches_replace
             patched_dict["transformer_options"] = topts
@@ -503,6 +553,10 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 stage, idx = _parse_block(transformer_options, "middle")
                 return _apply_block_expr(h, transformer_options, stage, idx)
 
+            def middle_block_after_patch(patch_args):
+                h = _apply_block_expr(patch_args["h"], patch_args["transformer_options"], "middle", 0)
+                return {**patch_args, "h": h}
+
             def emb_patch(emb, model_channels, transformer_options):
                 # začátek timestep pipeline
                 return _apply_block_expr(emb, transformer_options, "time_emb", 0)
@@ -511,7 +565,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             patches["output_block_patch"] = list(patches.get("output_block_patch", [])) + [output_block_patch]
             patches["middle_patch"] = list(patches.get("middle_patch", [])) + [middle_patch]
             patches["emb_patch"] = list(patches.get("emb_patch", [])) + [emb_patch]
-            patches["middle_block_after_patch"] = list(patches.get("middle_block_after_patch", [])) + [middle_patch]
+            patches["middle_block_after_patch"] = list(patches.get("middle_block_after_patch", [])) + [middle_block_after_patch]
 
             topts["patches"] = patches
             patched_dict["transformer_options"] = topts
@@ -525,7 +579,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             key = "mrmth_model_edges"
 
             def model_edges_wrapper(executor, x, *args, **kwargs):
-                if hook_target in ("all", "model_begin", "unet_block"):
+                if hook_target in ("all", "model_begin"):
                     pre_meta = {
                         "hook_kind": "model_begin",
                         "hook_domain": "diffusion",
@@ -545,7 +599,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
                 out = executor(xin, *args, **kwargs)
 
-                if isinstance(out, torch.Tensor) and hook_target in ("all", "model_end", "unet_block"):
+                if isinstance(out, torch.Tensor) and hook_target in ("all", "model_end"):
                     post_meta = {
                         "hook_kind": "model_end",
                         "hook_domain": "diffusion",
@@ -577,7 +631,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 p = register_unet_blocks(p, forced_side=side_label)
             if hook_target in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 p = register_attn(p, forced_side=side_label) 
-            if hook_target in ("all", "unet_block", "model_begin", "model_end"):
+            if hook_target in ("all", "model_begin", "model_end"):
                 p = register_model_edges(p, forced_side=side_label)
             return p["transformer_options"]
 
@@ -632,7 +686,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 patched = register_unet_blocks(patched, forced_side=None)
             if hook_target in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 patched = register_attn(patched, forced_side=None)
-            if hook_target in ("all", "unet_block", "model_begin", "model_end"):
+            if hook_target in ("all", "model_begin", "model_end"):
                 patched = register_model_edges(patched, forced_side=None)
             V.model_options = patched
 

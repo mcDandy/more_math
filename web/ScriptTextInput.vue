@@ -78,7 +78,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
 // Reactive state
 const gutterLines = ref<string[]>(['1']);
-const editorHeight = ref<string>('170px');
+const editorHeight = ref<string>('100%');
 const scrollTop = ref<number>(0);
 const scrollLeft = ref<number>(0);
 const textareaWidth = ref<number>(0);
@@ -329,24 +329,9 @@ const refresh = () => {
     // Apply translation to gutter
     gutterContent.style.transform = `translateY(${adjustedBaseline - scrollTop.value}px)`;
 
-    // Handle height resizing of the editor component
-    const contentHeight = measureEl.offsetHeight || (lhPx * lineCount);
     const parent = wrapperRef.value?.parentElement;
-    const parentHeight = parent ? parent.clientHeight : null;
-    const minHeight = 170;
-    let maxHeight = 600;
-
-    if (parentHeight !== null && parentHeight > 0) {
-      maxHeight = Math.max(minHeight, parentHeight - 12);
-    }
-
-    const desired = Math.min(Math.max(contentHeight, minHeight), maxHeight);
-
-    // FIX: If containing node is larger than text height (user enlarged the node), fill 100% of parent height
-    if (parentHeight && parentHeight > desired + 20) {
+    if (parent && parent.clientHeight > 0) {
       editorHeight.value = '100%';
-    } else {
-      editorHeight.value = desired + 'px';
     }
   });
 };
@@ -470,9 +455,12 @@ watch(modelValue, () => {
 
 <style scoped>
 .mrmth-editor {
-  display: flex;
-  align-items: stretch;
+  position: relative;
+  display: block;
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   overflow: hidden;
@@ -488,8 +476,11 @@ watch(modelValue, () => {
 }
 
 .mrmth-gutter {
+  position: absolute;
+  inset: 0 auto 0 0;
   padding: 0;
-  min-width: 44px;
+  width: 44px;
+  min-height: 0;
   text-align: right;
   user-select: none;
   color: #9aa0a6;
@@ -497,7 +488,6 @@ watch(modelValue, () => {
   border-right: 1px solid rgba(255, 255, 255, 0.12);
   box-sizing: border-box;
   overflow: hidden;
-  position: relative;
 }
 
 .mrmth-gutter-content {
@@ -519,10 +509,10 @@ watch(modelValue, () => {
 }
 
 .mrmth-editor-container {
-  position: relative;
-  flex: 1;
+  position: absolute;
+  inset: 0 0 0 44px;
   min-width: 0;
-  height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: transparent;
 }

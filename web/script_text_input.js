@@ -22,7 +22,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const style = document.createElement("style");
         style.id = STYLE_ID;
         style.textContent = `
-            .mrmth-editor {
+            .mrmth-editor:not(.mrmth-editor-v2) {
                 display: flex;
                 align-items: stretch;
                 width: 100%;
@@ -33,7 +33,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 background: rgba(0,0,0,0.18);
             }
 
-            .mrmth-gutter {
+            .mrmth-editor:not(.mrmth-editor-v2) .mrmth-gutter {
                 padding: 8px 10px;
                 min-width: 44px;
                 text-align: right;
@@ -72,7 +72,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 display: inline;
             }
 
-           .mrmth-editor-container {
+           .mrmth-editor:not(.mrmth-editor-v2) .mrmth-editor-container {
              position: relative;
              flex: 1;
              min-width: 0;
@@ -80,6 +80,35 @@ if (!window.__mrmthScriptInputUnifiedInit) {
              overflow: hidden;
              background: transparent; /* ⬅️ DŮLEŽITÉ */
            }
+
+            .mrmth-editor.mrmth-editor-v2 {
+                position: relative;
+                display: block;
+                 width: 100%;
+                height: 100%;
+                 min-height: 0;
+                box-sizing: border-box;
+                 border: 1px solid rgba(255,255,255,0.14);
+                 border-radius: 10px;
+                 overflow: hidden;
+                 background: rgba(0,0,0,0.18);
+            }
+
+            .mrmth-editor-v2 .mrmth-gutter {
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 44px;
+                min-height: 0;
+            }
+
+            .mrmth-editor-v2 .mrmth-editor-container {
+                position: absolute;
+                inset: 0 0 0 44px;
+                min-width: 0;
+                min-height: 0;
+                height: auto;
+                flex: none;
+            }
 
             .mrmth-syntax-layer {
               position: absolute;
@@ -438,11 +467,14 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const parent = textarea.parentElement;
         if (!parent) return;
 
+        const isVueWidget = !!(app.ui?.settings?.getSettingValue?.("Comfy.VueNodes.Enabled") || document.getElementById("vue-app"));
+
         ensureStyles();
         hideNearbyScriptLabels(textarea);
 
         const wrapper = document.createElement("div");
         wrapper.className = "mrmth-editor";
+        if (isVueWidget) wrapper.classList.add("mrmth-editor-v2");
 
         const gutter = document.createElement("div");
         gutter.className = "mrmth-gutter";
@@ -515,6 +547,14 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
             updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
             updateHighlight(textarea, syntaxLayer);
+
+            if (isVueWidget) {
+                wrapper.style.minHeight = '0';
+                wrapper.style.height = '100%';
+                editorContainer.style.minHeight = '0';
+                editorContainer.style.height = '100%';
+                return;
+            }
 
             // Reactive height: size wrapper and editor container to content, clamped to parent's height
             const contentHeight = measureEl.offsetHeight || (lineHeightPx * Math.max(1, textarea.value.split('\n').length));

@@ -88,3 +88,52 @@ def test_text_image_size_expression_is_evaluated_once(monkeypatch):
     )
 
     assert len(values) == 1
+
+
+def test_stack_list_of_tensors_with_negative_dimension():
+    first = torch.tensor([1.0, 2.0])
+    second = torch.tensor([3.0, 4.0])
+
+    result = _visit("stack([a, b], -1)", {"a": first, "b": second})
+
+    assert result.shape == (2, 2)
+    assert torch.equal(result, torch.tensor([[1.0, 3.0], [2.0, 4.0]]))
+
+
+def test_stack_rejects_invalid_dimension_and_non_list_input():
+    with pytest.raises(ValueError, match="stack expects a non-empty list"):
+        _visit("stack(a)", {"a": torch.tensor([1.0, 2.0])})
+    with pytest.raises(ValueError, match="stack dimension"):
+        _visit("stack([a], 2)", {"a": torch.tensor([1.0, 2.0])})
+
+
+@pytest.mark.parametrize("function", ("transpose", "swapaxes"))
+def test_axis_swap_functions_support_negative_dimensions(function):
+    values = torch.arange(24).reshape(2, 3, 4)
+
+    result = _visit(f"{function}(x, -1, 0)", {"x": values})
+
+    assert result.shape == (4, 3, 2)
+    assert torch.equal(result, values.transpose(-1, 0))
+
+
+def test_axis_swap_rejects_out_of_range_dimension():
+    with pytest.raises(ValueError, match="transpose dimension"):
+        _visit("transpose(x, 0, 2)", {"x": torch.ones(2, 3)})
+
+
+def test_nonzero_returns_coordinate_indices():
+    values = torch.tensor([[0.0, 2.0], [-1.0, 0.0]])
+
+    result = _visit("nonzero(x)", {"x": values})
+
+    assert result.dtype == torch.int64
+    assert result.device == values.device
+    assert torch.equal(result, torch.tensor([[0, 1], [1, 0]], dtype=torch.int64))
+
+
+def test_nonzero_empty_result_preserves_rank():
+    result = _visit("nonzero(x)", {"x": torch.zeros(2, 3)})
+
+    assert result.shape == (0, 2)
+    assert result.dtype == torch.int64

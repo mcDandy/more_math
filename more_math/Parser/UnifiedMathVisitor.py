@@ -1562,6 +1562,23 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return tsr.permute(*dims)
 
+    def visitTransposeFunc(self, ctx):
+        tensor = self._promote_to_tensor((yield ctx.expr(0)))
+        dim0 = self._to_int((yield ctx.expr(1)), ctx, "transpose dim", strict=True)
+        dim1 = self._to_int((yield ctx.expr(2)), ctx, "transpose dim", strict=True)
+
+        normalized_dims = []
+        for dim in (dim0, dim1):
+            if dim < 0:
+                dim += tensor.ndim
+            if dim < 0 or dim >= tensor.ndim:
+                raise ValueError(
+                    f"{ctx.start.line}:{ctx.start.column}: transpose dimension {dim} out of range for tensor with {tensor.ndim} dimensions"
+                )
+            normalized_dims.append(dim)
+
+        return tensor.transpose(*normalized_dims)
+
     def visitReshapeFunc(self, ctx):
         tsr = self._promote_to_tensor((yield ctx.expr(0)))
         new_shape = (yield ctx.expr(1))
@@ -4817,6 +4834,25 @@ class UnifiedMathVisitor(MathExprVisitor):
         d = int(dim_val.item()) if self._is_tensor(dim_val) else int(dim_val)
         return torch.cat(tensors, dim=d)
 
+    def visitStackFunc(self, ctx):
+        values = yield ctx.expr(0)
+        if not self._is_list(values) or not values:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: stack expects a non-empty list of values")
+
+        tensors = [self._promote_to_tensor(value) for value in values]
+        dim = self._to_int((yield ctx.expr(1)), ctx, "stack dim", strict=True) if len(ctx.expr()) > 1 else 0
+        if dim < 0:
+            dim += tensors[0].ndim + 1
+        if dim < 0 or dim > tensors[0].ndim:
+            raise ValueError(
+                f"{ctx.start.line}:{ctx.start.column}: stack dimension {dim} out of range for input tensors with {tensors[0].ndim} dimensions"
+            )
+
+        try:
+            return torch.stack(tensors, dim=dim)
+        except RuntimeError as e:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: stack failed: {e}") from e
+
     def visitIntFunc(self, ctx):
         val = yield ctx.expr()
         def as_int(ctx,val):
@@ -5480,3 +5516,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         dim = self._to_int(dim_val, ctx, "gather dim", strict=True)
         index = self._promote_to_tensor((yield ctx.expr(2))).long()
         return torch.gather(x, dim, index)
+
+    def visitNonzeroFunc(self, ctx):
+        tensor = self._promote_to_tensor((yield ctx.expr()))
+        if self._is_nested_tensor(tensor):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: nonzero does not support nested tensors")
+        return torch.nonzero(tensor)

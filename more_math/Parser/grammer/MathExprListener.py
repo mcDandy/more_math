@@ -1934,6 +1934,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#TransposeFunc.
+    def enterTransposeFunc(self, ctx:MathExprParser.TransposeFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#TransposeFunc.
+    def exitTransposeFunc(self, ctx:MathExprParser.TransposeFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#RangeFunc.
     def enterRangeFunc(self, ctx:MathExprParser.RangeFuncContext):
         pass
@@ -2282,6 +2291,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ConcatFunc.
     def exitConcatFunc(self, ctx:MathExprParser.ConcatFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#StackFunc.
+    def enterStackFunc(self, ctx:MathExprParser.StackFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#StackFunc.
+    def exitStackFunc(self, ctx:MathExprParser.StackFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NonzeroFunc.
+    def enterNonzeroFunc(self, ctx:MathExprParser.NonzeroFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NonzeroFunc.
+    def exitNonzeroFunc(self, ctx:MathExprParser.NonzeroFuncContext):
         pass
 
 

@@ -678,6 +678,10 @@ func3:
 		*/
 	| SMOOTHSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmoothstepFunc
 		/**
+		  transpose(x, dim0, dim1) / swapaxes(x, dim0, dim1) - swaps two tensor dimensions
+		*/
+	| TRANSPOSE LPAREN expr COMMA expr COMMA expr RPAREN	# TransposeFunc
+		/**
 		  range(start, stop, step) - creates a range of values between start (inclusive) and stop (exclusive) using step. Use linspace if you want value count.
 		*/
 	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN	# RangeFunc
@@ -841,6 +845,14 @@ funcN:
 		*/
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc
 		/**
+		  stack(tensors, [dim]) - stacks a list of tensors along a new dimension
+		*/
+	| STACK LPAREN expr (COMMA expr)? RPAREN	# StackFunc
+		/**
+		  nonzero(x) - returns an N-by-rank tensor of coordinates for nonzero elements
+		*/
+	| NONZERO LPAREN expr RPAREN			# NonzeroFunc
+		/**
 		  get_changed_keys(d) - returns list of keys that were modified or added in ChangeTrackingDict d
 		*/
 	| GET_CHANGED_KEYS LPAREN expr RPAREN		# GetChangedKeysFunc
@@ -986,6 +998,7 @@ MAP: 'map';
 EZCONV: 'ezconvolution' | 'ezconv';
 CONV: 'convolution' | 'conv';
 SWAP: 'swap';
+TRANSPOSE: 'transpose' | 'swapaxes';
 PERM: 'permute' | 'perm';
 RESHAPE: 'reshape' | 'rshp';
 RANGE: 'range';
@@ -1064,6 +1077,8 @@ CLEAR: 'stack_clear';
 HAS: 'stack_has';
 GET: 'stack_get';
 CONCAT: 'cat'|'concat'|'concatenate';
+STACK: 'stack';
+NONZERO: 'nonzero';
 INT: 'int';
 FLOAT: 'float';
 

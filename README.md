@@ -261,7 +261,7 @@ You can also get the node from comfy manager under the name of More math.
 - `matmul(a, b)`: matrix multiplication.
 - `cross(a, b)`: cross product; last dimension must be `3`.
 - `trace(x)`: sum of the main diagonal of each square matrix.
-- `det(x)`: determinant of each square matrix.
+- `det(x)`: determinant of each square matrix. Singular square matrices return `0`; non-square inputs or inputs with fewer than two dimensions raise an error because their determinant is undefined.
 - `pinv(x)`: permutation inverse for permutation-like values.
 - `singular_value_decomposition(x,[full_matrices])`/`svd`: singular value decomposition.
 - `diagonal_matrix(x,shape,[offset],[dim1],[dim2])` / `diag`: create a diagonal matrix from a vector. The diagonal can be offset from the main diagonal using the `offset` parameter. The `dim1` and `dim2` parameters specify which dimensions to use for the diagonal.

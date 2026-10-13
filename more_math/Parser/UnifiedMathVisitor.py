@@ -1146,11 +1146,22 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitHypotFunc(self, ctx):
         return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.hypot, math.hypot, ctx)
 
+    def _logical_binary_tensor_op(self, a, b, operation):
+        if isinstance(a, torch.Tensor):
+            device = a.device
+        elif isinstance(b, torch.Tensor):
+            device = b.device
+        else:
+            return 1.0 if operation(bool(a), bool(b)) else 0.0
+        a = torch.as_tensor(a, device=device)
+        b = torch.as_tensor(b, device=device)
+        return operation(a, b).to(torch.float32)
+
     def visitLogicalAndFunc(self, ctx):
         return self._bin_op(
             (yield ctx.expr(0)),
             (yield ctx.expr(1)),
-            lambda a, b: torch.logical_and(a, b).to(torch.float32),
+            lambda a, b: self._logical_binary_tensor_op(a, b, torch.logical_and),
             lambda a, b: 1.0 if bool(a) and bool(b) else 0.0,
             ctx,
         )
@@ -1159,7 +1170,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._bin_op(
             (yield ctx.expr(0)),
             (yield ctx.expr(1)),
-            lambda a, b: torch.logical_or(a, b).to(torch.float32),
+            lambda a, b: self._logical_binary_tensor_op(a, b, torch.logical_or),
             lambda a, b: 1.0 if bool(a) or bool(b) else 0.0,
             ctx,
         )

@@ -50,13 +50,22 @@ def test_float8_operations_preserve_dtype(dtype_name):
     values = torch.tensor([1.0, 2.0], dtype=dtype)
     tensor_result = _visit("x * 2", {"x": values})
     unary_result = _visit("-x", {"x": values})
+    math_result = _visit("log2(x)", {"x": values})
+    hypot_result = _visit("hypot(3*x, 4*x)", {"x": values})
+    logical_result = _visit("logical_and(x, 1)", {"x": values})
     dict_result = _visit("V0 * 2", {"V0": ChangeTrackingDict({"weight": values})})
 
     assert tensor_result.dtype == dtype
     assert unary_result.dtype == dtype
+    assert math_result.dtype == dtype
+    assert hypot_result.dtype == dtype
+    assert logical_result.dtype == dtype
     assert dict_result["weight"].dtype == dtype
     assert torch.equal(tensor_result.float(), torch.tensor([2.0, 4.0]))
     assert torch.equal(unary_result.float(), torch.tensor([-1.0, -2.0]))
+    assert torch.equal(math_result.float(), torch.tensor([0.0, 1.0]))
+    assert torch.equal(hypot_result.float(), torch.tensor([5.0, 10.0]))
+    assert torch.equal(logical_result.float(), torch.tensor([1.0, 1.0]))
     assert torch.equal(dict_result["weight"].float(), torch.tensor([2.0, 4.0]))
 
 

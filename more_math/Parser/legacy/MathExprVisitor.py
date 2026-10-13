@@ -514,6 +514,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#CbrtFunc.
+    def visitCbrtFunc(self, ctx:MathExprParser.CbrtFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#ReciprocalFunc.
+    def visitReciprocalFunc(self, ctx:MathExprParser.ReciprocalFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#IsnanFunc.
     def visitIsnanFunc(self, ctx:MathExprParser.IsnanFuncContext):
         return self.visitChildren(ctx)
@@ -899,6 +909,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#LogaddexpFunc.
+    def visitLogaddexpFunc(self, ctx:MathExprParser.LogaddexpFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#LogicalAndFunc.
     def visitLogicalAndFunc(self, ctx:MathExprParser.LogicalAndFuncContext):
         return self.visitChildren(ctx)
@@ -969,6 +984,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#OuterFunc.
+    def visitOuterFunc(self, ctx:MathExprParser.OuterFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#CossimFunc.
     def visitCossimFunc(self, ctx:MathExprParser.CossimFuncContext):
         return self.visitChildren(ctx)
@@ -981,6 +1001,26 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#EndswithFunc.
     def visitEndswithFunc(self, ctx:MathExprParser.EndswithFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LogsumexpFunc.
+    def visitLogsumexpFunc(self, ctx:MathExprParser.LogsumexpFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RfftFunc.
+    def visitRfftFunc(self, ctx:MathExprParser.RfftFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#TraceFunc.
+    def visitTraceFunc(self, ctx:MathExprParser.TraceFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DetFunc.
+    def visitDetFunc(self, ctx:MathExprParser.DetFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -1244,6 +1284,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#IrfftFunc.
+    def visitIrfftFunc(self, ctx:MathExprParser.IrfftFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#OverlayFunc.
     def visitOverlayFunc(self, ctx:MathExprParser.OverlayFuncContext):
         return self.visitChildren(ctx)
@@ -1354,6 +1399,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#NormFunc.
+    def visitNormFunc(self, ctx:MathExprParser.NormFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#NormalizeFunc.
+    def visitNormalizeFunc(self, ctx:MathExprParser.NormalizeFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SMinFunc.
     def visitSMinFunc(self, ctx:MathExprParser.SMinFuncContext):
         return self.visitChildren(ctx)
@@ -1431,6 +1486,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#NoiseFunc.
     def visitNoiseFunc(self, ctx:MathExprParser.NoiseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PinkNoiseFunc.
+    def visitPinkNoiseFunc(self, ctx:MathExprParser.PinkNoiseFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#BrownNoiseFunc.
+    def visitBrownNoiseFunc(self, ctx:MathExprParser.BrownNoiseFuncContext):
         return self.visitChildren(ctx)
 
 

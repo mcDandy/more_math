@@ -217,6 +217,14 @@ func1:
 			  expm1(x) - applies exp(x)-1 accurately for values near zero
 			*/
 		| EXPM1 LPAREN expr RPAREN			# Expm1Func
+		/**
+		  cbrt(x) - computes the real cube root of each value, including negative values
+		*/
+		| CBRT LPAREN expr RPAREN			# CbrtFunc
+		/**
+		  reciprocal(x) - computes 1/x element-wise
+		*/
+		| RECIPROCAL LPAREN expr RPAREN		# ReciprocalFunc
 			/**
 			  isnan(x) - returns 1.0 for NaN values and 0.0 otherwise
 			*/
@@ -528,6 +536,10 @@ func2:
 		*/
 	| HYPOT LPAREN expr COMMA expr RPAREN			# HypotFunc
 		/**
+		  logaddexp(x, y) - computes log(exp(x) + exp(y)) element-wise using a numerically stable method
+		*/
+	| LOGADDEXP LPAREN expr COMMA expr RPAREN		# LogaddexpFunc
+		/**
 		  logical_and(x, y) - returns 1.0 if both values are non-zero, else 0.0
 		*/
 	| LOGICAL_AND LPAREN expr COMMA expr RPAREN		# LogicalAndFunc
@@ -584,6 +596,10 @@ func2:
 		*/
 	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
 		/**
+		  outer(x, y) - computes the outer product of flattened x and y
+		*/
+	| OUTER LPAREN expr COMMA expr RPAREN		# OuterFunc
+		/**
 		  cosine_similarity(x, y) - computes the cosine similarity between x and y.
 		*/
 	| COSSIM LPAREN expr COMMA expr RPAREN			# CossimFunc
@@ -595,6 +611,22 @@ func2:
 		  endswith(text, suffix) - returns 1 if text ends with suffix, else 0
 		*/
 	| ENDSWITH LPAREN expr COMMA expr RPAREN			# EndswithFunc
+		/**
+		  logsumexp(x, [dims]) - computes log(sum(exp(x))) stably, optionally reducing along one or more dimensions
+		*/
+	| LOGSUMEXP LPAREN expr (COMMA expr)? RPAREN		# LogsumexpFunc
+		/**
+		  rfft(x, [dim]) - computes the one-dimensional real-input FFT along dim (default: last dimension)
+		*/
+	| RFFT LPAREN expr (COMMA expr)? RPAREN		# RfftFunc
+		/**
+		  trace(x) - sums the main diagonal of each square matrix in x
+		*/
+	| TRACE LPAREN expr RPAREN			# TraceFunc
+		/**
+		  det(x) - computes the determinant of each square matrix in x
+		*/
+	| DET LPAREN expr RPAREN			# DetFunc
 		/**
 		  flip(x, dims) - reverses the order of elements along the specified dimensions. Works also for text and list with dims=0
 		*/
@@ -810,6 +842,10 @@ func3:
 		*/
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
 		/**
+		  irfft(x, [n], [dim]) - computes the inverse one-dimensional real FFT along dim (default: last dimension)
+		*/
+	| IRFFT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# IrfftFunc
+		/**
 		  overlay(base, overlay, offset, [opacity]) - overlays overlay on base at offset. Opacity controls blending. It can be tensor or float. If it is tensor it should be the same shape as overlay.
 		*/
 	| OVERLAY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# OverlayFunc
@@ -905,9 +941,17 @@ func5:
 // N-argument functions
 funcN:
 		/**
+		  norm(x, [p], [dims]) - computes the p-norm globally or along one or more dimensions (default p=2)
+		*/
+	NORM LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# NormFunc
+		/**
+		  normalize(x, [p], [dim], [eps]) - normalizes x along dim using the p-norm (defaults: p=2, dim=-1, eps=1e-12)
+		*/
+	| NORMALIZE LPAREN expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# NormalizeFunc
+		/**
 		  smin(x, ...) - computes the minimum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smin(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
 		*/
-	SMIN LPAREN expr (COMMA expr)* RPAREN		# SMinFunc
+	| SMIN LPAREN expr (COMMA expr)* RPAREN		# SMinFunc
 		/**
 		  smax(x, ...) - computes the maximum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smax(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
 		*/
@@ -970,6 +1014,14 @@ funcNoise:
 		  random_normal(seed, [shape]) - generates normally distributed random noise
 		*/
 	NOISE LPAREN expr (COMMA expr)? RPAREN				# NoiseFunc
+		/**
+		  pink_noise(seed, [shape]) - generates deterministic pink noise (approximately 1/f power spectrum), normalised per row
+		*/
+	| PINK_NOISE LPAREN expr (COMMA expr)? RPAREN		# PinkNoiseFunc
+		/**
+		  brown_noise(seed, [shape]) - generates deterministic brown noise (approximately 1/f^2 power spectrum), normalised per row
+		*/
+	| BROWN_NOISE LPAREN expr (COMMA expr)? RPAREN		# BrownNoiseFunc
 		/**
 		  random_uniform(seed, [shape]) - generates uniformly distributed random noise
 		*/
@@ -1066,6 +1118,17 @@ LOG2: 'log2';
 EXP: 'exp';
 LOG1P: 'log1p';
 EXPM1: 'expm1';
+CBRT: 'cbrt';
+RECIPROCAL: 'reciprocal';
+LOGADDEXP: 'logaddexp';
+LOGSUMEXP: 'logsumexp';
+NORM: 'norm';
+NORMALIZE: 'normalize';
+OUTER: 'outer';
+TRACE: 'trace';
+DET: 'det';
+RFFT: 'rfft';
+IRFFT: 'irfft';
 ISNAN: 'isnan';
 ISINF: 'isinf';
 ISFINITE: 'isfinite';
@@ -1263,6 +1326,8 @@ SCATTER: 'scatter';
 SCATTER_ADD: 'scatter_add';
 
 NOISE: 'noise' | 'randn' | 'random_normal';
+PINK_NOISE: 'pink_noise' | 'pink';
+BROWN_NOISE: 'brown_noise' | 'brown';
 RAND: 'rand' | 'randu' | 'random_uniform';
 CAUCHY: 'randc' | 'random_cauchy';
 EXPONENTIAL: 'rande' | 'random_exponential';

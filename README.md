@@ -109,6 +109,9 @@ You can also get the node from comfy manager under the name of More math.
 - `exp(x)`: exponential `e^x`.
 - `log1p(x)`: numerically stable `ln(1 + x)`.
 - `expm1(x)`: numerically stable `exp(x) - 1`.
+- `logaddexp(x, y)`: numerically stable `ln(exp(x) + exp(y))`, element-wise.
+- `cbrt(x)`: real cube root, including for negative values.
+- `reciprocal(x)`: element-wise `1 / x`.
 - `isnan(x)`: per-element NaN test.
 - `isinf(x)`: per-element infinity test.
 - `isfinite(x)`: per-element finite-value test.
@@ -180,6 +183,8 @@ You can also get the node from comfy manager under the name of More math.
 - `tmax(x, y)`: element-wise maximum.
 - `tnorm(x,[dim])`: L2 normalization along the last dimension. If dimension is provided, it uses this dimension. Dimension list can be provided.
 - `snorm(x, [dim])`: scalar/tensor norm magnitude. Frobenius norm along `dim` if specified (`dim` can be a single dimension or a list of dimensions); otherwise over the whole tensor.
+- `norm(x, [p], [dims])`: p-norm globally or along one or more dimensions; `p` defaults to `2`.
+- `normalize(x, [p], [dim], [eps])`: normalize each vector along `dim` (default `-1`); defaults to L2 and clamps the divisor to `eps` (`1e-12`).
 - `cossim(a, b)` / `cosine_similarity`: cosine similarity.
 - `cov(x, y)`: covariance.
 - `corr(x, y)` / `correlation`: Pearson correlation.
@@ -193,6 +198,7 @@ You can also get the node from comfy manager under the name of More math.
 - `std(x, [dims])`: sample standard deviation globally or along dimensions.
 - `var(x, [dims])`: sample variance globally or along dimensions.
 - `prod(x, [dims])`: product globally or along dimensions.
+- `logsumexp(x, [dims])`: numerically stable `log(sum(exp(x)))`, globally or along dimensions.
 - `median(x)`: median.
 - `mode(x)`: mode.
 - `quartile(x, k)` / `quartil`: quartile (`k` in `0..4`).
@@ -251,8 +257,11 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 2.5 Linear Algebra
 - `dot(a, b)`: dot product after flattening.
+- `outer(a, b)`: outer product of flattened inputs.
 - `matmul(a, b)`: matrix multiplication.
 - `cross(a, b)`: cross product; last dimension must be `3`.
+- `trace(x)`: sum of the main diagonal of each square matrix.
+- `det(x)`: determinant of each square matrix.
 - `pinv(x)`: permutation inverse for permutation-like values.
 - `singular_value_decomposition(x,[full_matrices])`/`svd`: singular value decomposition.
 - `diagonal_matrix(x,shape,[offset],[dim1],[dim2])` / `diag`: create a diagonal matrix from a vector. The diagonal can be offset from the main diagonal using the `offset` parameter. The `dim1` and `dim2` parameters specify which dimensions to use for the diagonal.
@@ -302,6 +311,8 @@ You can also get the node from comfy manager under the name of More math.
 ### 5) Frequency Domain (FFT)
 - `fft(x)`: fast Fourier transform across all dimensions.
 - `ifft(x, [shape])`: inverse FFT.
+- `rfft(x, [dim])`: real-input FFT along `dim` (defaults to the last dimension).
+- `irfft(x, [n], [dim])`: inverse real FFT; `n` and `dim` are optional.
 - `angle(x)`: phase angle of complex values.
 
 ---
@@ -326,6 +337,9 @@ You can also get the node from comfy manager under the name of More math.
 - `randw(seed, scale, concentration, [shape])` / `random_weibull`: Weibull distribution.
 - `randchi2(seed, df, [shape])` / `random_chi2`: chi-squared distribution.
 - `randt(seed, df, [shape])` / `random_studentt`: Student’s t distribution.
+- `pink_noise(seed, [shape])` / `pink`: deterministic pink noise with an approximately `1/f` power spectrum.
+- `brown_noise(seed, [shape])` / `brown`: deterministic brown noise with an approximately `1/f^2` power spectrum.
+- Pink and brown noise are normalized to zero mean and unit variance independently along the last dimension; shorter dimensions fall back to seeded white noise.
 
 #### 6.2 Procedural Noise
 - `perlin(seed, scale, [octaves, [offset, [shape]]])` / `perlin_noise`:

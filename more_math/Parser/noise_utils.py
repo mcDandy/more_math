@@ -8,6 +8,24 @@ import torch
 
 class NoiseUtils:
     @staticmethod
+    def colored_noise(shape, seed, device, beta):
+        generator = torch.Generator(device=device).manual_seed(seed)
+        white = torch.randn(tuple(shape), generator=generator, device=device)
+        if white.ndim == 0 or white.shape[-1] < 2 or white.numel() == 0:
+            return white
+
+        spectrum = torch.fft.rfft(white, dim=-1)
+        bin_count = spectrum.shape[-1]
+        frequencies = torch.arange(1, bin_count, dtype=torch.float32, device=device)
+        weights = torch.zeros(bin_count, dtype=torch.float32, device=device)
+        if bin_count > 1:
+            weights[1:] = frequencies.pow(-beta / 2.0)
+        colored = torch.fft.irfft(spectrum * weights, n=white.shape[-1], dim=-1)
+        colored = colored - colored.mean(dim=-1, keepdim=True)
+        scale = colored.std(dim=-1, unbiased=False, keepdim=True)
+        return torch.where(scale > 0, colored / scale.clamp_min(1e-8), torch.zeros_like(colored))
+
+    @staticmethod
     def _fade(t):
         """
         Optimalizovaná Perlinova fade křivka.

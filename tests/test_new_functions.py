@@ -152,6 +152,11 @@ def test_leaky_relu_and_softsign():
     assert eval_expr("softsign([-2, 0, 2])") == [-2.0 / 3.0, 0.0, 2.0 / 3.0]
     assert "leaky_relu" in INBUILT_FUNCTIONS and "softsign" in INBUILT_FUNCTIONS
 
+def test_tnorm_normalizes_lists():
+    torch.testing.assert_close(torch.tensor(eval_expr("tnorm([3, 4])")), torch.tensor([0.6, 0.8]))
+    torch.testing.assert_close(torch.tensor(eval_expr("tnorm([[3, 4], [0, 0]])")), torch.tensor([[0.6, 0.8], [0.0, 0.0]]))
+    torch.testing.assert_close(torch.tensor(eval_expr("tnorm([[3, 0], [0, 4]], 0)")), torch.tensor([[1.0, 0.0], [0.0, 1.0]]))
+
 if __name__ == "__main__":
     test_logic_functions()
     test_spatial_functions()

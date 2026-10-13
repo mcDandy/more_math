@@ -1048,6 +1048,12 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitExpm1Func(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.expm1, math.expm1)
 
+    def visitCbrtFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), lambda x: torch.sign(x) * torch.abs(x).pow(1.0 / 3.0), lambda x: math.copysign(abs(x) ** (1.0 / 3.0), x))
+
+    def visitReciprocalFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), torch.reciprocal, lambda x: 1.0 / x)
+
     def visitIsnanFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), lambda x: torch.isnan(x).to(torch.float32), lambda x: 1.0 if math.isnan(float(x)) else 0.0)
 
@@ -1140,7 +1146,40 @@ class UnifiedMathVisitor(MathExprVisitor):
             dim = self._to_int((yield ctx.expr(1)), ctx, "tnorm dimension")
         if self._is_tensor(val):
             return F.normalize(val, p=2, dim=dim)
+        if self._is_list(val):
+            return F.normalize(self._promote_to_tensor(val), p=2, dim=dim).tolist()
         return 1.0 if val != 0 else 0.0
+
+    def visitNormFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        p = float((yield ctx.expr(1))) if len(ctx.expr()) > 1 else 2.0
+        dim = None
+        if len(ctx.expr()) > 2:
+            dims = self._normalize_dims((yield ctx.expr(2)), val.ndim, ctx, "norm dimension")
+            dim = tuple(dims)
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes():
+            val = val.to(torch.float32)
+        result = torch.linalg.vector_norm(val, ord=p, dim=dim)
+        if original_dtype in self._float8_dtypes():
+            result = result.to(original_dtype)
+        return result.item() if result.numel() == 1 else result
+
+    def visitNormalizeFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        p = float((yield ctx.expr(1))) if len(ctx.expr()) > 1 else 2.0
+        dim = self._to_int((yield ctx.expr(2)), ctx, "normalize dimension") if len(ctx.expr()) > 2 else -1
+        eps = float((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 1e-12
+        if eps < 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: normalize eps must be non-negative")
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes():
+            val = val.to(torch.float32)
+        if val.ndim == 0:
+            result = val / torch.linalg.vector_norm(val, ord=p).clamp_min(eps)
+        else:
+            result = F.normalize(val, p=p, dim=dim, eps=eps)
+        return result.to(original_dtype) if original_dtype in self._float8_dtypes() else result
 
     def visitSNormFunc(self, ctx):
         val = (yield ctx.expr(0))
@@ -1165,6 +1204,14 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitHypotFunc(self, ctx):
         return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.hypot, math.hypot, ctx)
+
+    def visitLogaddexpFunc(self, ctx):
+        def scalar_logaddexp(a, b):
+            maximum = max(a, b)
+            if math.isinf(maximum):
+                return maximum
+            return maximum + math.log1p(math.exp(-abs(a - b)))
+        return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.logaddexp, scalar_logaddexp, ctx)
 
     def _logical_binary_tensor_op(self, a, b, operation):
         if isinstance(a, torch.Tensor):
@@ -1846,6 +1893,21 @@ class UnifiedMathVisitor(MathExprVisitor):
         finally:
             self.variables = old_vars
 
+    def visitRfftFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        dim = self._to_int((yield ctx.expr(1)), ctx, "rfft dimension", strict=True) if len(ctx.expr()) > 1 else -1
+        if val.dtype in self._float8_dtypes() or not (val.is_floating_point() or val.is_complex()):
+            val = val.to(torch.float32)
+        return torch.fft.rfft(val, dim=dim)
+
+    def visitIrfftFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        n = self._to_int((yield ctx.expr(1)), ctx, "irfft length", strict=True) if len(ctx.expr()) > 1 else None
+        dim = self._to_int((yield ctx.expr(2)), ctx, "irfft dimension", strict=True) if len(ctx.expr()) > 2 else -1
+        if val.dtype in self._float8_dtypes():
+            val = val.to(torch.complex64)
+        return torch.fft.irfft(val, n=n, dim=dim)
+
     def visitSifftFunc(self, ctx):
         old_vars = self.variables
         self.variables = self.variables.copy()
@@ -1932,6 +1994,21 @@ class UnifiedMathVisitor(MathExprVisitor):
                 res = self._reduce_tensor_along_dims(tsr, dims, lambda t, dim: torch.sum(t, dim=dim), ctx, "sum")
                 return res.item() if self._is_tensor(res) and res.numel() == 1 else res
         return self._reduction_op(val, torch.sum, sum)
+
+    def visitLogsumexpFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        dims = None
+        if len(ctx.expr()) > 1:
+            dims = tuple(self._normalize_dims((yield ctx.expr(1)), val.ndim, ctx, "logsumexp dimension"))
+        elif val.ndim > 0:
+            dims = tuple(range(val.ndim))
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes():
+            val = val.to(torch.float32)
+        result = val if dims is None else torch.logsumexp(val, dim=dims)
+        if original_dtype in self._float8_dtypes():
+            result = result.to(original_dtype)
+        return result.item() if result.numel() == 1 else result
 
     def visitProdFunc(self, ctx):
         val = (yield ctx.expr(0))
@@ -2181,6 +2258,39 @@ class UnifiedMathVisitor(MathExprVisitor):
         a = self._promote_to_tensor((yield ctx.expr(0)))
         b = self._promote_to_tensor((yield ctx.expr(1)))
         return float(torch.dot(a.flatten(), b.flatten()).item())
+
+    def visitOuterFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0))).flatten()
+        b = self._promote_to_tensor((yield ctx.expr(1))).flatten()
+        float8_dtypes = self._float8_dtypes()
+        output_dtype = a.dtype if a.dtype in float8_dtypes else b.dtype if b.dtype in float8_dtypes else None
+        if output_dtype is not None:
+            a = a.to(torch.float32)
+            b = b.to(torch.float32)
+        result = torch.outer(a, b)
+        return result.to(output_dtype) if output_dtype is not None else result
+
+    def visitTraceFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        if val.ndim < 2 or val.shape[-1] != val.shape[-2]:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: trace expects square matrices")
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes():
+            val = val.to(torch.float32)
+        result = torch.diagonal(val, dim1=-2, dim2=-1).sum(dim=-1)
+        if original_dtype in self._float8_dtypes():
+            result = result.to(original_dtype)
+        return result.item() if result.numel() == 1 else result
+
+    def visitDetFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr()))
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes():
+            val = val.to(torch.float32)
+        result = torch.linalg.det(val)
+        if original_dtype in self._float8_dtypes():
+            result = result.to(original_dtype)
+        return result.item() if result.numel() == 1 else result
 
     def visitMomentFunc(self,ctx):
         x = self._promote_to_tensor((yield ctx.expr(0)))
@@ -3373,6 +3483,22 @@ class UnifiedMathVisitor(MathExprVisitor):
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         generator = torch.Generator(device=self.device).manual_seed(seed)
         return torch.randn(shape_arg, generator=generator, device=self.device)
+
+    def visitPinkNoiseFunc(self, ctx):
+        seed = self._to_int((yield ctx.expr(0)), ctx, "pink_noise seed")
+        shape_arg = self.shape
+        if len(ctx.expr()) > 1:
+            shape_arg = (yield ctx.expr(1))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "pink_noise")
+        return NoiseUtils.colored_noise(shape_arg, seed, self.device, beta=1.0)
+
+    def visitBrownNoiseFunc(self, ctx):
+        seed = self._to_int((yield ctx.expr(0)), ctx, "brown_noise seed")
+        shape_arg = self.shape
+        if len(ctx.expr()) > 1:
+            shape_arg = (yield ctx.expr(1))
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "brown_noise")
+        return NoiseUtils.colored_noise(shape_arg, seed, self.device, beta=2.0)
 
     def visitRandFunc(self, ctx):
         seed_val = yield ctx.expr(0)

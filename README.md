@@ -199,7 +199,10 @@ You can also get the node from comfy manager under the name of More math.
 - `botk_ind(x, k)` / `botk_indices`: global bottom-k indices from `flatten()`.
 - `unique(x)`: sorted unique values for tensors and lists.
 - `where(cond, a, b)`: tensor broadcasting for tensor inputs; recursive truthy selection for lists/scalars.
-- `histogram(x, bins, min, max)` / `hist`: histogram counts from `flatten()` in the given interval.
+- `histogram(x, bins, min, max)` / `hist`: histogram counts from `flatten()` in the given interval
+- `gather(tensor, dim, indices)`: gather values along `dim` using `indices`
+- `scatter(tensor, dim, indices)`: scatter values along `dim` using `indices`
+- `scatter_add(tensor, dim, indices)`: scatter-add values along `dim` using `indices`
 
 #### 2.4 Shape / Structure / Layout
 - `shape(x)`: returns shape as a Python list.

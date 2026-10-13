@@ -2880,7 +2880,14 @@ class UnifiedMathVisitor(MathExprVisitor):
             elif sys_platform == "Darwin":
                 search_dirs = ["/Library/Fonts", "/System/Library/Fonts", os.path.expanduser("~/Library/Fonts")]
             else:
-                search_dirs = ["/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts")]
+                xdg_data_home = os.environ.get("XDG_DATA_HOME", "~/.local/share")
+                search_dirs = [
+                    "/usr/share/fonts",
+                    "/usr/local/share/fonts",
+                    os.path.join(os.path.expanduser(xdg_data_home), "fonts"),
+                    os.path.expanduser("~/.local/share/fonts"),
+                    os.path.expanduser("~/.fonts"),
+                ]
 
             name_clean = _normalise_font_name(name)
             wants_italic = "italic" in target_style
@@ -2928,7 +2935,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     continue
                 for root, _, files in os.walk(directory):
                     for fname in files:
-                        if not fname.lower().endswith((".ttf", ".otf")):
+                        if not fname.lower().endswith((".ttf", ".otf", ".ttc", ".otc")):
                             continue
 
                         full_path = os.path.join(root, fname)

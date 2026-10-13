@@ -5422,3 +5422,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         index = self._promote_to_tensor((yield ctx.expr(2))).long()
         src = self._promote_to_tensor((yield ctx.expr(3)))
         return torch.scatter_add(x, dim, index, src)
+
+    def visitGatherFunc(self, ctx):
+        """gather(x, dim, index) - gather values along an axis"""
+        x = self._promote_to_tensor((yield ctx.expr(0)))
+        dim_val = yield ctx.expr(1)
+        dim = self._to_int(dim_val, ctx, "gather dim", strict=True)
+        index = self._promote_to_tensor((yield ctx.expr(2))).long()
+        return torch.gather(x, dim, index)

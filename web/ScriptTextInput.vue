@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mrmth-editor"
+    class="mrmth-editor mrmth-editor-v2"
     data-mrmth-script-widget="vue"
     ref="wrapperRef"
     :style="editorStyle"
@@ -323,11 +323,8 @@ const refresh = () => {
 
     prevOffset.value = baselineDelta;
 
-    const halfLineCorrection = lhPx / 2;
-    const adjustedBaseline = baselineDelta - halfLineCorrection;
-
     // Apply translation to gutter
-    gutterContent.style.transform = `translateY(${adjustedBaseline - scrollTop.value}px)`;
+    gutterContent.style.transform = `translateY(${baselineDelta - scrollTop.value}px)`;
 
     const parent = wrapperRef.value?.parentElement;
     if (parent && parent.clientHeight > 0) {
@@ -356,9 +353,7 @@ const onScroll = () => {
   }
 
   if (gutterContent) {
-    const halfLineCorrection = (parseFloat(textareaStyles.value.lineHeight) || 17.4) / 2;
-    const adjustedBaseline = prevOffset.value - halfLineCorrection;
-    gutterContent.style.transform = `translateY(${adjustedBaseline - textarea.scrollTop}px)`;
+    gutterContent.style.transform = `translateY(${prevOffset.value - textarea.scrollTop}px)`;
   }
 };
 

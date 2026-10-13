@@ -383,7 +383,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         if (!gutterFirstLine) baselineDelta = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0);
 
         // Clamp and smooth extreme jumps to avoid the gutter flying away on transient layout changes
-        const prevOffset = parseFloat(gutterContent.dataset.mrmthOffset || "0");
+        const prevOffset = parseFloat(gutterContent.dataset.mrmthBaselineDelta || "0");
         let stableCount = parseInt(gutterContent.dataset.mrmthStableCount || "0", 10) || 0;
         const locked = gutterContent.dataset.mrmthLocked === "1";
         const maxJumpPerFrame = 20; // px
@@ -444,13 +444,11 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             });
         }
 
-        // Apply half-line correction: shift gutter up by half the line height so numbers align with text baseline
-        const parsedLHFinal = parseFloat(cs.lineHeight);
-        const lineHUsedFinal = Number.isFinite(parsedLHFinal) && parsedLHFinal > 0 ? parsedLHFinal : lineHeightPx;
-        const halfLineCorrection = lineHUsedFinal / 2;
-        const adjustedBaseline = baselineDelta - halfLineCorrection;
+        // The measured baseline delta already aligns the gutter with the text baseline.
+        const adjustedBaseline = baselineDelta;
 
         // Apply transform on next frame to avoid layout thrash
+        gutterContent.dataset.mrmthBaselineDelta = String(baselineDelta);
         gutterContent.dataset.mrmthOffset = String(adjustedBaseline);
         requestAnimationFrame(() => {
             gutterContent.style.transform = `translateY(${adjustedBaseline - textarea.scrollTop}px)`;

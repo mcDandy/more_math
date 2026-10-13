@@ -494,6 +494,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#Log2Func.
+    def visitLog2Func(self, ctx:MathExprParser.Log2FuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#ExpFunc.
     def visitExpFunc(self, ctx:MathExprParser.ExpFuncContext):
         return self.visitChildren(ctx)
@@ -586,6 +591,21 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#SignFunc.
     def visitSignFunc(self, ctx:MathExprParser.SignFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#DegreesFunc.
+    def visitDegreesFunc(self, ctx:MathExprParser.DegreesFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RadiansFunc.
+    def visitRadiansFunc(self, ctx:MathExprParser.RadiansFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LogicalNotFunc.
+    def visitLogicalNotFunc(self, ctx:MathExprParser.LogicalNotFuncContext):
         return self.visitChildren(ctx)
 
 
@@ -866,6 +886,21 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#Atan2Func.
     def visitAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#HypotFunc.
+    def visitHypotFunc(self, ctx:MathExprParser.HypotFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LogicalAndFunc.
+    def visitLogicalAndFunc(self, ctx:MathExprParser.LogicalAndFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LogicalOrFunc.
+    def visitLogicalOrFunc(self, ctx:MathExprParser.LogicalOrFuncContext):
         return self.visitChildren(ctx)
 
 

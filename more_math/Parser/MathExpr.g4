@@ -202,6 +202,10 @@ func1:
 		*/
 	| LOG LPAREN expr RPAREN			# LogFunc
 		/**
+		  log2(x) - applies base 2 logarithm to value (per element). Negative numbers return NaN (not a number)
+		*/
+	| LOG2 LPAREN expr RPAREN			# Log2Func
+		/**
 		  exp(x) - applies e^x to value (per element)
 		*/
 		| EXP LPAREN expr RPAREN			# ExpFunc
@@ -277,6 +281,18 @@ func1:
 		  sign(x) - returns the sign of x: -1, 0, or 1
 		*/
 	| SIGN LPAREN expr RPAREN			# SignFunc
+		/**
+	  degrees(x) - converts radians to degrees (per element)
+	*/
+	| DEGREES LPAREN expr RPAREN			# DegreesFunc
+		/**
+	  radians(x) - converts degrees to radians (per element)
+	*/
+	| RADIANS LPAREN expr RPAREN			# RadiansFunc
+		/**
+	  logical_not(x) - returns 1.0 where x is zero and 0.0 otherwise
+	*/
+	| LOGICAL_NOT LPAREN expr RPAREN		# LogicalNotFunc
 		/**
 		  print_shape(x) - prints the shape of the tensor x
 		*/
@@ -503,6 +519,18 @@ func2:
 		  atan2(y, x) - computes the arc tangent of y/x, using the signs of both arguments to determine the quadrant
 		*/
 	| ATAN2 LPAREN expr COMMA expr RPAREN			# Atan2Func
+		/**
+		  hypot(x, y) - computes the element-wise Euclidean distance from the origin
+		*/
+	| HYPOT LPAREN expr COMMA expr RPAREN			# HypotFunc
+		/**
+		  logical_and(x, y) - returns 1.0 if both values are non-zero, else 0.0
+		*/
+	| LOGICAL_AND LPAREN expr COMMA expr RPAREN		# LogicalAndFunc
+		/**
+		  logical_or(x, y) - returns 1.0 if either value is non-zero, else 0.0
+		*/
+	| LOGICAL_OR LPAREN expr COMMA expr RPAREN		# LogicalOrFunc
 		/**
 		  isclose(a, b, [rtol], [atol]) - elementwise approximate equality test
 		*/
@@ -998,6 +1026,7 @@ ABS: 'abs';
 SQRT: 'sqrt';
 LN: 'ln';
 LOG: 'log';
+LOG2: 'log2';
 EXP: 'exp';
 LOG1P: 'log1p';
 EXPM1: 'expm1';
@@ -1031,6 +1060,12 @@ RELU: 'relu';
 SOFTPLUS: 'softplus';
 GELU: 'gelu';
 SIGN: 'sign';
+DEGREES: 'degrees';
+RADIANS: 'radians';
+LOGICAL_NOT: 'logical_not';
+LOGICAL_AND: 'logical_and';
+LOGICAL_OR: 'logical_or';
+HYPOT: 'hypot';
 MAP: 'map';
 EZCONV: 'ezconvolution' | 'ezconv';
 CONV: 'convolution' | 'conv';

@@ -105,6 +105,7 @@ You can also get the node from comfy manager under the name of More math.
 - `sqrt(x)`: square root.
 - `ln(x)`: natural logarithm.
 - `log(x)`: base-10 logarithm.
+- `log2(x)`: base-2 logarithm.
 - `exp(x)`: exponential `e^x`.
 - `log1p(x)`: numerically stable `ln(1 + x)`.
 - `expm1(x)`: numerically stable `exp(x) - 1`.
@@ -123,6 +124,7 @@ You can also get the node from comfy manager under the name of More math.
 - `clamp(x, min, max)`: clamp to interval.
 - `step(x, edge)`: returns `1` when `x >= edge`, otherwise `0`.
 - `dist(x1, y1, x2, y2)` / `distance`: Euclidean distance between 2D points.
+- `hypot(x, y)`: element-wise Euclidean distance from the origin, computed robustly as `sqrt(x*x + y*y)`.
 
 #### 1.2 Trigonometric
 - `sin(x)`: sine in radians.
@@ -132,6 +134,8 @@ You can also get the node from comfy manager under the name of More math.
 - `acos(x)`: inverse cosine.
 - `atan(x)`: inverse tangent.
 - `atan2(y, x)`: quadrant-aware inverse tangent.
+- `degrees(x)`: convert radians to degrees.
+- `radians(x)`: convert degrees to radians.
 
 #### 1.3 Hyperbolic
 - `sinh(x)`: hyperbolic sine.
@@ -151,7 +155,12 @@ You can also get the node from comfy manager under the name of More math.
 - `erf(x)`: error function.
 - `erfinv(x)`: inverse error function.
 
-#### 1.5 Interpolation & Remap
+#### 1.5 Logical
+- `logical_not(x)`: element-wise logical NOT; returns `1.0` where `x` is zero and `0.0` otherwise.
+- `logical_and(x, y)`: element-wise logical AND; returns `1.0` where both values are non-zero and `0.0` otherwise.
+- `logical_or(x, y)`: element-wise logical OR; returns `1.0` where either value is non-zero and `0.0` otherwise.
+
+#### 1.6 Interpolation & Remap
 - `lerp(a, b, t)`: linear interpolation.
 - `smoothstep(x, e0, e1)`: 3rd-order smooth transition.
 - `smootherstep(x, e0, e1)`: 5th-order smoother transition.

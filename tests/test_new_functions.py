@@ -1,6 +1,7 @@
 import torch
 import sys
 import os
+import math
 
 # Ensure test runner usage (Visual Studio) can import the package regardless of working dir.
 _here = os.path.abspath(os.path.dirname(__file__))
@@ -9,6 +10,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from more_math.Parser.inbuilt_symbols import INBUILT_FUNCTIONS
 from more_math.helper_functions import parse_expr
 
 def eval_expr(expr, variables={}, shape=(1,)):
@@ -80,6 +82,32 @@ def test_lerp_fix():
     res2 = eval_expr("lerp([0, 10, 20], [10, 20, 30], [0.5, 0.5, 0.5])")
     # Expected: [5, 15, 25]
     assert res2 == [5.0, 15.0, 25.0]
+
+def test_added_math_and_logical_functions():
+    added_functions = {
+        "logical_not", "logical_and", "logical_or", "degrees", "radians", "log2", "hypot"
+    }
+    assert added_functions <= INBUILT_FUNCTIONS
+
+    assert eval_expr("logical_not(0)") == 1.0
+    assert eval_expr("logical_not(-2)") == 0.0
+    assert eval_expr("logical_and(2, 1)") == 1.0
+    assert eval_expr("logical_and(2, 0)") == 0.0
+    assert eval_expr("logical_or(0, -1)") == 1.0
+    assert eval_expr("logical_or(0, 0)") == 0.0
+
+    assert math.isclose(eval_expr("degrees(pi)"), 180.0, rel_tol=1e-6)
+    assert math.isclose(eval_expr("radians(180)"), math.pi, rel_tol=1e-6)
+    assert eval_expr("log2(8)") == 3.0
+    assert eval_expr("hypot(3, 4)") == 5.0
+
+    assert eval_expr("logical_and([1, 0], [1, 1])") == [1.0, 0.0]
+    assert eval_expr("logical_or([0, 0], [1, 0])") == [1.0, 0.0]
+    assert eval_expr("logical_not([0, 1])") == [1.0, 0.0]
+    assert torch.allclose(eval_expr("log2(T)", {"T": torch.tensor([1.0, 2.0, 8.0])}), torch.tensor([0.0, 1.0, 3.0]))
+    assert torch.allclose(eval_expr("hypot(A, B)", {"A": torch.tensor([3.0, 5.0]), "B": torch.tensor([4.0, 12.0])}), torch.tensor([5.0, 13.0]))
+    assert torch.allclose(eval_expr("logical_or(A, B)", {"A": torch.tensor([0.0, 1.0]), "B": torch.tensor([0.0, 0.0])}), torch.tensor([0.0, 1.0]))
+    assert torch.allclose(eval_expr("degrees(T)", {"T": torch.tensor([0.0, math.pi])}), torch.tensor([0.0, 180.0]))
 
 if __name__ == "__main__":
     test_logic_functions()

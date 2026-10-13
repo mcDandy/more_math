@@ -881,6 +881,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#Log2Func.
+    def enterLog2Func(self, ctx:MathExprParser.Log2FuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#Log2Func.
+    def exitLog2Func(self, ctx:MathExprParser.Log2FuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#ExpFunc.
     def enterExpFunc(self, ctx:MathExprParser.ExpFuncContext):
         pass
@@ -1049,6 +1058,33 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#SignFunc.
     def exitSignFunc(self, ctx:MathExprParser.SignFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#DegreesFunc.
+    def enterDegreesFunc(self, ctx:MathExprParser.DegreesFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DegreesFunc.
+    def exitDegreesFunc(self, ctx:MathExprParser.DegreesFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RadiansFunc.
+    def enterRadiansFunc(self, ctx:MathExprParser.RadiansFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RadiansFunc.
+    def exitRadiansFunc(self, ctx:MathExprParser.RadiansFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogicalNotFunc.
+    def enterLogicalNotFunc(self, ctx:MathExprParser.LogicalNotFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogicalNotFunc.
+    def exitLogicalNotFunc(self, ctx:MathExprParser.LogicalNotFuncContext):
         pass
 
 
@@ -1553,6 +1589,33 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#Atan2Func.
     def exitAtan2Func(self, ctx:MathExprParser.Atan2FuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#HypotFunc.
+    def enterHypotFunc(self, ctx:MathExprParser.HypotFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#HypotFunc.
+    def exitHypotFunc(self, ctx:MathExprParser.HypotFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogicalAndFunc.
+    def enterLogicalAndFunc(self, ctx:MathExprParser.LogicalAndFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogicalAndFunc.
+    def exitLogicalAndFunc(self, ctx:MathExprParser.LogicalAndFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LogicalOrFunc.
+    def enterLogicalOrFunc(self, ctx:MathExprParser.LogicalOrFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LogicalOrFunc.
+    def exitLogicalOrFunc(self, ctx:MathExprParser.LogicalOrFuncContext):
         pass
 
 

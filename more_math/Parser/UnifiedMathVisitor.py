@@ -1036,6 +1036,9 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitLogFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.log10, math.log10)
 
+    def visitLog2Func(self, ctx):
+        return self._unary_op((yield ctx.expr()), torch.log2, math.log2)
+
     def visitExpFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.exp, math.exp)
 
@@ -1065,6 +1068,19 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitSignFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.sign, lambda x: (1.0 if x > 0 else (-1.0 if x < 0 else 0.0)))
+
+    def visitDegreesFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), torch.rad2deg, math.degrees)
+
+    def visitRadiansFunc(self, ctx):
+        return self._unary_op((yield ctx.expr()), torch.deg2rad, math.radians)
+
+    def visitLogicalNotFunc(self, ctx):
+        return self._unary_op(
+            (yield ctx.expr()),
+            lambda x: torch.logical_not(x).to(torch.float32),
+            lambda x: 0.0 if bool(x) else 1.0,
+        )
 
     def visitFractFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), lambda x: x - torch.floor(x), lambda x: x - math.floor(x))
@@ -1126,6 +1142,27 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitAtan2Func(self, ctx):
         return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.atan2, math.atan2,ctx)
+
+    def visitHypotFunc(self, ctx):
+        return self._bin_op((yield ctx.expr(0)), (yield ctx.expr(1)), torch.hypot, math.hypot, ctx)
+
+    def visitLogicalAndFunc(self, ctx):
+        return self._bin_op(
+            (yield ctx.expr(0)),
+            (yield ctx.expr(1)),
+            lambda a, b: torch.logical_and(a, b).to(torch.float32),
+            lambda a, b: 1.0 if bool(a) and bool(b) else 0.0,
+            ctx,
+        )
+
+    def visitLogicalOrFunc(self, ctx):
+        return self._bin_op(
+            (yield ctx.expr(0)),
+            (yield ctx.expr(1)),
+            lambda a, b: torch.logical_or(a, b).to(torch.float32),
+            lambda a, b: 1.0 if bool(a) or bool(b) else 0.0,
+            ctx,
+        )
 
     def visitIscloseFunc(self, ctx):
         a = yield ctx.expr(0)

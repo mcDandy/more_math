@@ -2,6 +2,7 @@ import sys
 import os
 import torch
 import math
+import pytest
 
 # Ensure we can import the module
 _here = os.path.abspath(os.path.dirname(__file__))
@@ -12,8 +13,10 @@ if _project_root not in sys.path:
 
 # Import visitor
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from more_math.Parser.MathExprLexer import MathExprLexer
-from more_math.Parser.MathExprParser import MathExprParser
+from more_math.Parser.antlr_router import get_antlr_modules
+from more_math.helper_functions import parse_expr
+
+MathExprLexer, MathExprParser, _ = get_antlr_modules()
 from antlr4 import InputStream, CommonTokenStream
 
 
@@ -32,6 +35,22 @@ def parse_and_visit(expr_str, variables):
     shape = (1, 1, 1, 1)  # Dummy shape
     visitor = UnifiedMathVisitor(variables, shape)
     return visitor.visit(tree)
+
+
+def test_csharp_operator_precedence():
+    assert parse_and_visit("a + b << c", {"a": 1, "b": 2, "c": 1}) == 6
+    assert parse_and_visit("2 == 1 < 2", {}) == 0.0
+
+
+def test_rgb_conversion_dispatch():
+    assert parse_and_visit("int_to_rgb(16711680)", {}) == [255 / 256, 0, 0]
+    assert parse_and_visit("rgb_to_int([1, 0, 0])", {}) == 0xFF0000
+
+
+def test_map_rejects_more_than_three_coordinates():
+    parse_expr("map(t, x, y, z)")
+    with pytest.raises(ValueError, match="Syntax error"):
+        parse_expr("map(t, x, y, z, w)")
 
 
 def test_scalar_ops():

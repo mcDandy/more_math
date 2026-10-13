@@ -10,9 +10,10 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from more_math.Parser.MathExprLexer import MathExprLexer
-from more_math.Parser.MathExprParser import MathExprParser
+from more_math.Parser.antlr_router import get_antlr_modules
 from antlr4 import InputStream, CommonTokenStream
+
+MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
 def parse_and_visit(expr_str, variables):
     lexer = MathExprLexer(InputStream(expr_str))

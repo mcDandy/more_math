@@ -30,9 +30,8 @@ def test_mixed_dtype_operations():
     a_int8 = torch.tensor([15, 7, 3], dtype=torch.int8)
     visitor = UnifiedMathVisitor({"a": a_int8})
     result = visitor._bitwise_not(a_int8)
-    print(f"   Input:  {a_int8} (dtype={a_int8.dtype})")
-    print(f"   ~Input: {result} (dtype={result.dtype})")
     assert result.dtype == torch.int8
+    assert torch.equal(result, torch.bitwise_not(a_int8))
 
     # int16 operations
     print("\n2. INT16 Bitwise Operations:")
@@ -50,24 +49,26 @@ def test_mixed_dtype_operations():
     print(f"   a | b: {result_or}")
     print(f"   a ^ b: {result_xor}")
     assert all(t.dtype == torch.int16 for t in [result_and, result_or, result_xor])
+    assert torch.equal(result_and, torch.tensor([15, 31, 7], dtype=torch.int16))
+    assert torch.equal(result_or, torch.tensor([255, 127, 63], dtype=torch.int16))
+    assert torch.equal(result_xor, torch.tensor([240, 96, 56], dtype=torch.int16))
 
     # fp16 operations
     print("\n3. FP16 Bitwise Operations (bit-level manipulation):")
     a_fp16 = torch.tensor([1.0, -2.0, 3.5], dtype=torch.float16)
     visitor = UnifiedMathVisitor({"a": a_fp16})
     result = visitor._bitwise_not(a_fp16)
-    print(f"   Input:         {a_fp16} (dtype={a_fp16.dtype})")
-    print(f"   Bit-flipped:   {result} (dtype={result.dtype})")
     assert result.dtype == torch.float16
+    expected = torch.bitwise_not(a_fp16.view(torch.int16)).view(torch.float16)
+    assert torch.equal(result, expected)
 
     # int32 operations (existing, should still work)
     print("\n4. INT32 Bitwise Operations (backward compatibility):")
     a_int32 = torch.tensor([65535, 32767, 16383], dtype=torch.int32)
     visitor = UnifiedMathVisitor({"a": a_int32})
     result = visitor._bitwise_not(a_int32)
-    print(f"   Input:  {a_int32} (dtype={a_int32.dtype})")
-    print(f"   ~Input: {result} (dtype={result.dtype})")
     assert result.dtype == torch.int32
+    assert torch.equal(result, torch.bitwise_not(a_int32))
 
     print("\n" + "=" * 70)
     print("✓ All mixed dtype operations completed successfully!")
@@ -95,28 +96,28 @@ def test_scalar_list_tensor_combinations():
     a = torch.tensor([7, 14, 21], dtype=torch.int16)
     b = torch.tensor([3, 5, 7], dtype=torch.int16)
     result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
-    print(f"   {a} & {b} = {result}")
+    assert torch.equal(result, torch.tensor([3, 4, 5], dtype=torch.int16))
 
     # Tensor & List
     print("\n2. Tensor & List (mixed):")
     a = torch.tensor([15, 14, 13], dtype=torch.int16)
     b = [7, 3, 1]
     result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
-    print(f"   Tensor({a}) & List({b}) = {result}")
+    assert torch.equal(result, torch.tensor([7, 2, 1], dtype=torch.int16))
 
     # Scalar & List
     print("\n3. Scalar & List:")
     a = 15
     b = [7, 3, 1]
     result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
-    print(f"   {a} & {b} = {result}")
+    assert result == [7, 3, 1]
 
     # List & List
     print("\n4. List & List:")
     a = [15, 14, 13]
     b = [7, 3, 1]
     result = visitor._bitwise_op(a, b, torch.bitwise_and, lambda x, y: x & y, ctx)
-    print(f"   {a} & {b} = {result}")
+    assert result == [7, 2, 1]
 
     print("\n" + "=" * 70)
     print("✓ All scalar/list/tensor combinations work correctly!")
@@ -153,12 +154,17 @@ def test_element_size_mapping():
         elif elem_size == 2:
             expected_view = "int16"
         elif elem_size == 4:
-            expected_view = "int32"
+            expected_view = torch.int32
         else:
-            expected_view = "int64"
+            expected_view = torch.int64
+        if elem_size == 1:
+            expected_view = torch.int8
+        elif elem_size == 2:
+            expected_view = torch.int16
 
         print(f"  {name:12} -> {elem_size} byte(s) -> {str(view_dtype):18}")
         assert elem_size == expected_elem_size
+        assert view_dtype == expected_view
 
     print("\n" + "=" * 70)
     print("✓ Element size mapping is correct!")

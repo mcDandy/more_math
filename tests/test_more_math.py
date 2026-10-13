@@ -42,7 +42,7 @@ def test_conditioning_math_node_initialization():
 def test_conditioning_math_node_metadata():
     assert ConditioningMathNode.RETURN_TYPES == ["CONDITIONING", "STACK"]
     assert ConditioningMathNode.FUNCTION == "EXECUTE_NORMALIZED"
-    assert ConditioningMathNode.CATEGORY == "More math"
+    assert ConditioningMathNode.CATEGORY == "More math/math"
 
 
 def test_latent_math_node_initialization():
@@ -53,7 +53,7 @@ def test_latent_math_node_initialization():
 def test_latent_math_node_metadata():
     assert LatentMathNode.RETURN_TYPES == ["LATENT", "STACK"]
     assert LatentMathNode.FUNCTION == "EXECUTE_NORMALIZED"
-    assert LatentMathNode.CATEGORY == "More math"
+    assert LatentMathNode.CATEGORY == "More math/math"
 
 
 def test_image_math_node_initialization():
@@ -64,7 +64,7 @@ def test_image_math_node_initialization():
 def test_image_math_node_metadata():
     assert ImageMathNode.RETURN_TYPES == ["IMAGE", "STACK"]
     assert ImageMathNode.FUNCTION == "EXECUTE_NORMALIZED"
-    assert ImageMathNode.CATEGORY == "More math"
+    assert ImageMathNode.CATEGORY == "More math/math"
 
 
 # ==========================================

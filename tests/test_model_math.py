@@ -49,7 +49,7 @@ def test_model_math_simple_add():
     expr = "a + b"
 
     # Execute
-    result_tuple = ModelMathNode.execute(Expression=expr, V={"V0": a, "V1": b}, F={})
+    result_tuple = ModelMathNode.execute(Expression=expr, V={"V0": a, "V1": b}, F={}, use_compute_device=False)
     result_model = result_tuple[0]
 
     # Verify patches
@@ -81,7 +81,7 @@ def test_model_math_zero_default():
     # diff = 10 - 10 = 0.
     # Should skip patch.
 
-    result_tuple = ModelMathNode.execute(Expression="a + b", V={"V0": a}, F={})
+    result_tuple = ModelMathNode.execute(Expression="a + b", V={"V0": a}, F={}, use_compute_device=False)
     result_model = result_tuple[0]
 
     assert len(result_model.patches) == 0
@@ -94,7 +94,7 @@ def test_model_math_custom_formula():
     # expr: a * w
     # w input = 0.5
 
-    result_tuple = ModelMathNode.execute(Expression="a * w", V={"V0": a}, F={"F0": 0.5})
+    result_tuple = ModelMathNode.execute(Expression="a * w", V={"V0": a}, F={"F0": 0.5}, use_compute_device=False)
     result_model = result_tuple[0]
 
     # res = 2.0 * 0.5 = 1.0
@@ -113,8 +113,8 @@ def test_model_math_device_mismatch():
     # But we can verify that the scalar created by visitor.visitNumberExp has the same device as 'a'.
 
     from antlr4 import InputStream, CommonTokenStream
-    from more_math.Parser.MathExprLexer import MathExprLexer
-    from more_math.Parser.MathExprParser import MathExprParser
+    from more_math.Parser.antlr_router import get_antlr_modules
+    MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
     # Mock a tensor with a mocked .device property if we can't use real devices
     # But torch tensors created with torch.tensor are real.
@@ -168,7 +168,7 @@ def test_clip_math():
     sd_a = {"text_model.encoder.layers.0.mlp.fc1.weight": torch.tensor([1.0])}
     clip_a = MockPatcherContainer(sd_a)
 
-    result_tuple = CLIPMathNode.execute(Expression="a * 2", V={"V0": clip_a}, F={})
+    result_tuple = CLIPMathNode.execute(Expression="a * 2", V={"V0": clip_a}, F={}, use_compute_device=False)
     result_clip = result_tuple[0]
 
     # 1.0 * 2 = 2.0. diff = 1.0.
@@ -193,7 +193,7 @@ def test_vae_math():
 
     vae_a = MockVAE(sd_a)
 
-    result_tuple = VAEMathNode.execute(Expression="a + 1", V={"V0": vae_a}, F={})
+    result_tuple = VAEMathNode.execute(Expression="a + 1", V={"V0": vae_a}, F={}, use_compute_device=False)
     result_vae = result_tuple[0]
 
     # Check if result is a copy (not same object)
@@ -224,7 +224,7 @@ def test_model_math_disjoint_keys():
     # common: 1 + 2 = 3. diff = 2.
     # extra_b: should NOT be in patches because loop is over 'a'
 
-    result_tuple = ModelMathNode.execute(Expression="a + b", V={"V0": a.patcher, "V1": b.patcher}, F={})
+    result_tuple = ModelMathNode.execute(Expression="a + b", V={"V0": a.patcher, "V1": b.patcher}, F={}, use_compute_device=False)
     patches = result_tuple[0].patches
 
     assert "common" in patches
@@ -246,7 +246,7 @@ def test_model_math_weighted_merge():
     # expr: lerp(a, b, w) with w=0.5 -> 15.0
     # diff = 15 - 10 = 5.
 
-    result_tuple = ModelMathNode.execute(Expression="lerp(a, b, w)", V={"V0": a.patcher, "V1": b.patcher}, F={"F0": 0.5})
+    result_tuple = ModelMathNode.execute(Expression="lerp(a, b, w)", V={"V0": a.patcher, "V1": b.patcher}, F={"F0": 0.5}, use_compute_device=False)
     patches = result_tuple[0].patches
 
     assert "w" in patches
@@ -267,7 +267,7 @@ def test_model_math_3_way_merge():
     # Expected: 1 + 2 + 3 = 6.
     # Diff vs a (1.0) = 5.0.
 
-    result_tuple = ModelMathNode.execute(Expression="a + b + c", V={"V0": a.patcher, "V1": b.patcher, "V2": c.patcher}, F={})
+    result_tuple = ModelMathNode.execute(Expression="a + b + c", V={"V0": a.patcher, "V1": b.patcher, "V2": c.patcher}, F={}, use_compute_device=False)
     patches = result_tuple[0].patches
 
     assert "w" in patches

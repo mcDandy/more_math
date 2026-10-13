@@ -608,6 +608,12 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         # Handle slice expressions - all cases with colons
         exprs = slice_elem_ctx.expr() if hasattr(slice_elem_ctx, 'expr') else []
+        if exprs is None:
+            exprs = []
+        elif isinstance(exprs, tuple):
+            exprs = list(exprs)
+        elif not isinstance(exprs, list):
+            exprs = [exprs]
 
         start = None
         stop = None
@@ -4817,6 +4823,10 @@ class UnifiedMathVisitor(MathExprVisitor):
             for v in val:
                 t.append(self.i2rgb(v))
             return t
+        if self._is_tensor(val):
+            val = val.to(torch.int64)
+        else:
+            val = int(val)
         r = (val >> 16) & 0xFF
         g = (val >> 8) & 0xFF
         b = val & 0xFF

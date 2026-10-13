@@ -7,9 +7,10 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
+from more_math.Parser.antlr_router import get_antlr_modules
 import antlr4
-from more_math.Parser.MathExprLexer import MathExprLexer
-from more_math.Parser.MathExprParser import MathExprParser
+
+MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
 class TestIndexing(unittest.TestCase):
     def evaluate(self, expr, variables):

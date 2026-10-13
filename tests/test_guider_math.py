@@ -28,7 +28,7 @@ class TestMathGuider(unittest.TestCase):
         # Expression: Average V0 and V1
         expr = "V0 * 0.5 + V1 * 0.5"
 
-        math_guider = MathGuider(V, F, expr, expr)  # Add expression1 parameter
+        math_guider = MathGuider(V, F, expr, expr, {})
 
         # Pseudo input
         x = torch.zeros((1, 4, 16, 16))
@@ -48,7 +48,7 @@ class TestMathGuider(unittest.TestCase):
         # a = V0, w = F0
         expr = "a + w"
 
-        math_guider = MathGuider(V, F, expr, expr)  # Add expression1 parameter
+        math_guider = MathGuider(V, F, expr, expr, {})
         x = torch.zeros((1, 4, 8, 8))
         sigma = torch.tensor(1.0)
 
@@ -60,7 +60,7 @@ class TestMathGuider(unittest.TestCase):
         g0 = MockGuider(1.0)
         V = {"V0": g0}
         F = {}
-        math_guider = MathGuider(V, F, "V0", "V0")  # Add expression1 parameter
+        math_guider = MathGuider(V, F, "V0", "V0", {})
 
         # Check if the property exists and matches g0's patcher
         self.assertIsNotNone(math_guider.model_patcher)
@@ -72,7 +72,7 @@ class TestMathGuider(unittest.TestCase):
         del g0.model_patcher # force remove
         V = {"V0": g0}
         F = {}
-        math_guider = MathGuider(V, F, "V0", "V0")  # Add expression1 parameter
+        math_guider = MathGuider(V, F, "V0", "V0", {})
         self.assertIsNone(math_guider.model_patcher)
 
     def test_math_guider_steps_context(self):
@@ -82,7 +82,7 @@ class TestMathGuider(unittest.TestCase):
         V = {"V0": g0}
 
         expr = "steps > 0 ? current_step / steps : 0.0"  # Handle division by zero
-        math_guider = MathGuider(V, {}, expr, expr)
+        math_guider = MathGuider(V, {}, expr, expr, {})
         math_guider.sigmas = sigmas # sets sigmas directly for testing
         math_guider.steps = len(sigmas) - 1  # steps = num_sigmas - 1 (2 steps)
 
@@ -112,7 +112,7 @@ class TestMathGuider(unittest.TestCase):
         # Input shape is (1, 4, 4, 4) = (batch, channel, height, width)
         # crop(a, [0, 1, 1, 1], [1, 2, 2, 2]) extracts 2x2x2 region
         expr = "crop(a, [0, 1, 1, 1], [1, 2, 2, 2])"
-        math_guider = MathGuider(V, F, expr, expr)
+        math_guider = MathGuider(V, F, expr, expr, {})
 
         # Input: 4D tensor (batch, channel, height, width)
         x = torch.ones((1, 4, 4, 4))
@@ -131,7 +131,7 @@ class TestMathGuider(unittest.TestCase):
 
         # Simple numeric expression
         expr = "a * 2"
-        math_guider = MathGuider(V, F, expr, expr)
+        math_guider = MathGuider(V, F, expr, expr, {})
 
         x = torch.ones((1, 4, 4, 4))
         sigma = torch.tensor(1.0)
@@ -150,7 +150,7 @@ class TestMathGuider(unittest.TestCase):
 
         # crop with 4D parameters for 4D input (batch, channel, height, width)
         expr = "crop(a, [0, 0, 0, 0], [1, 2, 2, 2])"
-        math_guider = MathGuider(V, F, expr, expr)
+        math_guider = MathGuider(V, F, expr, expr, {})
 
         x = torch.ones((1, 4, 4, 4))
         sigma = torch.tensor(1.0)

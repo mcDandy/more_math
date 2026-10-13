@@ -1,5 +1,6 @@
 import sys
 import os
+import pytest
 
 # Ensure we can import the module
 _here = os.path.abspath(os.path.dirname(__file__))
@@ -8,9 +9,10 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from more_math.Parser.MathExprLexer import MathExprLexer
-from more_math.Parser.MathExprParser import MathExprParser
+from more_math.Parser.antlr_router import get_antlr_modules
 from antlr4 import InputStream, CommonTokenStream
+
+MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
 def parse_and_visit(expr_str, variables):
     lexer = MathExprLexer(InputStream(expr_str))
@@ -30,13 +32,10 @@ def test_variable_not_found_error():
         raise AssertionError("Expected ValueError not raised")
 
 def test_unknown_function_error():
-    try:
+    with pytest.raises(ValueError) as exc_info:
         parse_and_visit("unknown_func(1)", {})
-    except ValueError as e:
-        msg = str(e)
-        assert "1:0: Unknown function: unknown_func" in msg
-    else:
-        raise AssertionError("Expected ValueError not raised")
+    msg = str(exc_info.value)
+    assert "1:0: Unknown function or variable: unknown_func" in msg
 
 def test_get_value_invalid_arg_error():
     try:

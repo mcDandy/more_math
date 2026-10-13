@@ -1,9 +1,10 @@
 import torch
 import sys
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
-from more_math.Parser.MathExprLexer import MathExprLexer
-from more_math.Parser.MathExprParser import MathExprParser
+from more_math.Parser.antlr_router import get_antlr_modules
 from antlr4 import InputStream, CommonTokenStream
+
+MathExprLexer, MathExprParser, _ = get_antlr_modules()
 
 def parse_and_visit(expr, variables, state_storage=None):
     from antlr4.error.ErrorListener import ErrorListener
@@ -26,8 +27,8 @@ def parse_and_visit(expr, variables, state_storage=None):
     visitor = UnifiedMathVisitor(variables, (1,), state_storage=state_storage)
     return visitor.visit(tree)
 
-def test_all():
-    with open("tests/test_debug.log", "w") as f_log:
+def test_all(tmp_path):
+    with (tmp_path / "test_debug.log").open("w") as f_log:
         def log(msg):
             print(msg)
             f_log.write(msg + "\n")
@@ -70,8 +71,8 @@ def test_all():
         assert parse_and_visit("cnt([1, 2, 3])", {}) == 3.0
         assert parse_and_visit("length([1, 2, 3])", {}) == 3.0
 
-        t = torch.randn(5, 10)
-        assert parse_and_visit("count(t)", {"t": t}) == 5.0
+        t = torch.arange(50).reshape(5, 10)
+        assert parse_and_visit("count(t)", {"t": t}) == 50
         assert parse_and_visit("count(42)", {}) == 1.0
 
         # 6. Tensor Function

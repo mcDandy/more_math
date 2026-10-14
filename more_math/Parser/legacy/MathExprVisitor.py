@@ -604,6 +604,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#SiluFunc.
+    def visitSiluFunc(self, ctx:MathExprParser.SiluFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#SignFunc.
     def visitSignFunc(self, ctx:MathExprParser.SignFuncContext):
         return self.visitChildren(ctx)
@@ -1436,6 +1441,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#NormalizeFunc.
     def visitNormalizeFunc(self, ctx:MathExprParser.NormalizeFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GroupNormFunc.
+    def visitGroupNormFunc(self, ctx:MathExprParser.GroupNormFuncContext):
         return self.visitChildren(ctx)
 
 

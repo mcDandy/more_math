@@ -152,3 +152,9 @@ def test_weighted_mean_and_losses():
         torch.nn.functional.cross_entropy(logits, probabilities, reduction="sum"),
     )
 
+    logits_by_class = torch.tensor([[2.0, 0.0], [0.0, 2.0], [0.0, 0.0]])
+    torch.testing.assert_close(
+        parse_and_visit("cross_entropy(logits, labels, 0)", {"logits": logits_by_class, "labels": labels}),
+        torch.nn.functional.cross_entropy(logits_by_class.movedim(0, 1), labels),
+    )
+

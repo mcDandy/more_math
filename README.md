@@ -150,6 +150,7 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 1.4 Activation / ML
 - `relu(x)`: `max(0, x)`.
+- `silu(x)`: Sigmoid Linear Unit, equivalent to `x * sigm(x)`; applied element-wise.
 - `gelu(x)`: Gaussian Error Linear Unit.
 - `leaky_relu(x, [negative_slope])`: Leaky ReLU; `negative_slope` defaults to `0.01`.
 - `softplus(x)`: smooth ReLU-like function.
@@ -159,6 +160,7 @@ You can also get the node from comfy manager under the name of More math.
 - `softmin(x, [dim])`: softmin normalization.
 - `erf(x)`: error function.
 - `erfinv(x)`: inverse error function.
+- `group_norm(x, groups, [weight], [bias], [eps])`: PyTorch GroupNorm for channel-first tensors shaped `[N, C, ...]`; `groups` must divide `C`, affine parameters are optional vectors of length `C`, and `eps` defaults to `1e-5`.
 
 #### 1.5 Logical
 - `logical_not(x)`: element-wise logical NOT; returns `1.0` where `x` is zero and `0.0` otherwise.

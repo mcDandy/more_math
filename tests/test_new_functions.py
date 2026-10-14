@@ -157,6 +157,48 @@ def test_tnorm_normalizes_lists():
     torch.testing.assert_close(torch.tensor(eval_expr("tnorm([[3, 4], [0, 0]])")), torch.tensor([[0.6, 0.8], [0.0, 0.0]]))
     torch.testing.assert_close(torch.tensor(eval_expr("tnorm([[3, 0], [0, 4]], 0)")), torch.tensor([[1.0, 0.0], [0.0, 1.0]]))
 
+def test_silu_activation():
+    expected = torch.nn.functional.silu(torch.tensor([-2.0, 0.0, 2.0])).tolist()
+    assert eval_expr("silu([-2, 0, 2])") == pytest.approx(expected)
+    assert eval_expr("silu(1000)") == pytest.approx(1000.0)
+
+    values = torch.tensor([-3.0, 0.0, 2.0])
+    torch.testing.assert_close(eval_expr("silu(x)", {"x": values}), torch.nn.functional.silu(values))
+    assert "silu" in INBUILT_FUNCTIONS
+
+def test_group_norm_matches_pytorch():
+    values = torch.arange(24, dtype=torch.float32).reshape(2, 4, 3)
+    weight = torch.tensor([1.0, 0.5, 2.0, 3.0])
+    bias = torch.tensor([0.0, 1.0, -1.0, 2.0])
+    variables = {"x": values, "weight": weight, "bias": bias}
+
+    torch.testing.assert_close(
+        eval_expr("group_norm(x, 2)", variables),
+        torch.nn.functional.group_norm(values, 2),
+    )
+    torch.testing.assert_close(
+        eval_expr("group_norm(x, 2, weight, bias, 0.01)", variables),
+        torch.nn.functional.group_norm(values, 2, weight, bias, eps=0.01),
+    )
+    assert "group_norm" in INBUILT_FUNCTIONS
+
+    with pytest.raises(ValueError, match="divide the channel count"):
+        eval_expr("group_norm(x, 3)", variables)
+    with pytest.raises(ValueError, match="weight must have shape"):
+        eval_expr("group_norm(x, 2, [1, 2])", variables)
+    with pytest.raises(ValueError, match="eps must be a positive finite scalar"):
+        eval_expr("group_norm(x, 2, none, none, 0)", variables)
+
+def test_group_norm_preserves_float8_dtype():
+    float8_dtypes = [
+        getattr(torch, name, None)
+        for name in ("float8_e4m3fn", "float8_e4m3fnuz", "float8_e5m2", "float8_e5m2fnuz")
+    ]
+    for dtype in (dtype for dtype in float8_dtypes if dtype is not None):
+        values = torch.randn(2, 4, 3).to(dtype)
+        result = eval_expr("group_norm(x, 2)", {"x": values})
+        assert result.dtype == dtype
+
 if __name__ == "__main__":
     test_logic_functions()
     test_spatial_functions()

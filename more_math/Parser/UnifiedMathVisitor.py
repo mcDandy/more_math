@@ -1131,6 +1131,15 @@ class UnifiedMathVisitor(MathExprVisitor):
             (yield ctx.expr()), F.gelu, lambda x: 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * math.pow(x, 3)))),
         )
 
+    def visitSiluFunc(self, ctx):
+        def scalar_silu(x):
+            if x >= 0:
+                return x / (1.0 + math.exp(-x))
+            exp_x = math.exp(x)
+            return x * exp_x / (1.0 + exp_x)
+
+        return self._unary_op((yield ctx.expr()), F.silu, scalar_silu)
+
     def visitAnglFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.angle, lambda x: math.atan2(0, x) if x < 0 else 0)
 
@@ -1184,6 +1193,56 @@ class UnifiedMathVisitor(MathExprVisitor):
         if original_dtype in self._float8_dtypes():
             result = result.to(original_dtype)
         return result.tolist() if return_list else result
+
+    def visitGroupNormFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        if val.ndim < 2:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm input must have shape [N, C, ...]")
+
+        num_groups = self._to_int((yield ctx.expr(1)), ctx, "group_norm groups", strict=True)
+        channels = val.shape[1]
+        if num_groups <= 0 or channels % num_groups != 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm groups must be positive and divide the channel count {channels}")
+
+        original_dtype = val.dtype
+        float8_dtypes = self._float8_dtypes()
+        if original_dtype in float8_dtypes:
+            val = val.to(torch.float32)
+
+        weight = None
+        bias = None
+        if len(ctx.expr()) > 2:
+            weight_arg = (yield ctx.expr(2))
+            if weight_arg is not None:
+                weight = self._promote_to_tensor(weight_arg).to(device=val.device, dtype=val.dtype)
+                if weight.ndim != 1 or weight.numel() != channels:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm weight must have shape [{channels}]")
+        if len(ctx.expr()) > 3:
+            bias_arg = (yield ctx.expr(3))
+            if bias_arg is not None:
+                bias = self._promote_to_tensor(bias_arg).to(device=val.device, dtype=val.dtype)
+                if bias.ndim != 1 or bias.numel() != channels:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm bias must have shape [{channels}]")
+
+        eps = 1e-5
+        if len(ctx.expr()) > 4:
+            eps_arg = (yield ctx.expr(4))
+            if self._is_tensor(eps_arg):
+                if eps_arg.numel() != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm eps must be a positive scalar")
+                eps_arg = eps_arg.item()
+            elif self._is_list(eps_arg):
+                if len(eps_arg) != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm eps must be a positive scalar")
+                eps_arg = eps_arg[0]
+            eps = float(eps_arg)
+        if not math.isfinite(eps) or eps <= 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm eps must be a positive finite scalar")
+
+        result = F.group_norm(val, num_groups, weight=weight, bias=bias, eps=eps)
+        if original_dtype in float8_dtypes:
+            result = result.to(original_dtype)
+        return result
 
     def visitSNormFunc(self, ctx):
         val = (yield ctx.expr(0))

@@ -290,6 +290,10 @@ func1:
 		*/
 	| GELU LPAREN expr RPAREN			# GeluFunc
 		/**
+		  silu(x) - applies the Sigmoid Linear Unit activation element-wise
+		*/
+	| SILU LPAREN expr RPAREN			# SiluFunc
+		/**
 		  sign(x) - returns the sign of x: -1, 0, or 1
 		*/
 	| SIGN LPAREN expr RPAREN			# SignFunc
@@ -973,6 +977,10 @@ funcN:
 		*/
 	| NORMALIZE LPAREN expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# NormalizeFunc
 		/**
+		  group_norm(x, groups, [weight], [bias], [eps]) - applies channel-first GroupNorm to [N, C, ...] input
+		*/
+	| GROUP_NORM LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# GroupNormFunc
+		/**
 		  smin(x, ...) - computes the minimum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smin(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
 		*/
 	| SMIN LPAREN expr (COMMA expr)* RPAREN		# SMinFunc
@@ -1148,6 +1156,7 @@ LOGADDEXP: 'logaddexp';
 LOGSUMEXP: 'logsumexp';
 NORM: 'norm';
 NORMALIZE: 'normalize';
+GROUP_NORM: 'group_norm';
 OUTER: 'outer';
 TRACE: 'trace';
 DET: 'det';
@@ -1184,6 +1193,7 @@ SOFTSIGN: 'softsign';
 LEAKY_RELU: 'leaky_relu';
 SOFTPLUS: 'softplus';
 GELU: 'gelu';
+SILU: 'silu';
 SIGN: 'sign';
 DEGREES: 'degrees';
 RADIANS: 'radians';

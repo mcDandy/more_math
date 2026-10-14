@@ -1079,6 +1079,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#SiluFunc.
+    def enterSiluFunc(self, ctx:MathExprParser.SiluFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SiluFunc.
+    def exitSiluFunc(self, ctx:MathExprParser.SiluFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SignFunc.
     def enterSignFunc(self, ctx:MathExprParser.SignFuncContext):
         pass
@@ -2579,6 +2588,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#NormalizeFunc.
     def exitNormalizeFunc(self, ctx:MathExprParser.NormalizeFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GroupNormFunc.
+    def enterGroupNormFunc(self, ctx:MathExprParser.GroupNormFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GroupNormFunc.
+    def exitGroupNormFunc(self, ctx:MathExprParser.GroupNormFuncContext):
         pass
 
 

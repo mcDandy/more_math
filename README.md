@@ -169,6 +169,7 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 1.6 Interpolation & Remap
 - `lerp(a, b, t)`: linear interpolation.
+- `slerp(a, b, t, [dim])`: spherical interpolation of vector directions with linearly interpolated magnitudes. `dim` selects the axis containing each vector's components; all other axes identify independent vectors. It defaults to the last axis (for `[batch, features]`, use `dim=1`), and `t` may be scalar or broadcast over the other axes.
 - `smoothstep(x, e0, e1)`: 3rd-order smooth transition.
 - `smootherstep(x, e0, e1)`: 5th-order smoother transition.
 - `cubic_ease(a, b, t)` / `cubic`: cubic easing interpolation.

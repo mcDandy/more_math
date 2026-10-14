@@ -199,6 +199,49 @@ def test_group_norm_preserves_float8_dtype():
         result = eval_expr("group_norm(x, 2)", {"x": values})
         assert result.dtype == dtype
 
+def test_slerp_interpolates_direction_and_magnitude():
+    a = torch.tensor([2.0, 0.0])
+    b = torch.tensor([0.0, 4.0])
+    result = eval_expr("slerp(a, b, 0.5)", {"a": a, "b": b})
+    torch.testing.assert_close(result, torch.tensor([3.0 / math.sqrt(2.0), 3.0 / math.sqrt(2.0)]))
+    torch.testing.assert_close(eval_expr("slerp(a, b, 0)", {"a": a, "b": b}), a)
+    torch.testing.assert_close(eval_expr("slerp(a, b, 1)", {"a": a, "b": b}), b)
+
+    batch_a = torch.tensor([[1.0, 0.0], [2.0, 0.0]])
+    batch_b = torch.tensor([[0.0, 1.0], [0.0, 2.0]])
+    torch.testing.assert_close(
+        eval_expr("slerp(a, b, t)", {"a": batch_a, "b": batch_b, "t": torch.tensor([0.0, 1.0])}),
+        torch.tensor([[1.0, 0.0], [0.0, 2.0]]),
+    )
+
+    a_by_column = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
+    b_by_column = torch.tensor([[0.0, 2.0], [2.0, 0.0]])
+    torch.testing.assert_close(
+        eval_expr("slerp(a, b, 0.5, 0)", {"a": a_by_column, "b": b_by_column}),
+        torch.full((2, 2), 1.5 / math.sqrt(2.0)),
+    )
+
+    antipodal = eval_expr("slerp([1, 0], [-4, 0], 0.5)")
+    assert torch.isfinite(antipodal).all()
+    torch.testing.assert_close(torch.linalg.vector_norm(antipodal), torch.tensor(2.5))
+    torch.testing.assert_close(eval_expr("slerp([0, 0], [0, 4], 0.5)"), torch.tensor([0.0, 2.0]))
+    assert "slerp" in INBUILT_FUNCTIONS
+
+def test_slerp_validates_broadcasting_and_preserves_float8_dtype():
+    with pytest.raises(ValueError, match="inputs must be broadcastable"):
+        eval_expr("slerp([1, 2], [1, 2, 3], 0.5)")
+    with pytest.raises(ValueError, match="t must broadcast"):
+        eval_expr("slerp([[1, 0], [0, 1]], [[0, 1], [1, 0]], [1, 2, 3])")
+
+    float8_dtypes = [
+        getattr(torch, name, None)
+        for name in ("float8_e4m3fn", "float8_e4m3fnuz", "float8_e5m2", "float8_e5m2fnuz")
+    ]
+    for dtype in (dtype for dtype in float8_dtypes if dtype is not None):
+        values = torch.randn(2, 3).to(dtype)
+        result = eval_expr("slerp(a, b, 0.5)", {"a": values, "b": values})
+        assert result.dtype == dtype
+
 if __name__ == "__main__":
     test_logic_functions()
     test_spatial_functions()

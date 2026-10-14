@@ -2582,6 +2582,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#SlerpFunc.
+    def enterSlerpFunc(self, ctx:MathExprParser.SlerpFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SlerpFunc.
+    def exitSlerpFunc(self, ctx:MathExprParser.SlerpFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#NormalizeFunc.
     def enterNormalizeFunc(self, ctx:MathExprParser.NormalizeFuncContext):
         pass

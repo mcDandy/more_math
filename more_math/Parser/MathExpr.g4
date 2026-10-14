@@ -973,6 +973,10 @@ funcN:
 		*/
 	NORM LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# NormFunc
 		/**
+		  slerp(a, b, t, [dim]) - interpolates vector directions spherically and magnitudes linearly. dim selects the vector-component axis; other axes identify independent vectors. Defaults to the last dimension.
+		*/
+	| SLERP LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# SlerpFunc
+		/**
 		  normalize(x, [p], [dim], [eps]) - normalizes x along dim using the p-norm (defaults: p=2, dim=-1, eps=1e-12)
 		*/
 	| NORMALIZE LPAREN expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# NormalizeFunc
@@ -1185,6 +1189,7 @@ PRNT: 'print';
 PRINT_SHAPE: 'print_shape' | 'pshp';
 NVL: 'nvl' | 'nan_to_num';
 LERP: 'lerp';
+SLERP: 'slerp';
 STEP: 'step';
 SMOOTHSTEP: 'smoothstep';
 FRACT: 'fract';

@@ -1439,6 +1439,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#SlerpFunc.
+    def visitSlerpFunc(self, ctx:MathExprParser.SlerpFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#NormalizeFunc.
     def visitNormalizeFunc(self, ctx:MathExprParser.NormalizeFuncContext):
         return self.visitChildren(ctx)

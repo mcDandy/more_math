@@ -1566,6 +1566,74 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return self._lerp_helper(a, b, w)
 
+    def visitSlerpFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+        t = self._promote_to_tensor((yield ctx.expr(2)))
+        if a.ndim == 0 or b.ndim == 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp inputs must have a vector dimension")
+        try:
+            a, b = torch.broadcast_tensors(a, b)
+        except RuntimeError as exc:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp inputs must be broadcastable") from exc
+
+        dim = -1
+        if len(ctx.expr()) > 3:
+            dims = self._normalize_dims((yield ctx.expr(3)), a.ndim, ctx, "slerp dimension")
+            if len(dims) != 1:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp expects one vector dimension")
+            dim = dims[0]
+
+        float8_dtypes = self._float8_dtypes()
+        input_dtypes = (a.dtype, b.dtype)
+        output_dtype = next((dtype for dtype in input_dtypes if dtype in float8_dtypes), None)
+        if output_dtype is None:
+            output_dtype = torch.promote_types(a.dtype, b.dtype)
+            if not torch.empty((), dtype=output_dtype).is_floating_point():
+                output_dtype = torch.float32
+        if a.is_complex() or b.is_complex():
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp inputs must be real-valued")
+        compute_dtype = torch.float64 if output_dtype == torch.float64 else torch.float32
+        a = a.to(dtype=compute_dtype).movedim(dim, -1)
+        b = b.to(dtype=compute_dtype).movedim(dim, -1)
+        t = t.to(device=a.device, dtype=compute_dtype)
+        try:
+            t = torch.broadcast_to(t, a.shape[:-1]).unsqueeze(-1)
+        except RuntimeError as exc:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp t must broadcast to the input shape without the vector dimension") from exc
+
+        norm_a = torch.linalg.vector_norm(a, dim=-1, keepdim=True)
+        norm_b = torch.linalg.vector_norm(b, dim=-1, keepdim=True)
+        eps = torch.finfo(compute_dtype).eps
+        unit_a = a / norm_a.clamp_min(eps)
+        unit_b = b / norm_b.clamp_min(eps)
+        unit_a = torch.where(norm_a > eps, unit_a, unit_b)
+        unit_b = torch.where(norm_b > eps, unit_b, unit_a)
+
+        dot = (unit_a * unit_b).sum(dim=-1, keepdim=True).clamp(-1.0, 1.0)
+        omega = torch.acos(dot)
+        sin_omega = torch.sin(omega)
+        regular = sin_omega.abs() > 1e-6
+        safe_sin_omega = torch.where(regular, sin_omega, torch.ones_like(sin_omega))
+        spherical = (
+            torch.sin((1.0 - t) * omega) / safe_sin_omega * unit_a
+            + torch.sin(t * omega) / safe_sin_omega * unit_b
+        )
+
+        linear_direction = (1.0 - t) * unit_a + t * unit_b
+        linear_direction = linear_direction / torch.linalg.vector_norm(linear_direction, dim=-1, keepdim=True).clamp_min(eps)
+
+        basis_indices = unit_a.abs().argmin(dim=-1, keepdim=True)
+        basis = torch.zeros_like(unit_a).scatter_(-1, basis_indices, 1.0)
+        orthogonal = basis - (basis * unit_a).sum(dim=-1, keepdim=True) * unit_a
+        orthogonal = orthogonal / torch.linalg.vector_norm(orthogonal, dim=-1, keepdim=True).clamp_min(eps)
+        antipodal_direction = torch.cos(math.pi * t) * unit_a + torch.sin(math.pi * t) * orthogonal
+        fallback_direction = torch.where(dot < 0, antipodal_direction, linear_direction)
+        direction = torch.where(regular, spherical, fallback_direction)
+        magnitude = (1.0 - t) * norm_a + t * norm_b
+        result = (direction * magnitude).movedim(-1, dim)
+        return result.to(dtype=output_dtype).contiguous()
+
     def _lerp_helper(self, a, b, w):
         if any(self._is_tensor(x) for x in [a, b, w]) or any(self._is_list(x) for x in [a, b, w]):
              return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), self._promote_to_tensor(w))

@@ -110,6 +110,7 @@ You can also get the node from comfy manager under the name of More math.
 - `log1p(x)`: numerically stable `ln(1 + x)`.
 - `expm1(x)`: numerically stable `exp(x) - 1`.
 - `logaddexp(x, y)`: numerically stable `ln(exp(x) + exp(y))`, element-wise.
+- `sinc(x)`: normalized sinc, `sin(πx)/(πx)`; returns `1` at zero.
 - `cbrt(x)`: real cube root, including for negative values.
 - `reciprocal(x)`: element-wise `1 / x`.
 - `isnan(x)`: per-element NaN test.
@@ -159,6 +160,7 @@ You can also get the node from comfy manager under the name of More math.
 - `softmax(x, [dim])`: softmax normalization.
 - `softmin(x, [dim])`: softmin normalization.
 - `erf(x)`: error function.
+- `erfc(x)`: complementary error function, `1 - erf(x)`, evaluated directly for better tail accuracy.
 - `erfinv(x)`: inverse error function.
 - `group_norm(x, groups, [weight], [bias], [eps])`: PyTorch GroupNorm for channel-first tensors shaped `[N, C, ...]`; `groups` must divide `C`, affine parameters are optional vectors of length `C`, and `eps` defaults to `1e-5`.
 
@@ -169,7 +171,7 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 1.6 Interpolation & Remap
 - `lerp(a, b, t)`: linear interpolation.
-- `slerp(a, b, t, [dim])`: spherical interpolation of vector directions with linearly interpolated magnitudes. `dim` selects the axis containing each vector's components; all other axes identify independent vectors. It defaults to the last axis (for `[batch, features]`, use `dim=1`), and `t` may be scalar or broadcast over the other axes.
+- `slerp(a, b, t, [dim])`: spherical interpolation of vector directions with linearly interpolated magnitudes. Without `dim`, all elements form one vector. Set `dim` to select an axis of vector components; all other axes identify independent vectors, and `t` may be scalar or broadcast over those axes.
 - `smoothstep(x, e0, e1)`: 3rd-order smooth transition.
 - `smootherstep(x, e0, e1)`: 5th-order smoother transition.
 - `cubic_ease(a, b, t)` / `cubic`: cubic easing interpolation.

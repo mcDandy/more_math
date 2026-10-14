@@ -1048,6 +1048,12 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitExpm1Func(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.expm1, math.expm1)
 
+    def visitSincFunc(self, ctx):
+        def scalar_sinc(x):
+            return 1.0 if x == 0 else math.sin(math.pi * x) / (math.pi * x)
+
+        return self._unary_op((yield ctx.expr()), torch.sinc, scalar_sinc)
+
     def visitCbrtFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), lambda x: torch.sign(x) * torch.abs(x).pow(1.0 / 3.0), lambda x: math.copysign(abs(x) ** (1.0 / 3.0), x))
 
@@ -1577,8 +1583,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         except RuntimeError as exc:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp inputs must be broadcastable") from exc
 
-        dim = -1
-        if len(ctx.expr()) > 3:
+        default_dim = len(ctx.expr()) <= 3
+        if default_dim:
+            output_shape = a.shape
+            a = a.reshape(-1)
+            b = b.reshape(-1)
+            dim = 0
+        else:
             dims = self._normalize_dims((yield ctx.expr(3)), a.ndim, ctx, "slerp dimension")
             if len(dims) != 1:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp expects one vector dimension")
@@ -1632,6 +1643,8 @@ class UnifiedMathVisitor(MathExprVisitor):
         direction = torch.where(regular, spherical, fallback_direction)
         magnitude = (1.0 - t) * norm_a + t * norm_b
         result = (direction * magnitude).movedim(-1, dim)
+        if default_dim:
+            result = result.reshape(output_shape)
         return result.to(dtype=output_dtype).contiguous()
 
     def _lerp_helper(self, a, b, w):
@@ -5673,6 +5686,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         """erf(x) - error function"""
         x = self._promote_to_tensor((yield ctx.expr()))
         return torch.erf(x)
+
+    def visitErfcFunc(self, ctx):
+        """erfc(x) - complementary error function"""
+        return self._unary_op((yield ctx.expr()), torch.special.erfc, math.erfc)
 
     def visitErfinvFunc(self, ctx):
         """erfinv(x) - inverse error function"""

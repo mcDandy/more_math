@@ -917,6 +917,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#SincFunc.
+    def enterSincFunc(self, ctx:MathExprParser.SincFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SincFunc.
+    def exitSincFunc(self, ctx:MathExprParser.SincFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#CbrtFunc.
     def enterCbrtFunc(self, ctx:MathExprParser.CbrtFuncContext):
         pass
@@ -1418,6 +1427,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ErfFunc.
     def exitErfFunc(self, ctx:MathExprParser.ErfFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#ErfcFunc.
+    def enterErfcFunc(self, ctx:MathExprParser.ErfcFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ErfcFunc.
+    def exitErfcFunc(self, ctx:MathExprParser.ErfcFuncContext):
         pass
 
 

@@ -218,6 +218,10 @@ func1:
 			*/
 		| EXPM1 LPAREN expr RPAREN			# Expm1Func
 		/**
+		  sinc(x) - computes the normalized sinc function sin(pi*x)/(pi*x), with sinc(0)=1
+		*/
+		| SINC LPAREN expr RPAREN			# SincFunc
+		/**
 		  cbrt(x) - computes the real cube root of each value, including negative values
 		*/
 		| CBRT LPAREN expr RPAREN			# CbrtFunc
@@ -441,6 +445,10 @@ func1:
 		  erf(x) - computes the error function (torch.erf)
 		*/
 	| ERF LPAREN expr RPAREN			# ErfFunc
+		/**
+		  erfc(x) - computes the complementary error function (torch.special.erfc)
+		*/
+	| ERFC LPAREN expr RPAREN			# ErfcFunc
 		/**
 		  erfinv(x) - computes the inverse error function (torch.erfinv)
 		*/
@@ -973,7 +981,7 @@ funcN:
 		*/
 	NORM LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# NormFunc
 		/**
-		  slerp(a, b, t, [dim]) - interpolates vector directions spherically and magnitudes linearly. dim selects the vector-component axis; other axes identify independent vectors. Defaults to the last dimension.
+		  slerp(a, b, t, [dim]) - interpolates vector directions spherically and magnitudes linearly. Without dim, all elements form one vector; dim selects a vector-component axis and other axes identify independent vectors.
 		*/
 	| SLERP LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# SlerpFunc
 		/**
@@ -1154,6 +1162,7 @@ LOG2: 'log2';
 EXP: 'exp';
 LOG1P: 'log1p';
 EXPM1: 'expm1';
+SINC: 'sinc';
 CBRT: 'cbrt';
 RECIPROCAL: 'reciprocal';
 LOGADDEXP: 'logaddexp';
@@ -1233,6 +1242,7 @@ QUANTILE: 'quantile';
 DOT: 'dot';
 MOMENT: 'moment';
 ERF: 'erf';
+ERFC: 'erfc';
 ERFINV: 'erfinv';
 
 ANY: 'any';

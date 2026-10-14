@@ -7,8 +7,10 @@ import pytest
 # Ensure test runner usage (Visual Studio) can import the package regardless of working dir.
 _here = os.path.abspath(os.path.dirname(__file__))
 _project_root = os.path.abspath(os.path.join(_here, os.pardir))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
+_comfy_root = os.path.abspath(os.path.join(_project_root, os.pardir, os.pardir))
+for _path in (_comfy_root, _project_root):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from more_math.Parser.UnifiedMathVisitor import UnifiedMathVisitor
 from more_math.Parser.inbuilt_symbols import INBUILT_FUNCTIONS
@@ -210,8 +212,15 @@ def test_slerp_interpolates_direction_and_magnitude():
     batch_a = torch.tensor([[1.0, 0.0], [2.0, 0.0]])
     batch_b = torch.tensor([[0.0, 1.0], [0.0, 2.0]])
     torch.testing.assert_close(
-        eval_expr("slerp(a, b, t)", {"a": batch_a, "b": batch_b, "t": torch.tensor([0.0, 1.0])}),
+        eval_expr("slerp(a, b, t, 1)", {"a": batch_a, "b": batch_b, "t": torch.tensor([0.0, 1.0])}),
         torch.tensor([[1.0, 0.0], [0.0, 2.0]]),
+    )
+
+    whole_a = torch.tensor([[1.0, 0.0], [0.0, 0.0]])
+    whole_b = torch.tensor([[0.0, 0.0], [0.0, 1.0]])
+    torch.testing.assert_close(
+        eval_expr("slerp(a, b, 0.5)", {"a": whole_a, "b": whole_b}),
+        torch.tensor([[1.0 / math.sqrt(2.0), 0.0], [0.0, 1.0 / math.sqrt(2.0)]]),
     )
 
     a_by_column = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
@@ -242,10 +251,36 @@ def test_slerp_validates_broadcasting_and_preserves_float8_dtype():
         result = eval_expr("slerp(a, b, 0.5)", {"a": values, "b": values})
         assert result.dtype == dtype
 
+def test_sinc_and_erfc():
+    assert {"sinc", "erfc"} <= INBUILT_FUNCTIONS
+    assert eval_expr("sinc(0)") == 1.0
+    assert abs(eval_expr("sinc(0.5)") - 2.0 / math.pi) < 1e-6
+    assert abs(eval_expr("sinc(1)")) < 1e-6
+    assert eval_expr("erfc(0)") == 1.0
+    assert math.isclose(eval_expr("erfc(1)"), math.erfc(1), rel_tol=1e-6)
+    torch.testing.assert_close(
+        eval_expr("sinc(x)", {"x": torch.tensor([0.0, 0.5, 1.0])}),
+        torch.sinc(torch.tensor([0.0, 0.5, 1.0])),
+    )
+    torch.testing.assert_close(
+        eval_expr("erfc(x)", {"x": torch.tensor([-1.0, 0.0, 1.0])}),
+        torch.special.erfc(torch.tensor([-1.0, 0.0, 1.0])),
+    )
+    assert eval_expr("sinc([0, 0.5])") == [1.0, 2.0 / math.pi]
+    float8_dtypes = [
+        getattr(torch, name, None)
+        for name in ("float8_e4m3fn", "float8_e4m3fnuz", "float8_e5m2", "float8_e5m2fnuz")
+    ]
+    for dtype in (dtype for dtype in float8_dtypes if dtype is not None):
+        values = torch.tensor([0.0, 0.5, 1.0]).to(dtype)
+        assert eval_expr("sinc(x)", {"x": values}).dtype == dtype
+        assert eval_expr("erfc(x)", {"x": values}).dtype == dtype
+
 if __name__ == "__main__":
     test_logic_functions()
     test_spatial_functions()
     test_stats_functions()
     test_easing_functions()
     test_lerp_fix()
+    test_sinc_and_erfc()
     print("All new function tests passed!")

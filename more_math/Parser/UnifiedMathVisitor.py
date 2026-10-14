@@ -1166,7 +1166,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         return result.item() if result.numel() == 1 else result
 
     def visitNormalizeFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr(0)))
+        source = (yield ctx.expr(0))
+        return_list = self._is_list(source)
+        val = self._promote_to_tensor(source)
         p = float((yield ctx.expr(1))) if len(ctx.expr()) > 1 else 2.0
         dim = self._to_int((yield ctx.expr(2)), ctx, "normalize dimension") if len(ctx.expr()) > 2 else -1
         eps = float((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 1e-12
@@ -1179,14 +1181,18 @@ class UnifiedMathVisitor(MathExprVisitor):
             result = val / torch.linalg.vector_norm(val, ord=p).clamp_min(eps)
         else:
             result = F.normalize(val, p=p, dim=dim, eps=eps)
-        return result.to(original_dtype) if original_dtype in self._float8_dtypes() else result
+        if original_dtype in self._float8_dtypes():
+            result = result.to(original_dtype)
+        return result.tolist() if return_list else result
 
     def visitSNormFunc(self, ctx):
         val = (yield ctx.expr(0))
+        if self._is_list(val):
+            val = self._promote_to_tensor(val)
         if len(ctx.expr()) > 1:
-            dim = self._to_int((yield ctx.expr(1)), ctx, "s_norm dimension")
+            dims = self._normalize_dims((yield ctx.expr(1)), val.ndim, ctx, "s_norm dimension")
             if self._is_tensor(val):
-                return torch.linalg.norm(val, dim=dim)
+                return torch.linalg.norm(val, dim=tuple(dims))
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: s_norm with dimension argument only supports tensors")
         if self._is_tensor(val):
             res = torch.linalg.norm(val)
@@ -2036,56 +2042,38 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return res.item() if self._is_tensor(res) and res.numel() == 1 else res
         return self._reduction_op(val, lambda x: torch.mean(x.float()), lambda x: sum(x) / len(x) if x else 0.0)
 
-    def visitStdFunc(self, ctx):
-        def list_std(val):
-            if len(val) < 2:
-                return 0.0
-            mean = sum(val) / len(val)
-            variance = sum((x - mean) ** 2 for x in val) / (len(val) - 1)
-            return math.sqrt(variance)
+    def _sample_statistic(self, val, dims, ctx, name, operation):
+        tsr = self._promote_to_tensor(val).float()
+        normalized_dims = None
+        if dims is not None:
+            normalized_dims = self._normalize_dims(dims, tsr.ndim, ctx, f"{name} dimension")
 
-        val = (yield ctx.expr(0))
-        if len(ctx.expr()) > 1:
-            dims = (yield ctx.expr(1))
-            if self._is_tensor(val) or self._is_list(val):
-                tsr = self._promote_to_tensor(val)
-                normalized_dims = self._normalize_dims(dims, tsr.ndim, ctx, "std dimension")
-                res = torch.std(tsr.float(), dim=tuple(normalized_dims))
-                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
-        if self._is_tensor(val):
-            res = torch.std(val.float())
-            if self._is_tensor(res) and res.numel() == 1:
-                return float(res.item())
-            return res
-        elif self._is_list(val):
-            return list_std(val)
+        reduced_count = tsr.numel() if normalized_dims is None else math.prod(tsr.shape[dim] for dim in normalized_dims)
+        if reduced_count < 2:
+            if normalized_dims is None:
+                return 0.0
+            reduced_dims = set(normalized_dims)
+            output_shape = tuple(size for dim, size in enumerate(tsr.shape) if dim not in reduced_dims)
+            result = torch.zeros(output_shape, dtype=tsr.dtype, device=tsr.device)
+        elif normalized_dims is None:
+            result = operation(tsr)
         else:
-            return val
+            result = operation(tsr, dim=tuple(normalized_dims))
+        return result.item() if result.numel() == 1 else result
+
+    def visitStdFunc(self, ctx):
+        val = (yield ctx.expr(0))
+        if self._is_tensor(val) or self._is_list(val):
+            dims = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else None
+            return self._sample_statistic(val, dims, ctx, "std", torch.std)
+        return val
 
     def visitVarFunc(self, ctx):
-        def list_var(val):
-            if len(val) < 2:
-                return 0.0
-            mean = sum(val) / len(val)
-            return sum((x - mean) ** 2 for x in val) / (len(val) - 1)
-
         val = (yield ctx.expr(0))
-        if len(ctx.expr()) > 1:
-            dims = (yield ctx.expr(1))
-            if self._is_tensor(val) or self._is_list(val):
-                tsr = self._promote_to_tensor(val)
-                normalized_dims = self._normalize_dims(dims, tsr.ndim, ctx, "var dimension")
-                res = torch.var(tsr.float(), dim=tuple(normalized_dims))
-                return res.item() if self._is_tensor(res) and res.numel() == 1 else res
-        if self._is_tensor(val):
-            res = torch.var(val.float())
-            if self._is_tensor(res) and res.numel() == 1:
-                return float(res.item())
-            return res
-        elif self._is_list(val):
-            return list_var(val)
-        else:
-            return val
+        if self._is_tensor(val) or self._is_list(val):
+            dims = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else None
+            return self._sample_statistic(val, dims, ctx, "var", torch.var)
+        return val
 
     def visitCountFunc(self, ctx):
         val = yield ctx.expr()
@@ -2291,6 +2279,48 @@ class UnifiedMathVisitor(MathExprVisitor):
         if original_dtype in self._float8_dtypes():
             result = result.to(original_dtype)
         return result.item() if result.numel() == 1 else result
+
+    def visitInvFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        pseudo = self._to_bool((yield ctx.expr(1)), ctx, "inv pseudo") if len(ctx.expr()) > 1 else False
+        if val.ndim < 2:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: inv expects a matrix or batch of matrices")
+        if not pseudo and val.shape[-1] != val.shape[-2]:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: inv without pseudo requires square matrices")
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes():
+            val = val.to(torch.float32)
+        result = torch.linalg.pinv(val) if pseudo else torch.linalg.inv(val)
+        return result.to(original_dtype) if original_dtype in self._float8_dtypes() else result
+
+    def visitSolveFunc(self, ctx):
+        a = self._promote_to_tensor((yield ctx.expr(0)))
+        b = self._promote_to_tensor((yield ctx.expr(1)))
+        if a.ndim < 2 or a.shape[-1] != a.shape[-2]:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: solve expects square coefficient matrices")
+
+        float8_dtypes = self._float8_dtypes()
+        output_dtype = a.dtype if a.dtype in float8_dtypes else b.dtype if b.dtype in float8_dtypes else None
+        if a.dtype in float8_dtypes or not (a.is_floating_point() or a.is_complex()):
+            a = a.to(torch.float32)
+        if b.dtype in float8_dtypes or not (b.is_floating_point() or b.is_complex()):
+            b = b.to(torch.float32)
+        common_dtype = torch.promote_types(a.dtype, b.dtype)
+        result = torch.linalg.solve(a.to(common_dtype), b.to(common_dtype))
+        return result.to(output_dtype) if output_dtype is not None else result
+
+    def visitMatrixRankFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        if val.ndim < 2:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: matrix_rank expects matrices")
+        original_dtype = val.dtype
+        if original_dtype in self._float8_dtypes() or not (val.is_floating_point() or val.is_complex()):
+            val = val.to(torch.float32)
+        tol = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else None
+        if self._is_tensor(tol):
+            tol = tol.to(val.dtype)
+        result = torch.linalg.matrix_rank(val, atol=tol)
+        return int(result.item()) if result.numel() == 1 else result
 
     def visitMomentFunc(self,ctx):
         x = self._promote_to_tensor((yield ctx.expr(0)))

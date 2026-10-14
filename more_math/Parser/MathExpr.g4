@@ -314,6 +314,14 @@ func1:
 		*/
 	| PINV LPAREN expr RPAREN			# PinvFunc
 		/**
+		  inv(x, [pseudo]) - computes the matrix inverse; when pseudo is truthy, computes the Moore-Penrose pseudoinverse instead
+		*/
+	| INV LPAREN expr (COMMA expr)? RPAREN		# InvFunc
+		/**
+		  matrix_rank(x, [tol]) - computes the numerical rank of each matrix using optional absolute tolerance tol
+		*/
+	| MATRIX_RANK LPAREN expr (COMMA expr)? RPAREN	# MatrixRankFunc
+		/**
 		  sum(x, [dims]) - computes the sum of elements of x, optionally along one or more dimensions
 		*/
 	| SUM LPAREN expr (COMMA expr)? RPAREN		# SumFunc
@@ -723,6 +731,10 @@ func2:
 		  matmul(x, y) - computes the matrix multiplication of x and y
 		*/
 	| MATMUL LPAREN expr COMMA expr RPAREN			# MatmulFunc
+		/**
+		  solve(A, b) - solves the square linear system A*x=b without explicitly forming A inverse
+		*/
+	| SOLVE LPAREN expr COMMA expr RPAREN		# SolveFunc
 		/**
 		  flow_apply(image, flow) - applies optical flow to an image
 		*/
@@ -1180,6 +1192,7 @@ LOGSPACE: 'logspace';
 TOPK: 'topk';
 BOTK: 'botk';
 PINV: 'pinv';
+INV: 'inv';
 SUM: 'sum';
 MEAN: 'mean';
 STD: 'std';
@@ -1237,6 +1250,8 @@ OVERLAY: 'overlay';
 PAD: 'pad';
 CROSS: 'cross';
 MATMUL: 'matmul';
+SOLVE: 'solve';
+MATRIX_RANK: 'matrix_rank';
 RIFE: 'rife';
 BNOT: 'bnot' | 'bitwise_not';
 BITCOUNT: 'bitcount' | 'popcount' | 'popcnt';

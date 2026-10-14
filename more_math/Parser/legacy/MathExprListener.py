@@ -1133,6 +1133,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#InvFunc.
+    def enterInvFunc(self, ctx:MathExprParser.InvFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InvFunc.
+    def exitInvFunc(self, ctx:MathExprParser.InvFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#MatrixRankFunc.
+    def enterMatrixRankFunc(self, ctx:MathExprParser.MatrixRankFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#MatrixRankFunc.
+    def exitMatrixRankFunc(self, ctx:MathExprParser.MatrixRankFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#SumFunc.
     def enterSumFunc(self, ctx:MathExprParser.SumFuncContext):
         pass
@@ -2048,6 +2066,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#MatmulFunc.
     def exitMatmulFunc(self, ctx:MathExprParser.MatmulFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SolveFunc.
+    def enterSolveFunc(self, ctx:MathExprParser.SolveFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SolveFunc.
+    def exitSolveFunc(self, ctx:MathExprParser.SolveFuncContext):
         pass
 
 

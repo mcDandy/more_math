@@ -181,10 +181,10 @@ You can also get the node from comfy manager under the name of More math.
 #### 2.1 Element-wise / Tensor Math
 - `tmin(x, y)`: element-wise minimum.
 - `tmax(x, y)`: element-wise maximum.
-- `tnorm(x,[dim])`: L2 normalization along the last dimension. If dimension is provided, it uses this dimension. Dimension list can be provided.
-- `snorm(x, [dim])`: scalar/tensor norm magnitude. Frobenius norm along `dim` if specified (`dim` can be a single dimension or a list of dimensions); otherwise over the whole tensor.
+- `tnorm(x, [dim])`: L2 normalization along the last dimension by default, or along `dim`; list input returns a nested list and tensor input returns a tensor.
+- `snorm(x, [dim])`: L2/Frobenius norm of a scalar, list, or tensor. With `dim`, reduces along one or more dimensions.
 - `norm(x, [p], [dims])`: p-norm globally or along one or more dimensions; `p` defaults to `2`.
-- `normalize(x, [p], [dim], [eps])`: normalize each vector along `dim` (default `-1`); defaults to L2 and clamps the divisor to `eps` (`1e-12`).
+- `normalize(x, [p], [dim], [eps])`: normalize each vector along `dim` (default `-1`); defaults to L2 and clamps the divisor to `eps` (`1e-12`). List input returns a nested list; tensor input returns a tensor.
 - `cossim(a, b)` / `cosine_similarity`: cosine similarity.
 - `cov(x, y)`: covariance.
 - `corr(x, y)` / `correlation`: Pearson correlation.
@@ -195,8 +195,8 @@ You can also get the node from comfy manager under the name of More math.
 #### 2.2 Reductions & Statistical Aggregates
 - `sum(x, [dims])`: sum; optional `dims` can be a single dimension or a list of dimensions.
 - `mean(x, [dims])`: mean globally or along dimensions.
-- `std(x, [dims])`: sample standard deviation globally or along dimensions.
-- `var(x, [dims])`: sample variance globally or along dimensions.
+- `std(x, [dims])`: sample standard deviation globally or along dimensions; returns `0` when a reduction contains fewer than two values.
+- `var(x, [dims])`: sample variance globally or along dimensions; returns `0` when a reduction contains fewer than two values.
 - `prod(x, [dims])`: product globally or along dimensions.
 - `logsumexp(x, [dims])`: numerically stable `log(sum(exp(x)))`, globally or along dimensions.
 - `median(x)`: median.
@@ -262,7 +262,10 @@ You can also get the node from comfy manager under the name of More math.
 - `cross(a, b)`: cross product; last dimension must be `3`.
 - `trace(x)`: sum of the main diagonal of each square matrix.
 - `det(x)`: determinant of each square matrix. Singular square matrices return `0`; non-square inputs or inputs with fewer than two dimensions raise an error because their determinant is undefined.
-- `pinv(x)`: permutation inverse for permutation-like values.
+- `solve(A, b)`: solve the square linear system `A*x = b`; prefer this to computing `inv(A) @ b`.
+- `matrix_rank(x, [tol])`: numerical rank of each matrix; optional `tol` is the absolute singular-value tolerance.
+- `inv(x, [pseudo])`: matrix inverse; `pseudo` defaults to false. A singular or non-square matrix raises an error in ordinary mode. Set `pseudo` to a truthy value (for example, `1`) to compute the Moore–Penrose pseudoinverse, which also supports singular and rectangular matrices.
+- `pinv(x)`: permutation inverse for permutation-like values; this is not the matrix pseudoinverse.
 - `singular_value_decomposition(x,[full_matrices])`/`svd`: singular value decomposition.
 - `diagonal_matrix(x,shape,[offset],[dim1],[dim2])` / `diag`: create a diagonal matrix from a vector. The diagonal can be offset from the main diagonal using the `offset` parameter. The `dim1` and `dim2` parameters specify which dimensions to use for the diagonal.
 #### 2.6 Mapping / Sampling

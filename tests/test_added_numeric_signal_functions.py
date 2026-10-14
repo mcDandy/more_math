@@ -3,6 +3,7 @@ import os
 import sys
 
 import torch
+import pytest
 
 _here = os.path.abspath(os.path.dirname(__file__))
 _project_root = os.path.abspath(os.path.join(_here, os.pardir))
@@ -24,7 +25,7 @@ def test_numeric_functions_and_float8_support():
     assert eval_expr("reciprocal([2, 4])") == [0.5, 0.25]
     assert math.isclose(eval_expr("logaddexp(1, 1)"), 1.0 + math.log(2.0))
     assert math.isclose(eval_expr("norm([3, 4])"), 5.0)
-    torch.testing.assert_close(eval_expr("normalize([3, 4])"), torch.tensor([0.6, 0.8]))
+    torch.testing.assert_close(torch.tensor(eval_expr("normalize([3, 4])")), torch.tensor([0.6, 0.8]))
     assert math.isclose(eval_expr("logsumexp([0, 0])"), math.log(2.0), rel_tol=1e-6)
 
     float8_dtype = getattr(torch, "float8_e4m3fn", None)
@@ -34,6 +35,35 @@ def test_numeric_functions_and_float8_support():
         assert eval_expr("normalize(x)", {"x": values}).dtype == float8_dtype
 
 
+def test_normalization_and_norm_support_lists_consistently():
+    normalized = eval_expr("normalize([3, 4])")
+    assert isinstance(normalized, list)
+    torch.testing.assert_close(torch.tensor(normalized), torch.tensor([0.6, 0.8]))
+    assert math.isclose(eval_expr("snorm([3, 4])"), 5.0)
+    torch.testing.assert_close(
+        eval_expr("snorm([[3, 4], [0, 0]], 1)"),
+        torch.tensor([5.0, 0.0]),
+    )
+
+
+@pytest.mark.parametrize("function", ("std", "var"))
+def test_sample_statistics_match_for_small_lists_and_tensors(function):
+    for values in ([], [7.0], torch.tensor([]), torch.tensor([7.0])):
+        assert eval_expr(f"{function}(x)", {"x": values}) == 0.0
+
+    values_list = [[1.0, 3.0], [5.0, 7.0]]
+    values_tensor = torch.tensor(values_list)
+    list_result = eval_expr(f"{function}(x, 1)", {"x": values_list})
+    tensor_result = eval_expr(f"{function}(x, 1)", {"x": values_tensor})
+    torch.testing.assert_close(torch.as_tensor(list_result), torch.as_tensor(tensor_result))
+
+    singleton_slices = torch.tensor([[1.0], [2.0]])
+    torch.testing.assert_close(
+        eval_expr(f"{function}(x, 1)", {"x": singleton_slices}),
+        torch.zeros(2),
+    )
+
+
 def test_linear_algebra_additions():
     torch.testing.assert_close(
         eval_expr("outer(a, b)", {"a": torch.tensor([1.0, 2.0]), "b": torch.tensor([3.0, 4.0])}),
@@ -41,6 +71,46 @@ def test_linear_algebra_additions():
     )
     assert eval_expr("trace(x)", {"x": torch.tensor([[1.0, 2.0], [3.0, 4.0]])}) == 5.0
     assert eval_expr("det(x)", {"x": torch.tensor([[1.0, 2.0], [3.0, 4.0]])}) == -2.0
+
+
+def test_matrix_inverse_and_pseudoinverse():
+    matrix = torch.tensor([[1.0, 2.0], [3.0, 5.0]])
+    inverse = eval_expr("inv(x)", {"x": matrix})
+    torch.testing.assert_close(matrix @ inverse, torch.eye(2))
+
+    rectangular = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    pseudoinverse = eval_expr("inv(x, 1)", {"x": rectangular})
+    assert pseudoinverse.shape == (3, 2)
+    torch.testing.assert_close(rectangular @ pseudoinverse @ rectangular, rectangular)
+    assert "inv" in INBUILT_FUNCTIONS
+    with pytest.raises(ValueError, match="requires square matrices"):
+        eval_expr("inv(x)", {"x": rectangular})
+
+    float8_dtype = getattr(torch, "float8_e4m3fn", None)
+    if float8_dtype is not None:
+        float8_identity = torch.eye(2, dtype=float8_dtype)
+        assert eval_expr("inv(x)", {"x": float8_identity}).dtype == float8_dtype
+
+
+def test_solve_and_matrix_rank():
+    matrix = torch.tensor([[3.0, 1.0], [1.0, 2.0]])
+    rhs = torch.tensor([9.0, 8.0])
+    result = eval_expr("solve(A, b)", {"A": matrix, "b": rhs})
+    torch.testing.assert_close(matrix @ result, rhs)
+    assert eval_expr("matrix_rank(A)", {"A": matrix}) == 2
+
+    singular = torch.tensor([[1.0, 2.0], [2.0, 4.0]])
+    assert eval_expr("matrix_rank(A)", {"A": singular}) == 1
+    assert eval_expr("matrix_rank(A, 1e-5)", {"A": singular}) == 1
+
+    with pytest.raises(ValueError, match="square coefficient matrices"):
+        eval_expr("solve(A, b)", {"A": torch.ones(2, 3), "b": rhs})
+
+    float8_dtype = getattr(torch, "float8_e4m3fn", None)
+    if float8_dtype is not None:
+        float8_identity = torch.eye(2, dtype=float8_dtype)
+        assert eval_expr("solve(A, b)", {"A": float8_identity, "b": float8_identity}).dtype == float8_dtype
+        assert eval_expr("matrix_rank(A)", {"A": float8_identity}) == 2
 
 
 def test_real_fft_round_trip():
@@ -76,5 +146,6 @@ def test_added_symbols_are_registered():
         "cbrt", "reciprocal", "logaddexp", "logsumexp", "norm", "normalize",
         "outer", "trace", "det", "rfft", "irfft", "pink_noise", "pink",
         "brown_noise", "brown",
+        "solve", "matrix_rank",
     }
     assert expected <= INBUILT_FUNCTIONS

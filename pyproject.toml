@@ -12,11 +12,10 @@ authors = [
 readme = "README.md"
 license = {text = "GNU General Public License v3"}
 classifiers = []
-description = "Adds math nodes for FLOAT, STRING, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, SIGMAS, and GUIDER types and allows usage of math expressions with large number of functions and variables, not limited to inputs. List of those is on github of this extension."
+description = "Adds math nodes for FLOAT, STRING, CONDITIONING, LATENT, IMAGE, MASK, NOISE, AUDIO, VIDEO, MODEL, CLIP, VAE, LORA, SIGMAS, and GUIDER types and allows usage of math expressions with large number of functions and variables, not limited to inputs. (lets be honest, it is now scripting engine). List of those is on github of this extension."
 dependencies = [
 
 ]
-
 
 
 [project.optional-dependencies]

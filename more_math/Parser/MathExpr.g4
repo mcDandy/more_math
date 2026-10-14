@@ -358,13 +358,13 @@ func1:
 		*/
 	| EDGE LPAREN expr (COMMA expr)? RPAREN		# EdgeFunc
 		/**
-		  median(x) - computes the median of elements of x
+		  median(x, [dim]) - computes the median globally or along one dimension
 		*/
-	| MEDIAN LPAREN expr RPAREN			# MedianFunc
+	| MEDIAN LPAREN expr (COMMA expr)? RPAREN			# MedianFunc
 		/**
-		  mode(x) - computes the mode of elements of x
+		  mode(x, [dim]) - computes the mode globally or along one dimension
 		*/
-	| MODE LPAREN expr RPAREN			# ModeFunc
+	| MODE LPAREN expr (COMMA expr)? RPAREN			# ModeFunc
 		/**
 		  cumsum(x, [dim]) - computes the cumulative sum, defaulting to the first dimension.
 		*/
@@ -418,13 +418,13 @@ func1:
 		*/
 	| ARGSORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# ArgsortFunc
 		/**
-		  argmin(x, [as_position]) - returns the minimum position in flattened x or coordinates as a list when requested
+		  argmin(x, [as_position], [dim]) - returns the minimum index globally or along dim; as_position returns global coordinates
 		*/
-	| ARGMIN LPAREN expr (COMMA expr)? RPAREN		# ArgminFunc
+	| ARGMIN LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgminFunc
 		/**
-		  argmax(x, [as_position]) - returns the maximum position in flattened x or coordinates as a list when requested
+		  argmax(x, [as_position], [dim]) - returns the maximum index globally or along dim; as_position returns global coordinates
 		*/
-	| ARGMAX LPAREN expr (COMMA expr)? RPAREN		# ArgmaxFunc
+	| ARGMAX LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgmaxFunc
 		/**
 		  softmax(x, [axis]) - applies the softmax function to x (sum of slice == 1.0 and max value <= 1.0). axis defaults to last.
 		*/
@@ -580,25 +580,25 @@ func2:
 		*/
 	| STEP LPAREN expr COMMA expr RPAREN			# StepFunc
 		/**
-		  topk(x, k) - returns the k largest elements of x. For tensors it keeps them in place.
+		  topk(x, k, [dim]) - returns the k largest elements along dim. For tensors it keeps them in place; dim defaults to the last.
 		*/
-	| TOPK LPAREN expr COMMA expr RPAREN			# TopkFunc
+	| TOPK LPAREN expr COMMA expr (COMMA expr)? RPAREN			# TopkFunc
 		/**
-		  botk(x, k) - returns the k smallest elements of x.  For tensors it keeps them in place.
+		  botk(x, k, [dim]) - returns the k smallest elements along dim. For tensors it keeps them in place; dim defaults to the last.
 		*/
-	| BOTK LPAREN expr COMMA expr RPAREN			# BotkFunc
+	| BOTK LPAREN expr COMMA expr (COMMA expr)? RPAREN			# BotkFunc
 		/**
-		  quartile(x, q) - computes the q-th quartile of x
+		  quartile(x, q, [dim]) - computes the q-th quartile globally or along dim
 		*/
-	| QUARTILE LPAREN expr COMMA expr RPAREN		# QuartileFunc
+	| QUARTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# QuartileFunc
 		/**
-		  percentile(x, p) - computes the p-th percentile of x
+		  percentile(x, p, [dim]) - computes the p-th percentile globally or along dim
 		*/
-	| PERCENTILE LPAREN expr COMMA expr RPAREN		# PercentileFunc
+	| PERCENTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PercentileFunc
 		/**
-		  quantile(x, q) - computes the q-th quantile of x
+		  quantile(x, q, [dim]) - computes the q-th quantile globally or along dim
 		*/
-	| QUANTILE LPAREN expr COMMA expr RPAREN		# QuantileFunc
+	| QUANTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# QuantileFunc
 		/**
 		  dot(x, y) - computes the dot product of x and y after flattening both to 1D. Use cross(x, y) if you need a per-vector product with the last dimension kept.
 		*/
@@ -664,13 +664,13 @@ func2:
 		*/
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 		/**
-		  topk_indices(x, k) - returns the indices of the k largest elements of x
+		  topk_indices(x, k, [dim]) - returns the indices of the k largest elements along dim; dim defaults to the last
 		*/
-	| TOPK_IND LPAREN expr COMMA expr RPAREN		# TopkIndFunc
+	| TOPK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# TopkIndFunc
 		/**
-		  botk_indices(x, k) - returns the indices of the k smallest elements of x
+		  botk_indices(x, k, [dim]) - returns the indices of the k smallest elements along dim; dim defaults to the last
 		*/
-	| BOTK_IND LPAREN expr COMMA expr RPAREN		# BotkIndFunc
+	| BOTK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# BotkIndFunc
 		/**
 		  batch_shuffle(x, indices) - shuffles and duplicates or skips the batch dimension of x according to indices
 		*/
@@ -715,6 +715,18 @@ func2:
 		  psnr(a, b, [data_range]) - peak signal-to-noise ratio in dB; data_range defaults to 1
 		*/
 	| PSNR LPAREN expr COMMA expr (COMMA expr)? RPAREN	# PsnrFunc
+		/**
+		  weighted_mean(x, weights, [dims]) - computes the weighted mean globally or along one or more dimensions
+		*/
+	| WEIGHTED_MEAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# WeightedMeanFunc
+		/**
+		  huber_loss(prediction, target, [delta], [reduction]) - computes Huber loss; delta defaults to 1 and reduction to mean
+		*/
+	| HUBER_LOSS LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# HuberLossFunc
+		/**
+		  cross_entropy(logits, target, [dim], [reduction]) - computes cross-entropy from class logits and class indices or target probabilities
+		*/
+	| CROSS_ENTROPY LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# CrossEntropyFunc
 		/**
 		  leaky_relu(x, [negative_slope]) - applies leaky ReLU element-wise; negative_slope defaults to 0.01
 		*/
@@ -1267,6 +1279,9 @@ ONE_HOT: 'one_hot';
 MSE: 'mse';
 MAE: 'mae';
 PSNR: 'psnr';
+WEIGHTED_MEAN: 'weighted_mean';
+HUBER_LOSS: 'huber_loss';
+CROSS_ENTROPY: 'cross_entropy';
 ADD_KEY: 'add_key';
 REMOVE_KEY: 'remove_key' | 'rm_key';
 PUSH: 'stack_push';

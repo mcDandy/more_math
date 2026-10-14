@@ -200,10 +200,11 @@ You can also get the node from comfy manager under the name of More math.
 - `prod(x, [dims])`: product globally or along dimensions.
 - `logsumexp(x, [dims])`: numerically stable `log(sum(exp(x)))`, globally or along dimensions.
 - `median(x)`: median.
-- `mode(x)`: mode.
-- `quartile(x, k)` / `quartil`: quartile (`k` in `0..4`).
-- `percentile(x, p)` / `prcnt`: percentile (`p` in `0..100`).
-- `quantile(x, q)`: quantile (`q` in `0..1`).
+- `median(x, [dim])`: median globally or along one dimension; without `dim`, reduces all elements.
+- `mode(x, [dim])`: mode globally or along one dimension; without `dim`, reduces all elements.
+- `quartile(x, k, [dim])` / `quartil`: quartile (`k` in `0..4`), globally or along one dimension.
+- `percentile(x, p, [dim])` / `prcnt`: percentile (`p` in `0..100`), globally or along one dimension.
+- `quantile(x, q, [dim])`: quantile (`q` in `0..1`), globally or along one dimension.
 - `moment(x, a, k)`: k-th moment around center `a`.
 - `any(x)`: `1.0` if any element is non-zero.
 - `all(x)`: `1.0` if all elements are non-zero.
@@ -216,12 +217,12 @@ You can also get the node from comfy manager under the name of More math.
 #### 2.3 Sorting / Selection / Indices
 - `sort(x, [descending], [dim])`: tensors are sorted along the specified dimension (`dim`); if `dim` is not specified, it defaults to the last dimension (`dim=-1`); lists use Python sorting.
 - `argsort(x, [descending], [dim])`: returns indices along `dim` (defaults to last dimension); `descending` defaults to `false`.
-- `argmin(x, [as_position])`: global minimum index for tensors; when `as_position` is truthy, returns coordinates as a list.
-- `argmax(x, [as_position])`: global maximum index for tensors; when `as_position` is truthy, returns coordinates as a list.
-- `topk(x, k)`: tensors keep the same shape and all non-top-k values are zeroed; lists return the sorted top-k slice.
-- `botk(x, k)`: same as `topk`, but for smallest values.
-- `topk_ind(x, k)` / `topk_indices`: global top-k indices from `flatten()`.
-- `botk_ind(x, k)` / `botk_indices`: global bottom-k indices from `flatten()`.
+- `argmin(x, [as_position], [dim])`: global minimum index, or indices along `dim`; `as_position` returns global coordinates and cannot be combined with `dim`.
+- `argmax(x, [as_position], [dim])`: global maximum index, or indices along `dim`; `as_position` returns global coordinates and cannot be combined with `dim`.
+- `topk(x, k, [dim])`: tensors keep the same shape and all non-top-k values are zeroed; defaults to the last dimension. Lists return the sorted top-k slice.
+- `botk(x, k, [dim])`: same as `topk`, but for smallest values.
+- `topk_ind(x, k, [dim])` / `topk_indices`: top-k indices along `dim`; without `dim`, uses global indices from `flatten()`.
+- `botk_ind(x, k, [dim])` / `botk_indices`: bottom-k indices along `dim`; without `dim`, uses global indices from `flatten()`.
 - `unique(x)`: sorted unique values for tensors and lists.
 - `where(cond, a, b)`: tensor broadcasting for tensor inputs; recursive truthy selection for lists/scalars.
 - `histogram(x, bins, min, max)` / `hist`: histogram counts from `flatten()` in the given interval
@@ -278,6 +279,8 @@ You can also get the node from comfy manager under the name of More math.
 #### 2.7 Losses / Image Metrics
 - `mse(a, b, [reduction])`: mean squared error; reduction is `mean` (default), `sum`, or `none` (`none` returns element-wise values).
 - `mae(a, b, [reduction])`: mean absolute error; reduction is `mean` (default), `sum`, or `none` (`none` returns element-wise values).
+- `huber_loss(prediction, target, [delta], [reduction])`: Huber regression loss; `delta` defaults to `1` and reduction defaults to `mean` (`sum` and `none` are also supported).
+- `cross_entropy(logits, target, [dim], [reduction])`: classification cross-entropy; `target` may contain class indices or probabilities matching `logits`. Class dimension defaults to `1` for multi-dimensional logits and `0` for a class vector; reduction defaults to `mean`.
 - `psnr(a, b, [data_range])`: peak signal-to-noise ratio in decibels; `data_range` defaults to `1` and must be positive.
 
 ---

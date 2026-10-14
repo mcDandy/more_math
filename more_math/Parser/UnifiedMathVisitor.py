@@ -1327,14 +1327,21 @@ class UnifiedMathVisitor(MathExprVisitor):
             k_val = int(k)
 
         if self._is_tensor(val):
-            size = val.shape[-1]
+            dim = -1
+            if len(ctx.expr()) > 2:
+                dim_arg = (yield ctx.expr(2))
+                dims = self._normalize_dims(dim_arg, val.ndim, ctx, "topk dimension")
+                if len(dims) != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: topk expects one dimension")
+                dim = dims[0]
+            size = val.shape[dim]
             k_val = max(1, min(k_val, size))
             score_val = val.abs() if torch.is_complex(val) else val
 
-            _, indices = torch.topk(score_val, k=k_val, dim=-1)
+            _, indices = torch.topk(score_val, k=k_val, dim=dim)
             indices = indices.contiguous()
             mask = torch.zeros_like(score_val, dtype=torch.bool)
-            mask.scatter_(dim=-1, index=indices, value=True)
+            mask.scatter_(dim=dim, index=indices, value=True)
 
             result = torch.where(mask, val, torch.zeros_like(val))
             return result.contiguous()
@@ -1358,14 +1365,21 @@ class UnifiedMathVisitor(MathExprVisitor):
             k_val = int(k)
 
         if self._is_tensor(val):
-            size = val.shape[-1]
+            dim = -1
+            if len(ctx.expr()) > 2:
+                dim_arg = (yield ctx.expr(2))
+                dims = self._normalize_dims(dim_arg, val.ndim, ctx, "botk dimension")
+                if len(dims) != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: botk expects one dimension")
+                dim = dims[0]
+            size = val.shape[dim]
             k_val = max(1, min(k_val, size))
             score_val = val.abs() if torch.is_complex(val) else val
 
-            _, indices = torch.topk(score_val, k=k_val, dim=-1, largest=False)
+            _, indices = torch.topk(score_val, k=k_val, dim=dim, largest=False)
             indices = indices.contiguous()
             mask = torch.zeros_like(score_val, dtype=torch.bool)
-            mask.scatter_(dim=-1, index=indices, value=True)
+            mask.scatter_(dim=dim, index=indices, value=True)
 
             result = torch.where(mask, val, torch.zeros_like(val))
             return result.contiguous()
@@ -2154,7 +2168,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         res = sorted_val[low] + (sorted_val[high] - sorted_val[low]) * frac
         return res
 
-    def _quartile_helper(self, val, q):
+    def _quartile_helper(self, val, q, dim=None):
 
         if self._is_tensor(q) and not self._is_tensor(val):
             val = self._promote_to_tensor(val)
@@ -2164,18 +2178,18 @@ class UnifiedMathVisitor(MathExprVisitor):
                 q = torch.tensor(q, device=self.device).float()
 
             try:
-                if q.ndim > 1:
+                if dim is None and q.ndim > 1:
                     q_flat = q.flatten()
                     res = torch.quantile(val.float(), q_flat)
-                    return res.reshape(q.shape)
-
-                res = torch.quantile(val.float(), q)
+                    res = res.reshape(q.shape)
+                else:
+                    res = torch.quantile(val.float(), q, dim=dim)
                 if self._is_tensor(res) and res.numel() == 1:
                     return float(res.item())
                 return res
             except RuntimeError as e:
                 # Fallback for "input tensor is too large" or other quantile-specific issues
-                if "quantile" in str(e).lower() or "too large" in str(e).lower():
+                if dim is None and ("quantile" in str(e).lower() or "too large" in str(e).lower()):
                     if q.ndim > 1:
                         q_flat = q.flatten()
                         res = self._manual_quantile(val, q_flat)
@@ -2187,6 +2201,8 @@ class UnifiedMathVisitor(MathExprVisitor):
                 raise e
 
         if self._is_list(val):
+            if dim is not None:
+                return self._quartile_helper(self._promote_to_tensor(val), q, dim)
             if not val:
                 return 0.0
             sorted_data = sorted(val)
@@ -2203,44 +2219,53 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitQuartileFunc(self, ctx):
         val = (yield ctx.expr(0))
         k = (yield ctx.expr(1))
+        dim = None
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "quartile dimension", strict=True)
 
         if self._is_tensor(k):
              # q = k * 0.25. Ensure k is treated as int-like (1,2,3)?
              # Old code did int().
-             return self._quartile_helper(val, (k.int().float() * 0.25))
+             return self._quartile_helper(val, (k.int().float() * 0.25), dim)
         if self._is_list(k):
-            return [self._quartile_helper(val, int(x) * 0.25) for x in k]
+            return [self._quartile_helper(val, int(x) * 0.25, dim) for x in k]
 
         k_val = int(k)
         q = min(1.0, max(0.0, k_val * 0.25))
-        return self._quartile_helper(val, q)
+        return self._quartile_helper(val, q, dim)
 
     def visitPercentileFunc(self, ctx):
         val = (yield ctx.expr(0))
         p_raw = (yield ctx.expr(1))
+        dim = None
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "percentile dimension", strict=True)
 
         if self._is_tensor(p_raw):
             # p is 0-100. q = p / 100
-            return self._quartile_helper(val, p_raw.float() / 100.0)
+            return self._quartile_helper(val, p_raw.float() / 100.0, dim)
         if self._is_list(p_raw):
-            return [self._quartile_helper(val, float(x) / 100.0) for x in p_raw]
+            return [self._quartile_helper(val, float(x) / 100.0, dim) for x in p_raw]
 
         p = float(p_raw)
         q = max(0.0, min(1.0, p / 100.0))
-        return self._quartile_helper(val, q)
+        return self._quartile_helper(val, q, dim)
 
     def visitQuantileFunc(self, ctx):
         val = (yield ctx.expr(0))
         q_raw = (yield ctx.expr(1))
+        dim = None
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "quantile dimension", strict=True)
 
         if self._is_tensor(q_raw):
-            return self._quartile_helper(val, q_raw.float())
+            return self._quartile_helper(val, q_raw.float(), dim)
         if self._is_list(q_raw):
-            return [self._quartile_helper(val, float(x)) for x in q_raw]
+            return [self._quartile_helper(val, float(x), dim) for x in q_raw]
 
         q = float(q_raw)
         q = max(0.0, min(1.0, q))
-        return self._quartile_helper(val, q)
+        return self._quartile_helper(val, q, dim)
 
     def visitDotFunc(self, ctx):
         a = self._promote_to_tensor((yield ctx.expr(0)))
@@ -3764,22 +3789,40 @@ class UnifiedMathVisitor(MathExprVisitor):
         return float(bool(val))
 
     def visitMedianFunc(self, ctx):
-        val = yield ctx.expr()
+        val = yield ctx.expr(0)
         if self._is_tensor(val):
-            res = torch.median(val.float())
+            if len(ctx.expr()) > 1:
+                dim = self._to_int((yield ctx.expr(1)), ctx, "median dimension", strict=True)
+                res = torch.median(val.float(), dim=dim).values
+            else:
+                res = torch.median(val.float())
             if res.numel() == 1:
                 return float(res.item())
             return res
+        if len(ctx.expr()) > 1:
+            dim = self._to_int((yield ctx.expr(1)), ctx, "median dimension", strict=True)
+            tensor = self._promote_to_tensor(val)
+            res = torch.median(tensor.float(), dim=dim).values
+            return float(res.item()) if res.numel() == 1 else res
         if self._is_list(val): return sorted(val)[len(val)//2]
         return val
 
     def visitModeFunc(self, ctx):
-        val = yield ctx.expr()
+        val = yield ctx.expr(0)
         if self._is_tensor(val):
-            res = torch.mode(val.float().flatten()).values
+            if len(ctx.expr()) > 1:
+                dim = self._to_int((yield ctx.expr(1)), ctx, "mode dimension", strict=True)
+                res = torch.mode(val.float(), dim=dim).values
+            else:
+                res = torch.mode(val.float().flatten()).values
             if res.numel() == 1:
                 return float(res.item())
             return res
+        if len(ctx.expr()) > 1:
+            dim = self._to_int((yield ctx.expr(1)), ctx, "mode dimension", strict=True)
+            tensor = self._promote_to_tensor(val)
+            res = torch.mode(tensor.float(), dim=dim).values
+            return float(res.item()) if res.numel() == 1 else res
         if self._is_list(val):
              from collections import Counter
              return Counter(val).most_common(1)[0][0]
@@ -3801,12 +3844,24 @@ class UnifiedMathVisitor(MathExprVisitor):
         val = self._promote_to_tensor((yield ctx.expr(0)))
         k_val = yield ctx.expr(1)
         k = int(k_val.item()) if self._is_tensor(k_val) else int(k_val)
+        if len(ctx.expr()) > 2:
+            dims = self._normalize_dims((yield ctx.expr(2)), val.ndim, ctx, "topk_indices dimension")
+            if len(dims) != 1:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: topk_indices expects one dimension")
+            dim = dims[0]
+            return torch.topk(val, k=max(1, min(k, val.shape[dim])), dim=dim, largest=True).indices
         return torch.topk(val.flatten(), k=min(k, val.numel()), largest=True).indices
 
     def visitBotkIndFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0)))
         k_val = yield ctx.expr(1)
         k = int(k_val.item()) if self._is_tensor(k_val) else int(k_val)
+        if len(ctx.expr()) > 2:
+            dims = self._normalize_dims((yield ctx.expr(2)), val.ndim, ctx, "botk_indices dimension")
+            if len(dims) != 1:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: botk_indices expects one dimension")
+            dim = dims[0]
+            return torch.topk(val, k=max(1, min(k, val.shape[dim])), dim=dim, largest=False).indices
         return torch.topk(val.flatten(), k=min(k, val.numel()), largest=False).indices
 
     def _apply_spatial_op(self, tsr, op_fn, original_shape):
@@ -4073,6 +4128,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         reduction = "mean"
         if len(ctx.expr()) > 2:
             reduction = (yield ctx.expr(2))
+        return self._reduce_loss_values(values, reduction, ctx)
+
+    def _reduce_loss_values(self, values, reduction, ctx):
         if not isinstance(reduction, str):
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reduction must be 'none', 'mean', or 'sum'")
         reduction = reduction.strip().lower()
@@ -4109,6 +4167,76 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.tensor(float("inf"), dtype=torch.float32, device=left.device)
         return 20.0 * math.log10(data_range) - 10.0 * torch.log10(mse)
 
+    def visitWeightedMeanFunc(self, ctx):
+        values = self._promote_to_tensor((yield ctx.expr(0))).float()
+        weights = self._promote_to_tensor((yield ctx.expr(1))).float()
+        values, weights = torch.broadcast_tensors(values, weights)
+        dims = None
+        if len(ctx.expr()) > 2:
+            dims = self._normalize_dims((yield ctx.expr(2)), values.ndim, ctx, "weighted_mean dimensions")
+        if dims is None:
+            numerator = (values * weights).sum()
+            denominator = weights.sum()
+        else:
+            reduction_dims = tuple(dims)
+            numerator = (values * weights).sum(dim=reduction_dims)
+            denominator = weights.sum(dim=reduction_dims)
+        if torch.any(denominator == 0):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: weighted_mean weights must have a non-zero sum in every reduction")
+        return numerator / denominator
+
+    def visitHuberLossFunc(self, ctx):
+        prediction = self._promote_to_tensor((yield ctx.expr(0))).float()
+        target = self._promote_to_tensor((yield ctx.expr(1))).float()
+        prediction, target = torch.broadcast_tensors(prediction, target)
+        delta = 1.0
+        if len(ctx.expr()) > 2:
+            delta_value = yield ctx.expr(2)
+            if self._is_tensor(delta_value):
+                if delta_value.numel() != 1:
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: huber_loss delta must be a positive scalar")
+                delta_value = delta_value.item()
+            delta = float(delta_value)
+        if not math.isfinite(delta) or delta <= 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: huber_loss delta must be a positive finite scalar")
+        error = (prediction - target).abs()
+        values = torch.where(error <= delta, 0.5 * error.square(), delta * (error - 0.5 * delta))
+        reduction = (yield ctx.expr(3)) if len(ctx.expr()) > 3 else "mean"
+        return self._reduce_loss_values(values, reduction, ctx)
+
+    def visitCrossEntropyFunc(self, ctx):
+        logits = self._promote_to_tensor((yield ctx.expr(0))).float()
+        target = self._promote_to_tensor((yield ctx.expr(1)))
+        if logits.ndim == 0:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: cross_entropy logits must include a class dimension")
+        dim = 1 if logits.ndim > 1 else 0
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "cross_entropy dimension", strict=True)
+        dims = self._normalize_dims(dim, logits.ndim, ctx, "cross_entropy dimension")
+        if len(dims) != 1:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: cross_entropy expects one class dimension")
+        dim = dims[0]
+        target_is_probabilities = target.shape == logits.shape
+        if dim != 1 and logits.ndim > 1:
+            logits = logits.movedim(dim, 1)
+            if target_is_probabilities:
+                target = target.movedim(dim, 1)
+
+        if target_is_probabilities:
+            target = target.float()
+        else:
+            if target.is_floating_point() and not torch.equal(target, target.round()):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: cross_entropy class targets must be integers")
+            target = target.long()
+
+        reduction = (yield ctx.expr(3)) if len(ctx.expr()) > 3 else "mean"
+        if not isinstance(reduction, str):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reduction must be 'none', 'mean', or 'sum'")
+        reduction = reduction.strip().lower()
+        if reduction not in ("none", "mean", "sum"):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: reduction must be 'none', 'mean', or 'sum'")
+        return F.cross_entropy(logits, target, reduction=reduction)
+
     def visitSoftmaxFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0))).float()
         dim = -1
@@ -4130,11 +4258,16 @@ class UnifiedMathVisitor(MathExprVisitor):
         as_position = False
         if len(ctx.expr()) > 1:
             as_position = self._to_bool((yield ctx.expr(1)), ctx, "argmin as_position")
+        dim = None
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "argmin dimension", strict=True)
+            if as_position:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: argmin as_position cannot be combined with a dimension")
         if as_position:
             return self._arg_extreme_position(val, find_min=True)
         val = self._promote_to_tensor(val)
         if self._is_tensor(val):
-            return torch.argmin(val.flatten())
+            return torch.argmin(val.flatten()) if dim is None else torch.argmin(val, dim=dim)
         if self._is_list(val):
             return float(val.index(min(val)))
         return 0.0
@@ -4144,11 +4277,16 @@ class UnifiedMathVisitor(MathExprVisitor):
         as_position = False
         if len(ctx.expr()) > 1:
             as_position = self._to_bool((yield ctx.expr(1)), ctx, "argmax as_position")
+        dim = None
+        if len(ctx.expr()) > 2:
+            dim = self._to_int((yield ctx.expr(2)), ctx, "argmax dimension", strict=True)
+            if as_position:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: argmax as_position cannot be combined with a dimension")
         if as_position:
             return self._arg_extreme_position(val, find_min=False)
         val = self._promote_to_tensor(val)
         if self._is_tensor(val):
-            return torch.argmax(val.flatten())
+            return torch.argmax(val.flatten()) if dim is None else torch.argmax(val, dim=dim)
         if self._is_list(val):
             return float(val.index(max(val)))
         return 0.0

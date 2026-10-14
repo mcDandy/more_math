@@ -100,3 +100,55 @@ def test_isclose_and_allclose_are_functions():
     torch.testing.assert_close(parse_and_visit("isclose(a, b)", {"a": a, "b": b}), torch.tensor([1.0, 1.0]))
     assert parse_and_visit("allclose(a, b)", {"a": a, "b": b}) == 1.0
 
+def test_order_statistics_support_dimensions():
+    values = torch.tensor([[1.0, 3.0, 3.0], [2.0, 2.0, 8.0]])
+    variables = {"t": values}
+
+    torch.testing.assert_close(parse_and_visit("median(t, 0)", variables), torch.tensor([1.0, 2.0, 3.0]))
+    torch.testing.assert_close(parse_and_visit("mode(t, 1)", variables), torch.tensor([3.0, 2.0]))
+    torch.testing.assert_close(parse_and_visit("quantile(t, 0.5, 0)", variables), torch.tensor([1.5, 2.5, 5.5]))
+    torch.testing.assert_close(parse_and_visit("percentile(t, 50, 1)", variables), torch.tensor([3.0, 2.0]))
+    torch.testing.assert_close(parse_and_visit("quartile(t, 2, 1)", variables), torch.tensor([3.0, 2.0]))
+
+    torch.testing.assert_close(parse_and_visit("argmin(t, 0, 1)", variables), torch.tensor([0, 0]))
+    torch.testing.assert_close(parse_and_visit("argmax(t, 0, 1)", variables), torch.tensor([1, 2]))
+    torch.testing.assert_close(parse_and_visit("topk_ind(t, 1, 1)", variables), torch.tensor([[1], [2]]))
+    torch.testing.assert_close(parse_and_visit("botk_ind(t, 1, 1)", variables), torch.tensor([[0], [0]]))
+    torch.testing.assert_close(
+        parse_and_visit("topk(t, 1, 1)", variables),
+        torch.tensor([[0.0, 3.0, 0.0], [0.0, 0.0, 8.0]]),
+    )
+
+def test_weighted_mean_and_losses():
+    values = torch.tensor([[1.0, 3.0], [2.0, 4.0]])
+    weights = torch.tensor([[1.0, 3.0], [3.0, 1.0]])
+    variables = {"x": values, "w": weights}
+    torch.testing.assert_close(parse_and_visit("weighted_mean(x, w)", variables), torch.tensor(2.5))
+    torch.testing.assert_close(parse_and_visit("weighted_mean(x, w, 1)", variables), torch.tensor([2.5, 2.5]))
+    torch.testing.assert_close(parse_and_visit("weighted_mean(x, w, 0)", variables), torch.tensor([1.75, 3.25]))
+
+    prediction = torch.tensor([0.0, 2.0])
+    target = torch.tensor([1.0, 0.0])
+    torch.testing.assert_close(
+        parse_and_visit("huber_loss(prediction, target)", {"prediction": prediction, "target": target}),
+        torch.tensor(1.0),
+    )
+    assert parse_and_visit("huber_loss(0, 2, 0.5, 'sum')", {}) == 0.875
+    with pytest.raises(ValueError, match="delta must be a positive"):
+        parse_and_visit("huber_loss(0, 1, 0)", {})
+    with pytest.raises(ValueError, match="weights must have a non-zero sum"):
+        parse_and_visit("weighted_mean([1, 2], [1, -1])", {})
+
+    logits = torch.tensor([[2.0, 0.0], [0.0, 2.0]])
+    labels = torch.tensor([0, 1])
+    expected = torch.nn.functional.cross_entropy(logits, labels)
+    torch.testing.assert_close(
+        parse_and_visit("cross_entropy(logits, labels)", {"logits": logits, "labels": labels}),
+        expected,
+    )
+    probabilities = torch.nn.functional.one_hot(labels, num_classes=2).float()
+    torch.testing.assert_close(
+        parse_and_visit("cross_entropy(logits, probabilities, 1, 'sum')", {"logits": logits, "probabilities": probabilities}),
+        torch.nn.functional.cross_entropy(logits, probabilities, reduction="sum"),
+    )
+

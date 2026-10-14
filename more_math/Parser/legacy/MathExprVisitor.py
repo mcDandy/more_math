@@ -1134,6 +1134,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#WeightedMeanFunc.
+    def visitWeightedMeanFunc(self, ctx:MathExprParser.WeightedMeanFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#HuberLossFunc.
+    def visitHuberLossFunc(self, ctx:MathExprParser.HuberLossFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CrossEntropyFunc.
+    def visitCrossEntropyFunc(self, ctx:MathExprParser.CrossEntropyFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#LeakyReluFunc.
     def visitLeakyReluFunc(self, ctx:MathExprParser.LeakyReluFuncContext):
         return self.visitChildren(ctx)

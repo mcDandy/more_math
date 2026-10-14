@@ -2033,6 +2033,33 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#WeightedMeanFunc.
+    def enterWeightedMeanFunc(self, ctx:MathExprParser.WeightedMeanFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#WeightedMeanFunc.
+    def exitWeightedMeanFunc(self, ctx:MathExprParser.WeightedMeanFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#HuberLossFunc.
+    def enterHuberLossFunc(self, ctx:MathExprParser.HuberLossFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#HuberLossFunc.
+    def exitHuberLossFunc(self, ctx:MathExprParser.HuberLossFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CrossEntropyFunc.
+    def enterCrossEntropyFunc(self, ctx:MathExprParser.CrossEntropyFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CrossEntropyFunc.
+    def exitCrossEntropyFunc(self, ctx:MathExprParser.CrossEntropyFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#LeakyReluFunc.
     def enterLeakyReluFunc(self, ctx:MathExprParser.LeakyReluFuncContext):
         pass

@@ -199,7 +199,6 @@ You can also get the node from comfy manager under the name of More math.
 - `var(x, [dims])`: sample variance globally or along dimensions; returns `0` when a reduction contains fewer than two values.
 - `prod(x, [dims])`: product globally or along dimensions.
 - `logsumexp(x, [dims])`: numerically stable `log(sum(exp(x)))`, globally or along dimensions.
-- `median(x)`: median.
 - `median(x, [dim])`: median globally or along one dimension; without `dim`, reduces all elements.
 - `mode(x, [dim])`: mode globally or along one dimension; without `dim`, reduces all elements.
 - `quartile(x, k, [dim])` / `quartil`: quartile (`k` in `0..4`), globally or along one dimension.
@@ -213,6 +212,7 @@ You can also get the node from comfy manager under the name of More math.
 - `cumprod(x)`: cumulative product along dimension `0`.
 - `smin(x, ...[, dims])`: scalar minimum across inputs; optionally reduce the first tensor/list input across `dims`.
 - `smax(x, ...[, dims])`: scalar maximum across inputs; optionally reduce the first tensor/list input across `dims`.
+- `weighted_mean(x, weights, [dims])`: computes `sum(x * weights) / sum(weights)` globally or along one or more dimensions; raises an error if a reduction's weights sum to zero.
 
 #### 2.3 Sorting / Selection / Indices
 - `sort(x, [descending], [dim])`: tensors are sorted along the specified dimension (`dim`); if `dim` is not specified, it defaults to the last dimension (`dim=-1`); lists use Python sorting.

@@ -5,6 +5,7 @@ import math
 import inspect
 import torch.nn.functional as F
 from comfy.nested_tensor import NestedTensor
+from comfy.model_management import throw_exception_if_processing_interrupted
 from . import optical_flow_utils as ofu
 from .Func import LambdaFunction
 from antlr4 import TerminalNode
@@ -2951,6 +2952,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitWhileStmt(self, ctx):
         while True:
+            throw_exception_if_processing_interrupted()
             cond = yield ctx.expr()
             is_true = (
                 torch.any(cond != 0).item() if isinstance(cond, torch.Tensor)
@@ -2987,6 +2989,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             iterator = [iterable]
 
         for val in iterator:
+            throw_exception_if_processing_interrupted()
             self.variables[var_name] = val
             res = yield ctx.stmt()
 
@@ -3174,6 +3177,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return None
 
     def visitCallExp(self, ctx):
+        throw_exception_if_processing_interrupted()
         func_name = ctx.VARIABLE().getText()
 
         builtin_visit = f"visit{func_name[:1].upper()}{func_name[1:]}Func"

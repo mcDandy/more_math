@@ -59,11 +59,11 @@ class ModelMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",use_compute_device=True,stack={},dict_mode=False):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",use_compute_device=True,stack=None,dict_mode=False):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",use_compute_device=True,stack={},dict_mode=False) -> io.NodeOutput:
+    def execute(cls, V, F, Expression, length_mismatch="tile",use_compute_device=True,stack=None,dict_mode=False) -> io.NodeOutput:
         # Determine reference model for cloning
         a = V.get("V0")
         stack = copy.deepcopy(stack) if stack is not None else {}

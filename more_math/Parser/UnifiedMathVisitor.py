@@ -3,6 +3,7 @@ import os
 import torch
 import math
 import inspect
+import weakref
 import torch.nn.functional as F
 from comfy.nested_tensor import NestedTensor
 from comfy.model_management import throw_exception_if_processing_interrupted
@@ -142,6 +143,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self.depth = depth
         self._scope_stack = []
         self._state_storage = state_storage if state_storage is not None else {}
+        self._owned_tensors = weakref.WeakValueDictionary()
 
     def visit(self, tree):
         if tree is None:
@@ -3062,6 +3064,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         target = self.variables[var_name]
 
         if self._is_tensor(target):
+            # Inputs can be cached outputs of upstream nodes, so copy before the first in-place write.
+            if self._is_plain_tensor(target) and self._owned_tensors.get(id(target)) is not target:
+                target = target.clone()
+                self._owned_tensors[id(target)] = target
+                self.variables[var_name] = target
+
             # Process indices for PyTorch
             torch_indices = []
             for idx in indices:
@@ -3179,10 +3187,6 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitCallExp(self, ctx):
         throw_exception_if_processing_interrupted()
         func_name = ctx.VARIABLE().getText()
-
-        builtin_visit = f"visit{func_name[:1].upper()}{func_name[1:]}Func"
-        if hasattr(self, builtin_visit):
-            return (yield getattr(self, builtin_visit)(ctx))
 
         # 1) Pokud proměnná existuje a je to lambda uložená v variables, aplikuj ji
         if func_name in self.variables and isinstance(self.variables[func_name], LambdaFunction):

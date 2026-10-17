@@ -78,11 +78,11 @@ class LatentMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",remember_stack=False,use_compute_device=True,stack={}):
+    def check_lazy_status(cls, Expression, V, F,batching, length_mismatch="tile",remember_stack=False,use_compute_device=True,stack=None):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression,batching, length_mismatch="tile",remember_stack=False,use_compute_device=True,stack={}) -> io.NodeOutput:
+    def execute(cls, V, F, Expression,batching, length_mismatch="tile",remember_stack=False,use_compute_device=True,stack=None) -> io.NodeOutput:
         # Determine reference latent
         ref_latent = None
         for lat in V.values():
@@ -92,7 +92,7 @@ class LatentMathNode(io.ComfyNode):
 
         if ref_latent is None:
              raise ValueError("At least one input is required.")
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
         original_device = get_tensor_device(ref_latent.get("samples"))
         compute_device = comfy.model_management.get_torch_device() if use_compute_device else original_device
         working_V = move_to_device(V, compute_device) if compute_device is not None and compute_device != original_device else V

@@ -57,7 +57,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         hook_target="all",
         remember_stack=False,
         debug_hooks=False,
-        stack={},
+        stack=None,
     ):
         return checkLazyNew(Expression, {}, F)
 
@@ -76,7 +76,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
         if V is None or not hasattr(V, "model_options"):
             raise ValueError("Vstupní guider musí mít model_options.")
 
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
         tree = parse_expr(Expression) if isinstance(Expression, str) else Expression
 
         hit_flags = {

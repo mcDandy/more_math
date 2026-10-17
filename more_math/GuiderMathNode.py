@@ -63,7 +63,7 @@ class GuiderMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression1, V, F,remember_stack=True,stack={}):
+    def check_lazy_status(cls, Expression,Expression1, V, F,remember_stack=True,stack=None):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression1,V,F)
         return d|b
@@ -71,7 +71,7 @@ class GuiderMathNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, V, F, Expression, Expression1,remember_stack = True, stack=None):
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
         guider = MathGuider(V, F, Expression, Expression1, stack);
         stack = stack if remember_stack else copy.deepcopy(stack)
         return (guider, stack)

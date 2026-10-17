@@ -45,11 +45,11 @@ class SigmasMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",stack=None):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",stack={}):
+    def execute(cls, V, F, Expression, length_mismatch="tile",stack=None):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Determine reference image for zero-initialization (fallback for a,b,c,d)

@@ -7,7 +7,8 @@ import torch
 from PIL import ImageFont
 
 from more_math.Parser.UnifiedMathVisitor import ChangeTrackingDict, MathDict, UnifiedMathVisitor
-from more_math.helper_functions import parse_expr
+from more_math.helper_functions import checkLazyNew, parse_expr
+from more_math.FloatMathNode import FloatMathNode
 
 
 def _visit(expression, variables):
@@ -220,3 +221,31 @@ def test_perlin_uses_full_unit_range():
     result = _visit("perlin(1, 8, 1, 0, [4096])", {})
 
     assert result.min() < 0.05 and result.max() > 0.95
+
+
+def test_indexed_assignment_does_not_modify_input_tensor():
+    a = torch.zeros(3)
+    result = _visit("a[0] = 5; a[1] = 6; a", {"a": a})
+
+    assert torch.equal(a, torch.zeros(3))
+    assert torch.equal(result, torch.tensor([5.0, 6.0, 0.0]))
+
+
+def test_user_function_named_like_builtin_visitor():
+    assert _visit("sigmoid(x) -> x + 1; sigmoid(1)", {}) == 2
+
+
+@pytest.mark.parametrize("expression, needed", [
+    ("w += 1; w", True),
+    ("f() -> w * 2; f()", True),
+    ("f(w) -> w * 2; f(1)", False),
+])
+def test_lazy_check_finds_hidden_reads(expression, needed):
+    assert ("F0" in checkLazyNew(expression, {"V0": 1.0}, {"F0": None})) == needed
+
+
+def test_unconnected_stack_is_not_shared_between_runs():
+    FloatMathNode.execute("stack_push(0, 1)", {"V0": 0.0}, remember_stack=True)
+    _, stack = FloatMathNode.execute("stack_push(0, 1)", {"V0": 0.0}, remember_stack=True)
+
+    assert stack == {0: [1.0]}

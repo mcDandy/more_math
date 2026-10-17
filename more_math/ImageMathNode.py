@@ -63,11 +63,11 @@ class ImageMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,use_compute_device=True,stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,use_compute_device=True,stack=None):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="error",batching=0,remember_stack=False,use_compute_device=True,stack={}):
+    def execute(cls, V, F, Expression, length_mismatch="error",batching=0,remember_stack=False,use_compute_device=True,stack=None):
         # I and F are Autogrow.Type which is dict[str, Any]
 
         # Identify all present tensors and their keys
@@ -80,7 +80,7 @@ class ImageMathNode(io.ComfyNode):
         compute_device = comfy.model_management.get_torch_device() if use_compute_device else original_device
         working_V = move_to_device(V, compute_device) if compute_device is not None and compute_device != original_device else V
         tensors = [working_V[k] for k in tensor_keys]
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
 
         # Normalize all tensors together to find the common target shape
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)

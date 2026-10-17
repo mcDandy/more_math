@@ -96,13 +96,13 @@ class VideoMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile",use_compute_device=True,stack={}):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile",use_compute_device=True,stack=None):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression_pi,V,F)
         return d|b
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile",use_compute_device=True,stack={}):
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile",use_compute_device=True,stack=None):
         tensor_keys = [k for k, v in V.items() if v is not None]
         if not tensor_keys:
              raise ValueError("At least one input is required.")

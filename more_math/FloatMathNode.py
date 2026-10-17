@@ -58,13 +58,13 @@ class FloatMathNode(io.ComfyNode):
     tooltip = cleandoc(__doc__)
 
     @classmethod
-    def check_lazy_status(cls, FloatFunc, V, remember_stack=False, stack={}):
+    def check_lazy_status(cls, FloatFunc, V, remember_stack=False, stack=None):
         # remember_stack ani stack nemění lazy logiku
         return checkLazyNew(FloatFunc, V, V)
 
     @classmethod
-    def execute(cls, FloatFunc, V, remember_stack=False, stack={}):
-        work_stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+    def execute(cls, FloatFunc, V, remember_stack=False, stack=None):
+        work_stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
 
         variables = {}
         # Populate aliases

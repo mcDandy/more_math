@@ -56,18 +56,18 @@ class MaskMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,stack={}):
+    def check_lazy_status(cls, Expression, V, F, length_mismatch="tile",batching=0,remember_stack=False,stack=None):
         return checkLazyNew(Expression,V,F)
 
     @classmethod
-    def execute(cls, V, F, Expression, length_mismatch="tile",batching=0,remember_stack=False,stack={}):
+    def execute(cls, V, F, Expression, length_mismatch="tile",batching=0,remember_stack=False,stack=None):
         # Identify all present tensors and their keys
         tensor_keys = [k for k, v in V.items() if v is not None]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
 
         tensors = [V[k] for k in tensor_keys]
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
         # Normalize all tensors together
         normalized_tensors = normalize_to_common_shape(*tensors, mode=length_mismatch)
         V_norm = dict(zip(tensor_keys, normalized_tensors))

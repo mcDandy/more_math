@@ -1,4 +1,4 @@
-from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, move_to_device, LazyVariableDict, checkLazyNew
+from .helper_functions import generate_dim_variables, parse_expr, as_tensor, get_v_variable, get_f_variable, get_tensor_device, LazyVariableDict, checkLazyNew
 from .Parser.UnifiedMathVisitor import MathDict, ChangeTrackingDict, UnifiedMathVisitor
 import comfy
 import comfy.model_management
@@ -109,7 +109,7 @@ def calculate_patches(Model, a, b=None, c=None, d=None, w=0.0, x=0.0, y=0.0, z=0
     """Legacy calculate_patches for backward compatibility."""
     return calculate_patches_autogrow(Model, V={"V0": a, "V1": b, "V2": c, "V3": d}, F={"F0": w, "F1": x, "F2": y, "F3": z}, pbar=None, mapping={"a": "V0", "b": "V1", "c": "V2", "d": "V3", "w": "F0", "x": "F1", "y": "F2", "z": "F3"}, use_compute_device=use_compute_device)
 
-def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=None, use_compute_device=False):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Autogrow inputs.
     Iterates over the UNION of keys from all input models to support merging disjoint architectures/patches.
@@ -192,8 +192,6 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
             continue
         if original_device is None:
             original_device = get_tensor_device(current_sd)
-        if compute_device is not None and original_device is not None and compute_device != original_device:
-            current_sd = move_to_device(current_sd, compute_device)
         current_state_dicts[v_name] = current_sd
 
     # Progress bar if possible (comfy.utils.ProgressBar might assume unthreaded?)
@@ -308,15 +306,8 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
 
         variables = variables | generate_dim_variables(ref_tensor)
 
-        # Execute math
-        # Store original V0 before visiting, since visitor may modify it
+        # Read V0 before visiting, since the expression may rebind it
         original_v0 = variables.get("V0")
-        if original_v0 is not None:
-            # If it's a tensor, clone it; if it's a dict, copy its items
-            if isinstance(original_v0, torch.Tensor):
-                original_v0 = original_v0.clone()
-            elif isinstance(original_v0, dict):
-                original_v0 = MathDict({k: (v.clone() if isinstance(v, torch.Tensor) else v) for k, v in original_v0.items()})
 
         visitor = UnifiedMathVisitor(variables, ref_tensor.shape,state_storage=stack)
         res = visitor.visit(tree)
@@ -358,7 +349,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], us
     return patches
 
 
-def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=None, use_compute_device=False):
     """
     Calculate patches for model-like objects (Model, VAE, CLIP) using Dictionary mode.
     Evaluates the expression once for all keys simultaneously.
@@ -423,8 +414,6 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
             continue
         if original_device is None:
             original_device = get_tensor_device(state_dict)
-        if compute_device is not None and original_device is not None and compute_device != original_device:
-            state_dict = move_to_device(state_dict, compute_device)
         state_dicts[name] = state_dict
 
     if not state_dicts:
@@ -495,9 +484,9 @@ def calculate_patches_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], u
         variables[f"{name}_d"] = make_delta_dict
 
     visitor_device = compute_device if compute_device is not None else next(iter(references.values())).device
-    # Store a copy of V0 BEFORE visiting, since the visitor may modify it
+    # Snapshot V0's entries BEFORE visiting, since the expression may reassign them
     v0_dict = variables.get("V0", MathDict({key: torch.zeros_like(reference) for key, reference in references.items()}))
-    originals = MathDict({k: (v.clone() if isinstance(v, torch.Tensor) else v) for k, v in v0_dict.items()})
+    originals = dict(v0_dict)
     result = UnifiedMathVisitor(variables, device=visitor_device, state_storage=stack).visit(tree)
     if not isinstance(result, (MathDict, dict)):
         if isinstance(result, (float, int)):

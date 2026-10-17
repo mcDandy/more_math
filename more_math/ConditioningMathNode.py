@@ -67,19 +67,19 @@ class ConditioningMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0,remember_stack=False,use_compute_device=True, stack={}):
+    def check_lazy_status(cls, Expression,Expression_pi, V, F, length_mismatch="tile", batching=0,remember_stack=False,use_compute_device=True, stack=None):
         d = checkLazyNew(Expression,V,F)
         b = checkLazyNew(Expression_pi,V,F)
         return d|b
 
 
     @classmethod
-    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0,remember_stack=False,use_compute_device=True, stack={}):
+    def execute(cls, V, F, Expression, Expression_pi, length_mismatch="tile", batching=0,remember_stack=False,use_compute_device=True, stack=None):
         # Identify all present conditioning inputs
         tensor_keys = [k for k, v in V.items() if v is not None and isinstance(v, list) and len(v) > 0]
         if not tensor_keys:
              raise ValueError("At least one input is required.")
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
 
         needed_vars = checkLazyNew(Expression, V, F) | checkLazyNew(Expression_pi, V, F)
         needed_tensor_keys = [k for k in tensor_keys if k in needed_vars]

@@ -53,12 +53,13 @@ class StringMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Expression, V, F,batching=0, remember_stack=False,stack={}):
+    def check_lazy_status(cls, Expression, V, F,batching=0, remember_stack=False,stack=None):
         return checkLazyNew(Expression,V,F)
 
 
     @classmethod
-    def execute(cls, V, F, Expression, batching=0, remember_stack=False, stack={}):
+    def execute(cls, V, F, Expression, batching=0, remember_stack=False, stack=None):
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
 
         variables = {
             "a": V.get("V0",""), "b": V.get("V1",""), "c": V.get("V2",""), "d": V.get("V3",""),

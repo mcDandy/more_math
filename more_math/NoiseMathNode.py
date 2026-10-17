@@ -53,12 +53,12 @@ class NoiseMathNode(io.ComfyNode):
         )
 
     @classmethod
-    def check_lazy_status(cls, Noise, V, F,remember_stack=False,stack={}):
+    def check_lazy_status(cls, Noise, V, F,remember_stack=False,stack=None):
         return checkLazyNew(Noise,V,F)
 
     @classmethod
-    def execute(cls, Noise, V,F,remember_stack=False,stack={}):
-        stack = stack if remember_stack else (copy.deepcopy(stack) if stack is not None else {})
+    def execute(cls, Noise, V,F,remember_stack=False,stack=None):
+        stack = {} if stack is None else (stack if remember_stack else copy.deepcopy(stack))
         executer = NoiseExecutor(V,F, Noise,stack)
         stack = stack if remember_stack else copy.deepcopy(stack)
         return (executer,stack)

@@ -337,31 +337,6 @@ def get_f_variable(f_dict):
     except Exception:
         return None, len(ordered_values)
 
-def _collect_reads_only( node, needed_vars, assigned_vars, shadowed_vars):
-    if node is None:
-        return
-
-    node_type = type(node).__name__
-
-    if node_type == 'VariableExpContext':
-        var_name = node.VARIABLE().getText()
-        if var_name in shadowed_vars:
-            return
-        if var_name not in assigned_vars:
-            needed_vars.add(var_name)
-        return
-
-    if node_type == 'FunctionDefContext':
-        return
-
-    if node_type == 'VarDefContext':
-        for expr in node.expr():
-            _collect_reads_only(expr, needed_vars, assigned_vars, shadowed_vars)
-        return
-
-    for i in range(node.getChildCount()):
-        _collect_reads_only(node.getChild(i), needed_vars, assigned_vars, shadowed_vars)
-
 def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
     """Recursively collect variable reads from an AST node"""
     if node is None:
@@ -379,9 +354,15 @@ def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
             needed_vars.add(var_name)
         return
 
-    # Skip
+    # Function bodies are scanned by checkLazyNew with their parameters shadowed
     if node_type == 'FunctionDefContext':
         return
+
+    # Compound (x += ...) and indexed (x[i] = ...) assignments read their target
+    if node_type == 'VarDefContext' and (node.LBRACKET() or node.EQUEALS() is None):
+        var_name = node.VARIABLE().getText()
+        if var_name not in shadowed_vars and var_name not in assigned_vars:
+            needed_vars.add(var_name)
 
     # Recursively visit children
     for i in range(node.getChildCount()):
@@ -411,14 +392,14 @@ def checkLazyNew(Expression, V, F):
 
         rule_name = parser.ruleNames[child.getRuleIndex()] if child.getRuleIndex() < len(parser.ruleNames) else None
 
-        # Process function definitions: scan for reads but ignore writes
+        # Process function definitions: scan the body for reads, ignoring parameters
         if rule_name == 'funcDef':
             func_params = set()
             if child.paramList():
                 for param in child.paramList().VARIABLE():
                     func_params.add(param.getText())
 
-            _collect_reads_only(child, needed_vars, assigned_vars, func_params)
+            _collect_vars_from_node(child.block() or child.expr(), needed_vars, assigned_vars, func_params)
 
         # Top-level assignments
         elif rule_name == 'varDef':

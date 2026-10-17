@@ -5,7 +5,7 @@ import torch
 from collections.abc import Mapping
 
 
-def calculate_lora_dict_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+def calculate_lora_dict_autogrow(Expr, V, F, pbar=None, mapping=None, stack=None, use_compute_device=False):
 
     """
     Calculate a new LORA_MODEL dict[str, Tensor] from math expressions applied
@@ -157,7 +157,7 @@ def calculate_lora_dict_autogrow(Expr, V, F, pbar=None, mapping=None, stack=[], 
     return result
 
 
-def calculate_lora_dict_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=[], use_compute_device=False):
+def calculate_lora_dict_dict_mode(Expr, V, F, pbar=None, mapping=None, stack=None, use_compute_device=False):
     if V is None:
         V = {}
     if F is None:

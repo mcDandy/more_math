@@ -101,6 +101,12 @@ function ensureAutocompleteStyles() {
             font-weight: 600;
         }
 
+        .mrmth-tt-details {
+            margin-top: 4px;
+            white-space: pre-wrap;
+            color: #9aa0a6;
+        }
+
         .mrmth-sig-call .mrmth-sig-active {
             color: #ffd700;
             text-decoration: underline;
@@ -558,9 +564,11 @@ export function attachAutocomplete(textarea) {
         argsText += meta.maxArgs === null ? "+ (variadic)" : `, max ${meta.maxArgs}`;
 
         tooltipEl.innerHTML = `
-            <div class="mrmth-tt-title">${escapeHtml(meta.snippet)}</div>
+            <div class="mrmth-tt-title">${escapeHtml(meta.signature)}</div>
             <div class="mrmth-tt-desc">${escapeHtml(meta.description)}</div>
+            ${meta.details ? `<div class="mrmth-tt-details">${escapeHtml(meta.details)}</div>` : ""}
             <div class="mrmth-tt-args">${argsText}</div>
+            ${meta.aliases.length ? `<div class="mrmth-tt-args">Also: ${escapeHtml(meta.aliases.join(", "))}</div>` : ""}
         `;
         tooltipEl.style.display = "block";
 
@@ -758,11 +766,11 @@ export function attachAutocomplete(textarea) {
             return;
         }
 
-        const argNames = (meta.snippet.match(/\((.*)\)$/)?.[1] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-        const variadicAt = argNames.indexOf("...");
+        // A variadic arg (`...`, `[sizes...]`) absorbs every argument from its position on.
+        const variadicAt = meta.args.findIndex((a) => a.includes("..."));
         let active = ctx.argIndex;
         if (variadicAt !== -1 && active >= variadicAt) active = variadicAt;
-        const args = argNames
+        const args = meta.args
             .map((a, i) => (i === active ? `<span class="mrmth-sig-active">${escapeHtml(a)}</span>` : escapeHtml(a)))
             .join(", ");
 

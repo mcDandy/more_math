@@ -692,7 +692,7 @@ func2:
 		*/
 	| PUSH LPAREN expr COMMA expr RPAREN			# PushFunc
 		/**
-		  get_value(slot) - returns the value at slot from stack
+		  get_value(tensor, position) - reads the value at an N-D position of tensor. Superseded by tensor[position] indexing
 		*/
 	| GET_VALUE LPAREN expr COMMA expr RPAREN		# GetValueFunc
 		/**

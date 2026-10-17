@@ -1098,10 +1098,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._unary_op((yield ctx.expr()), lambda x: x - torch.floor(x), lambda x: x - math.floor(x))
 
     def visitGammaFunc(self, ctx):
-        torch_gamma = getattr(torch.special, "gamma", None)
-        if torch_gamma is None:
-            torch_gamma = lambda x: torch.exp(torch.lgamma(x))
-        return self._unary_op((yield ctx.expr()), torch_gamma, math.gamma)
+        def tensor_gamma(x):
+            # gamma(x) is negative on (-1, 0), (-3, -2), ...
+            negative = (x < 0) & (torch.ceil(-x) % 2 == 1)
+            return torch.where(negative, -1.0, 1.0) * torch.exp(torch.lgamma(x))
+
+        return self._unary_op((yield ctx.expr()), tensor_gamma, math.gamma)
 
     def visitSigmoidFunc(self, ctx):
         return self._unary_op((yield ctx.expr()), torch.sigmoid, lambda x: 1.0 / (1.0 + math.exp(-x)))
@@ -1163,7 +1165,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             return F.normalize(val, p=2, dim=dim)
         if self._is_list(val):
             return F.normalize(self._promote_to_tensor(val), p=2, dim=dim).tolist()
-        return 1.0 if val != 0 else 0.0
+        return math.copysign(1.0, val) if val != 0 else 0.0
 
     def visitNormFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0)))
@@ -1509,7 +1511,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         for i, p in enumerate(pos_list):
             idx = int(p)
             if idx < 0 or idx >= shape[i]:
-                 raise ValueError(f"{ctx.VARIABLE().getPayload().line}:{ctx.VARIABLE().getPayload().column}: Index {idx} out of bounds for dimension {i} with size {shape[i]}")
+                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Index {idx} out of bounds for dimension {i} with size {shape[i]}")
             offset += idx * c_strides[i]
 
         return var.contiguous().flatten()[offset]
@@ -1905,9 +1907,9 @@ class UnifiedMathVisitor(MathExprVisitor):
         if isinstance(dims, torch.Tensor):
             dims = dims.flatten().long().tolist()
         elif isinstance(dims, (list, tuple)):
-            dims = [int(0.5 + float(d)) for d in dims] # Round floats to safe ints
+            dims = [round(float(d)) for d in dims]
         elif isinstance(dims, (int, float)):
-            dims = [int(0.5 + float(dims))]
+            dims = [round(float(dims))]
 
         return tsr.permute(*dims)
 
@@ -2220,14 +2222,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(val) or self._is_list(val):
             dims = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else None
             return self._sample_statistic(val, dims, ctx, "std", torch.std)
-        return val
+        return 0.0
 
     def visitVarFunc(self, ctx):
         val = (yield ctx.expr(0))
         if self._is_tensor(val) or self._is_list(val):
             dims = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else None
             return self._sample_statistic(val, dims, ctx, "var", torch.var)
-        return val
+        return 0.0
 
     def visitCountFunc(self, ctx):
         val = yield ctx.expr()
@@ -2550,8 +2552,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         return ofu.apply_flow(image, flow)
 
     def visitFlipFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr(0)))
+        val = (yield ctx.expr(0))
         dims = (yield ctx.expr(1))
+        if isinstance(val, str):
+            return val[::-1]
+        val = self._promote_to_tensor(val)
 
         if self._is_list(dims):
             dims_tuple = tuple(int(x) for x in dims)
@@ -3845,9 +3850,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitWeibullDistFunc(self, ctx):
         seed_val = yield ctx.expr(0)
-        shape_arg = self.shape;
-        if len(ctx.expr()) > 3:
-            shape_arg = (yield ctx.expr(3))
         seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
         scale_val = yield ctx.expr(1)
         scale = float(scale_val.item()) if self._is_tensor(scale_val) else float(scale_val)
@@ -3856,7 +3858,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         shape_arg = self.shape
         if len(ctx.expr()) > 3:
             shape_arg = (yield ctx.expr(3))
-            shape_arg = self._normalize_shape_arg(shape_arg, ctx, "weibull")
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "weibull")
 
         # Implement Weibull using generator-aware uniform: scale * (-log(u))^(1/concentration)
         generator = torch.Generator(device=self.device).manual_seed(seed)
@@ -3944,7 +3946,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             tensor = self._promote_to_tensor(val)
             res = torch.median(tensor.float(), dim=dim).values
             return float(res.item()) if res.numel() == 1 else res
-        if self._is_list(val): return sorted(val)[len(val)//2]
+        if self._is_list(val): return sorted(val)[(len(val) - 1) // 2]
         return val
 
     def visitModeFunc(self, ctx):
@@ -4113,7 +4115,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         def blur_op(x):
             kernel_size = int(6 * sigma + 1)
             if kernel_size % 2 == 0: kernel_size += 1
-            coords = torch.linspace(-kernel_size//2, kernel_size//2, kernel_size, device=x.device)
+            coords = torch.linspace(-(kernel_size // 2), kernel_size // 2, kernel_size, device=x.device)
             kernel = torch.exp(-coords**2 / (2 * sigma**2))
             kernel = kernel / kernel.sum()
 
@@ -4432,13 +4434,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         return 0.0
 
     def visitUniqueFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr()))
-        if self._is_tensor(val):
-            unique_vals, _ = torch.unique(val.flatten(), return_counts=False, sorted=True)
-            return unique_vals
+        val = (yield ctx.expr())
         if self._is_list(val):
-            return sorted(list(set(val)))
-        return val
+            return sorted(set(val))
+        return torch.unique(self._promote_to_tensor(val).flatten(), sorted=True)
 
     def visitFlattenFunc(self, ctx):
         val = (yield ctx.expr())
@@ -5285,7 +5284,6 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitErodeFunc(self, ctx):
         tsr_val = yield ctx.expr(0)
-        tsr = self._promote_to_tensor(tsr_val)
         kernel_size = yield ctx.expr(1) if len(ctx.expr()) > 1 else 3
         tsr = self._promote_to_tensor(tsr_val)
 
@@ -5525,7 +5523,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         dim_val = yield exprs[-1]
         if any(isinstance(x, str) for x in items):
-            return "".join(str(items))
+            return "".join(str(x) for x in items)
 
         if all(self._is_list(x) for x in items):
             res = []
@@ -5783,11 +5781,8 @@ class UnifiedMathVisitor(MathExprVisitor):
                 )
             kwargs = {"size": size, "mode": interp_mode}
 
-        elif self._is_tensor(arg):
-            if arg.numel() == 1:
-                size = (self._to_int(arg, ctx, "interpolate"),)
-            else:
-                size = tuple(self._to_int(v, ctx, "interpolate") for v in arg.flatten().tolist())
+        elif self._is_tensor(arg) and arg.ndim > 0:
+            size = tuple(self._to_int(v, ctx, "interpolate") for v in arg.flatten().tolist())
 
             if len(size) != spatial_dims:
                 raise ValueError(
@@ -5796,7 +5791,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             kwargs = {"size": size, "mode": interp_mode}
 
         else:
-            kwargs = {"scale_factor": float(arg), "mode": interp_mode}
+            kwargs = {"scale_factor": float(arg.item() if self._is_tensor(arg) else arg), "mode": interp_mode}
 
         if interp_mode in ("linear", "bilinear", "trilinear"):
             kwargs["align_corners"] = False
@@ -6189,10 +6184,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         dim = self._to_int(dim_val, ctx, "coords dim", strict=True)
         dtype = torch.float32
         if len(ctx.expr()) > 2:
-            dtype_val = yield ctx.expr(2)
-            if isinstance(dtype_val, torch.dtype):
-                dtype = dtype_val
-        base = torch.zeros(shape, dtype=dtype, device=self.device)
+            template = yield ctx.expr(2)
+            if not self._is_tensor(template):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: dtype_template must be a tensor")
+            dtype = template.dtype
         values = torch.arange(shape[dim], dtype=dtype, device=self.device)
         view_shape = [1] * len(shape)
         view_shape[dim] = shape[dim]

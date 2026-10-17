@@ -1,4 +1,5 @@
 import importlib
+import math
 import os
 
 import pytest
@@ -146,3 +147,53 @@ def test_nonzero_empty_result_preserves_rank():
 
     assert result.shape == (0, 2)
     assert result.dtype == torch.int64
+
+
+def test_unique_tensor_and_list():
+    assert torch.equal(_visit("unique(x)", {"x": torch.tensor([3.0, 1.0, 2.0, 1.0])}), torch.tensor([1.0, 2.0, 3.0]))
+    assert _visit("unique(x)", {"x": [3.0, 1.0, 3.0]}) == [1.0, 3.0]
+
+
+@pytest.mark.parametrize(
+    ("expression", "expected"),
+    (("std(5)", 0.0), ("var(5)", 0.0), ("tnorm(-3)", -1.0), ("median(x)", 2.0)),
+)
+def test_scalar_and_list_statistics(expression, expected):
+    assert _visit(expression, {"x": [4.0, 1.0, 3.0, 2.0]}) == expected
+
+
+def test_gamma_tensor_keeps_sign_for_negative_inputs():
+    result = _visit("gamma(x)", {"x": torch.tensor([-0.5, -1.5, 0.5])})
+
+    assert torch.allclose(result, torch.tensor([math.gamma(-0.5), math.gamma(-1.5), math.gamma(0.5)]))
+
+
+def test_get_value_out_of_bounds_reports_position():
+    with pytest.raises(ValueError, match="1:0: Index 5 out of bounds"):
+        _visit("get_value(x, [5])", {"x": torch.tensor([1.0, 2.0])})
+
+
+def test_permute_accepts_negative_dims():
+    assert _visit("permute(x, [0, -1, 1])", {"x": torch.zeros(2, 3, 4)}).shape == (2, 4, 3)
+
+
+def test_blur_kernel_is_centred():
+    image = torch.zeros(1, 1, 9, 9)
+    image[0, 0, 4, 4] = 1.0
+
+    result = _visit("blur(x, 1)", {"x": image})[0, 0]
+
+    assert torch.allclose(result, result.flip(0)) and torch.allclose(result, result.flip(1))
+
+
+def test_interpolate_zero_dim_tensor_is_scale_factor():
+    assert _visit("interpolate_nearest(x, s)", {"x": torch.zeros(1, 1, 4, 4), "s": torch.tensor(2.0)}).shape == (1, 1, 8, 8)
+
+
+def test_string_flip_and_concatenate():
+    assert _visit('flip("abc", 0)', {}) == "cba"
+    assert _visit('cat("a", "b", 0)', {}) == "ab"
+
+
+def test_coords_uses_dtype_template():
+    assert _visit("coords([2, 3], 1, t)", {"t": torch.zeros(1, dtype=torch.int64)}).dtype == torch.int64

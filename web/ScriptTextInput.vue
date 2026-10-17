@@ -2,25 +2,10 @@
   <div
     class="mrmth-editor mrmth-editor-v2"
     data-mrmth-script-widget="vue"
-    ref="wrapperRef"
-    :style="editorStyle"
   >
     <!-- Gutter / Line Numbers -->
     <div class="mrmth-gutter">
-      <div
-        ref="gutterContentRef"
-        class="mrmth-gutter-content"
-        :style="gutterStyle"
-      >
-        <div
-          v-for="(line, idx) in gutterLines"
-          :key="idx"
-          class="mrmth-gutter-line"
-        >
-          <span v-if="line === ' '" class="mrmth-baseline-probe"></span>
-          {{ line }}
-        </div>
-      </div>
+      <div class="mrmth-gutter-content" :style="gutterStyle">{{ gutterText }}</div>
     </div>
 
     <!-- Editor Container -->
@@ -46,15 +31,13 @@
         ref="textareaRef"
         v-model="modelValue"
         class="mrmth-script-textarea"
-        :style="sharedTextStyle"
         spellcheck="false"
         autocapitalize="off"
         autocomplete="off"
         autocorrect="off"
         placeholder="Enter your script here..."
-        @input="onInput"
         @scroll="onScroll"
-        @keydown="onKeyDown"
+        @blur="cursor = -2"
       ></textarea>
     </div>
   </div>
@@ -62,390 +45,138 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
-import { KEYWORDS, CONSTANTS, FUNCTIONS } from './inbuilt_symbols.js';
-import { attachAutocomplete } from './autocomplete.js';
+import { attachAutocomplete, escapeHtml, handleEditingKey, renderHighlight } from './autocomplete.js';
 
-// Define model for value binding
 const modelValue = defineModel<string>({ default: '' });
 
-// Refs for DOM elements
-const wrapperRef = ref<HTMLDivElement | null>(null);
-const gutterContentRef = ref<HTMLDivElement | null>(null);
 const editorContainerRef = ref<HTMLDivElement | null>(null);
 const measureElRef = ref<HTMLPreElement | null>(null);
 const syntaxLayerRef = ref<HTMLPreElement | null>(null);
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
-// Reactive state
-const gutterLines = ref<string[]>(['1']);
-const editorHeight = ref<string>('100%');
-const scrollTop = ref<number>(0);
-const scrollLeft = ref<number>(0);
-const textareaWidth = ref<number>(0);
+const gutterText = ref('1');
+const scrollTop = ref(0);
+// Collapsed caret position while focused, used to outline the bracket pair at the cursor.
+const cursor = ref(-2);
 
-// Style variables to sync with textarea computed styles
-const textareaStyles = ref({
-  fontFamily: 'monospace',
-  fontSize: '12px',
-  fontWeight: '400',
-  fontStyle: 'normal',
-  lineHeight: '17.4px',
-  padding: '8px 10px',
-});
+// Layout-relevant textarea styles, copied so overlay, mirror and textarea wrap identically.
+const textStyle = ref<Record<string, string>>({});
+const textWidth = ref(0);
+const gutterPaddingTop = ref('0px');
 
-// Escape HTML utility
-const escapeHtml = (value: string): string => {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-};
+const highlightedHtml = computed(() => renderHighlight(modelValue.value, cursor.value));
 
-const BRACKET_PAIRS: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
-const OPENING_BRACKETS = new Set(['(', '[', '{']);
-const CLOSING_BRACKETS = new Set([')', ']', '}']);
+// Empty lines need content to produce a line box in the mirror.
+const measureHtml = computed(() =>
+  modelValue.value
+    .split('\n')
+    .map((line) => `<span class="mrmth-ln-marker"></span>${escapeHtml(line || ' ')}`)
+    .join('\n')
+);
 
-interface Token {
-  type: string;
-  value: string;
-  depth: number;
-}
+const sharedTextStyle = computed(() => ({
+  ...textStyle.value,
+  width: textWidth.value ? `${textWidth.value}px` : '100%',
+}));
 
-// Tokenize standard input text
-const tokenize = (text: string): Token[] => {
-  const tokens: Token[] = [];
-  const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|\+=|-=|\*=|\/=|%=|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
+const gutterStyle = computed(() => ({
+  fontFamily: textStyle.value.fontFamily,
+  fontSize: textStyle.value.fontSize,
+  lineHeight: textStyle.value.lineHeight,
+  paddingTop: gutterPaddingTop.value,
+  transform: `translateY(${-scrollTop.value}px)`,
+}));
 
-  const bracketStack: string[] = [];
-  const depthByType: Record<string, number> = { '(': 0, '[': 0, '{': 0 };
-  let m;
+const updateLineNumbers = () => {
+  const measureEl = measureElRef.value;
+  if (!measureEl) return;
 
-  while ((m = pattern.exec(text)) !== null) {
-    const value = m[0];
-    let type = 'text';
-    let depth = 0;
-
-    if (value.startsWith('#') || value.startsWith('/*')) {
-      type = 'comment';
-    } else if (value.startsWith('"') || value.startsWith("'")) {
-      type = 'string';
-    } else if (OPENING_BRACKETS.has(value)) {
-      depth = depthByType[value] || 0;
-      depthByType[value] = depth + 1;
-      bracketStack.push(value);
-      type = 'bracket';
-    } else if (CLOSING_BRACKETS.has(value)) {
-      if (bracketStack.length) {
-        const lastOpen = bracketStack[bracketStack.length - 1];
-        if (BRACKET_PAIRS[lastOpen] === value) {
-          depth = (depthByType[lastOpen] || 1) - 1;
-          depthByType[lastOpen] = depth;
-          bracketStack.pop();
-        }
-      }
-      type = 'bracket';
-    } else if (/^[+\-*/%^=<>|?:,;]|==|!=|>=|<=|<<|>>|->$/.test(value)) {
-      type = 'operator';
-    } else if (/^(?:\d+\.\d*|\d+|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) {
-      type = 'number';
-    } else if (/^[a-zA-Z_]/.test(value)) {
-      if (KEYWORDS.has(value)) type = 'keyword';
-      else if (CONSTANTS.has(value)) type = 'constant';
-      else if (FUNCTIONS.has(value)) type = 'function';
-      else type = 'variable';
-    }
-
-    tokens.push({ type, value, depth });
+  const lineHeightPx = parseFloat(textStyle.value.lineHeight);
+  const markers = measureEl.querySelectorAll<HTMLElement>('.mrmth-ln-marker');
+  const contentBottom = measureEl.clientHeight - parseFloat(getComputedStyle(measureEl).paddingBottom);
+  const lines: string[] = [];
+  for (let i = 0; i < markers.length; i++) {
+    const y0 = markers[i].offsetTop;
+    const y1 = i + 1 < markers.length ? markers[i + 1].offsetTop : contentBottom;
+    lines.push(String(i + 1));
+    const visualLines = Math.max(1, Math.round((y1 - y0) / lineHeightPx));
+    for (let j = 1; j < visualLines; j++) lines.push('');
   }
-  return tokens;
+  gutterText.value = lines.join('\n');
 };
 
-// Generate syntax highlighted HTML
-const highlightedHtml = computed(() => {
-  return tokenize(modelValue.value)
-    .map((t) => {
-      if (t.type === 'text') return escapeHtml(t.value);
-      if (t.type === 'bracket') {
-        const d = t.depth % 6;
-        return `<span class="mrmth-token-bracket mrmth-bracket-${d}">${escapeHtml(t.value)}</span>`;
-      }
-      return `<span class="mrmth-token-${t.type}">${escapeHtml(t.value)}</span>`;
-    })
-    .join('');
-});
-
-// Generate HTML for mirror measurement layer
-const measureHtml = computed(() => {
-  const lines = modelValue.value.split('\n');
-  return lines
-    .map((line, idx) => {
-      const content = line === '' ? ' ' : line;
-      return `<span class="mrmth-ln-marker" data-ln="${idx}"></span>${escapeHtml(content)}`;
-    })
-    .join('\n');
-});
-
-// Line height measurement utility
-const getLineHeightPx = (el: HTMLTextAreaElement): number => {
-  const style = window.getComputedStyle(el);
-  const lh = parseFloat(style.lineHeight);
-  if (Number.isFinite(lh) && lh > 0) return lh;
-
-  const probe = document.createElement('span');
-  probe.textContent = 'A';
-  probe.style.position = 'absolute';
-  probe.style.visibility = 'hidden';
-  probe.style.fontFamily = style.fontFamily;
-  probe.style.fontSize = style.fontSize;
-  probe.style.fontWeight = style.fontWeight;
-  probe.style.fontStyle = style.fontStyle;
-  document.body.appendChild(probe);
-  const h = probe.getBoundingClientRect().height || 16;
-  probe.remove();
-  return h;
-};
-
-// Stable delta offset tracker for smoothing
-const prevOffset = ref<number>(0);
-const stableCount = ref<number>(0);
-const locked = ref<boolean>(false);
-
-// Core alignment and line number updates
 const refresh = () => {
   const textarea = textareaRef.value;
-  const measureEl = measureElRef.value;
-  const gutterContent = gutterContentRef.value;
-  if (!textarea || !measureEl || !gutterContent) return;
+  if (!textarea) return;
 
-  textareaWidth.value = textarea.clientWidth;
-
-  // Retrieve actual styles from textarea
   const cs = window.getComputedStyle(textarea);
-  textareaStyles.value = {
+  textStyle.value = {
     fontFamily: cs.fontFamily,
     fontSize: cs.fontSize,
     fontWeight: cs.fontWeight,
     fontStyle: cs.fontStyle,
+    letterSpacing: cs.letterSpacing,
     lineHeight: cs.lineHeight,
-    padding: cs.padding,
+    tabSize: cs.tabSize,
+    padding: `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`,
+    borderWidth: `${cs.borderTopWidth} ${cs.borderRightWidth} ${cs.borderBottomWidth} ${cs.borderLeftWidth}`,
   };
+  // Same border-box width as the textarea minus its scrollbar.
+  textWidth.value = textarea.clientWidth + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+  gutterPaddingTop.value = `${parseFloat(cs.paddingTop) + parseFloat(cs.borderTopWidth)}px`;
 
-  const rawLines = modelValue.value.split('\n');
-  const lineCount = Math.max(1, rawLines.length);
-  const totalHeight = measureEl.offsetHeight;
-
-  const parsedLH = parseFloat(cs.lineHeight);
-  const lhPx = Number.isFinite(parsedLH) && parsedLH > 0 ? parsedLH : getLineHeightPx(textarea);
-
-  const newGutterLines: string[] = [];
-  for (let i = 0; i < lineCount; i++) {
-    const marker = measureEl.querySelector(`[data-ln="${i}"]`) as HTMLElement | null;
-    const nextMarker = i < lineCount - 1 ? measureEl.querySelector(`[data-ln="${i + 1}"]`) as HTMLElement | null : null;
-
-    const y0 = marker ? marker.offsetTop : i * lhPx;
-    const y1 = nextMarker ? nextMarker.offsetTop : totalHeight;
-
-    const visualLines = Math.max(1, Math.round((y1 - y0) / lhPx));
-    newGutterLines.push(String(i + 1));
-    for (let j = 1; j < visualLines; j++) {
-      newGutterLines.push(' ');
-    }
-  }
-  gutterLines.value = newGutterLines;
-
-  // Perform baseline and transform alignment on next tick
-  nextTick(() => {
-    const firstMarker = measureEl.querySelector(`[data-ln="0"]`) as HTMLElement | null;
-    const gutterFirstLine = gutterContent.firstElementChild as HTMLElement | null;
-    if (!firstMarker || !gutterFirstLine) return;
-
-    // ensure probes exist
-    let measureProbe = firstMarker.querySelector('.mrmth-baseline-probe') as HTMLElement | null;
-    if (!measureProbe) {
-      measureProbe = document.createElement('span');
-      measureProbe.className = 'mrmth-baseline-probe';
-      measureProbe.style.display = 'inline-block';
-      measureProbe.style.width = '0px';
-      measureProbe.style.height = '0px';
-      measureProbe.style.lineHeight = '0';
-      measureProbe.style.verticalAlign = 'baseline';
-      measureProbe.style.overflow = 'hidden';
-      firstMarker.appendChild(measureProbe);
-    }
-
-    let gutterProbe = gutterFirstLine.querySelector('.mrmth-baseline-probe') as HTMLElement | null;
-    if (!gutterProbe) {
-      gutterProbe = document.createElement('span');
-      gutterProbe.className = 'mrmth-baseline-probe';
-      gutterProbe.style.display = 'inline-block';
-      gutterProbe.style.width = '0px';
-      gutterProbe.style.height = '0px';
-      gutterProbe.style.lineHeight = '0';
-      gutterProbe.style.verticalAlign = 'baseline';
-      gutterProbe.style.overflow = 'hidden';
-      gutterFirstLine.insertAdjacentElement('afterbegin', gutterProbe);
-    }
-
-    let baselineDelta = 0;
-    try {
-      const mProbeRect = measureProbe.getBoundingClientRect();
-      const gProbeRect = gutterProbe.getBoundingClientRect();
-      const mRect = measureEl.getBoundingClientRect();
-      const gRect = gutterContent.getBoundingClientRect();
-      const mOffset = mProbeRect.top - mRect.top;
-      const gOffset = gProbeRect.top - gRect.top;
-      baselineDelta = mOffset - gOffset;
-    } catch (e) {
-      baselineDelta = firstMarker.offsetTop + measureProbe.offsetTop - (gutterFirstLine.offsetTop + gutterProbe.offsetTop);
-    }
-
-    if (!Number.isFinite(baselineDelta)) baselineDelta = prevOffset.value;
-
-    const maxJumpPerFrame = 20;
-    if (locked.value) {
-      baselineDelta = prevOffset.value;
-    } else {
-      const jump = baselineDelta - prevOffset.value;
-      if (Math.abs(jump) > maxJumpPerFrame) {
-        baselineDelta = prevOffset.value + Math.sign(jump) * maxJumpPerFrame;
-      }
-      if (Math.abs(baselineDelta) > 200) {
-        baselineDelta = prevOffset.value;
-      }
-      const postJump = baselineDelta - prevOffset.value;
-      if (Math.abs(postJump) <= 1) stableCount.value++;
-      else stableCount.value = 0;
-
-      if (stableCount.value >= 3) locked.value = true;
-    }
-
-    prevOffset.value = baselineDelta;
-
-    // Apply translation to gutter
-    gutterContent.style.transform = `translateY(${baselineDelta - scrollTop.value}px)`;
-
-    const parent = wrapperRef.value?.parentElement;
-    if (parent && parent.clientHeight > 0) {
-      editorHeight.value = '100%';
-    }
-  });
+  // Measure once the mirror has re-rendered with the new text and styles.
+  nextTick(updateLineNumbers);
 };
 
-// Event handlers
-const onInput = () => {
-  refresh();
+const syncScroll = () => {
+  const textarea = textareaRef.value;
+  const syntaxLayer = syntaxLayerRef.value;
+  if (!textarea || !syntaxLayer) return;
+  syntaxLayer.scrollTop = textarea.scrollTop;
+  syntaxLayer.scrollLeft = textarea.scrollLeft;
 };
 
 const onScroll = () => {
-  const textarea = textareaRef.value;
-  const syntaxLayer = syntaxLayerRef.value;
-  const gutterContent = gutterContentRef.value;
-  if (!textarea) return;
-
-  scrollTop.value = textarea.scrollTop;
-  scrollLeft.value = textarea.scrollLeft;
-
-  if (syntaxLayer) {
-    syntaxLayer.scrollTop = textarea.scrollTop;
-    syntaxLayer.scrollLeft = textarea.scrollLeft;
-  }
-
-  if (gutterContent) {
-    gutterContent.style.transform = `translateY(${prevOffset.value - textarea.scrollTop}px)`;
-  }
+  scrollTop.value = textareaRef.value?.scrollTop ?? 0;
+  syncScroll();
 };
 
 const onKeyDown = (e: KeyboardEvent) => {
-  if (!OPENING_BRACKETS.has(e.key)) return;
-
-  const textarea = textareaRef.value;
-  if (!textarea) return;
-
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  if (start !== end) return;
-
-  const nextChar = modelValue.value[start] ?? '';
-  const closing = BRACKET_PAIRS[e.key];
-  if (/[a-zA-Z0-9_]/.test(nextChar) || nextChar === closing) return;
-
-  e.preventDefault();
-  modelValue.value = `${modelValue.value.slice(0, start)}${e.key}${closing}${modelValue.value.slice(start)}`;
-  
-  nextTick(() => {
-    textarea.selectionStart = textarea.selectionEnd = start + 1;
-    refresh();
-  });
+  if (textareaRef.value && handleEditingKey(textareaRef.value, e)) e.preventDefault();
 };
 
-// Computed styles
-const sharedTextStyle = computed(() => {
-  return {
-    fontFamily: textareaStyles.value.fontFamily,
-    fontSize: textareaStyles.value.fontSize,
-    fontWeight: textareaStyles.value.fontWeight,
-    fontStyle: textareaStyles.value.fontStyle,
-    lineHeight: textareaStyles.value.lineHeight,
-    padding: textareaStyles.value.padding,
-    width: textareaWidth.value ? `${textareaWidth.value}px` : '100%',
-    boxSizing: 'border-box' as const,
-  };
-});
+const onSelectionChange = () => {
+  const textarea = textareaRef.value;
+  if (!textarea || document.activeElement !== textarea) return;
+  cursor.value = textarea.selectionStart === textarea.selectionEnd ? textarea.selectionStart : -2;
+};
 
-const gutterStyle = computed(() => {
-  return {
-    fontFamily: textareaStyles.value.fontFamily,
-    fontSize: textareaStyles.value.fontSize,
-    fontWeight: textareaStyles.value.fontWeight,
-    fontStyle: textareaStyles.value.fontStyle,
-    lineHeight: textareaStyles.value.lineHeight,
-    padding: textareaStyles.value.padding,
-    boxSizing: 'border-box' as const,
-  };
-});
-
-const editorStyle = computed(() => {
-  return {
-    height: editorHeight.value,
-  };
-});
-
-// Setup observers
 let resizeObserver: ResizeObserver | null = null;
 let autocompleteController: { destroy: () => void } | null = null;
 
 onMounted(() => {
+  const textarea = textareaRef.value!;
+  // Autocomplete first: its keydown handler must run before the editing keys.
+  autocompleteController = attachAutocomplete(textarea);
+  textarea.addEventListener('keydown', onKeyDown);
+  document.addEventListener('selectionchange', onSelectionChange);
+
+  resizeObserver = new ResizeObserver(refresh);
+  resizeObserver.observe(editorContainerRef.value!);
   refresh();
-  // Ensure refresh also settles after parent and layout rendering
-  setTimeout(refresh, 50);
-  setTimeout(refresh, 200);
-
-  if (window.ResizeObserver && editorContainerRef.value) {
-    resizeObserver = new ResizeObserver(() => {
-      refresh();
-    });
-    resizeObserver.observe(editorContainerRef.value);
-  }
-
-  nextTick(() => {
-    if (textareaRef.value && editorContainerRef.value) {
-      autocompleteController = attachAutocomplete(textareaRef.value, editorContainerRef.value);
-    }
-  });
 });
 
 onBeforeUnmount(() => {
   autocompleteController?.destroy();
-  if (resizeObserver) {
-    resizeObserver.disconnect();
-  }
+  resizeObserver?.disconnect();
+  textareaRef.value?.removeEventListener('keydown', onKeyDown);
+  document.removeEventListener('selectionchange', onSelectionChange);
 });
 
-watch(modelValue, () => {
-  refresh();
-});
+watch(modelValue, refresh);
+// Replacing the overlay's content can reset its scroll position.
+watch(highlightedHtml, syncScroll, { flush: 'post' });
 </script>
 
 <style scoped>
@@ -486,21 +217,9 @@ watch(modelValue, () => {
 }
 
 .mrmth-gutter-content {
+  padding: 0 8px;
   white-space: pre;
   will-change: transform;
-}
-
-.mrmth-gutter-line {
-  padding: 0 8px;
-  display: block;
-}
-
-.mrmth-baseline-probe {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  line-height: 0;
-  overflow: hidden;
 }
 
 .mrmth-editor-container {
@@ -512,16 +231,23 @@ watch(modelValue, () => {
   background: transparent;
 }
 
+.mrmth-measure,
+.mrmth-syntax-layer {
+  margin: 0 !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: transparent;
+}
+
 .mrmth-measure {
   position: absolute;
   visibility: hidden;
   pointer-events: none;
   inset: 0 auto auto 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
   height: auto;
-  margin: 0 !important;
 }
 
 .mrmth-syntax-layer {
@@ -529,30 +255,31 @@ watch(modelValue, () => {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
   overflow: hidden;
-  opacity: 1;
-  margin: 0 !important;
   color: #ecf0f1;
+}
+
+/* Extra scroll room so the last line can scroll as far as in the textarea */
+.mrmth-syntax-layer::after {
+  content: "";
+  display: block;
+  height: 1em;
 }
 
 .mrmth-script-textarea {
   position: absolute;
   inset: 0;
   z-index: 2;
+  line-height: 1.45;
   border: 0 !important;
   outline: none !important;
   resize: none !important;
   color: transparent !important;
   caret-color: #ffffff !important;
   background: transparent !important;
-  mix-blend-mode: normal;
   -webkit-text-fill-color: transparent;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
   margin: 0 !important;
 }
 
@@ -573,4 +300,15 @@ watch(modelValue, () => {
 :deep(.mrmth-bracket-3) { color: #98fb98; }
 :deep(.mrmth-bracket-4) { color: #ff6347; }
 :deep(.mrmth-bracket-5) { color: #ffa500; }
+
+:deep(.mrmth-bracket-unmatched) {
+  color: #ff4d4d;
+  text-decoration: underline wavy #ff4d4d;
+}
+
+:deep(.mrmth-bracket-active) {
+  outline: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
 </style>

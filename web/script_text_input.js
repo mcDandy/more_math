@@ -1,17 +1,11 @@
 import { app } from "/scripts/app.js";
-import { KEYWORDS, CONSTANTS, FUNCTIONS } from "./inbuilt_symbols.js";
-import { attachAutocomplete } from "./autocomplete.js";
+import { attachAutocomplete, escapeHtml, handleEditingKey, renderHighlight } from "./autocomplete.js";
 
 const STYLE_ID = "mrmth-script-line-numbers-unified";
 
-function escapeHtml(value) {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
+// `widget.element` of every mrmth_ScriptInput script widget; only these get enhanced.
+const scriptTextareas = new WeakSet();
+const editors = new WeakMap();
 
 if (!window.__mrmthScriptInputUnifiedInit) {
     window.__mrmthScriptInputUnifiedInit = true;
@@ -33,72 +27,49 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 background: rgba(0,0,0,0.18);
             }
 
-            .mrmth-editor:not(.mrmth-editor-v2) .mrmth-gutter {
-                padding: 8px 10px;
+            .mrmth-gutter {
                 min-width: 44px;
                 text-align: right;
                 user-select: none;
                 color: #9aa0a6;
                 background: rgba(0,0,0,0.35);
                 border-right: 1px solid rgba(255,255,255,0.12);
-                font-family: monospace;
-                font-size: 12px;
-                line-height: 1.45;
-                white-space: pre;
                 box-sizing: border-box;
                 overflow: hidden;
             }
-            .mrmth-syntax-layer::after {
-                content: "";
-                display: block;
-                height: 1em;
-            }
+
             .mrmth-gutter-content {
+                padding: 0 6px;
                 white-space: pre;
                 will-change: transform;
             }
 
-            /* Make token spans allow breaking at the same points as plain text so highlighted layer wraps identically */
-            .mrmth-syntax-layer span,
-            .mrmth-syntax-layer .mrmth-token-comment,
-            .mrmth-syntax-layer .mrmth-token-string,
-            .mrmth-syntax-layer .mrmth-token-variable,
-            .mrmth-syntax-layer .mrmth-token-operator,
-            .mrmth-syntax-layer .mrmth-token-bracket {
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
-                word-break: break-word;
-                hyphens: none;
-                display: inline;
+            .mrmth-editor:not(.mrmth-editor-v2) .mrmth-editor-container {
+                position: relative;
+                flex: 1;
+                min-width: 0;
+                min-height: 170px;
+                overflow: hidden;
+                background: transparent;
             }
-
-           .mrmth-editor:not(.mrmth-editor-v2) .mrmth-editor-container {
-             position: relative;
-             flex: 1;
-             min-width: 0;
-             min-height: 170px;
-             overflow: hidden;
-             background: transparent; /* ⬅️ DŮLEŽITÉ */
-           }
 
             .mrmth-editor.mrmth-editor-v2 {
                 position: relative;
                 display: block;
-                 width: 100%;
+                width: 100%;
                 height: 100%;
-                 min-height: 0;
+                min-height: 0;
                 box-sizing: border-box;
-                 border: 1px solid rgba(255,255,255,0.14);
-                 border-radius: 10px;
-                 overflow: hidden;
-                 background: rgba(0,0,0,0.18);
+                border: 1px solid rgba(255,255,255,0.14);
+                border-radius: 10px;
+                overflow: hidden;
+                background: rgba(0,0,0,0.18);
             }
 
             .mrmth-editor-v2 .mrmth-gutter {
                 position: absolute;
                 inset: 0 auto 0 0;
                 width: 44px;
-                min-height: 0;
             }
 
             .mrmth-editor-v2 .mrmth-editor-container {
@@ -106,40 +77,39 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 inset: 0 0 0 44px;
                 min-width: 0;
                 min-height: 0;
-                height: auto;
-                flex: none;
+            }
+
+            .mrmth-syntax-layer,
+            .mrmth-measure {
+                margin: 0 !important;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+                box-sizing: border-box;
+                border-style: solid;
+                border-color: transparent;
             }
 
             .mrmth-syntax-layer {
-              position: absolute;
-              inset: 0;
-              z-index: 3;              /* ⬅️ výš než textarea */
-              pointer-events: none;
-              white-space: pre-wrap;
-              overflow-wrap: anywhere;
-              word-break: break-word;
-              box-sizing: border-box;
-              overflow: hidden;
-              opacity: 1;
+                position: absolute;
+                inset: 0;
+                z-index: 3;
+                pointer-events: none;
+                overflow: hidden;
             }
 
+            /* Extra scroll room so the last line can scroll as far as in the textarea */
+            .mrmth-syntax-layer::after {
+                content: "";
+                display: block;
+                height: 1em;
+            }
 
-            .mrmth-script-textarea {
-              position: absolute;       /* ⬅️ ne relative */
-              inset: 0;
-              z-index: 2;
-
-              color: transparent !important;
-              caret-color: #ffffff !important;
-              background: transparent !important;
-
-              mix-blend-mode: normal;   /* ⬅️ ZRUŠ lighten */
-              -webkit-text-fill-color: transparent;
-
-              /* Reserve scrollbar space to avoid layout jumps when it appears */
-              overflow-y: auto;
-              scrollbar-gutter: stable;
-              -webkit-overflow-scrolling: touch;
+            .mrmth-syntax-layer span {
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+                hyphens: none;
             }
 
             .mrmth-measure {
@@ -147,22 +117,24 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 visibility: hidden;
                 pointer-events: none;
                 inset: 0 auto auto 0;
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
-                word-break: break-word;
-                box-sizing: border-box;
                 height: auto;
             }
 
-.mrmth-syntax-layer,
-.mrmth-measure {
-    margin: 0 !important;
-}
+            .mrmth-script-textarea {
+                position: absolute;
+                inset: 0;
+                z-index: 2;
+                line-height: 1.45;
 
-.mrmth-gutter-line { display: block; }
-.mrmth-baseline-probe { display:inline-block; width:0; height:0; line-height:0; overflow:hidden; }
-.mrmth-gutter-line { padding: 0 6px; }
+                color: transparent !important;
+                caret-color: #ffffff !important;
+                background: transparent !important;
+                -webkit-text-fill-color: transparent;
 
+                /* Reserve scrollbar space to avoid layout jumps when it appears */
+                overflow-y: auto;
+                scrollbar-gutter: stable;
+            }
 
             .mrmth-token-comment { color: #7f8c8d; }
             .mrmth-token-number { color: #f39c12; }
@@ -179,38 +151,17 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             .mrmth-bracket-3 { color: #98fb98; }
             .mrmth-bracket-4 { color: #ff6347; }
             .mrmth-bracket-5 { color: #ffa500; }
+            .mrmth-bracket-unmatched {
+                color: #ff4d4d;
+                text-decoration: underline wavy #ff4d4d;
+            }
+            .mrmth-bracket-active {
+                outline: 1px solid rgba(255,255,255,0.6);
+                border-radius: 2px;
+                background: rgba(255,255,255,0.12);
+            }
         `;
         document.head.appendChild(style);
-    }
-
-    function hasNearbyScriptLabel(el) {
-        const root = el.closest("div, section, article") ?? el.parentElement;
-        if (!root) return false;
-        const candidates = root.querySelectorAll("label, .label, .input-label, .property_name, .v-label, span, div");
-        for (const n of candidates) {
-            const t = (n.textContent || "").trim().toLowerCase();
-            if (t === "script") return true;
-        }
-        return false;
-    }
-
-    function isLikelyScriptTextarea(el) {
-        if (!(el instanceof HTMLTextAreaElement)) return false;
-        if (el.dataset.mrmthEnhanced === "1") return false;
-        if (el.closest('[data-mrmth-script-widget="vue"]')) return false;
-
-        const attrs = [
-            el.name,
-            el.id,
-            el.getAttribute("data-name"),
-            el.getAttribute("aria-label"),
-            el.getAttribute("placeholder"),
-        ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-        return attrs.includes("script") || hasNearbyScriptLabel(el);
     }
 
     function hideNearbyScriptLabels(textarea) {
@@ -219,246 +170,69 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const labels = root.querySelectorAll("label, .label, .input-label, .property_name, .v-label, span, div");
         for (const el of labels) {
             if (el.dataset.mrmthHiddenLabel === "1") continue;
-            const t = (el.textContent || "").trim().toLowerCase();
-            if (t === "script") {
+            if ((el.textContent || "").trim().toLowerCase() === "script") {
                 el.style.display = "none";
                 el.dataset.mrmthHiddenLabel = "1";
             }
         }
     }
 
-    function addBracketAutoClose(textarea) {
-        const pairs = { "(": ")", "[": "]", "{": "}" };
-        const opening = new Set(Object.keys(pairs));
-
-        textarea.addEventListener("keydown", (e) => {
-            if (!opening.has(e.key)) return;
-
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            if (start !== end) return;
-
-            const nextChar = textarea.value[start] ?? "";
-            const closing = pairs[e.key];
-            if (/[a-zA-Z0-9_]/.test(nextChar) || nextChar === closing) return;
-
-            e.preventDefault();
-            textarea.value = `${textarea.value.slice(0, start)}${e.key}${closing}${textarea.value.slice(start)}`;
-            textarea.selectionStart = textarea.selectionEnd = start + 1;
-            textarea.dispatchEvent(new Event("input", { bubbles: true }));
-        });
+    // Copy everything that affects text layout so overlay, mirror and textarea wrap identically.
+    function syncTextStyle(cs, el) {
+        el.style.fontFamily = cs.fontFamily;
+        el.style.fontSize = cs.fontSize;
+        el.style.fontWeight = cs.fontWeight;
+        el.style.fontStyle = cs.fontStyle;
+        el.style.letterSpacing = cs.letterSpacing;
+        el.style.lineHeight = cs.lineHeight;
+        el.style.tabSize = cs.tabSize;
+        el.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+        el.style.borderWidth = `${cs.borderTopWidth} ${cs.borderRightWidth} ${cs.borderBottomWidth} ${cs.borderLeftWidth}`;
     }
 
-    function getLineHeightPx(textarea) {
-        const style = getComputedStyle(textarea);
-        const lh = parseFloat(style.lineHeight);
-        if (Number.isFinite(lh) && lh > 0) return lh;
+    function updateLineNumbers(textarea, gutterContent, measureEl, lineHeightPx) {
+        const lines = textarea.value.split("\n");
+        // Empty lines need content to produce a line box in the mirror.
+        measureEl.innerHTML = lines.map((l) => `<span class="mrmth-ln-marker"></span>${escapeHtml(l || " ")}`).join("\n");
 
-        const probe = document.createElement("span");
-        probe.textContent = "A";
-        probe.style.position = "absolute";
-        probe.style.visibility = "hidden";
-        probe.style.fontFamily = style.fontFamily;
-        probe.style.fontSize = style.fontSize;
-        probe.style.fontWeight = style.fontWeight;
-        probe.style.fontStyle = style.fontStyle;
-        document.body.appendChild(probe);
-        const h = probe.getBoundingClientRect().height || 16;
-        probe.remove();
-        return h;
-    }
-
-    function buildMeasureHtml(lines) {
-        let html = "";
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i] === "" ? " " : lines[i];
-            html += `<span class="mrmth-ln-marker" data-ln="${i}"></span>${escapeHtml(line)}`;
-            if (i < lines.length - 1) html += "\n";
+        const markers = measureEl.querySelectorAll(".mrmth-ln-marker");
+        const contentBottom = measureEl.clientHeight - parseFloat(getComputedStyle(measureEl).paddingBottom);
+        const gutterLines = [];
+        for (let i = 0; i < markers.length; i++) {
+            const y0 = markers[i].offsetTop;
+            const y1 = i + 1 < markers.length ? markers[i + 1].offsetTop : contentBottom;
+            gutterLines.push(String(i + 1));
+            const visualLines = Math.max(1, Math.round((y1 - y0) / lineHeightPx));
+            for (let j = 1; j < visualLines; j++) gutterLines.push("");
         }
-        return html;
+        gutterContent.textContent = gutterLines.join("\n");
     }
 
     function findBoundingAncestor(el) {
         let node = el.parentElement;
         while (node && node !== document.body && node !== document.documentElement) {
             const cs = getComputedStyle(node);
-            // if ancestor has an explicit height or max-height or constrained overflow, use it as bounding box
-            if ((cs.height && cs.height !== 'auto') || (cs.maxHeight && cs.maxHeight !== 'none') || (cs.overflowY && cs.overflowY !== 'visible')) {
+            // An ancestor with an explicit height, max-height or constrained overflow bounds the editor.
+            if ((cs.height && cs.height !== "auto") || (cs.maxHeight && cs.maxHeight !== "none") || (cs.overflowY && cs.overflowY !== "visible")) {
                 return node;
             }
             node = node.parentElement;
         }
-        // fallback to viewport
         return document.documentElement;
     }
 
-    function updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx) {
-        const rawLines = textarea.value.split("\n");
-        const lineCount = Math.max(1, rawLines.length);
-
-        // Use clientWidth directly for mirror width to avoid rewrap when scrollbar appears/disappears
-        const widthPx = textarea.clientWidth;
-
-        const cs = getComputedStyle(textarea);
-        measureEl.style.fontFamily = cs.fontFamily;
-        measureEl.style.fontSize = cs.fontSize;
-        measureEl.style.fontWeight = cs.fontWeight;
-        measureEl.style.fontStyle = cs.fontStyle;
-        measureEl.style.lineHeight = cs.lineHeight;
-        measureEl.style.padding = cs.padding;
-        measureEl.style.width = `${widthPx}px`;
-
-        measureEl.innerHTML = buildMeasureHtml(rawLines);
-        const totalHeight = measureEl.offsetHeight;
-
-        const gutterLines = [];
-        for (let i = 0; i < lineCount; i++) {
-            const marker = measureEl.querySelector(`[data-ln="${i}"]`);
-            const nextMarker = i < lineCount - 1 ? measureEl.querySelector(`[data-ln="${i + 1}"]`) : null;
-
-            const y0 = marker ? marker.offsetTop : i * lineHeightPx;
-            const y1 = nextMarker ? nextMarker.offsetTop : totalHeight;
-
-            const visualLines = Math.max(1, Math.round((y1 - y0) / lineHeightPx));
-            gutterLines.push(String(i + 1));
-            for (let j = 1; j < visualLines; j++) gutterLines.push(" ");
-        }
-
-        // Render gutter lines as elements so we can measure baseline correctly
-        gutterContent.innerHTML = gutterLines.map(l => `<div class="mrmth-gutter-line">${escapeHtml(l)}</div>`).join("");
-        // stable baseline alignment using offsetTop sums (measure marker + probe) to avoid viewport jitter
-        const firstMarker = measureEl.querySelector(`[data-ln="0"]`);
-        const gutterFirstLine = gutterContent.firstElementChild;
-
-        // ensure probes exist
-        let measureProbe = firstMarker ? firstMarker.querySelector('.mrmth-baseline-probe') : null;
-        if (!measureProbe && firstMarker) {
-            measureProbe = document.createElement('span');
-            measureProbe.className = 'mrmth-baseline-probe';
-            measureProbe.style.display = 'inline-block';
-            measureProbe.style.width = '0px';
-            measureProbe.style.height = '0px';
-            measureProbe.style.lineHeight = '0';
-            measureProbe.style.verticalAlign = 'baseline';
-            measureProbe.style.overflow = 'hidden';
-            firstMarker.appendChild(measureProbe);
-        }
-
-        let gutterProbe = gutterFirstLine ? gutterFirstLine.querySelector('.mrmth-baseline-probe') : null;
-        if (!gutterProbe && gutterFirstLine) {
-            gutterProbe = document.createElement('span');
-            gutterProbe.className = 'mrmth-baseline-probe';
-            gutterProbe.style.display = 'inline-block';
-            gutterProbe.style.width = '0px';
-            gutterProbe.style.height = '0px';
-            gutterProbe.style.lineHeight = '0';
-            gutterProbe.style.verticalAlign = 'baseline';
-            gutterProbe.style.overflow = 'hidden';
-            gutterFirstLine.insertAdjacentElement('afterbegin', gutterProbe);
-        }
-
-        // Prefer baseline positions computed relative to each container to avoid global jumps
-        let baselineDelta;
-        try {
-            if (measureProbe && gutterProbe) {
-                const mProbeRect = measureProbe.getBoundingClientRect();
-                const gProbeRect = gutterProbe.getBoundingClientRect();
-                const mRect = measureEl.getBoundingClientRect();
-                const gRect = gutterContent.getBoundingClientRect();
-                // probe offsets relative to their own containers
-                const mOffset = mProbeRect.top - mRect.top;
-                const gOffset = gProbeRect.top - gRect.top;
-                baselineDelta = mOffset - gOffset;
-            } else {
-                const measureBaseline = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0);
-                const gutterBaseline = (gutterFirstLine ? gutterFirstLine.offsetTop : 0) + (gutterProbe ? gutterProbe.offsetTop : 0);
-                baselineDelta = measureBaseline - gutterBaseline;
-            }
-        } catch (e) {
-            // fallback to previous offsetTop-based method
-            baselineDelta = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0) - ((gutterFirstLine ? gutterFirstLine.offsetTop : 0) + (gutterProbe ? gutterProbe.offsetTop : 0));
-        }
-
-        // If gutterBaseline couldn't be measured for some reason, fall back to marker offset
-        if (!gutterFirstLine) baselineDelta = (firstMarker ? firstMarker.offsetTop : 0) + (measureProbe ? measureProbe.offsetTop : 0);
-
-        // Clamp and smooth extreme jumps to avoid the gutter flying away on transient layout changes
-        const prevOffset = parseFloat(gutterContent.dataset.mrmthBaselineDelta || "0");
-        let stableCount = parseInt(gutterContent.dataset.mrmthStableCount || "0", 10) || 0;
-        const locked = gutterContent.dataset.mrmthLocked === "1";
-        const maxJumpPerFrame = 20; // px
-
-        if (locked) {
-            // keep previous locked offset
-            baselineDelta = prevOffset;
-        } else {
-            if (!Number.isFinite(baselineDelta)) baselineDelta = prevOffset;
-            const jump = baselineDelta - prevOffset;
-            if (Math.abs(jump) > maxJumpPerFrame) baselineDelta = prevOffset + Math.sign(jump) * maxJumpPerFrame;
-            // absolute sanity clamp
-            if (Math.abs(baselineDelta) > 200) baselineDelta = prevOffset;
-
-            const postJump = baselineDelta - prevOffset;
-            if (Math.abs(postJump) <= 1) stableCount++; else stableCount = 0;
-            gutterContent.dataset.mrmthStableCount = String(stableCount);
-            if (stableCount >= 3) gutterContent.dataset.mrmthLocked = "1";
-        }
-
-        // Keep gutter padding in sync with textarea to match vertical origin across node variants
-        gutterContent.style.padding = cs.padding || '0';
-        // Prefer computed CSS line-height when available, otherwise fall back to measured px
-        const parsedLH = parseFloat(cs.lineHeight);
-        gutterContent.style.lineHeight = Number.isFinite(parsedLH) && parsedLH > 0 ? cs.lineHeight : `${lineHeightPx}px`;
-        gutterContent.style.boxSizing = 'border-box';
-        gutterContent.style.fontFamily = cs.fontFamily;
-        gutterContent.style.fontSize = cs.fontSize;
-        gutterContent.style.fontWeight = cs.fontWeight;
-        gutterContent.style.fontStyle = cs.fontStyle;
-
-        if (window.__mrmthGutterDebug) {
-            const textareaRect = textarea.getBoundingClientRect();
-            const measureRect = measureEl.getBoundingClientRect();
-            const gutterRect = gutterContent.getBoundingClientRect();
-            const firstMarkerTop = firstMarker ? firstMarker.offsetTop : null;
-            const measureProbeTop = measureProbe ? measureProbe.offsetTop : null;
-            const gutterFirstLineTop = gutterFirstLine ? gutterFirstLine.offsetTop : null;
-            const gutterProbeTop = gutterProbe ? gutterProbe.offsetTop : null;
-            const computedTranslate = baselineDelta - textarea.scrollTop;
-            console.log("mrmth-gutter-debug", {
-                textareaRect,
-                measureRect,
-                gutterRect,
-                lineHeightPx,
-                lineCount,
-                widthPx,
-                totalHeight,
-                firstMarkerTop,
-                measureProbeTop,
-                gutterFirstLineTop,
-                gutterProbeTop,
-                baselineDelta,
-                computedTranslate,
-                prevOffset,
-                stableCount,
-                locked
-            });
-        }
-
-        // The measured baseline delta already aligns the gutter with the text baseline.
-        const adjustedBaseline = baselineDelta;
-
-        // Apply transform on next frame to avoid layout thrash
-        gutterContent.dataset.mrmthBaselineDelta = String(baselineDelta);
-        gutterContent.dataset.mrmthOffset = String(adjustedBaseline);
-        requestAnimationFrame(() => {
-            gutterContent.style.transform = `translateY(${adjustedBaseline - textarea.scrollTop}px)`;
-        });
-    }
-
     function attachToTextarea(textarea) {
-        if (!isLikelyScriptTextarea(textarea)) return;
-        if (textarea.closest(".mrmth-editor")) {
-            textarea.dataset.mrmthEnhanced = "1";
+        if (!scriptTextareas.has(textarea)) return;
+
+        // The frontend re-mounts widget.element into a fresh container (e.g. after
+        // subgraph navigation); move the editor along with it.
+        const existing = editors.get(textarea);
+        if (existing) {
+            if (!existing.wrapper.contains(textarea)) {
+                textarea.replaceWith(existing.wrapper);
+                existing.container.appendChild(textarea);
+                requestAnimationFrame(existing.refresh);
+            }
             return;
         }
 
@@ -498,158 +272,153 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         editorContainer.appendChild(textarea);
 
         textarea.classList.add("mrmth-script-textarea");
-        textarea.dataset.mrmthEnhanced = "1";
         textarea.spellcheck = false;
         textarea.autocapitalize = "off";
         textarea.autocomplete = "off";
         textarea.autocorrect = "off";
 
-        addBracketAutoClose(textarea);
-        attachAutocomplete(textarea, editorContainer);
-        const cs = getComputedStyle(textarea);
-        syntaxLayer.style.fontFamily = cs.fontFamily;
-        syntaxLayer.style.fontSize = cs.fontSize;
-        syntaxLayer.style.fontWeight = cs.fontWeight;
-        syntaxLayer.style.fontStyle = cs.fontStyle;
-        syntaxLayer.style.lineHeight = cs.lineHeight;
-        syntaxLayer.style.padding = cs.padding;
-        measureEl.style.fontFamily = cs.fontFamily;
-        measureEl.style.fontSize = cs.fontSize;
-        measureEl.style.fontWeight = cs.fontWeight;
-        measureEl.style.fontStyle = cs.fontStyle;
-        measureEl.style.lineHeight = cs.lineHeight;
-        measureEl.style.padding = cs.padding;
-        gutterContent.style.fontFamily = cs.fontFamily;
-        gutterContent.style.fontSize = cs.fontSize;
-        gutterContent.style.fontWeight = cs.fontWeight;
-        gutterContent.style.fontStyle = cs.fontStyle;
-        gutterContent.style.padding = cs.padding;
-        gutterContent.style.boxSizing = 'border-box';
-        gutterContent.style.margin = '0';
-        gutterContent.style.whiteSpace = 'pre';
-        gutterContent.style.lineHeight = cs.lineHeight;
-        // Ensure syntax layer wraps characters the same way as measure layer
-        syntaxLayer.style.whiteSpace = 'pre-wrap';
-        syntaxLayer.style.overflowWrap = 'anywhere';
-        syntaxLayer.style.wordBreak = 'break-word';
-        syntaxLayer.style.boxSizing = 'border-box';
-        syntaxLayer.style.display = 'block';
+        // Autocomplete first: its keydown handler must run before the editing keys.
+        const autocomplete = attachAutocomplete(textarea);
+        textarea.addEventListener("keydown", (e) => {
+            if (handleEditingKey(textarea, e)) e.preventDefault();
+        });
 
-        const lineHeightPx = getLineHeightPx(textarea);
+        const syncScroll = () => {
+            gutterContent.style.transform = `translateY(${-textarea.scrollTop}px)`;
+            syntaxLayer.scrollTop = textarea.scrollTop;
+            syntaxLayer.scrollLeft = textarea.scrollLeft;
+        };
+
+        const updateHighlight = () => {
+            const focused = document.activeElement === textarea && textarea.selectionStart === textarea.selectionEnd;
+            syntaxLayer.innerHTML = renderHighlight(textarea.value, focused ? textarea.selectionStart : -2);
+            syncScroll();
+        };
+
         const refresh = () => {
-            // keep measure and syntax layers using the exact textarea content width to ensure identical wrapping
-            const widthPx = textarea.clientWidth;
+            const cs = getComputedStyle(textarea);
+            syncTextStyle(cs, syntaxLayer);
+            syncTextStyle(cs, measureEl);
+            gutterContent.style.fontFamily = cs.fontFamily;
+            gutterContent.style.fontSize = cs.fontSize;
+            gutterContent.style.lineHeight = cs.lineHeight;
+            gutterContent.style.paddingTop = `${parseFloat(cs.paddingTop) + parseFloat(cs.borderTopWidth)}px`;
+
+            // Same border-box width as the textarea minus its scrollbar, so text wraps identically.
+            const widthPx = textarea.clientWidth + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
             measureEl.style.width = `${widthPx}px`;
             syntaxLayer.style.width = `${widthPx}px`;
-            syntaxLayer.style.boxSizing = 'border-box';
 
-            updateNumbersWrapped(textarea, gutterContent, measureEl, lineHeightPx);
-            updateHighlight(textarea, syntaxLayer);
+            const lineHeightPx = parseFloat(cs.lineHeight);
+            updateLineNumbers(textarea, gutterContent, measureEl, lineHeightPx);
+            updateHighlight();
 
             if (isVueWidget) {
-                wrapper.style.minHeight = '0';
-                wrapper.style.height = '100%';
-                editorContainer.style.minHeight = '0';
-                editorContainer.style.height = '100%';
+                wrapper.style.minHeight = "0";
+                wrapper.style.height = "100%";
+                editorContainer.style.minHeight = "0";
+                editorContainer.style.height = "100%";
                 return;
             }
 
             // Reactive height: size wrapper and editor container to content, clamped to parent's height
-            const contentHeight = measureEl.offsetHeight || (lineHeightPx * Math.max(1, textarea.value.split('\n').length));
-                const bounding = findBoundingAncestor(wrapper) || parent || document.documentElement;
-                const parentHeight = bounding && bounding.clientHeight ? bounding.clientHeight : null;
-                const minHeight = 60;
-                let maxHeight = 600;
+            const contentHeight = measureEl.offsetHeight || (lineHeightPx * Math.max(1, textarea.value.split("\n").length));
+            const bounding = findBoundingAncestor(wrapper) || parent || document.documentElement;
+            const parentHeight = bounding && bounding.clientHeight ? bounding.clientHeight : null;
+            const minHeight = 60;
+            let maxHeight = 600;
 
-                if (parentHeight !== null) {
-                    // leave some padding inside parent
-                    maxHeight = Math.max(60, parentHeight - 12);
+            if (parentHeight !== null) {
+                maxHeight = Math.max(60, parentHeight - 12);
 
-                    // special-case: if bounding is the documentElement (viewport), allow growth until viewport
-                    if (bounding === document.documentElement) {
-                        // but guard against ancestor that resizes with content (V2). If wrapper's parent adapts to content, find a higher static ancestor
-                        const staticAncestor = findBoundingAncestor(bounding);
-                        if (staticAncestor && staticAncestor !== document.documentElement) {
-                            maxHeight = Math.max(60, staticAncestor.clientHeight - 12);
-                        }
+                // If the viewport is the bound, prefer a higher static ancestor so the editor doesn't grow with itself.
+                if (bounding === document.documentElement) {
+                    const staticAncestor = findBoundingAncestor(bounding);
+                    if (staticAncestor && staticAncestor !== document.documentElement) {
+                        maxHeight = Math.max(60, staticAncestor.clientHeight - 12);
                     }
                 }
+            }
 
-                const desired = Math.min(Math.max(contentHeight, minHeight), maxHeight);
+            const desired = Math.min(Math.max(contentHeight, minHeight), maxHeight);
 
-                // ensure wrapper and editor container fill the desired height
-                try {
-                    wrapper.style.minHeight = '170px';
-                    // FIX: If the parent container is larger than the desired content height (e.g. node was enlarged/resized),
-                    // allow it to occupy 100% of the parent height. Otherwise, let it match content size.
-                    if (parentHeight && parentHeight > desired + 20) {
-                        wrapper.style.height = '100%';
-                        editorContainer.style.height = '100%';
-                    } else {
-                        wrapper.style.height = desired + 'px';
-                        editorContainer.style.height = desired + 'px';
-                    }
-                } catch (e) {
-                    // ignore if elements unavailable
-                }
+            wrapper.style.minHeight = "170px";
+            // A node enlarged beyond the content height lets the editor fill it; otherwise match content size.
+            if (parentHeight && parentHeight > desired + 20) {
+                wrapper.style.height = "100%";
+                editorContainer.style.height = "100%";
+            } else {
+                wrapper.style.height = desired + "px";
+                editorContainer.style.height = desired + "px";
+            }
         };
 
-        // Force initial measurement again after a short delay to allow different node wrappers to settle
-        setTimeout(refresh, 50);
-        setTimeout(refresh, 200);
+        const onSelectionChange = () => {
+            if (document.activeElement === textarea) updateHighlight();
+        };
 
         textarea.addEventListener("input", refresh);
-        textarea.addEventListener("scroll", () => {
-            const base = parseFloat(gutterContent.dataset.mrmthOffset) || 0;
-            gutterContent.style.transform = `translateY(${base - textarea.scrollTop}px)`;
-            syntaxLayer.scrollTop = textarea.scrollTop;
-            syntaxLayer.scrollLeft = textarea.scrollLeft;
+        textarea.addEventListener("scroll", syncScroll);
+        textarea.addEventListener("blur", updateHighlight);
+        document.addEventListener("selectionchange", onSelectionChange);
+
+        const ro = new ResizeObserver(refresh);
+        ro.observe(editorContainer);
+
+        editors.set(textarea, {
+            wrapper,
+            container: editorContainer,
+            refresh,
+            destroy() {
+                ro.disconnect();
+                autocomplete.destroy();
+                document.removeEventListener("selectionchange", onSelectionChange);
+            },
         });
 
-        // Also keep gutter stable on mouse enter/leave which previously caused jumps
-        gutter.addEventListener('mouseenter', () => requestAnimationFrame(refresh));
-        gutter.addEventListener('mouseleave', () => requestAnimationFrame(refresh));
-
-        if (window.ResizeObserver) {
-            const ro = new ResizeObserver(refresh);
-            ro.observe(editorContainer);
-        }
-
         requestAnimationFrame(refresh);
-    }
-    function updateHighlight(textarea, syntaxLayer) {
-        syntaxLayer.innerHTML = renderHighlight(textarea.value);
-
-        syntaxLayer.scrollTop = textarea.scrollTop;
-        syntaxLayer.scrollLeft = textarea.scrollLeft;
-    }
-
-    function scan(root = document) {
-        root.querySelectorAll("textarea").forEach(attachToTextarea);
     }
 
     app.registerExtension({
         name: "mrmth.ScriptTextInput.Unified",
         nodeCreated(node, app) {
-            if (node.comfyClass === "mrmth_ScriptInput" || node.type === "mrmth_ScriptInput") {
-                const widget = node.widgets?.find(w => w.name === "script");
-                if (widget) {
-                    const isVue = app.ui?.settings?.getSettingValue?.("Comfy.VueNodes.Enabled") || document.getElementById("vue-app");
-                    if (isVue) {
-                        widget.type = "scriptinput";
-                    }
-                }
-            }
+            if (node.comfyClass !== "mrmth_ScriptInput" && node.type !== "mrmth_ScriptInput") return;
+            const widget = node.widgets?.find(w => w.name === "script");
+            if (!(widget?.element instanceof HTMLTextAreaElement)) return;
+
+            const isVue = app.ui?.settings?.getSettingValue?.("Comfy.VueNodes.Enabled") || document.getElementById("vue-app");
+            // No Vue component is registered for this type, so Nodes 2.0 mounts the
+            // DOM widget's own textarea, which is then enhanced like in the classic UI.
+            if (isVue) widget.type = "scriptinput";
+
+            const textarea = widget.element;
+            scriptTextareas.add(textarea);
+            if (textarea.isConnected) attachToTextarea(textarea);
+
+            // Loading a workflow sets the value without an input event.
+            const onConfigure = node.onConfigure;
+            node.onConfigure = function () {
+                const r = onConfigure?.apply(this, arguments);
+                const editor = editors.get(textarea);
+                if (editor) requestAnimationFrame(editor.refresh);
+                return r;
+            };
+
+            const onRemoved = node.onRemoved;
+            node.onRemoved = function () {
+                editors.get(textarea)?.destroy();
+                editors.delete(textarea);
+                return onRemoved?.apply(this, arguments);
+            };
         },
         async setup() {
-            scan(document);
-
+            // Script widgets are mounted into the DOM after nodeCreated; enhance them once they appear.
             const observer = new MutationObserver((mutations) => {
                 for (const m of mutations) {
                     for (const node of m.addedNodes) {
                         if (!(node instanceof Element)) continue;
-                        if (node.matches?.("textarea")) attachToTextarea(node);
-                        scan(node);
+                        if (node instanceof HTMLTextAreaElement) attachToTextarea(node);
+                        else node.querySelectorAll("textarea").forEach(attachToTextarea);
                     }
                 }
             });
@@ -657,68 +426,4 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             observer.observe(document.body, { childList: true, subtree: true });
         },
     });
-}
-
-
-const BRACKET_PAIRS = { "(": ")", "[": "]", "{": "}" };
-const OPENING_BRACKETS = new Set(["(", "[", "{"]);
-const CLOSING_BRACKETS = new Set([")", "]", "}"]);
-
-function tokenize(text) {
-    const tokens = [];
-    const pattern = /#.*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\r\n])*"|'(?:\\.|[^'\\\r\n])*'|\b\d+(?:\.\d*)?(?:[eE][+-]?\d+)?\b|\B\.\d+(?:[eE][+-]?\d+)?\b|==|!=|>=|<=|<<|>>|->|\+=|-=|\*=|\/=|%=|[+\-*/%^=<>|?:,;()\[\]{}]|\b[a-zA-Z_][a-zA-Z_0-9]*\b|\s+|./g;
-
-    const bracketStack = [];
-    const depthByType = { "(": 0, "[": 0, "{": 0 };
-    let m;
-
-    while ((m = pattern.exec(text)) !== null) {
-        const value = m[0];
-        let type = "text";
-        let depth = 0;
-
-        if (value.startsWith("#") || value.startsWith("/*")) {
-            type = "comment";
-        } else if (value.startsWith('"') || value.startsWith("'")) {
-            type = "string";
-        } else if (OPENING_BRACKETS.has(value)) {
-            depth = depthByType[value];
-            depthByType[value]++;
-            bracketStack.push(value);
-            type = "bracket";
-        } else if (CLOSING_BRACKETS.has(value)) {
-            if (bracketStack.length) {
-                const lastOpen = bracketStack[bracketStack.length - 1];
-                if (BRACKET_PAIRS[lastOpen] === value) {
-                    depth = depthByType[lastOpen] - 1;
-                    depthByType[lastOpen]--;
-                    bracketStack.pop();
-                }
-            }
-            type = "bracket";
-        } else if (/^[+\-*/%^=<>|?:,;]|==|!=|>=|<=|<<|>>|->$/.test(value)) {
-            type = "operator";
-        } else if (/^(?:\d+\.\d*|\d+|\.\d+)(?:[eE][+-]?\d+)?$/.test(value)) {
-            type = "number";
-        } else if (/^[a-zA-Z_]/.test(value)) {
-            if (KEYWORDS.has(value)) type = "keyword";
-            else if (CONSTANTS.has(value)) type = "constant";
-            else if (FUNCTIONS.has(value)) type = "function";
-            else type = "variable";
-        }
-
-        tokens.push({ type, value, depth });
-    }
-    return tokens;
-}
-
-function renderHighlight(text) {
-    return tokenize(text).map((t) => {
-        if (t.type === "text") return escapeHtml(t.value);
-        if (t.type === "bracket") {
-            const d = t.depth % 6;
-            return `<span class="mrmth-token-bracket mrmth-bracket-${d}">${escapeHtml(t.value)}</span>`;
-        }
-        return `<span class="mrmth-token-${t.type}">${escapeHtml(t.value)}</span>`;
-    }).join("");
 }

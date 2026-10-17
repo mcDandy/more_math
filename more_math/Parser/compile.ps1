@@ -209,17 +209,17 @@ function Get-FunctionTokenNames {
     return $names
 }
 
-function Get-UniqueLowerWords {
-    # De-duplicates literal alternatives that only differ by case (e.g.
-    # 'pi'/'PI', 'none'/'None'/'null'/'NULL') down to one lowercase spelling
-    # per distinct word, preserving first-seen order.
+function Get-UniqueWords {
+    # De-duplicates literal alternatives, preserving first-seen order. Case
+    # variants (e.g. 'pi'/'PI', 'none'/'None'/'null'/'NULL') are all kept,
+    # since the lexer is case-sensitive and the web highlighter must
+    # recognise every spelling the grammar accepts.
     param([string[]]$Words)
 
-    $seen = New-Object System.Collections.Generic.HashSet[string]
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
     $result = New-Object System.Collections.Generic.List[string]
     foreach ($w in $Words) {
-        $lw = $w.ToLowerInvariant()
-        if ($seen.Add($lw)) { [void]$result.Add($lw) }
+        if ($seen.Add($w)) { [void]$result.Add($w) }
     }
     return $result
 }
@@ -327,7 +327,7 @@ $functionTokenToWords = [ordered]@{}
 
 $tokenNames = @($allTokens.psbase.Keys)
 foreach ($name in $tokenNames) {
-    $words = Get-UniqueLowerWords -Words $allTokens[$name]
+    $words = Get-UniqueWords -Words $allTokens[$name]
     if ($name -eq 'CONSTANT') {
         $constantWords = $words
         continue
@@ -340,9 +340,9 @@ foreach ($name in $tokenNames) {
     }
 }
 
-$KEYWORDS  = @($keywordWords  | Sort-Object -Unique)
-$CONSTANTS = @($constantWords | Sort-Object -Unique)
-$FUNCTIONS = @($functionWords | Sort-Object -Unique)
+$KEYWORDS  = @($keywordWords  | Sort-Object -Unique -CaseSensitive)
+$CONSTANTS = @($constantWords | Sort-Object -Unique -CaseSensitive)
+$FUNCTIONS = @($functionWords | Sort-Object -Unique -CaseSensitive)
 
 $docEntries = Get-FunctionDocEntries -FuncSection $sections.FuncSection
 $sigByToken = @{}

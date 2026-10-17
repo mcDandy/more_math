@@ -4,6 +4,8 @@ Pure PyTorch implementation with deterministic seeding.
 True Perlin noise with gradient interpolation - arbitrary dimensions.
 """
 
+import math
+
 import torch
 
 class NoiseUtils:
@@ -109,7 +111,8 @@ class NoiseUtils:
 
             result += dot * weight
 
-        return torch.clamp(result, -1, 1)
+        # Gradient noise with unit gradients peaks at ±sqrt(ndim)/2; rescale to [-1, 1].
+        return torch.clamp(result * (2.0 / math.sqrt(ndim)), -1, 1)
 
     @staticmethod
     def cellular_noise_nd(coords_input, scale=1.0, jitter=0.5, seed=0, device=None):
@@ -162,7 +165,8 @@ class NoiseUtils:
             dist = torch.sqrt(dist_sq)
             min_dist = torch.minimum(min_dist, dist)
 
-        return min_dist
+        # High jitter can leave points more than one cell from any feature point.
+        return min_dist.clamp(0.0, 1.0)
 
 
 
@@ -201,7 +205,7 @@ class NoiseUtils:
 
         # Normalizace zpět do [-1, 1] a potom do [0, 1]
         result = result / max_amplitude
-        return (result*2)+0.5
+        return result * 0.5 + 0.5
 
     @staticmethod
     def _accumulate_octaves_nd(sample_fn, octaves=1, persistence=0.5, lacunarity=2.0):

@@ -353,6 +353,7 @@ You can also get the node from comfy manager under the name of More math.
 - Pink and brown noise are normalized to zero mean and unit variance independently along the last dimension; shorter dimensions fall back to seeded white noise.
 
 #### 6.2 Procedural Noise
+All procedural noises return values in `0..1`.
 - `perlin(seed, scale, [octaves, [offset, [shape]]])` / `perlin_noise`:
   - smooth gradient noise,
   - supports arbitrary dimensional grids.

@@ -4818,10 +4818,10 @@ class UnifiedMathVisitor(MathExprVisitor):
                 result = result + octave_noise * amplitude
                 amplitude *= 0.5
                 frequency *= 2.0
-            noise = result / (2 - 2**(-octaves))
+            noise = result / (2 - 2 ** (1 - octaves))
         target_shape = grids[0].shape
         noise = noise.view(target_shape)
-        return noise * 2 + 0.5
+        return noise * 0.5 + 0.5
 
     def visitCellularFunc(self, ctx):
         """cellular(seed, scale, [jitter], [offset], [shape])

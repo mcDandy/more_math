@@ -1059,11 +1059,11 @@ funcNoise:
 		*/
 	NOISE LPAREN expr (COMMA expr)? RPAREN				# NoiseFunc
 		/**
-		  pink_noise(seed, [shape]) - generates deterministic pink noise (approximately 1/f power spectrum), normalised per row
+		  pink_noise(seed, [shape]) - generates deterministic pink noise (approximately 1/f power spectrum) with zero mean and unit variance per row
 		*/
 	| PINK_NOISE LPAREN expr (COMMA expr)? RPAREN		# PinkNoiseFunc
 		/**
-		  brown_noise(seed, [shape]) - generates deterministic brown noise (approximately 1/f^2 power spectrum), normalised per row
+		  brown_noise(seed, [shape]) - generates deterministic brown noise (approximately 1/f^2 power spectrum) with zero mean and unit variance per row
 		*/
 	| BROWN_NOISE LPAREN expr (COMMA expr)? RPAREN		# BrownNoiseFunc
 		/**
@@ -1119,23 +1119,23 @@ funcNoise:
 		*/
 	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc
 		/**
-		  perlin_noise(seed, scale, [octaves], [offset], [shape]) - generates Perlin noise
+		  perlin_noise(seed, scale, [octaves], [offset], [shape]) - generates Perlin gradient noise in 0-1 (default 1 octave)
 		*/
 	| PERLIN LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PerlinFunc
 		/**
-		  cellular_noise(seed, scale, [jitter], [offset], [shape]) - generates Cellular/Voronoi noise
+		  cellular_noise(seed, scale, [jitter], [offset], [shape]) - generates Cellular/Voronoi noise in 0-1: distance to the nearest feature point (jitter 0-1, default 0.5)
 		*/
 	| CELLULAR LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# CellularFunc
 		/**
-		  plasma_noise(seed, scale, [octaves], [offset], [shape]) - generates Plasma/Turbulence noise - same as perlin but default octaves 4
+		  plasma_noise(seed, scale, [octaves], [offset], [shape]) - generates Plasma/Turbulence noise in 0-1 - same as perlin but default octaves 4
 		*/
 	| PLASMA LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PlasmaFunc
 		/**
-		  ridged_noise(seed, scale, [octaves], [offset], [shape]) - generates ridged multi-fractal noise
+		  ridged_noise(seed, scale, [octaves], [offset], [shape]) - generates ridged multi-fractal noise in 0-1 (default 4 octaves)
 		*/
 	| RIDGED LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# RidgedFunc
 		/**
-		  domain_warp_noise(seed, scale, warp_scale, warp_strength, [octaves], [warp_octaves], [offset], [shape]) - generates domain warped noise
+		  domain_warp_noise(seed, scale, warp_scale, warp_strength, [octaves], [warp_octaves], [offset], [shape]) - generates domain warped Perlin noise in 0-1 (defaults: 4 octaves, 2 warp octaves)
 		*/
 	| DOMAIN_WARP LPAREN expr COMMA expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# DomainWarpFunc;
 

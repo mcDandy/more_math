@@ -197,3 +197,26 @@ def test_string_flip_and_concatenate():
 
 def test_coords_uses_dtype_template():
     assert _visit("coords([2, 3], 1, t)", {"t": torch.zeros(1, dtype=torch.int64)}).dtype == torch.int64
+
+
+@pytest.mark.parametrize(
+    "expression",
+    (
+        "perlin(1, 8, 1, 0, [256, 256])",
+        "perlin(1, 8, 4, 0, [16, 16, 16])",
+        "plasma(1, 8, 1, 0, [256, 256])",
+        "ridged(1, 8, 1, 0, [256, 256])",
+        "domain_warp(1, 8, 4, 4, 4, 2, 0, [256, 256])",
+        "cellular(1, 8, 1, 0, [256, 256])",
+    ),
+)
+def test_procedural_noise_stays_in_unit_range(expression):
+    result = _visit(expression, {})
+
+    assert result.min() >= 0.0 and result.max() <= 1.0
+
+
+def test_perlin_uses_full_unit_range():
+    result = _visit("perlin(1, 8, 1, 0, [4096])", {})
+
+    assert result.min() < 0.05 and result.max() > 0.95

@@ -33,26 +33,6 @@ def get_effective_state_dict(obj):
     return None
 
 
-def get_effective_weight(obj, key):
-    patcher = _get_model_patcher(obj)
-    if patcher is not None and hasattr(patcher, "patch_weight_to_device"):
-        try:
-            return patcher.patch_weight_to_device(key, return_weight=True)
-        except Exception:
-            pass
-
-    if hasattr(obj, "patch_weight_to_device"):
-        try:
-            return obj.patch_weight_to_device(key, return_weight=True)
-        except Exception:
-            pass
-
-    sd = get_effective_state_dict(obj)
-    if sd is not None:
-        return sd.get(key, None)
-    return None
-
-
 def get_base_weight(obj, key):
     """True pre-patch weight for `key`, regardless of whether the patcher
     currently has this key's patches baked into the live model (`backup`
@@ -70,7 +50,7 @@ def get_base_weight(obj, key):
             try:
                 weight, _, _ = comfy.model_patcher.get_key_weight(model, key)
                 return weight
-            except Exception:
+            except AttributeError:
                 pass
 
     sd = get_effective_state_dict(obj)
@@ -90,10 +70,7 @@ def get_patched_weight(obj, key, base_weight):
     if patcher is not None:
         patches = getattr(patcher, "patches", None)
         if patches is not None and key in patches:
-            try:
-                return comfy.lora.calculate_weight(patches[key], base_weight.clone(), key)
-            except Exception:
-                pass
+            return comfy.lora.calculate_weight(patches[key], base_weight.clone(), key)
     return base_weight
 
 
@@ -160,10 +137,6 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=None, 
             if key not in seen_keys:
                 seen_keys.add(key)
                 all_keys_list.append(key)
-
-    # Function to get weight from a valid object
-    def get_weight(obj, key):
-        return get_effective_weight(obj, key)
 
     tree = None
     if isinstance(Expr,str):

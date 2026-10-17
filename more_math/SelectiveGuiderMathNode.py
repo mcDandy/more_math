@@ -171,7 +171,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 return None
             try:
                 diffusion_model = patcher.get_model_object("diffusion_model")
-            except Exception:
+            except AttributeError:
                 return None
 
             if stage in ("input", "output"):
@@ -713,23 +713,16 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
         if hasattr(V, "model_patcher") and V.model_patcher is not None and not getattr(V, "_mrmth_debug_callbacks_added", False):
             def _on_register_all_hook_patches(model_patcher, hooks, target_dict, model_options, registered):
-                try:
-                    reg_len = len(registered) if registered is not None else 0
-                    in_len = len(hooks) if hooks is not None else 0
-                    tr_count = len(registered.get_type(comfy.hooks.EnumHookType.TransformerOptions)) if registered is not None else 0
-                    dbg(f"REGISTER hooks_in={in_len} registered={reg_len} transformer_registered={tr_count}")
-                    if model_options is not None:
-                        rh = model_options.get("registered_hooks", None)
-                        dbg(f"model_options.registered_hooks={'set' if rh is not None else 'None'}")
-                except Exception as e:
-                    logging.warning(f"[SelectiveGuiderMathNode] REGISTER debug error: {e}")
+                reg_len = len(registered) if registered is not None else 0
+                in_len = len(hooks) if hooks is not None else 0
+                tr_count = len(registered.get_type(comfy.hooks.EnumHookType.TransformerOptions)) if registered is not None else 0
+                dbg(f"REGISTER hooks_in={in_len} registered={reg_len} transformer_registered={tr_count}")
+                if model_options is not None:
+                    rh = model_options.get("registered_hooks", None)
+                    dbg(f"model_options.registered_hooks={'set' if rh is not None else 'None'}")
 
             def _on_apply_hooks(model_patcher, hooks):
-                try:
-                    hl = len(hooks) if hooks is not None else 0
-                    dbg(f"APPLY hooks_len={hl}")
-                except Exception as e:
-                    logging.warning(f"[SelectiveGuiderMathNode] APPLY debug error: {e}")
+                dbg(f"APPLY hooks_len={len(hooks) if hooks is not None else 0}")
 
             V.model_patcher.add_callback_with_key(
                 comfy.patcher_extension.CallbacksMP.ON_REGISTER_ALL_HOOK_PATCHES,

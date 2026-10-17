@@ -80,7 +80,7 @@ def test_lambda_calls_require_exact_argument_count(call):
 def test_text_image_size_expression_is_evaluated_once(monkeypatch):
     visitor_module = importlib.import_module("more_math.Parser.UnifiedMathVisitor")
     default_font = ImageFont.load_default()
-    original_exists = os.path.exists
+    original_isfile = os.path.isfile
     monkeypatch.setattr(
         visitor_module.ImageFont,
         "truetype",
@@ -88,8 +88,8 @@ def test_text_image_size_expression_is_evaluated_once(monkeypatch):
     )
     monkeypatch.setattr(
         visitor_module.os.path,
-        "exists",
-        lambda path: path == "mock-font" or original_exists(path),
+        "isfile",
+        lambda path: path == "mock-font" or original_isfile(path),
     )
 
     values = MathDict()
@@ -249,3 +249,45 @@ def test_unconnected_stack_is_not_shared_between_runs():
     _, stack = FloatMathNode.execute("stack_push(0, 1)", {"V0": 0.0}, remember_stack=True)
 
     assert stack == {0: [1.0]}
+
+
+def test_top_level_return_stops_script():
+    assert _visit("x = 1; return 5; x = 2; x", {}) == 5
+
+
+def test_return_from_loop_inside_function_resumes_caller():
+    expression = "f(n) -> { for (i in [1, 2, 3]) { if (i == 2) return i * n; } return 0; }; f(10) + f(1)"
+    assert _visit(expression, {}) == 22
+
+
+def test_break_inside_function_does_not_escape_to_caller_loop():
+    with pytest.raises(ValueError, match="outside of a loop"):
+        _visit("f() -> { break; }; for (i in [1, 2]) { f(); } 0", {})
+
+
+def test_tiny_non_zero_values_are_true():
+    t = torch.tensor([1e-9, 0.0])
+
+    assert torch.equal(_visit("t ? 1 : 0", {"t": t}), torch.tensor([1.0, 0.0]))
+    assert _visit("any(t)", {"t": t}) == 1.0
+
+
+def test_text_image_synthetic_italic_with_only_empty_lines(monkeypatch):
+    visitor_module = importlib.import_module("more_math.Parser.UnifiedMathVisitor")
+    default_font = ImageFont.load_default()
+    monkeypatch.setattr(visitor_module.ImageFont, "truetype", lambda *args, **kwargs: default_font)
+    monkeypatch.setattr(visitor_module, "_find_font", lambda name, tier, weight, italic: None if italic else "mock-font")
+
+    result = _visit('text_image("\\n", "MockFont", 12, 0, 400, 0, 1, 1)', {})
+
+    assert result.ndim == 2
+
+
+def test_bold_request_prefers_bold_over_semibold(monkeypatch):
+    visitor_module = importlib.import_module("more_math.Parser.UnifiedMathVisitor")
+    monkeypatch.setattr(visitor_module, "_system_fonts", lambda: [
+        ("semibold.ttf", "arialsemibold", "arial", "semibold", False, False),
+        ("bold.ttf", "arialbold", "arial", "bold", False, False),
+    ])
+
+    assert visitor_module._find_font("Arial", "bold", 700, False) == "bold.ttf"

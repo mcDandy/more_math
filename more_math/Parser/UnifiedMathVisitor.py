@@ -1,5 +1,8 @@
+import bisect
+import functools
 import time
 import os
+import sys
 import torch
 import math
 import inspect
@@ -22,15 +25,17 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 
-class ReturnSignal:
-    __slots__ = ("value",)
+class ControlSignal(Exception):
+    """Returned by break/continue/return visitors; visit() throws it into the waiting parent visitors."""
+
+class ReturnSignal(ControlSignal):
     def __init__(self, value):
         self.value = value
 
-class BreakSignal:
+class BreakSignal(ControlSignal):
     pass
 
-class ContinueSignal:
+class ContinueSignal(ControlSignal):
     pass
 
 class MathDict(dict):
@@ -129,6 +134,140 @@ class ChangeTrackingDict(dict):
         self._changed_keys = set()
 
 
+_FONT_WEIGHT_TIERS = ("thin", "extralight", "light", "regular", "medium", "semibold", "bold", "extrabold", "black")
+_FONT_STYLE_SUFFIXES = {
+    "thin": ("thin", "hairline", "100"),
+    "extralight": ("extralight", "ultralight", "200"),
+    "light": ("light", "300"),
+    "regular": ("regular", "normal", "reg", "400", "standard"),
+    "medium": ("medium", "500"),
+    "semibold": ("semibold", "demibold", "600"),
+    "bold": ("bold", "bd", "700"),
+    "extrabold": ("extrabold", "ultrabold", "800"),
+    "black": ("black", "heavy", "blk", "900"),
+}
+# Compound names first so "semibold" is not read as "bold" or "extralight" as "light".
+_FONT_WEIGHT_HINTS = tuple(
+    ((_FONT_WEIGHT_TIERS.index(tier) + 1) * 100, _FONT_STYLE_SUFFIXES[tier])
+    for tier in ("extrabold", "semibold", "extralight", "black", "bold", "medium", "light", "thin")
+)
+
+
+def _normalise_font_name(value):
+    return value.lower().replace(" ", "").replace("-", "").replace("_", "")
+
+
+def _font_axis_name(axis):
+    name = axis.get("name", "")
+    if isinstance(name, bytes):
+        name = name.decode(errors="ignore")
+    return str(name).lower()
+
+
+@functools.lru_cache(maxsize=1)
+def _system_fonts():
+    """Index of installed fonts, scanned once per process (fonts installed later need a restart)."""
+    if sys.platform == "win32":
+        search_dirs = [os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"), os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Windows\Fonts")]
+    elif sys.platform == "darwin":
+        search_dirs = ["/Library/Fonts", "/System/Library/Fonts", os.path.expanduser("~/Library/Fonts")]
+    else:
+        search_dirs = [
+            "/usr/share/fonts",
+            "/usr/local/share/fonts",
+            os.path.join(os.path.expanduser(os.environ.get("XDG_DATA_HOME", "~/.local/share")), "fonts"),
+            os.path.expanduser("~/.local/share/fonts"),
+            os.path.expanduser("~/.fonts"),
+        ]
+
+    fonts = []
+    for directory in dict.fromkeys(search_dirs):
+        for root, _, files in os.walk(directory):
+            for fname in files:
+                if not fname.lower().endswith((".ttf", ".otf", ".ttc", ".otc")):
+                    continue
+                path = os.path.join(root, fname)
+                try:
+                    fnt = ImageFont.truetype(path, 10)
+                except OSError:
+                    continue
+                family, sub = fnt.getname()
+                try:
+                    axes = {_font_axis_name(axis) for axis in fnt.get_variation_axes()}
+                except OSError:  # not a variable font
+                    axes = set()
+                fonts.append((
+                    path,
+                    _normalise_font_name(os.path.splitext(fname)[0]),
+                    _normalise_font_name(family or ""),
+                    _normalise_font_name(sub or ""),
+                    bool(axes & {"weight", "wght"}),
+                    bool(axes & {"italic", "ital", "slant", "slnt"}),
+                ))
+    return fonts
+
+
+def _find_font(name, tier, weight, italic):
+    """Path of the installed font best matching name/weight/italic, or None."""
+    name_clean = _normalise_font_name(name)
+    suffixes = _FONT_STYLE_SUFFIXES[tier]
+    if italic:
+        suffixes = tuple(f"{s}{i}" for s in suffixes for i in ("italic", "ital", "it", "oblique")) + ("italic", "ital", "oblique", "it")
+    plain_regular = tier == "regular" and not italic
+
+    best = None
+    for path, base, family, sub, weight_axis, italic_axis in _system_fonts():
+        match = name_clean in base and ((plain_regular and base == name_clean) or any(s in base for s in suffixes))
+        if not match and family and (name_clean in family or family in name_clean):
+            if (italic and italic_axis) or (not italic and weight_axis):
+                match = True
+            elif not (weight_axis or italic_axis):
+                if plain_regular:
+                    match = sub == "" or any(s in sub for s in ("regular", "normal", "standard"))
+                else:
+                    match = any(s in sub or s in family for s in suffixes)
+        if not match:
+            continue
+
+        combined = f"{base} {sub}"
+        font_italic = any(t in combined for t in ("italic", "ital", "oblique")) or base.endswith((f"{name_clean}i", f"{name_clean}bi"))
+        font_weight = next((w for w, hints in _FONT_WEIGHT_HINTS if any(h in combined for h in hints)), 400)
+        if base.endswith((f"{name_clean}bd", f"{name_clean}bi")):
+            font_weight = 700
+
+        score = (0 if font_italic == italic else 10000) + (0 if weight_axis else abs(font_weight - weight)) + (0 if base == name_clean else 50)
+        if best is None or score < best[0]:
+            best = (score, path)
+    return best[1] if best is not None else None
+
+
+def _apply_font_variations(fnt, weight, italic):
+    try:
+        axes = fnt.get_variation_axes()
+    except OSError:  # not a variable font
+        return fnt
+
+    values = []
+    changed = False
+    for axis in axes:
+        axis_name = _font_axis_name(axis)
+        if axis_name in ("weight", "wght"):
+            target = weight
+        elif axis_name in ("italic", "ital"):
+            target = 1 if italic else 0
+        elif axis_name in ("slant", "slnt"):
+            target = axis.get("minimum", -12) if italic else 0
+        else:
+            values.append(axis.get("default", axis.get("minimum", 0)))
+            continue
+        values.append(max(axis["minimum"], min(axis["maximum"], target)))
+        changed = True
+
+    if changed:
+        fnt.set_variation_by_axes(values)
+    return fnt
+
+
 class UnifiedMathVisitor(MathExprVisitor):
     def __init__(self, variables, shape=None, device=None, functions=None, depth=0, state_storage=None):
 
@@ -153,46 +292,43 @@ class UnifiedMathVisitor(MathExprVisitor):
         if not inspect.isgenerator(gen):
             return gen
 
+        # Visitors yield child nodes instead of recursing, so deep scripts don't hit Python's recursion limit.
+        # A ControlSignal is thrown into the waiting parent; loops and calls catch the ones they handle.
         stack = [gen]
         last_result = None
+        signal = None
 
         while stack:
             try:
-                # If we're bubbling a signal, we need to check if the parent can handle it.
-                if isinstance(last_result, (ReturnSignal, BreakSignal, ContinueSignal)):
-                    parent_gen = stack[-1]
-                    func_name = parent_gen.gi_code.co_name
-
-                    is_handler = False
-                    if isinstance(last_result, (BreakSignal, ContinueSignal)):
-                        if func_name in ("visitWhileStmt", "visitForStmt"):
-                            is_handler = True
-                    elif isinstance(last_result, ReturnSignal):
-                        if func_name in ("visitCallExp", "visitStart"):
-                            is_handler = True
-
-                    if not is_handler:
-                        stack.pop().close()
-                        continue
-
-                res = stack[-1].send(last_result)
-
-                if hasattr(res, 'accept'):
-                    next_gen = res.accept(self)
-                    if inspect.isgenerator(next_gen):
-                        stack.append(next_gen)
-                        last_result = None
-                    else:
-                        last_result = next_gen
+                if signal is not None:
+                    pending, signal = signal, None
+                    res = stack[-1].throw(pending)
                 else:
-                    last_result = res
-
+                    res = stack[-1].send(last_result)
             except StopIteration as e:
                 stack.pop()
-                last_result = e.value
+                res = e.value
+            except ControlSignal as e:
+                stack.pop()
+                signal = e
+                continue
+            else:
+                if hasattr(res, "accept"):
+                    res = res.accept(self)
+                    if inspect.isgenerator(res):
+                        stack.append(res)
+                        last_result = None
+                        continue
 
-        if isinstance(last_result, ReturnSignal):
-            return last_result.value
+            if isinstance(res, ControlSignal):
+                signal = res
+            else:
+                last_result = res
+
+        if isinstance(signal, ReturnSignal):
+            return signal.value
+        if signal is not None:
+            raise ValueError("break/continue used outside of a loop")
         return last_result
     def _is_tensor(self, val):
         return isinstance(val, torch.Tensor) or getattr(val, "is_nested", False)
@@ -224,6 +360,16 @@ class UnifiedMathVisitor(MathExprVisitor):
         if tracking_source is not None:
             return ChangeTrackingDict.from_result(result_dict, tracking_source)
         return MathDict(result_dict)
+
+    def _truthy(self, value):
+        """Truth of a branch condition: a tensor or list is true when any element is non-zero."""
+        if self._is_nested_tensor(value):
+            return any(self._truthy(t) for t in value.tensors)
+        if self._is_plain_tensor(value):
+            return bool(torch.any(value != 0))
+        if self._is_list(value):
+            return any(self._truthy(v) for v in value)
+        return bool(value)
 
     def _where_value(self, condition, true_value, false_value):
         if self._is_tensor(condition) or self._is_tensor(true_value) or self._is_tensor(false_value):
@@ -857,22 +1003,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         if self._is_tensor(condition):
             true_val = yield ctx.expr(0)
             false_val = yield ctx.expr(1)
-            true_t = self._promote_to_tensor(true_val)
-            false_t = self._promote_to_tensor(false_val)
-
-            if true_t.dtype != false_t.dtype:
-                true_t = true_t.float()
-                false_t = false_t.float()
-
-            cond_t = torch.isclose(condition.float(), torch.tensor(0.0, device=self.device)) == False
-            return torch.where(cond_t, true_t, false_t).contiguous()
+            return self._where_value(condition, true_val, false_val)
 
         if self._is_list(condition):
             res = []
             cache_true = None
             cache_false = None
-            for i, c in enumerate(condition):
-                if c:
+            for c in condition:
+                if self._truthy(c):
                     if cache_true is None:
                         cache_true = yield ctx.expr(0)
                     res.append(cache_true)
@@ -882,7 +1020,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                     res.append(cache_false)
             return res
 
-        if condition:
+        if self._truthy(condition):
             return (yield ctx.expr(0))
         else:
             return (yield ctx.expr(1))
@@ -1418,10 +1556,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if self._is_list(val):
             k_val = max(0, min(k_val, len(val)))
-            try:
-                return sorted(val, reverse=True)[:k_val]
-            except:
-                return val[:k_val]
+            return sorted(val, reverse=True)[:k_val]
 
         return val
 
@@ -1456,10 +1591,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if self._is_list(val):
             k_val = max(0, min(k_val, len(val)))
-            try:
-                return sorted(val)[:k_val]
-            except:
-                return val[:k_val]
+            return sorted(val)[:k_val]
 
         return val
 
@@ -2899,14 +3031,17 @@ class UnifiedMathVisitor(MathExprVisitor):
         count = ctx.getChildCount()
         last_res = None
 
-        for i in range(count):
-            child = ctx.getChild(i)
-            if isinstance(child, TerminalNode):
-                continue
+        try:
+            for i in range(count):
+                child = ctx.getChild(i)
+                if isinstance(child, TerminalNode):
+                    continue
 
-            res = yield child
-            if res is not None:
-                last_res = res
+                res = yield child
+                if res is not None:
+                    last_res = res
+        except ReturnSignal as signal:
+            return signal.value
 
         return last_res
 
@@ -2939,14 +3074,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitIfStmt(self, ctx):
         cond = yield ctx.expr()
 
-        def truthy(x):
-            if isinstance(x, torch.Tensor):
-                return torch.any(x != 0).item()
-            if isinstance(x, (list, tuple)):
-                return any(x)
-            return bool(x)
-
-        if truthy(cond):
+        if self._truthy(cond):
             return (yield ctx.stmt(0))
         elif ctx.stmt(1):
             return (yield ctx.stmt(1))
@@ -2955,24 +3083,14 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitWhileStmt(self, ctx):
         while True:
             throw_exception_if_processing_interrupted()
-            cond = yield ctx.expr()
-            is_true = (
-                torch.any(cond != 0).item() if isinstance(cond, torch.Tensor)
-                else any(cond) if isinstance(cond, (list, tuple))
-                else bool(cond)
-            )
-
-            if not is_true:
+            if not self._truthy((yield ctx.expr())):
                 break
-
-            res = yield ctx.stmt()
-
-            if isinstance(res, ReturnSignal):
-                return res
-            if isinstance(res, BreakSignal):
+            try:
+                yield ctx.stmt()
+            except BreakSignal:
                 break
-            if isinstance(res, ContinueSignal):
-                continue
+            except ContinueSignal:
+                pass
         return None
 
     def visitForStmt(self, ctx):
@@ -2993,12 +3111,12 @@ class UnifiedMathVisitor(MathExprVisitor):
         for val in iterator:
             throw_exception_if_processing_interrupted()
             self.variables[var_name] = val
-            res = yield ctx.stmt()
-
-            if isinstance(res, BreakSignal):
+            try:
+                yield ctx.stmt()
+            except BreakSignal:
                 break
-            if isinstance(res, ContinueSignal):
-                continue
+            except ContinueSignal:
+                pass
         return None
 
     def visitBreakStmt(self, ctx):
@@ -3108,8 +3226,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
                 target[idx_tuple] = val_t
                 return assigned_val if assign_op == "=" else val_t
-            except Exception as e:
-                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment to '{var_name}' failed: {str(e)}")
+            except (RuntimeError, IndexError, TypeError, ValueError) as e:
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment to '{var_name}' failed: {e}") from e
         elif self._is_list(target):
             # Recurse through nested lists if multiple indices provided
             curr = target
@@ -3213,10 +3331,11 @@ class UnifiedMathVisitor(MathExprVisitor):
             self.depth += 1
             self.variables["depth"] = float(self.depth)
             try:
-                res = yield lam.body
-                if isinstance(res, ReturnSignal):
-                    return res.value
-                return res
+                return (yield lam.body)
+            except ReturnSignal as signal:
+                return signal.value
+            except (BreakSignal, ContinueSignal):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: break/continue outside of a loop in lambda body")
             finally:
                 self.variables = self._scope_stack.pop()
                 self.depth -= 1
@@ -3250,13 +3369,11 @@ class UnifiedMathVisitor(MathExprVisitor):
             self.variables["depth"] = float(self.depth)
 
             try:
-                # Visit the body using yield (trampoline will handle it)
-                res = yield func_def["body"]
-                if isinstance(res, ReturnSignal):
-                    return res.value
-
-                return res
-
+                return (yield func_def["body"])
+            except ReturnSignal as signal:
+                return signal.value
+            except (BreakSignal, ContinueSignal):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: break/continue outside of a loop in function '{func_name}'")
             finally:
                 # Restore variables and depth
                 self.variables = self._scope_stack.pop()
@@ -3283,15 +3400,6 @@ class UnifiedMathVisitor(MathExprVisitor):
                 return float(v.item())
             return float(v)
 
-        def _to_bool(v):
-            if isinstance(v, bool):
-                return v
-            if self._is_tensor(v):
-                v = v.item()
-            if isinstance(v, str):
-                return v.lower() in ("true", "1", "yes")
-            return bool(v)
-
         text       = _to_str((yield ctx.expr(0)))
         font_name  = _to_str((yield ctx.expr(1)))
         size       = max(1, self._to_int((yield ctx.expr(2)), ctx,"text_image", strict=True))
@@ -3299,378 +3407,65 @@ class UnifiedMathVisitor(MathExprVisitor):
         weight_val = self._to_int((yield ctx.expr(4)), ctx,"text_image", strict=True) if len(ctx.expr()) > 4 else 400
         angle      = _to_float((yield ctx.expr(5))) if len(ctx.expr()) > 5 else 0.0
         spacing    = max(0.1, _to_float((yield ctx.expr(6)))) if len(ctx.expr()) > 6 else 1.0
-        is_italic  = _to_bool((yield ctx.expr(7))) if len(ctx.expr()) > 7 else False
-        has_ul     = _to_bool((yield ctx.expr(8))) if len(ctx.expr()) > 8 else False
+        is_italic  = self._to_bool((yield ctx.expr(7)), ctx, "text_image italic") if len(ctx.expr()) > 7 else False
+        has_ul     = self._to_bool((yield ctx.expr(8)), ctx, "text_image underline") if len(ctx.expr()) > 8 else False
 
-        # --- Plně granulární mapování tlouštěk (CSS standard) ---
-        if weight_val <= 150:
-            weight_tier = "thin"
-        elif weight_val <= 250:
-            weight_tier = "extralight"
-        elif weight_val <= 350:
-            weight_tier = "light"
-        elif weight_val <= 450:
-            weight_tier = "regular"
-        elif weight_val <= 550:
-            weight_tier = "medium"
-        elif weight_val <= 650:
-            weight_tier = "semibold"
-        elif weight_val <= 750:
-            weight_tier = "bold"
-        elif weight_val <= 850:
-            weight_tier = "extrabold"
+        tier = _FONT_WEIGHT_TIERS[bisect.bisect_left((150, 250, 350, 450, 550, 650, 750, 850), weight_val)]
+        synthetic_italic = synthetic_bold = False
+        variation_weight, variation_italic = weight_val, is_italic
+        if os.path.isfile(font_name):
+            font_path = font_name
         else:
-            weight_tier = "black"
-
-        if is_italic:
-            style_key = f"{weight_tier}_italic" if weight_tier != "regular" else "italic"
-        else:
-            style_key = weight_tier
-
-        # --- Load font ---
-        def _normalise_font_name(value):
-            return value.lower().replace(" ", "").replace("-", "").replace("_", "")
-
-        def _axis_name(axis):
-            name = axis.get("name", "")
-            if isinstance(name, bytes):
-                name = name.decode(errors="ignore")
-            return str(name).lower()
-
-        def _axis_value(axis, value):
-            minimum = axis.get("minimum", value)
-            maximum = axis.get("maximum", value)
-            return max(minimum, min(maximum, value))
-
-        def _apply_font_variations(fnt, exact_weight, italic):
-            if not (
-                hasattr(fnt, "get_variation_axes")
-                and hasattr(fnt, "set_variation_by_axes")
-            ):
-                return fnt
-
-            try:
-                axes = fnt.get_variation_axes()
-                values = []
-                changed = False
-
-                for axis in axes:
-                    axis_name = _axis_name(axis)
-                    default = axis.get("default", axis.get("minimum", 0))
-
-                    if axis_name in ("weight", "wght"):
-                        values.append(_axis_value(axis, exact_weight))
-                        changed = True
-                    elif axis_name in ("italic", "ital"):
-                        values.append(_axis_value(axis, 1 if italic else 0))
-                        changed = True
-                    elif axis_name in ("slant", "slnt"):
-                        target = axis.get("minimum", -12) if italic else 0
-                        values.append(_axis_value(axis, target))
-                        changed = True
-                    else:
-                        values.append(default)
-
-                if changed:
-                    fnt.set_variation_by_axes(values)
-            except Exception:
-                pass
-
-            return fnt
-
-        def _load_font(name, sz, target_style, exact_weight):
-            if os.path.exists(name):
-                try:
-                    fnt = ImageFont.truetype(name, sz)
-                    return _apply_font_variations(
-                        fnt,
-                        exact_weight,
-                        "italic" in target_style,
-                    )
-                except Exception:
-                    pass
-
-            style_suffixes = {
-                "thin":        ["thin", "100", "hairline"],
-                "extralight":  ["extralight", "ultralight", "200"],
-                "light":       ["light", "300"],
-                "regular":     ["regular", "normal", "reg", "400", "standard"],
-                "medium":      ["medium", "500"],
-                "semibold":    ["semibold", "demibold", "600"],
-                "bold":        ["bold", "bd", "700"],
-                "extrabold":   ["extrabold", "ultrabold", "800"],
-                "black":       ["black", "heavy", "blk", "900"],
-                "italic":      ["italic", "it", "i"],
-            }.get(target_style.replace("_italic", ""), [""])
-
-            if "italic" in target_style:
-                italic_suffixes = []
-                for suffix in style_suffixes:
-                    italic_suffixes.extend([
-                        f"{suffix}italic",
-                        f"{suffix}ital",
-                        f"{suffix}it",
-                        f"{suffix}oblique",
-                    ])
-                style_suffixes = italic_suffixes + [
-                    "italic", "ital", "oblique", "it"
-                ]
-
-            search_dirs = []
-            import platform
-            sys_platform = platform.system()
-            if sys_platform == "Windows":
-                search_dirs = [
-                    os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"),
-                    os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Windows\Fonts")
-                ]
-            elif sys_platform == "Darwin":
-                search_dirs = ["/Library/Fonts", "/System/Library/Fonts", os.path.expanduser("~/Library/Fonts")]
-            else:
-                xdg_data_home = os.environ.get("XDG_DATA_HOME", "~/.local/share")
-                search_dirs = [
-                    "/usr/share/fonts",
-                    "/usr/local/share/fonts",
-                    os.path.join(os.path.expanduser(xdg_data_home), "fonts"),
-                    os.path.expanduser("~/.local/share/fonts"),
-                    os.path.expanduser("~/.fonts"),
-                ]
-
-            name_clean = _normalise_font_name(name)
-            wants_italic = "italic" in target_style
-            candidates = []
-
-            def _font_traits(base_name, sub_name):
-                combined = f"{base_name} {sub_name}"
-                is_italic_font = any(
-                    token in combined
-                    for token in ("italic", "ital", "oblique")
-                )
-                is_italic_font = is_italic_font or base_name.endswith(
-                    (f"{name_clean}i", f"{name_clean}bi")
-                )
-
-                weight = 400
-                weight_hints = (
-                    (900, ("black", "heavy", "blk", "900")),
-                    (800, ("extrabold", "ultrabold", "800")),
-                    (700, ("bold", "bd", "700")),
-                    (600, ("semibold", "demibold", "600")),
-                    (500, ("medium", "500")),
-                    (300, ("light", "300")),
-                    (200, ("extralight", "ultralight", "200")),
-                    (100, ("thin", "hairline", "100")),
-                )
-                for font_weight, hints in weight_hints:
-                    if any(hint in combined for hint in hints):
-                        weight = font_weight
-                        break
-                if base_name.endswith((f"{name_clean}bd", f"{name_clean}bi")):
-                    weight = 700
-
-                return is_italic_font, weight
-
-            def _candidate_score(base_name, sub_name, has_weight_axis):
-                is_italic_font, font_weight = _font_traits(base_name, sub_name)
-                italic_penalty = 0 if is_italic_font == wants_italic else 10000
-                weight_penalty = 0 if has_weight_axis else abs(font_weight - exact_weight)
-                exact_name_penalty = 0 if base_name == name_clean else 50
-                return italic_penalty + weight_penalty + exact_name_penalty
-
-            for directory in search_dirs:
-                if not os.path.isdir(directory):
-                    continue
-                for root, _, files in os.walk(directory):
-                    for fname in files:
-                        if not fname.lower().endswith((".ttf", ".otf", ".ttc", ".otc")):
-                            continue
-
-                        full_path = os.path.join(root, fname)
-                        base_name = _normalise_font_name(os.path.splitext(fname)[0])
-
-                        match_found = False
-                        has_weight_axis = False
-                        sub_clean = ""
-
-                        # 1. KONTROLA NÁZVU SOUBORU
-                        if name_clean in base_name:
-                            if target_style == "regular" and base_name == name_clean:
-                                match_found = True
-                            else:
-                                match_found = any(suf in base_name for suf in style_suffixes)
-                        # 2. KONTROLA METADAT UVNITŘ SOUBORU
-                        if not match_found:
-                            try:
-                                test_fnt = ImageFont.truetype(full_path, 10)
-                                internal_family, internal_sub = test_fnt.getname()
-
-                                family_clean = _normalise_font_name(internal_family)
-                                sub_clean = _normalise_font_name(internal_sub)
-
-                                if name_clean in family_clean or family_clean in name_clean:
-                                    has_variable_axes = False
-                                    if hasattr(test_fnt, "get_variation_axes"):
-                                        try:
-                                            axes = test_fnt.get_variation_axes()
-                                            axis_names = {
-                                                _axis_name(axis)
-                                                for axis in axes
-                                            }
-                                            has_weight_axis = bool(
-                                                axis_names & {"weight", "wght"}
-                                            )
-                                            has_italic_axis = bool(
-                                                axis_names & {
-                                                    "italic",
-                                                    "ital",
-                                                    "slant",
-                                                    "slnt",
-                                                }
-                                            )
-                                            has_variable_axes = (
-                                                has_weight_axis
-                                                or has_italic_axis
-                                            )
-
-                                            if wants_italic and has_italic_axis:
-                                                match_found = True
-                                            elif not wants_italic and has_weight_axis:
-                                                match_found = True
-                                        except Exception:
-                                            has_variable_axes = False
-
-                                    if not match_found and not has_variable_axes:
-                                        if target_style == "regular":
-                                            match_found = any(
-                                                s in sub_clean
-                                                for s in [
-                                                    "regular",
-                                                    "normal",
-                                                    "standard",
-                                                ]
-                                            ) or sub_clean == ""
-                                        else:
-                                            match_found = any(
-                                                suf in sub_clean
-                                                for suf in style_suffixes
-                                            ) or any(
-                                                suf in family_clean
-                                                for suf in style_suffixes
-                                            )
-                            except Exception:
-                                continue
-
-                        if match_found:
-                            candidates.append((
-                                _candidate_score(
-                                    base_name,
-                                    sub_clean,
-                                    has_weight_axis,
-                                ),
-                                full_path,
-                            ))
-
-            for _, full_path in sorted(candidates, key=lambda item: item[0]):
-                try:
-                    fnt = ImageFont.truetype(full_path, sz)
-                    return _apply_font_variations(
-                        fnt,
-                        exact_weight,
-                        wants_italic,
-                    )
-                except Exception:
-                    pass
-
-            raise FileNotFoundError(
-                f"Font '{name}' with style '{target_style}' (weight {exact_weight}) was not found in the system directories."
-            )
-
-        try:
-            font = _load_font(font_name, size, style_key, weight_val)
-            synthetic_italic = False
-            synthetic_bold = False
-        except FileNotFoundError:
-            try:
-                font = _load_font(font_name, size, "regular", 400)
+            font_path = _find_font(font_name, tier, weight_val, is_italic)
+            if font_path is None:
+                # Fall back to the regular face and fake the requested style
+                font_path = _find_font(font_name, "regular", 400, False)
+                if font_path is None:
+                    raise FileNotFoundError(f"Font '{font_name}' was not found in the system font directories.")
                 synthetic_italic = is_italic
-                synthetic_bold = (weight_val >= 600)
-            except FileNotFoundError:
-                raise FileNotFoundError(f"Font '{font_name}' was not found in the system directories (nor its base version).")
+                synthetic_bold = weight_val >= 600
+                variation_weight, variation_italic = 400, False
+        font = _apply_font_variations(ImageFont.truetype(font_path, size), variation_weight, variation_italic)
 
         # --- Word-wrap if max_width is set ---
-        def _wrap_text(text_in, fnt, max_w):
-            if max_w <= 0:
-                return text_in.splitlines()
-            lines = []
-            for paragraph in text_in.splitlines():
-                words = paragraph.split(" ")
-                current = ""
-                for word in words:
-                    test = (current + " " + word).strip()
-                    bbox = fnt.getbbox(test)
-                    w = bbox[2] - bbox[0]
-                    if w <= max_w or not current:
-                        current = test
-                    else:
-                        lines.append(current)
-                        current = word
-                lines.append(current)
-            return lines
+        lines = []
+        for paragraph in text.splitlines():
+            if max_width <= 0:
+                lines.append(paragraph)
+                continue
+            current = ""
+            for word in paragraph.split(" "):
+                test = (current + " " + word).strip()
+                if not current or font.getlength(test) <= max_width:
+                    current = test
+                else:
+                    lines.append(current)
+                    current = word
+            lines.append(current)
 
-        lines = _wrap_text(text, font, max_width)
+        # --- Measure and render ---
+        stroke = max(1, int(size * 0.02)) if synthetic_bold else 0
+        shear = 0.25 if synthetic_italic else 0.0
+        bboxes = [font.getbbox(line or " ", stroke_width=stroke) for line in lines]
+        line_stride = max(1, int(max((b[3] - b[1] for b in bboxes), default=size) * spacing))
+        canvas_h = max(1, line_stride * len(lines))
+        canvas_w = max(1, max((b[2] - b[0] for b in bboxes), default=size) + int(shear * canvas_h))
 
-        # --- Measure canvas size ---
-        line_heights = []
-        line_widths = []
-        for line in lines:
-            bbox = font.getbbox(line if line else " ")
-            line_widths.append(bbox[2] - bbox[0])
-            line_heights.append(bbox[3] - bbox[1])
-
-        line_h = max(line_heights) if line_heights else size
-        line_stride = max(1, int(line_h * spacing))
-
-        padding_x = int(size * 0.3) if synthetic_italic else 0
-        canvas_w = (max(line_widths) if line_widths else size) + padding_x
-        canvas_h = line_stride * len(lines)
-
-        canvas_w = max(canvas_w, 1)
-        canvas_h = max(canvas_h, 1)
-
-        # --- Render text ---
         img = Image.new("L", (canvas_w, canvas_h), color=0)
         draw = ImageDraw.Draw(img)
-        y = 0
-
         ul_thickness = max(1, int(size * 0.06))
         ul_offset = max(1, int(size * 0.08))
-
-        for line in lines:
+        for i, (line, bbox) in enumerate(zip(lines, bboxes)):
             if not line:
-                y += line_stride
                 continue
-            bbox = font.getbbox(line)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
-
-            # Synthetic bold.
-            if synthetic_bold:
-                thickness_offset = max(1, int(size * 0.02))
-                for ox in range(-thickness_offset, thickness_offset + 1):
-                    for oy in range(-thickness_offset, thickness_offset + 1):
-                        draw.text((ox, (y - bbox[1]) + oy), line, fill=255, font=font)
-            else:
-                draw.text((0, y - bbox[1]), line, fill=255, font=font)
-
+            y = i * line_stride
+            draw.text((-bbox[0], y - bbox[1]), line, fill=255, font=font, stroke_width=stroke, stroke_fill=255)
             if has_ul:
-                ul_top = y + text_h + ul_offset
-                draw.rectangle([0, ul_top, text_w, ul_top + ul_thickness], fill=255)
+                ul_top = y + bbox[3] - bbox[1] + ul_offset
+                draw.rectangle([0, ul_top, bbox[2] - bbox[0], ul_top + ul_thickness], fill=255)
 
-            y += line_stride
-
-        # --- Software Italic (After Text Rendering) ---
         if synthetic_italic:
-            img = img.transform(img.size, Image.Transform.AFFINE, (1, 0.25, -0.25*text_h, 0, 1, 0))
+            img = img.transform(img.size, Image.Transform.AFFINE, (1, shear, -shear * canvas_h, 0, 1, 0))
 
         # --- Rotate if requested ---
         if angle != 0.0:
@@ -3928,14 +3723,13 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitAnyFunc(self, ctx):
         val = yield ctx.expr()
-        if self._is_tensor(val): return torch.any(torch.isclose(val, torch.tensor(0.0, device=self.device)) == False).float()
-        if self._is_list(val): return float(any(val))
-        return float(bool(val))
+        if self._is_plain_tensor(val): return torch.any(val != 0).float()
+        return float(self._truthy(val))
 
     def visitAllFunc(self, ctx):
         val = yield ctx.expr()
-        if self._is_tensor(val): return torch.all(torch.isclose(val, torch.tensor(0.0, device=self.device)) == False).float()
-        if self._is_list(val): return float(all(val))
+        if self._is_plain_tensor(val): return torch.all(val != 0).float()
+        if self._is_list(val): return float(all(self._truthy(v) for v in val))
         return float(bool(val))
 
     def visitMedianFunc(self, ctx):
@@ -4568,13 +4362,10 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def _bitwise_op(self, a, b, torch_op, scalar_op,ctx):
         """Binary bitwise operation handler supporting tensors, lists, and scalars."""
-        try:
-            if self._is_tensor(a) and a.numel() == 1:
-                a = int(a.flatten()[0].item())
-            if self._is_tensor(b) and b.numel() == 1:
-                b = int(b.flatten()[0].item())
-        except Exception as e:
-            raise ValueError(f"Invalid tensor value for bitwise operation: {e}")
+        if self._is_tensor(a) and a.numel() == 1:
+            a = int(a.flatten()[0].item())
+        if self._is_tensor(b) and b.numel() == 1:
+            b = int(b.flatten()[0].item())
 
         # Handle tensor-list combinations
         if self._is_tensor(a) and self._is_list(b):
@@ -5015,14 +4806,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if mask_idx < 0:
             return mask.view(new_shape).expand(overlay_shape)
 
-        # Fallback: try broadcast_to or expand
-        try:
-            return torch.broadcast_to(mask, overlay_shape)
-        except Exception:
-            try:
-                return mask.expand(overlay_shape)
-            except Exception:
-                return mask
+        return torch.broadcast_to(mask, overlay_shape)
 
     def visitOverlayFunc(self, ctx):
         base = yield ctx.expr(0)

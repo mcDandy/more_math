@@ -4,134 +4,26 @@ import torch.nn.functional as F
 from torchvision.models.optical_flow import raft_large, Raft_Large_Weights
 from torchvision.utils import flow_to_image as torchvision_flow_to_image
 import numpy as np
+import folder_paths
+import comfy.utils
 
 _raft_model = None
 
 def get_raft_model(device):
     global _raft_model
     if _raft_model is None:
-        # First, try to load a user-provided checkpoint from ComfyUI's configurable
-        # "optical_flow" folder (preferred). If that fails, fall back to the
-        # torchvision default weights.
-        try:
-            # Imported here to avoid adding a hard dependency at module import time
-            # when this utility may be used outside of a full ComfyUI environment.
-            import folder_paths
-            import comfy.utils
-
-            names = folder_paths.get_filename_list("optical_flow")
-            model_name = None
-            if names:
-                # Choose the first available file by default (matching other UI lists).
-                model_name = names[0]
-            else:
-                # Try to use torchvision weights but save them to the optical_flow folder
-                try:
-                    weights = Raft_Large_Weights.DEFAULT
-
-                    # Instantiate the torchvision model (this will download weights into the torchvision cache)
-                    try:
-                        model_dl = raft_large(weights=weights, progress=True)
-                    except Exception:
-                        model_dl = raft_large(weights=weights, progress=False)
-
-                    # Move state dict to CPU and detach
-                    state_dict = {k: v.cpu() for k, v in model_dl.state_dict().items()}
-
-                    # Try to infer original filename/extension from the weights metadata or URL
-                    candidate_name = None
-                    try:
-                        url = getattr(weights, 'url', None) or getattr(weights, '_url', None)
-                        if url:
-                            candidate_name = os.path.basename(str(url).split('?')[0])
-                    except Exception:
-                        candidate_name = None
-                    if not candidate_name:
-                        try:
-                            meta = getattr(weights, 'meta', None) or {}
-                            if isinstance(meta, dict):
-                                candidate_name = meta.get('filename') or meta.get('name')
-                        except Exception:
-                            candidate_name = None
-
-                    # Ensure folder exists: use folder_paths mapping when available
-                    save_dir = None
-                    if hasattr(folder_paths, 'folder_names_and_paths') and 'optical_flow' in folder_paths.folder_names_and_paths:
-                        dirs = folder_paths.folder_names_and_paths['optical_flow'][0]
-                        if isinstance(dirs, (list, tuple)) and len(dirs) > 0:
-                            save_dir = dirs[0]
-                    if not save_dir:
-                        save_dir = os.path.join(os.path.dirname(__file__), "..", "..", "models", "optical_flow")
-                    os.makedirs(save_dir, exist_ok=True)
-
-                    # Decide filename and format
-                    if candidate_name:
-                        model_name = candidate_name
-                    else:
-                        model_name = "raft_large_default.pth"
-
-                    model_path = folder_paths.get_full_path("optical_flow", model_name) or os.path.join(save_dir, model_name)
-
-                    # Save in original format if known (.safetensors or .pth/.pt), otherwise default to .pth
-                    _, ext = os.path.splitext(model_name)
-                    ext = ext.lower()
-                    saved_ok = False
-                    try:
-                        if ext in ('.safetensors', '.sft'):
-                            # Save as safetensors
-                            try:
-                                comfy.utils.save_torch_file(state_dict, model_path)
-                                saved_ok = True
-                            except Exception:
-                                import safetensors.torch
-                                safetensors.torch.save_file(state_dict, model_path)
-                                saved_ok = True
-                        else:
-                            # Default: save as a PyTorch checkpoint (.pth)
-                            try:
-                                import torch as _torch
-                                _torch.save(state_dict, model_path)
-                                saved_ok = True
-                            except Exception:
-                                # Fallback to comfy.utils (may write safetensors)
-                                try:
-                                    comfy.utils.save_torch_file(state_dict, model_path)
-                                    saved_ok = True
-                                except Exception:
-                                    saved_ok = False
-                    except Exception:
-                        saved_ok = False
-
-                    if not saved_ok:
-                        model_name = None
-                except Exception:
-                    model_name = None
-
-            if model_name:
-                try:
-                    model_path = folder_paths.get_full_path_or_raise("optical_flow", model_name)
-                    sd = comfy.utils.load_torch_file(model_path, safe_load=True)
-
-                    # Basic validation for a RAFT-large state dict
-                    has_raft_keys = (
-                        any(k.startswith("feature_encoder.") for k in sd)
-                        and any(k.startswith("context_encoder.") for k in sd)
-                        and any(k.startswith("update_block.") for k in sd)
-                    )
-                    if has_raft_keys:
-                        model = raft_large(weights=None, progress=False)
-                        model.load_state_dict(sd)
-                        _raft_model = model.to(device).eval()
-                        return _raft_model
-                except Exception:
-                    pass
-        except Exception:
-            # If anything goes wrong with folder resolution / loading, fall back below.
-            pass
-
-        # Fallback to torchvision-provided default weights
-        weights = Raft_Large_Weights.DEFAULT
-        _raft_model = raft_large(weights=weights, progress=False).to(device).eval()
+        names = folder_paths.get_filename_list("optical_flow")
+        if names:
+            model = raft_large(weights=None, progress=False)
+            model.load_state_dict(comfy.utils.load_torch_file(folder_paths.get_full_path_or_raise("optical_flow", names[0]), safe_load=True))
+        else:
+            # No local checkpoint: download torchvision's RAFT weights once and keep a copy in models/optical_flow
+            weights = Raft_Large_Weights.DEFAULT
+            model = raft_large(weights=weights, progress=True)
+            save_dir = folder_paths.get_folder_paths("optical_flow")[0]
+            os.makedirs(save_dir, exist_ok=True)
+            torch.save(model.state_dict(), os.path.join(save_dir, os.path.basename(weights.url)))
+        _raft_model = model.to(device).eval()
     return _raft_model
 
 def warp(x, flow, padding_mode='reflection'):

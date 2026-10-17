@@ -209,17 +209,12 @@ def move_to_device(value, device):
         return tuple(move_to_device(v, device) for v in value)
 
     if hasattr(value, "images") and hasattr(value, "audio"):
-        images = move_to_device(getattr(value, "images", None), device)
-        audio = move_to_device(getattr(value, "audio", None), device)
-        try:
-            return type(value)(
-                images=images,
-                audio=audio,
-                frame_rate=getattr(value, "frame_rate", None),
-                metadata=getattr(value, "metadata", None),
-            )
-        except Exception:
-            return value
+        return type(value)(
+            images=move_to_device(value.images, device),
+            audio=move_to_device(value.audio, device),
+            frame_rate=getattr(value, "frame_rate", None),
+            metadata=getattr(value, "metadata", None),
+        )
 
     return value
 
@@ -320,22 +315,15 @@ def get_f_variable(f_dict):
     for k in sorted_keys:
         val = f_dict[k]
         if torch.is_tensor(val):
-            # If it's a tensor, just get the first element if it's a scalar or keep as is if it's already 1D?
-            # Usually F inputs are floats. If they are tensors, we'll try to treat them as values.
-            ordered_values.append(val.flatten()[0] if val.numel() > 0 else torch.tensor(0.0))
+            ordered_values.append(float(val.flatten()[0]) if val.numel() > 0 else 0.0)
         elif isinstance(val, (int, float)):
-             ordered_values.append(torch.tensor(float(val)))
+            ordered_values.append(float(val))
         else:
-             ordered_values.append(torch.tensor(0.0))
+            ordered_values.append(0.0)
 
     if not ordered_values:
-         return None, 0
-
-    try:
-        stacked = torch.stack(ordered_values)
-        return stacked, len(ordered_values)
-    except Exception:
-        return None, len(ordered_values)
+        return None, 0
+    return torch.tensor(ordered_values), len(ordered_values)
 
 def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
     """Recursively collect variable reads from an AST node"""

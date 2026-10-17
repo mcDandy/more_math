@@ -699,6 +699,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#DistanceTransformFunc.
+    def visitDistanceTransformFunc(self, ctx:MathExprParser.DistanceTransformFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#GrayscaleFunc.
+    def visitGrayscaleFunc(self, ctx:MathExprParser.GrayscaleFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#MedianFunc.
     def visitMedianFunc(self, ctx:MathExprParser.MedianFuncContext):
         return self.visitChildren(ctx)
@@ -1239,6 +1249,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#RegexSearchFunc.
+    def visitRegexSearchFunc(self, ctx:MathExprParser.RegexSearchFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#RegexReplaceFunc.
+    def visitRegexReplaceFunc(self, ctx:MathExprParser.RegexReplaceFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FormatFunc.
+    def visitFormatFunc(self, ctx:MathExprParser.FormatFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#Int_to_rgbFunc.
     def visitInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
         return self.visitChildren(ctx)
@@ -1339,6 +1364,36 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BlendFunc.
+    def visitBlendFunc(self, ctx:MathExprParser.BlendFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#InterpFunc.
+    def visitInterpFunc(self, ctx:MathExprParser.InterpFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SigmKarrasFunc.
+    def visitSigmKarrasFunc(self, ctx:MathExprParser.SigmKarrasFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SigmExponentialFunc.
+    def visitSigmExponentialFunc(self, ctx:MathExprParser.SigmExponentialFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SigmPolyexponentialFunc.
+    def visitSigmPolyexponentialFunc(self, ctx:MathExprParser.SigmPolyexponentialFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#SigmLaplaceFunc.
+    def visitSigmLaplaceFunc(self, ctx:MathExprParser.SigmLaplaceFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#LinspaceFunc.
     def visitLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
         return self.visitChildren(ctx)
@@ -1356,6 +1411,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#RgbToCielabFunc.
     def visitRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#LuminanceFunc.
+    def visitLuminanceFunc(self, ctx:MathExprParser.LuminanceFuncContext):
         return self.visitChildren(ctx)
 
 

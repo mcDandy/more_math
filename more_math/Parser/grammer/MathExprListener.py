@@ -1250,6 +1250,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#DistanceTransformFunc.
+    def enterDistanceTransformFunc(self, ctx:MathExprParser.DistanceTransformFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#DistanceTransformFunc.
+    def exitDistanceTransformFunc(self, ctx:MathExprParser.DistanceTransformFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#GrayscaleFunc.
+    def enterGrayscaleFunc(self, ctx:MathExprParser.GrayscaleFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#GrayscaleFunc.
+    def exitGrayscaleFunc(self, ctx:MathExprParser.GrayscaleFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#MedianFunc.
     def enterMedianFunc(self, ctx:MathExprParser.MedianFuncContext):
         pass
@@ -2222,6 +2240,33 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#RegexSearchFunc.
+    def enterRegexSearchFunc(self, ctx:MathExprParser.RegexSearchFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RegexSearchFunc.
+    def exitRegexSearchFunc(self, ctx:MathExprParser.RegexSearchFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#RegexReplaceFunc.
+    def enterRegexReplaceFunc(self, ctx:MathExprParser.RegexReplaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#RegexReplaceFunc.
+    def exitRegexReplaceFunc(self, ctx:MathExprParser.RegexReplaceFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FormatFunc.
+    def enterFormatFunc(self, ctx:MathExprParser.FormatFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FormatFunc.
+    def exitFormatFunc(self, ctx:MathExprParser.FormatFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#Int_to_rgbFunc.
     def enterInt_to_rgbFunc(self, ctx:MathExprParser.Int_to_rgbFuncContext):
         pass
@@ -2402,6 +2447,60 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#BlendFunc.
+    def enterBlendFunc(self, ctx:MathExprParser.BlendFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BlendFunc.
+    def exitBlendFunc(self, ctx:MathExprParser.BlendFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InterpFunc.
+    def enterInterpFunc(self, ctx:MathExprParser.InterpFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InterpFunc.
+    def exitInterpFunc(self, ctx:MathExprParser.InterpFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SigmKarrasFunc.
+    def enterSigmKarrasFunc(self, ctx:MathExprParser.SigmKarrasFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SigmKarrasFunc.
+    def exitSigmKarrasFunc(self, ctx:MathExprParser.SigmKarrasFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SigmExponentialFunc.
+    def enterSigmExponentialFunc(self, ctx:MathExprParser.SigmExponentialFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SigmExponentialFunc.
+    def exitSigmExponentialFunc(self, ctx:MathExprParser.SigmExponentialFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SigmPolyexponentialFunc.
+    def enterSigmPolyexponentialFunc(self, ctx:MathExprParser.SigmPolyexponentialFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SigmPolyexponentialFunc.
+    def exitSigmPolyexponentialFunc(self, ctx:MathExprParser.SigmPolyexponentialFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#SigmLaplaceFunc.
+    def enterSigmLaplaceFunc(self, ctx:MathExprParser.SigmLaplaceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#SigmLaplaceFunc.
+    def exitSigmLaplaceFunc(self, ctx:MathExprParser.SigmLaplaceFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#LinspaceFunc.
     def enterLinspaceFunc(self, ctx:MathExprParser.LinspaceFuncContext):
         pass
@@ -2435,6 +2534,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#RgbToCielabFunc.
     def exitRgbToCielabFunc(self, ctx:MathExprParser.RgbToCielabFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#LuminanceFunc.
+    def enterLuminanceFunc(self, ctx:MathExprParser.LuminanceFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LuminanceFunc.
+    def exitLuminanceFunc(self, ctx:MathExprParser.LuminanceFuncContext):
         pass
 
 

@@ -434,6 +434,17 @@ func1:
 		*/
 	| EDGE LPAREN expr (COMMA expr)? RPAREN		# EdgeFunc
 		/**
+		  distance_transform(mask, [threshold]) - Euclidean distance in pixels from each pixel inside the mask to the nearest pixel outside it; outside pixels are 0. Use distance_transform(1 - mask) for the distance outside the mask
+		  - mask: mask or image; values above threshold count as inside
+		  - threshold: inside/outside cutoff (default: 0.5)
+		*/
+	| DISTANCE_TRANSFORM LPAREN expr (COMMA expr)? RPAREN	# DistanceTransformFunc
+		/**
+		  grayscale(image) - replaces the R, G, B entries of the last dimension with their Rec.709 luminance, keeping the shape and extra channels such as alpha
+		  - image: colors with R, G, B as the first three entries of the last dimension
+		*/
+	| GRAYSCALE LPAREN expr RPAREN			# GrayscaleFunc
+		/**
 		  median(x, [dim]) - computes the median globally or along one dimension
 		  - x: values (list or tensor)
 		  - dim: dimension to reduce (default: all elements)
@@ -1083,6 +1094,25 @@ func2:
 		*/
 	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN	# ReplaceFunc
 		/**
+		  regex_search(text, pattern) - returns the index of the first match of the regular expression pattern in text, or -1 if there is none
+		  - text: text to search in
+		  - pattern: Python regular expression
+		*/
+	| REGEX_SEARCH LPAREN expr COMMA expr RPAREN		# RegexSearchFunc
+		/**
+		  regex_replace(text, pattern, replacement) - replaces every match of the regular expression pattern in text; replacement may refer to groups as \1
+		  - text: text to change
+		  - pattern: Python regular expression
+		  - replacement: replacement text
+		*/
+	| REGEX_REPLACE LPAREN expr COMMA expr COMMA expr RPAREN	# RegexReplaceFunc
+		/**
+		  format(value, [spec]) - formats numbers as text. spec is a number of decimals or a Python format spec such as ".3e" (default: shortest form, "g"); lists and tensors are formatted per element
+		  - value: number, list or tensor
+		  - spec: decimal count or format spec text
+		*/
+	| FORMAT LPAREN expr (COMMA expr)? RPAREN		# FormatFunc
+		/**
 		  int_to_rgb(color) - unpacks 0xRRGGBB integers into 0-1 RGB colors. Tensors get R, G, B stacked in a new last dimension, lists return a list of colors and a number returns a 3-item list
 		  - color: packed 0xRRGGBB integer, list or tensor
 		*/
@@ -1213,13 +1243,62 @@ func3:
 		*/
 	| IRFFT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# IrfftFunc
 		/**
-		  overlay(base, overlay, offset, [opacity]) - overlays overlay on base at offset. Opacity controls blending. It can be tensor or float. If it is tensor it should be the same shape as overlay.
+		  overlay(base, overlay, offset, [opacity], [mode]) - overlays overlay on base at offset. Opacity controls blending. It can be tensor or float. If it is tensor it should be the same shape as overlay. For tensors, mode picks a blend mode like blend()
 		  - base: background value, list, text or tensor
 		  - overlay: value placed on top of base
 		  - offset: position of the overlay's low corner in base, one value per dimension
 		  - opacity: 0-1 blend amount; a number or a tensor shaped like overlay (default: 1)
+		  - mode: blend mode name for tensors, see blend() (default: "normal")
 		*/
-	| OVERLAY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# OverlayFunc
+	| OVERLAY LPAREN expr COMMA expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# OverlayFunc
+		/**
+		  blend(base, top, mode, [opacity]) - blends top onto base with a blend mode, like layers in an image editor. Shapes broadcast; use overlay() to place a smaller layer at an offset. Modes: normal, multiply, screen, overlay, soft_light, hard_light, darken, lighten, difference, exclusion, add, subtract, color_dodge, color_burn
+		  - base: bottom layer
+		  - top: top layer
+		  - mode: blend mode name, e.g. "screen"
+		  - opacity: 0-1 amount of the blended result; a number or a broadcastable tensor (default: 1)
+		*/
+	| BLEND LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# BlendFunc
+		/**
+		  interp(x, xs, ys, [mode]) - keyframe interpolation: the value at x of the curve through the points (xs, ys), holding the first/last value outside the keys. Modes: linear (default), smooth (eases in and out of every key), step (holds a value until the next key)
+		  - x: position such as a frame index; a number or tensor
+		  - xs: key positions
+		  - ys: values at the keys; they may be tensors (e.g. images) when x is a number
+		  - mode: "linear", "smooth" or "step" (default: "linear")
+		*/
+	| INTERP LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# InterpFunc
+		/**
+		  sigm_karras(steps, sigma_min, sigma_max, [rho]) - Karras noise schedule: steps sigmas from sigma_max down to sigma_min, followed by a final 0
+		  - steps: number of sampling steps
+		  - sigma_min: smallest non-zero sigma
+		  - sigma_max: largest sigma
+		  - rho: curvature of the schedule (default: 7)
+		*/
+	| SIGM_KARRAS LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# SigmKarrasFunc
+		/**
+		  sigm_exponential(steps, sigma_min, sigma_max) - exponential noise schedule (evenly spaced in log sigma), followed by a final 0
+		  - steps: number of sampling steps
+		  - sigma_min: smallest non-zero sigma
+		  - sigma_max: largest sigma
+		*/
+	| SIGM_EXPONENTIAL LPAREN expr COMMA expr COMMA expr RPAREN	# SigmExponentialFunc
+		/**
+		  sigm_polyexponential(steps, sigma_min, sigma_max, [rho]) - polynomial-in-log-sigma noise schedule, followed by a final 0
+		  - steps: number of sampling steps
+		  - sigma_min: smallest non-zero sigma
+		  - sigma_max: largest sigma
+		  - rho: polynomial power; 1 is the exponential schedule (default: 1)
+		*/
+	| SIGM_POLYEXPONENTIAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# SigmPolyexponentialFunc
+		/**
+		  sigm_laplace(steps, sigma_min, sigma_max, [mu], [beta]) - Laplace noise schedule of steps sigmas; like ComfyUI's LaplaceScheduler it has no final 0
+		  - steps: number of sampling steps
+		  - sigma_min: smallest non-zero sigma
+		  - sigma_max: largest sigma
+		  - mu: location of the Laplace distribution in log sigma (default: 0)
+		  - beta: scale of the Laplace distribution (default: 0.5)
+		*/
+	| SIGM_LAPLACE LPAREN expr COMMA expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# SigmLaplaceFunc
 		/**
 		  linspace(start, stop, count) - creates count evenly spaced values from start to stop (both included). Use range to control the step instead.
 		  - start: first value
@@ -1250,6 +1329,14 @@ func3:
 		  - b: blue channel 0-1
 		*/
 	| RGB_TO_CIELAB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# RgbToCielabFunc
+		/**
+		  luminance(rgb) / luminance(r, g, b) - Rec.709 luminance 0.2126 R + 0.7152 G + 0.0722 B of gamma-encoded colors. With one argument the first three entries of its last dimension are R, G, B and that dimension is removed
+		  - rgb: colors (0-1) with R, G, B in the last dimension, or a 3-item list
+		  - r: red channel 0-1
+		  - g: green channel 0-1
+		  - b: blue channel 0-1
+		*/
+	| LUMINANCE LPAREN expr (COMMA expr COMMA expr)? RPAREN	# LuminanceFunc
 		/**
 		  rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts RGB to HSV. With one color argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is 0-360 instead of 0-1
 		  - rgb: colors (0-1) with R, G, B in the last dimension, or a 3-item list
@@ -1739,6 +1826,10 @@ ROUND: 'round';
 GAMMA: 'gamma';
 POWE: 'pow';
 SIGM: 'sigm';
+SIGM_KARRAS: 'sigm_karras';
+SIGM_EXPONENTIAL: 'sigm_exponential';
+SIGM_POLYEXPONENTIAL: 'sigm_polyexponential';
+SIGM_LAPLACE: 'sigm_laplace';
 CLAMP: 'clamp';
 SFFT: 'fft';
 SIFFT: 'ifft';
@@ -1747,6 +1838,7 @@ PRNT: 'print';
 PRINT_SHAPE: 'print_shape' | 'pshp';
 NVL: 'nvl' | 'nan_to_num';
 LERP: 'lerp';
+INTERP: 'interp';
 SLERP: 'slerp';
 STEP: 'step';
 SMOOTHSTEP: 'smoothstep';
@@ -1797,6 +1889,8 @@ ERFINV: 'erfinv';
 ANY: 'any';
 ALL: 'all';
 EDGE: 'edge';
+DISTANCE_TRANSFORM: 'distance_transform';
+GRAYSCALE: 'grayscale';
 GAUSSIAN: 'blur' | 'gaussian';
 MEDIAN: 'median';
 MODE: 'mode';
@@ -1833,6 +1927,7 @@ FLOW_ANG: 'flow_ang' | 'flow_angle';
 WHERE: 'where';
 HISTOGRAM: 'histogram' | 'hist';
 OVERLAY: 'overlay';
+BLEND: 'blend';
 PAD: 'pad';
 CROSS: 'cross';
 MATMUL: 'matmul';
@@ -1877,11 +1972,15 @@ JOIN: 'join';
 SUBSTRING: 'substring'|'substr';
 FIND: 'find';
 REPLACE: 'replace';
+REGEX_SEARCH: 'regex_search';
+REGEX_REPLACE: 'regex_replace';
+FORMAT: 'format';
 DILATE: 'dilate';
 ERODE: 'erode';
 MORPH_OPEN: 'morph_open';
 MORPH_CLOSE: 'morph_close';
 RGB_TO_OKLAB: 'rgb_to_oklab';
+LUMINANCE: 'luminance';
 RGB_TO_CIELAB: 'rgb_to_cielab';
 OKLAB_TO_RGB: 'oklab_to_rgb';
 CIELAB_TO_RGB: 'cielab_to_rgb';

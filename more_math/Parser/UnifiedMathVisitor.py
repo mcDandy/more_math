@@ -2,7 +2,9 @@ import bisect
 import functools
 import time
 import os
+import re
 import sys
+import scipy.ndimage
 import torch
 import math
 import inspect
@@ -10,6 +12,7 @@ import weakref
 import torch.nn.functional as F
 from comfy.nested_tensor import NestedTensor
 from comfy.model_management import throw_exception_if_processing_interrupted
+from comfy.k_diffusion import sampling as k_sampling
 from . import optical_flow_utils as ofu
 from .Func import LambdaFunction
 from antlr4 import TerminalNode
@@ -132,6 +135,29 @@ class ChangeTrackingDict(dict):
     def reset_tracking(self):
         """Reset change tracking (clear all tracked changes)"""
         self._changed_keys = set()
+
+
+# Blend modes as f(base, top); soft_light uses the Pegtop formula, which stays defined outside 0-1.
+_BLEND_MODES = {
+    "normal": lambda b, s: s,
+    "multiply": torch.mul,
+    "screen": lambda b, s: b + s - b * s,
+    "overlay": lambda b, s: torch.where(b <= 0.5, 2 * b * s, 1 - 2 * (1 - b) * (1 - s)),
+    "soft_light": lambda b, s: (1 - 2 * s) * b * b + 2 * s * b,
+    "hard_light": lambda b, s: torch.where(s <= 0.5, 2 * b * s, 1 - 2 * (1 - b) * (1 - s)),
+    "darken": torch.minimum,
+    "lighten": torch.maximum,
+    "difference": lambda b, s: (b - s).abs(),
+    "exclusion": lambda b, s: b + s - 2 * b * s,
+    "add": torch.add,
+    "subtract": torch.sub,
+    "color_dodge": lambda b, s: torch.where(s >= 1, torch.ones_like(b), (b / (1 - s).clamp_min(1e-6)).clamp_max(1)),
+    "color_burn": lambda b, s: torch.where(s <= 0, torch.zeros_like(b), 1 - ((1 - b) / s.clamp_min(1e-6)).clamp_max(1)),
+}
+
+
+def _rec709_luma(r, g, b):
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
 _FONT_WEIGHT_TIERS = ("thin", "extralight", "light", "regular", "medium", "semibold", "bold", "extrabold", "black")
@@ -1694,6 +1720,77 @@ class UnifiedMathVisitor(MathExprVisitor):
         if any(self._is_tensor(x) for x in [val, min_v, max_v]):
             return torch.clamp(self._promote_to_tensor(val), self._promote_to_tensor(min_v), self._promote_to_tensor(max_v))
         return max(min(val, max_v), min_v)
+
+    def visitInterpFunc(self, ctx):
+        x = yield ctx.expr(0)
+        xs = yield ctx.expr(1)
+        ys = yield ctx.expr(2)
+        mode = str((yield ctx.expr(3))).lower() if len(ctx.expr()) > 3 else "linear"
+        if mode not in ("linear", "smooth", "step"):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: interp mode must be linear, smooth or step, got '{mode}'")
+
+        xs = xs.flatten().tolist() if self._is_tensor(xs) else [float(v) for v in xs]
+        ys = list(ys.unbind(0)) if self._is_tensor(ys) else list(ys)
+        if len(xs) != len(ys) or not xs:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: interp needs the same non-zero number of keys and values, got {len(xs)} and {len(ys)}")
+        keys = sorted(zip(xs, ys), key=lambda kv: kv[0])
+        xs = [k for k, _ in keys]
+        ys = [v for _, v in keys]
+
+        if not self._is_tensor(x) or x.numel() == 1:
+            i = bisect.bisect_right(xs, float(x))
+            if i == 0:
+                return ys[0]
+            if i == len(xs) or mode == "step":
+                return ys[i - 1]
+            t = (float(x) - xs[i - 1]) / (xs[i] - xs[i - 1])
+            if mode == "smooth":
+                t = t * t * (3 - 2 * t)
+            a, b = ys[i - 1], ys[i]
+            if self._is_tensor(a) or self._is_tensor(b):
+                return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), t)
+            return a + (b - a) * t
+
+        if any(self._is_tensor(v) and v.numel() != 1 for v in ys):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: interp values must be numbers when x is a tensor")
+        xs_t = torch.tensor(xs, dtype=torch.float32, device=x.device)
+        ys_t = torch.tensor([float(v) for v in ys], dtype=torch.float32, device=x.device)
+        if len(xs) == 1:
+            return torch.full_like(x, float(ys[0]), dtype=torch.float32)
+
+        xf = x.float().contiguous()
+        i = torch.searchsorted(xs_t, xf, right=True).clamp(1, len(xs) - 1)
+        x0, x1 = xs_t[i - 1], xs_t[i]
+        t = ((xf - x0) / (x1 - x0)).nan_to_num(1.0).clamp(0, 1)
+        if mode == "step":
+            t = (t >= 1).float()
+        elif mode == "smooth":
+            t = t * t * (3 - 2 * t)
+        return torch.lerp(ys_t[i - 1], ys_t[i], t)
+
+    def _schedule_args(self, ctx):
+        steps = self._to_int((yield ctx.expr(0)), ctx, "schedule steps", strict=True)
+        return steps, float((yield ctx.expr(1))), float((yield ctx.expr(2)))
+
+    def visitSigmKarrasFunc(self, ctx):
+        steps, sigma_min, sigma_max = yield from self._schedule_args(ctx)
+        rho = float((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 7.0
+        return k_sampling.get_sigmas_karras(steps, sigma_min, sigma_max, rho, device=self.device)
+
+    def visitSigmExponentialFunc(self, ctx):
+        steps, sigma_min, sigma_max = yield from self._schedule_args(ctx)
+        return k_sampling.get_sigmas_exponential(steps, sigma_min, sigma_max, device=self.device)
+
+    def visitSigmPolyexponentialFunc(self, ctx):
+        steps, sigma_min, sigma_max = yield from self._schedule_args(ctx)
+        rho = float((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 1.0
+        return k_sampling.get_sigmas_polyexponential(steps, sigma_min, sigma_max, rho, device=self.device)
+
+    def visitSigmLaplaceFunc(self, ctx):
+        steps, sigma_min, sigma_max = yield from self._schedule_args(ctx)
+        mu = float((yield ctx.expr(3))) if len(ctx.expr()) > 3 else 0.0
+        beta = float((yield ctx.expr(4))) if len(ctx.expr()) > 4 else 0.5
+        return k_sampling.get_sigmas_laplace(steps, sigma_min, sigma_max, mu, beta, device=self.device)
 
     def visitLerpFunc(self, ctx):
         a = (yield ctx.expr(0))
@@ -3858,6 +3955,18 @@ class UnifiedMathVisitor(MathExprVisitor):
             return res.squeeze(0).squeeze(0)
         return res
 
+    def visitDistanceTransformFunc(self, ctx):
+        tsr = self._promote_to_tensor((yield ctx.expr(0)))
+        threshold = float((yield ctx.expr(1))) if len(ctx.expr()) > 1 else 0.5
+
+        def edt_op(x):
+            # scipy's exact EDT runs on CPU; [B, C, H, W] -> one 2D transform per image channel
+            inside = (x > threshold).cpu().numpy()
+            dist = np.stack([[scipy.ndimage.distance_transform_edt(channel) for channel in image] for image in inside])
+            return torch.from_numpy(dist).to(device=x.device, dtype=torch.float32)
+
+        return self._apply_spatial_op(tsr, edt_op, tsr.shape)
+
     def visitEdgeFunc(self, ctx):
         tsr_val = yield ctx.expr(0)
         tsr = self._promote_to_tensor(tsr_val)
@@ -4818,6 +4927,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             opacity = 1.0
 
+        blend = None
+        if len(ctx.expr()) > 4:
+            mode = str((yield ctx.expr(4))).lower()
+            if mode != "normal":
+                blend = self._blend_fn(mode, ctx)
+                if isinstance(base, str) or self._is_list(base):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: overlay blend mode '{mode}' needs tensors, got {type(base).__name__}")
+
         opacity_is_tensor = self._is_tensor(opacity) and opacity.numel() > 1
 
         if not opacity_is_tensor:
@@ -4929,6 +5046,8 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         result = base.clone()
         target_region = result[tuple(paste_slices)]
+        if blend is not None:
+            cropped_overlay = blend(target_region, cropped_overlay)
 
         if opacity_is_tensor:
             cropped_mask = mask[tuple(crop_slices)]
@@ -4940,6 +5059,44 @@ class UnifiedMathVisitor(MathExprVisitor):
                 result[tuple(paste_slices)] = cropped_overlay * opacity_f + target_region * (1.0 - opacity_f)
 
         return result.contiguous()
+
+    def _blend_fn(self, mode, ctx):
+        fn = _BLEND_MODES.get(str(mode).lower())
+        if fn is None:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Unknown blend mode '{mode}'. Modes: {', '.join(_BLEND_MODES)}")
+        return fn
+
+    def visitBlendFunc(self, ctx):
+        base = self._promote_to_tensor((yield ctx.expr(0)))
+        top = self._promote_to_tensor((yield ctx.expr(1)))
+        blend = self._blend_fn((yield ctx.expr(2)), ctx)
+        opacity = (yield ctx.expr(3)) if len(ctx.expr()) > 3 else 1.0
+
+        blended = blend(base, top)
+        return torch.lerp(base.to(blended.dtype), blended, self._promote_to_tensor(opacity).to(blended.dtype))
+
+    def visitRegexSearchFunc(self, ctx):
+        text = str((yield ctx.expr(0)))
+        match = re.search(str((yield ctx.expr(1))), text)
+        return float(match.start()) if match else -1.0
+
+    def visitRegexReplaceFunc(self, ctx):
+        text = str((yield ctx.expr(0)))
+        pattern = str((yield ctx.expr(1)))
+        return re.sub(pattern, str((yield ctx.expr(2))), text)
+
+    def visitFormatFunc(self, ctx):
+        value = yield ctx.expr(0)
+        spec = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else "g"
+        if not isinstance(spec, str):
+            spec = f".{self._to_int(spec, ctx, 'format decimals', strict=True)}f"
+
+        def fmt(v):
+            if self._is_list(v):
+                return [fmt(x) for x in v]
+            return format(v, spec)
+
+        return fmt(value.tolist() if self._is_tensor(value) else value)
 
     def visitReplaceFunc(self, ctx):
         val = yield ctx.expr(0)
@@ -5670,6 +5827,23 @@ class UnifiedMathVisitor(MathExprVisitor):
             b = self._promote_to_tensor((yield ctx.expr(2))).float()
 
         return self._linear_to_oklab(r, g, b)
+
+    def visitLuminanceFunc(self, ctx):
+        if len(ctx.expr()) == 1:
+            rgb = yield ctx.expr(0)
+            if self._is_list(rgb):
+                return _rec709_luma(*self._rgb_triplet_from_arg(ctx, rgb, "luminance"))
+            rgb = self._promote_to_tensor(rgb)
+            return _rec709_luma(rgb[..., 0], rgb[..., 1], rgb[..., 2])
+        r = self._promote_to_tensor((yield ctx.expr(0)))
+        g = self._promote_to_tensor((yield ctx.expr(1)))
+        b = self._promote_to_tensor((yield ctx.expr(2)))
+        return _rec709_luma(r, g, b)
+
+    def visitGrayscaleFunc(self, ctx):
+        img = self._promote_to_tensor((yield ctx.expr()))
+        luma =_rec709_luma(img[..., 0], img[..., 1], img[..., 2]).unsqueeze(-1)
+        return torch.cat([luma.expand(*luma.shape[:-1], 3), img[..., 3:]], dim=-1)
 
     def visitRgbToCielabFunc(self, ctx):
         num_args = len(ctx.expr())

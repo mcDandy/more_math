@@ -16,11 +16,14 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const style = document.createElement("style");
         style.id = STYLE_ID;
         style.textContent = `
-            .mrmth-editor:not(.mrmth-editor-v2) {
-                display: flex;
-                align-items: stretch;
+            /* Both node renderers mount the widget into a sized container, so the editor just fills it. */
+            .mrmth-editor {
+                position: relative;
+                display: block;
                 width: 100%;
-                min-height: 170px;
+                height: 100%;
+                min-height: 0;
+                box-sizing: border-box;
                 border: 1px solid rgba(255,255,255,0.14);
                 border-radius: 10px;
                 overflow: hidden;
@@ -28,7 +31,9 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             }
 
             .mrmth-gutter {
-                min-width: 44px;
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 44px;
                 text-align: right;
                 user-select: none;
                 color: #9aa0a6;
@@ -44,39 +49,12 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 will-change: transform;
             }
 
-            .mrmth-editor:not(.mrmth-editor-v2) .mrmth-editor-container {
-                position: relative;
-                flex: 1;
-                min-width: 0;
-                min-height: 170px;
-                overflow: hidden;
-                background: transparent;
-            }
-
-            .mrmth-editor.mrmth-editor-v2 {
-                position: relative;
-                display: block;
-                width: 100%;
-                height: 100%;
-                min-height: 0;
-                box-sizing: border-box;
-                border: 1px solid rgba(255,255,255,0.14);
-                border-radius: 10px;
-                overflow: hidden;
-                background: rgba(0,0,0,0.18);
-            }
-
-            .mrmth-editor-v2 .mrmth-gutter {
-                position: absolute;
-                inset: 0 auto 0 0;
-                width: 44px;
-            }
-
-            .mrmth-editor-v2 .mrmth-editor-container {
+            .mrmth-editor-container {
                 position: absolute;
                 inset: 0 0 0 44px;
                 min-width: 0;
                 min-height: 0;
+                overflow: hidden;
             }
 
             .mrmth-syntax-layer,
@@ -120,7 +98,8 @@ if (!window.__mrmthScriptInputUnifiedInit) {
                 height: auto;
             }
 
-            .mrmth-script-textarea {
+            /* Scoped to the editor so a textarea that ever ends up outside it stays readable. */
+            .mrmth-editor-container > .mrmth-script-textarea {
                 position: absolute;
                 inset: 0;
                 z-index: 2;
@@ -208,24 +187,13 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         gutterContent.textContent = gutterLines.join("\n");
     }
 
-    function findBoundingAncestor(el) {
-        let node = el.parentElement;
-        while (node && node !== document.body && node !== document.documentElement) {
-            const cs = getComputedStyle(node);
-            // An ancestor with an explicit height, max-height or constrained overflow bounds the editor.
-            if ((cs.height && cs.height !== "auto") || (cs.maxHeight && cs.maxHeight !== "none") || (cs.overflowY && cs.overflowY !== "visible")) {
-                return node;
-            }
-            node = node.parentElement;
-        }
-        return document.documentElement;
-    }
-
     function attachToTextarea(textarea) {
         if (!scriptTextareas.has(textarea)) return;
 
-        // The frontend re-mounts widget.element into a fresh container (e.g. after
-        // subgraph navigation); move the editor along with it.
+        // The frontend moves the bare widget.element into a fresh container when
+        // switching between classic and Nodes 2.0 rendering (and on re-mounts);
+        // bring the gutter and highlight overlay along, or the textarea is left
+        // showing transparent text.
         const existing = editors.get(textarea);
         if (existing) {
             if (!existing.wrapper.contains(textarea)) {
@@ -236,17 +204,13 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             return;
         }
 
-        const parent = textarea.parentElement;
-        if (!parent) return;
-
-        const isVueWidget = !!(app.ui?.settings?.getSettingValue?.("Comfy.VueNodes.Enabled") || document.getElementById("vue-app"));
+        if (!textarea.parentElement) return;
 
         ensureStyles();
         hideNearbyScriptLabels(textarea);
 
         const wrapper = document.createElement("div");
         wrapper.className = "mrmth-editor";
-        if (isVueWidget) wrapper.classList.add("mrmth-editor-v2");
 
         const gutter = document.createElement("div");
         gutter.className = "mrmth-gutter";
@@ -264,7 +228,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         const syntaxLayer = document.createElement("pre");
         syntaxLayer.className = "mrmth-syntax-layer";
 
-        parent.replaceChild(wrapper, textarea);
+        textarea.replaceWith(wrapper);
         wrapper.appendChild(gutter);
         wrapper.appendChild(editorContainer);
         editorContainer.appendChild(measureEl);
@@ -312,45 +276,6 @@ if (!window.__mrmthScriptInputUnifiedInit) {
             const lineHeightPx = parseFloat(cs.lineHeight);
             updateLineNumbers(textarea, gutterContent, measureEl, lineHeightPx);
             updateHighlight();
-
-            if (isVueWidget) {
-                wrapper.style.minHeight = "0";
-                wrapper.style.height = "100%";
-                editorContainer.style.minHeight = "0";
-                editorContainer.style.height = "100%";
-                return;
-            }
-
-            // Reactive height: size wrapper and editor container to content, clamped to parent's height
-            const contentHeight = measureEl.offsetHeight || (lineHeightPx * Math.max(1, textarea.value.split("\n").length));
-            const bounding = findBoundingAncestor(wrapper) || parent || document.documentElement;
-            const parentHeight = bounding && bounding.clientHeight ? bounding.clientHeight : null;
-            const minHeight = 60;
-            let maxHeight = 600;
-
-            if (parentHeight !== null) {
-                maxHeight = Math.max(60, parentHeight - 12);
-
-                // If the viewport is the bound, prefer a higher static ancestor so the editor doesn't grow with itself.
-                if (bounding === document.documentElement) {
-                    const staticAncestor = findBoundingAncestor(bounding);
-                    if (staticAncestor && staticAncestor !== document.documentElement) {
-                        maxHeight = Math.max(60, staticAncestor.clientHeight - 12);
-                    }
-                }
-            }
-
-            const desired = Math.min(Math.max(contentHeight, minHeight), maxHeight);
-
-            wrapper.style.minHeight = "170px";
-            // A node enlarged beyond the content height lets the editor fill it; otherwise match content size.
-            if (parentHeight && parentHeight > desired + 20) {
-                wrapper.style.height = "100%";
-                editorContainer.style.height = "100%";
-            } else {
-                wrapper.style.height = desired + "px";
-                editorContainer.style.height = desired + "px";
-            }
         };
 
         const onSelectionChange = () => {
@@ -381,15 +306,14 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
     app.registerExtension({
         name: "mrmth.ScriptTextInput.Unified",
-        nodeCreated(node, app) {
+        nodeCreated(node) {
             if (node.comfyClass !== "mrmth_ScriptInput" && node.type !== "mrmth_ScriptInput") return;
             const widget = node.widgets?.find(w => w.name === "script");
             if (!(widget?.element instanceof HTMLTextAreaElement)) return;
 
-            const isVue = app.ui?.settings?.getSettingValue?.("Comfy.VueNodes.Enabled") || document.getElementById("vue-app");
             // No Vue component is registered for this type, so Nodes 2.0 mounts the
             // DOM widget's own textarea, which is then enhanced like in the classic UI.
-            if (isVue) widget.type = "scriptinput";
+            widget.type = "scriptinput";
 
             const textarea = widget.element;
             scriptTextareas.add(textarea);

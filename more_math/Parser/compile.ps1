@@ -385,12 +385,30 @@ $FUNCTIONS = @($functionWords | Sort-Object -Unique -CaseSensitive)
 $docEntries = Get-FunctionDocEntries -FuncSection $sections.FuncSection
 $sigByToken = @{}
 $detailsByToken = @{}
+$paramsByToken = @{}
 foreach ($e in $docEntries) {
     $sig = ConvertTo-FunctionSignature -Line $e.FirstLine
-    if ($sig) {
-        $sigByToken[$e.Token] = $sig
-        $detailsByToken[$e.Token] = $e.Details -join "`n"
+    if (-not $sig) { continue }
+    $sigByToken[$e.Token] = $sig
+
+    # "- name: description" lines document one parameter; other lines are general details.
+    $argNames = @($sig.Forms | ForEach-Object { $_ } | ForEach-Object { $_.Trim('[', ']', ' ').Replace('...', '') })
+    $params = [ordered]@{}
+    $details = New-Object System.Collections.Generic.List[string]
+    foreach ($line in $e.Details) {
+        $pm = [regex]::Match($line, '^-\s*(?<name>[a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(?<desc>.+)$')
+        if (-not $pm.Success) {
+            [void]$details.Add($line)
+            continue
+        }
+        $paramName = $pm.Groups['name'].Value
+        if ($argNames -notcontains $paramName) {
+            Write-Warning "Doc comment for $($e.Token) describes parameter '$paramName', which is not in '$($sig.Signature)'."
+        }
+        $params[$paramName] = $pm.Groups['desc'].Value.Trim()
     }
+    $paramsByToken[$e.Token] = $params
+    $detailsByToken[$e.Token] = $details -join "`n"
 }
 
 $functionTokens = @($functionTokenToWords.psbase.Keys)
@@ -436,6 +454,7 @@ foreach ($token in $functionTokens) {
             Forms       = $forms
             Description = if ($sig) { $sig.Description } else { '' }
             Details     = if ($sig) { $detailsByToken[$token] } else { '' }
+            Params      = if ($sig) { $paramsByToken[$token] } else { [ordered]@{} }
             Aliases     = @($words | Where-Object { $_ -ne $alias })
         }
     }
@@ -491,6 +510,18 @@ function ConvertTo-PyForms {
     return '[' + (@($parts) -join ', ') + ']'
 }
 
+function ConvertTo-JsObject {
+    param([System.Collections.IDictionary]$Map)
+    $parts = foreach ($key in @($Map.Keys)) { "$(ConvertTo-JsString $key): $(ConvertTo-JsString $Map[$key])" }
+    return '{' + (@($parts) -join ', ') + '}'
+}
+
+function ConvertTo-PyDict {
+    param([System.Collections.IDictionary]$Map)
+    $parts = foreach ($key in @($Map.Keys)) { "$(ConvertTo-PyString $key): $(ConvertTo-PyString $Map[$key])" }
+    return '{' + (@($parts) -join ', ') + '}'
+}
+
 function Write-JsSymbols {
     param(
         [string]$Path,
@@ -519,7 +550,7 @@ function Write-JsSymbols {
     foreach ($name in @($FunctionMeta.psbase.Keys)) {
         $meta = $FunctionMeta[$name]
         $maxArgsJs = if ($null -eq $meta.MaxArgs) { 'null' } else { $meta.MaxArgs }
-        [void]$sb.AppendLine("    $(ConvertTo-JsString $name): { minArgs: $($meta.MinArgs), maxArgs: $maxArgsJs, signature: $(ConvertTo-JsString $meta.Signature), forms: $(ConvertTo-JsForms $meta.Forms), description: $(ConvertTo-JsString $meta.Description), details: $(ConvertTo-JsString $meta.Details), aliases: $(ConvertTo-JsArray $meta.Aliases) },")
+        [void]$sb.AppendLine("    $(ConvertTo-JsString $name): { minArgs: $($meta.MinArgs), maxArgs: $maxArgsJs, signature: $(ConvertTo-JsString $meta.Signature), forms: $(ConvertTo-JsForms $meta.Forms), description: $(ConvertTo-JsString $meta.Description), details: $(ConvertTo-JsString $meta.Details), params: $(ConvertTo-JsObject $meta.Params), aliases: $(ConvertTo-JsArray $meta.Aliases) },")
     }
     [void]$sb.AppendLine('};')
 
@@ -551,7 +582,7 @@ function Write-PySymbols {
     foreach ($name in @($FunctionMeta.psbase.Keys)) {
         $meta = $FunctionMeta[$name]
         $maxArgsPy = if ($null -eq $meta.MaxArgs) { 'None' } else { $meta.MaxArgs }
-        [void]$sb.AppendLine("    $(ConvertTo-PyString $name): {'min_args': $($meta.MinArgs), 'max_args': $maxArgsPy, 'signature': $(ConvertTo-PyString $meta.Signature), 'forms': $(ConvertTo-PyForms $meta.Forms), 'description': $(ConvertTo-PyString $meta.Description), 'details': $(ConvertTo-PyString $meta.Details), 'aliases': $(ConvertTo-PyList $meta.Aliases)},")
+        [void]$sb.AppendLine("    $(ConvertTo-PyString $name): {'min_args': $($meta.MinArgs), 'max_args': $maxArgsPy, 'signature': $(ConvertTo-PyString $meta.Signature), 'forms': $(ConvertTo-PyForms $meta.Forms), 'description': $(ConvertTo-PyString $meta.Description), 'details': $(ConvertTo-PyString $meta.Details), 'params': $(ConvertTo-PyDict $meta.Params), 'aliases': $(ConvertTo-PyList $meta.Aliases)},")
     }
     [void]$sb.AppendLine('}')
 

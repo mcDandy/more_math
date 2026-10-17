@@ -101,6 +101,22 @@ function ensureAutocompleteStyles() {
             font-weight: 600;
         }
 
+        .mrmth-tt-param,
+        .mrmth-sig-param {
+            margin-top: 2px;
+            color: #d5d9de;
+        }
+
+        .mrmth-sig-param {
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 4px;
+        }
+
+        .mrmth-param-name {
+            color: #ffd700;
+        }
+
         .mrmth-tt-details {
             margin-top: 4px;
             white-space: pre-wrap;
@@ -555,15 +571,39 @@ function getCaretScreenPosition(textarea, position) {
     };
 }
 
+export const SIGNATURE_HINTS_SETTING = "mrmth.ScriptEditor.SignatureHints";
+export const PARAMETER_DOCS_SETTING = "mrmth.ScriptEditor.ParameterDescriptions";
+
+export const EDITOR_SETTINGS = [
+    {
+        id: SIGNATURE_HINTS_SETTING,
+        category: ["More math", "Script editor", "Signature hints"],
+        name: "Show signature hints",
+        tooltip: "Show the function signature and description while typing its arguments.",
+        type: "boolean",
+        defaultValue: true,
+    },
+    {
+        id: PARAMETER_DOCS_SETTING,
+        category: ["More math", "Script editor", "Parameter descriptions"],
+        name: "Show parameter descriptions",
+        tooltip: "Describe the argument being typed in the signature hint, and list the arguments in the completion tooltip.",
+        type: "boolean",
+        defaultValue: true,
+    },
+];
+
 /**
  * Attach identifier autocomplete and built-in signature hints to a script
  * textarea. The popups are portaled to document.body. Must be attached before
  * other keydown handlers so they can skip keys it consumed (`defaultPrevented`).
  * @param {HTMLTextAreaElement} textarea
+ * @param {(id: string) => unknown} [getSetting] - reads one of EDITOR_SETTINGS; features stay on unless it returns false
  * @returns {{ destroy: () => void, close: () => void }}
  */
-export function attachAutocomplete(textarea) {
+export function attachAutocomplete(textarea, getSetting = () => undefined) {
     ensureAutocompleteStyles();
+    const enabled = (id) => getSetting(id) !== false;
 
     const layoutEl = document.createElement("div");
     layoutEl.className = "mrmth-autocomplete-layout";
@@ -609,10 +649,13 @@ export function attachAutocomplete(textarea) {
         let argsText = `Arguments: min ${meta.minArgs}`;
         argsText += meta.maxArgs === null ? "+ (variadic)" : `, max ${meta.maxArgs}`;
 
+        const params = enabled(PARAMETER_DOCS_SETTING) ? Object.entries(meta.params) : [];
+
         tooltipEl.innerHTML = `
             <div class="mrmth-tt-title">${escapeHtml(meta.signature)}</div>
             <div class="mrmth-tt-desc">${escapeHtml(meta.description)}</div>
             ${meta.details ? `<div class="mrmth-tt-details">${escapeHtml(meta.details)}</div>` : ""}
+            ${params.map(([name, desc]) => `<div class="mrmth-tt-param"><span class="mrmth-param-name">${escapeHtml(name)}</span>: ${escapeHtml(desc)}</div>`).join("")}
             <div class="mrmth-tt-args">${argsText}</div>
             ${meta.aliases.length ? `<div class="mrmth-tt-args">Also: ${escapeHtml(meta.aliases.join(", "))}</div>` : ""}
         `;
@@ -801,7 +844,7 @@ export function attachAutocomplete(textarea) {
 
     function updateHint() {
         const cursor = textarea.selectionStart;
-        if (open || document.activeElement !== textarea || cursor !== textarea.selectionEnd) {
+        if (open || !enabled(SIGNATURE_HINTS_SETTING) || document.activeElement !== textarea || cursor !== textarea.selectionEnd) {
             hideHint();
             return;
         }
@@ -821,8 +864,13 @@ export function attachAutocomplete(textarea) {
             .map((a, i) => (i === active ? `<span class="mrmth-sig-active">${escapeHtml(a)}</span>` : escapeHtml(a)))
             .join(", ");
 
+        // Doc names drop the optional/variadic markup: "[dims]" and "[g" -> "dims", "g".
+        const activeName = form[active]?.replace(/[[\].]/g, "").trim();
+        const paramDesc = enabled(PARAMETER_DOCS_SETTING) ? meta.params[activeName] : undefined;
+
         hintEl.innerHTML = `
             <div class="mrmth-sig-call">${escapeHtml(ctx.name)}(${args})</div>
+            ${paramDesc ? `<div class="mrmth-sig-param"><span class="mrmth-param-name">${escapeHtml(activeName)}</span>: ${escapeHtml(paramDesc)}</div>` : ""}
             ${meta.description ? `<div class="mrmth-tt-desc">${escapeHtml(meta.description)}</div>` : ""}
         `;
         hintEl.hidden = false;

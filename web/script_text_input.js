@@ -1,5 +1,5 @@
 import { app } from "/scripts/app.js";
-import { attachAutocomplete, escapeHtml, handleEditingKey, renderHighlight } from "./autocomplete.js";
+import { attachAutocomplete, escapeHtml, handleEditingKey, renderHighlight, EDITOR_SETTINGS } from "./autocomplete.js";
 
 const STYLE_ID = "mrmth-script-line-numbers-unified";
 
@@ -242,7 +242,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
         textarea.autocorrect = "off";
 
         // Autocomplete first: its keydown handler must run before the editing keys.
-        const autocomplete = attachAutocomplete(textarea);
+        const autocomplete = attachAutocomplete(textarea, (id) => app.extensionManager?.setting?.get(id));
         textarea.addEventListener("keydown", (e) => {
             if (handleEditingKey(textarea, e)) e.preventDefault();
         });
@@ -306,6 +306,7 @@ if (!window.__mrmthScriptInputUnifiedInit) {
 
     app.registerExtension({
         name: "mrmth.ScriptTextInput.Unified",
+        settings: EDITOR_SETTINGS,
         nodeCreated(node) {
             if (node.comfyClass !== "mrmth_ScriptInput" && node.type !== "mrmth_ScriptInput") return;
             const widget = node.widgets?.find(w => w.name === "script");

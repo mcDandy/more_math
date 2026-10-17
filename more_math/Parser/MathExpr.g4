@@ -243,6 +243,7 @@ func1:
 		| ISFINITE LPAREN expr RPAREN			# IsfiniteFunc
 		/**
 		  tnorm(x, [dim]) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. Defaults to the last dimension; dim selects a different slicing dimension.
+		  - dim: dimension whose slices are normalised (default: last)
 		*/
 		| TNORM LPAREN expr (COMMA expr)? RPAREN			# TNormFunc
 		/**
@@ -323,34 +324,43 @@ func1:
 	| PINV LPAREN expr RPAREN			# PinvFunc
 		/**
 		  inv(x, [pseudo]) - computes the matrix inverse; when pseudo is truthy, computes the Moore-Penrose pseudoinverse instead
+		  - pseudo: truthy to compute the Moore-Penrose pseudoinverse, which also works for singular and non-square matrices (default: false)
 		*/
 	| INV LPAREN expr (COMMA expr)? RPAREN		# InvFunc
 		/**
 		  matrix_rank(x, [tol]) - computes the numerical rank of each matrix using optional absolute tolerance tol
+		  - tol: absolute tolerance below which singular values count as zero
 		*/
 	| MATRIX_RANK LPAREN expr (COMMA expr)? RPAREN	# MatrixRankFunc
 		/**
 		  sum(x, [dims]) - computes the sum of elements of x, optionally along one or more dimensions
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| SUM LPAREN expr (COMMA expr)? RPAREN		# SumFunc
 		/**
 		  mean(x, [dims]) - computes the arithmetic mean of elements of x globally or along one or more dimensions
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| MEAN LPAREN expr (COMMA expr)? RPAREN		# MeanFunc
 		/**
 		  std(x, [dims]) - computes the sample standard deviation of elements of x globally or along one or more dimensions
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| STD LPAREN expr (COMMA expr)? RPAREN		# StdFunc
 		/**
 		  var(x, [dims]) - computes the sample variance of elements of x globally or along one or more dimensions
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| VAR LPAREN expr (COMMA expr)? RPAREN		# VarFunc
 		/**
 		  prod(x, [dims]) - computes the product of elements of x globally or along one or more dimensions
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| PROD LPAREN expr (COMMA expr)? RPAREN		# ProdFunc
 		/**
 		  sort(x, [descending], [dim]) - returns x sorted ascending, or descending when descending is truthy. Tensors are sorted along dim (default: last dimension); lists use Python sorting
+		  - descending: truthy to sort from largest to smallest (default: false)
+		  - dim: dimension to sort along (default: last)
 		*/
 	| SORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN			# SortFunc
 		/**
@@ -363,18 +373,22 @@ func1:
 	| ALL LPAREN expr RPAREN			# AllFunc
 		/**
 		  edge(x, [kernel_size]) - detects edges in x with a Sobel filter. kernel_size must be odd and at least 3 (default 3).
+		  - kernel_size: odd Sobel kernel size, at least 3 (default: 3)
 		*/
 	| EDGE LPAREN expr (COMMA expr)? RPAREN		# EdgeFunc
 		/**
 		  median(x, [dim]) - computes the median globally or along one dimension
+		  - dim: dimension to reduce (default: all elements)
 		*/
 	| MEDIAN LPAREN expr (COMMA expr)? RPAREN			# MedianFunc
 		/**
 		  mode(x, [dim]) - computes the mode globally or along one dimension
+		  - dim: dimension to reduce (default: all elements)
 		*/
 	| MODE LPAREN expr (COMMA expr)? RPAREN			# ModeFunc
 		/**
 		  cumsum(x, [dim]) - computes the cumulative sum, defaulting to the first dimension.
+		  - dim: dimension to accumulate along (default: 0)
 		*/
 	| CUMSUM LPAREN expr (COMMA expr)? RPAREN	# CumsumFunc
 		/**
@@ -399,6 +413,8 @@ func1:
 	| RESET_TRACKING LPAREN expr RPAREN		# ResetTrackingFunc
 		/**
 		  repeat(x, count, [dims]) - repeats tensor elements; count may be scalar or per-dim list
+		  - count: number of repeats, or a list with one count per dimension
+		  - dims: dimension or list of dimensions to repeat along; without it a number repeats each element of the flattened input and a list tiles the whole tensor
 		*/
 	| REPEAT LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RepeatFunc
 		/**
@@ -423,22 +439,30 @@ func1:
 	| GET LPAREN expr RPAREN			# GetFunc
 		/**
 		  argsort(x, [descending], [dim]) - returns the indices that would sort x. descending defaults to false and dim defaults to the last dimension.
+		  - descending: truthy to sort from largest to smallest (default: false)
+		  - dim: dimension to sort along (default: last)
 		*/
 	| ARGSORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# ArgsortFunc
 		/**
 		  argmin(x, [as_position], [dim]) - returns the minimum index globally or along dim; as_position returns global coordinates
+		  - as_position: truthy to return the coordinates of the minimum instead of a flat index
+		  - dim: dimension to search along; cannot be combined with as_position
 		*/
 	| ARGMIN LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgminFunc
 		/**
 		  argmax(x, [as_position], [dim]) - returns the maximum index globally or along dim; as_position returns global coordinates
+		  - as_position: truthy to return the coordinates of the maximum instead of a flat index
+		  - dim: dimension to search along; cannot be combined with as_position
 		*/
 	| ARGMAX LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgmaxFunc
 		/**
 		  softmax(x, [dim]) - applies the softmax function to x (each slice sums to 1.0). dim defaults to the last dimension.
+		  - dim: dimension whose slices sum to 1 (default: last)
 		*/
 	| SOFTMAX LPAREN expr (COMMA expr)? RPAREN	# SoftmaxFunc
 		/**
 		  softmin(x, [dim]) - applies the softmin function to x (same as softmax(-x, [dim])). dim defaults to the last dimension.
+		  - dim: dimension whose slices sum to 1 (default: last)
 		*/
 	| SOFTMIN LPAREN expr (COMMA expr)? RPAREN	# SoftminFunc
 		/**
@@ -503,18 +527,22 @@ func1:
 	| SFFT LPAREN expr RPAREN			# SfftFunc
 		/**
 		  dilate(x, [kernel_size]) - applies morphological dilation to x with a square kernel (default size 3).
+		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| DILATE LPAREN expr (COMMA expr)? RPAREN	# DilateFunc
 		/**
 		  erode(x, [kernel_size]) - applies morphological erosion to x with a square kernel (default size 3).
+		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| ERODE LPAREN expr (COMMA expr)? RPAREN	# ErodeFunc
 		/**
 		  morph_open(x, [kernel_size]) - applies morphological opening (erosion then dilation) to x with a square kernel (default size 3).
+		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN	# MorphOpenFunc
 		/**
 		  morph_close(x, [kernel_size]) - applies morphological closing (dilation then erosion) to x with a square kernel (default size 3).
+		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN	# MorphCloseFunc
 		/**
@@ -539,16 +567,21 @@ func1:
 	| AS_NESTED LPAREN expr RPAREN	# AsNestedFunc
 		/**
 		  svd(x, [full_matrices]) - computes the singular value decomposition of x. Returns a list of 3 tensors U, S, Vh such that x = matmul(matmul(U, diagonal_matrix(S, shape(U))), Vh)
+		  - full_matrices: truthy to return full-size U and Vh (default: false)
 		*/
 		| SVD LPAREN expr (COMMA expr)? RPAREN	# SvdFunc;
 
 func2:
 		/**
 		  pow(x, y) - computes x raised to the power of y
+		  - x: base
+		  - y: exponent
 		*/
 	POWE LPAREN expr COMMA expr RPAREN			# PowFunc
 		/**
 		  atan2(y, x) - computes the arc tangent of y/x, using the signs of both arguments to determine the quadrant
+		  - y: y coordinate (numerator)
+		  - x: x coordinate (denominator)
 		*/
 	| ATAN2 LPAREN expr COMMA expr RPAREN			# Atan2Func
 		/**
@@ -569,10 +602,14 @@ func2:
 	| LOGICAL_OR LPAREN expr COMMA expr RPAREN		# LogicalOrFunc
 		/**
 		  isclose(a, b, [rtol], [atol]) - elementwise approximate equality test
+		  - rtol: relative tolerance (default: 1e-5)
+		  - atol: absolute tolerance (default: 1e-8)
 		*/
 	| ISCLOSE LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# IscloseFunc
 		/**
 		  allclose(a, b, [rtol], [atol]) - returns 1.0 if all elements are approximately equal, else 0.0
+		  - rtol: relative tolerance (default: 1e-5)
+		  - atol: absolute tolerance (default: 1e-8)
 		*/
 	| ALLCLOSE LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# AllcloseFunc
 		/**
@@ -585,30 +622,42 @@ func2:
 	| TMAX LPAREN expr COMMA expr RPAREN			# TMaxFunc
 		/**
 		  snorm(x,[dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list. Defaults to no dimension.
+		  - dim: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| SNORM LPAREN expr (COMMA expr)? RPAREN		# SNormFunc
 		/**
 		  step(x, edge) - returns 0 if x < edge, else 1
+		  - edge: threshold; the result is 1 where x >= edge, otherwise 0
 		*/
 	| STEP LPAREN expr COMMA expr RPAREN			# StepFunc
 		/**
 		  topk(x, k, [dim]) - returns the k largest elements along dim. For tensors it keeps them in place; dim defaults to the last.
+		  - k: number of elements to keep
+		  - dim: dimension to select along (default: last)
 		*/
 	| TOPK LPAREN expr COMMA expr (COMMA expr)? RPAREN			# TopkFunc
 		/**
 		  botk(x, k, [dim]) - returns the k smallest elements along dim. For tensors it keeps them in place; dim defaults to the last.
+		  - k: number of elements to keep
+		  - dim: dimension to select along (default: last)
 		*/
 	| BOTK LPAREN expr COMMA expr (COMMA expr)? RPAREN			# BotkFunc
 		/**
 		  quartile(x, q, [dim]) - computes the q-th quartile globally or along dim
+		  - q: quartile number 0-4 (0 = minimum, 2 = median, 4 = maximum)
+		  - dim: dimension to reduce (default: all elements)
 		*/
 	| QUARTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# QuartileFunc
 		/**
 		  percentile(x, p, [dim]) - computes the p-th percentile globally or along dim
+		  - p: percentile 0-100
+		  - dim: dimension to reduce (default: all elements)
 		*/
 	| PERCENTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PercentileFunc
 		/**
 		  quantile(x, q, [dim]) - computes the q-th quantile globally or along dim
+		  - q: quantile 0-1
+		  - dim: dimension to reduce (default: all elements)
 		*/
 	| QUANTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# QuantileFunc
 		/**
@@ -633,10 +682,12 @@ func2:
 	| ENDSWITH LPAREN expr COMMA expr RPAREN			# EndswithFunc
 		/**
 		  logsumexp(x, [dims]) - computes log(sum(exp(x))) stably, optionally reducing along one or more dimensions
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| LOGSUMEXP LPAREN expr (COMMA expr)? RPAREN		# LogsumexpFunc
 		/**
 		  rfft(x, [dim]) - computes the one-dimensional real-input FFT along dim (default: last dimension)
+		  - dim: dimension to transform (default: last)
 		*/
 	| RFFT LPAREN expr (COMMA expr)? RPAREN		# RfftFunc
 		/**
@@ -649,6 +700,7 @@ func2:
 	| DET LPAREN expr RPAREN			# DetFunc
 		/**
 		  flip(x, dims) - reverses the order of elements along the specified dimensions. Text is reversed as a whole
+		  - dims: dimension or list of dimensions to reverse
 		*/
 	| FLIP LPAREN expr COMMA expr RPAREN			# FlipFunc
 		/**
@@ -661,6 +713,7 @@ func2:
 	| CORR LPAREN expr COMMA expr RPAREN			# CorrFunc
 		/**
 		  append(x, y) - appends y to the end of x. If inputs are tensors use concatenate(x,...,dim)
+		  - y: item, list or tensor added to the end of x
 		*/
 		| APPEND LPAREN expr COMMA expr RPAREN			# AppendFunc
 			/**
@@ -669,82 +722,117 @@ func2:
 		| ADD_KEY LPAREN expr COMMA expr COMMA expr RPAREN	# AddKeyFunc
 			/**
 			  permute(x, dims) - permutes the dimensions of tensor x according to dims
+			  - dims: new order of the dimensions, e.g. [0, 2, 1]
 			*/
 		| PERM LPAREN expr COMMA expr RPAREN			# PermuteFunc
 		/**
 		  gaussian(x, sigma, [reshape]) - applies a Gaussian blur to x with specified sigma. if reshape has value of 1.0, then it tries orienting the input such that channel is in the direction of filter. Otherwise it expect color dimension to be the last.
+		  - sigma: blur strength as the standard deviation in elements; 0 or less returns x unchanged
+		  - reshape: truthy to find the channel dimension automatically; otherwise channels must be last (default: false)
 		*/
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 		/**
 		  topk_indices(x, k, [dim]) - returns the indices of the k largest elements along dim; without dim, returns indices into flatten(x)
+		  - k: number of indices to return
+		  - dim: dimension to select along (default: indices into flatten(x))
 		*/
 	| TOPK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# TopkIndFunc
 		/**
 		  botk_indices(x, k, [dim]) - returns the indices of the k smallest elements along dim; without dim, returns indices into flatten(x)
+		  - k: number of indices to return
+		  - dim: dimension to select along (default: indices into flatten(x))
 		*/
 	| BOTK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# BotkIndFunc
 		/**
 		  batch_shuffle(x, indices) - shuffles and duplicates or skips the batch dimension of x according to indices
+		  - indices: batch indices to take, in order; batches may repeat or be skipped
 		*/
 	| BATCH_SHUFFLE LPAREN expr COMMA expr RPAREN		# BatchShuffleFunc
 		/**
 		  stack_push(slot, val) - pushes val onto the end of slot stack
+		  - slot: stack number (any integer)
+		  - val: value to push; it is also returned
 		*/
 	| PUSH LPAREN expr COMMA expr RPAREN			# PushFunc
 		/**
 		  get_value(tensor, position) - reads the value at an N-D position of tensor. Superseded by tensor[position] indexing
+		  - position: list with one index per dimension
 		*/
 	| GET_VALUE LPAREN expr COMMA expr RPAREN		# GetValueFunc
 		/**
 		  tensor(shape, [value], [dtype_template]) - creates a tensor with specified shape and optional value/type. Default value is 0 and default format FP32
+		  - shape: list of dimension sizes
+		  - value: fill value (default: 0)
+		  - dtype_template: tensor whose dtype the result uses (default: float32)
 		*/
 	| TENSOR LPAREN indexExpr (COMMA expr (COMMA expr)? )? RPAREN	# EmptyTensorFunc
 		/**
 		  zeros(shape, [dtype_template]) - creates a zero-filled tensor on the current device
+		  - shape: list of dimension sizes
+		  - dtype_template: tensor whose dtype the result uses (default: float32)
 		*/
 	| ZEROS LPAREN expr (COMMA expr)? RPAREN	# ZerosFunc
 		/**
 		  ones(shape, [dtype_template]) - creates a one-filled tensor on the current device
+		  - shape: list of dimension sizes
+		  - dtype_template: tensor whose dtype the result uses (default: float32)
 		*/
 	| ONES LPAREN expr (COMMA expr)? RPAREN		# OnesFunc
 		/**
 		  eye(n, [dtype_template]) - creates an n-by-n identity matrix
+		  - n: number of rows and columns
+		  - dtype_template: tensor whose dtype the result uses (default: float32)
 		*/
 	| EYE LPAREN expr (COMMA expr)? RPAREN		# EyeFunc
 		/**
 		  one_hot(indices, classes) - converts integer class indices to float32 one-hot vectors
+		  - indices: integer class indices
+		  - classes: number of classes, i.e. the length of each one-hot vector
 		*/
 	| ONE_HOT LPAREN expr COMMA expr RPAREN		# OneHotFunc
 		/**
 		  mse(a, b, [reduction]) - mean squared error; reduction is mean (default), sum, or none
+		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
 	| MSE LPAREN expr COMMA expr (COMMA expr)? RPAREN	# MseFunc
 		/**
 		  mae(a, b, [reduction]) - mean absolute error; reduction is mean (default), sum, or none
+		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
 	| MAE LPAREN expr COMMA expr (COMMA expr)? RPAREN	# MaeFunc
 		/**
 		  psnr(a, b, [data_range]) - peak signal-to-noise ratio in dB; data_range defaults to 1
+		  - data_range: difference between the largest and smallest possible value (default: 1)
 		*/
 	| PSNR LPAREN expr COMMA expr (COMMA expr)? RPAREN	# PsnrFunc
 		/**
 		  weighted_mean(x, weights, [dims]) - computes the weighted mean globally or along one or more dimensions
+		  - weights: weight of each element, broadcast against x
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| WEIGHTED_MEAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# WeightedMeanFunc
 		/**
 		  huber_loss(prediction, target, [delta], [reduction]) - computes Huber loss; delta defaults to 1 and reduction to mean
+		  - delta: error size where the loss changes from quadratic to linear (default: 1)
+		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
 	| HUBER_LOSS LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# HuberLossFunc
 		/**
 		  cross_entropy(logits, target, [dim], [reduction]) - computes cross-entropy from class logits and class indices or target probabilities
+		  - logits: unnormalised class scores
+		  - target: class indices, or class probabilities with the same shape as logits
+		  - dim: class dimension (default: 1, or 0 for a single vector)
+		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
 	| CROSS_ENTROPY LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# CrossEntropyFunc
 		/**
 		  leaky_relu(x, [negative_slope]) - applies leaky ReLU element-wise; negative_slope defaults to 0.01
+		  - negative_slope: slope used for negative inputs (default: 0.01)
 		*/
 	| LEAKY_RELU LPAREN expr (COMMA expr)? RPAREN		# LeakyReluFunc
 		/**
 		  pad(x, padding) - pads tensor x with specified padding (dim 0 neg, dim 0 pos, dim 1 ...)
+		  - padding: amounts as [dim0_before, dim0_after, dim1_before, dim1_after, ...]
 		*/
 	| PAD LPAREN expr COMMA expr RPAREN			# PadFunc
 		/**
@@ -757,6 +845,8 @@ func2:
 	| MATMUL LPAREN expr COMMA expr RPAREN			# MatmulFunc
 		/**
 		  solve(A, b) - solves the square linear system A*x=b without explicitly forming A inverse
+		  - A: square coefficient matrix
+		  - b: right-hand side
 		*/
 	| SOLVE LPAREN expr COMMA expr RPAREN		# SolveFunc
 		/**
@@ -784,14 +874,18 @@ func2:
 	| BOR LPAREN expr COMMA expr RPAREN			# BitOrFunc
 		/**
 		  split(x, [delimiter]) - splits string to list of strings based on delimiter. Default is space.
+		  - delimiter: text to split on (default: a space)
 		*/
 	| SPLIT LPAREN expr (COMMA expr)? RPAREN		# SplitFunc
 		/**
 		  join(x, [separator]) - joins the items of list x as text using separator (default ""). Use concatenate(...) to join tensors
+		  - separator: text placed between the items (default: "")
 		*/
 	| JOIN LPAREN expr (COMMA expr)? RPAREN			# JoinFunc
 		/**
 		  substring(s, start, [length]) - returns length characters of s starting at start. If length is not supplied, it returns the rest of the string
+		  - start: index of the first character
+		  - length: number of characters (default: the rest of the text)
 		*/
 	| SUBSTRING LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
 		/**
@@ -800,6 +894,8 @@ func2:
 	| FIND LPAREN expr COMMA expr RPAREN			# FindFunc
 		/**
 		  replace(s, old, new) - replaces occurrences of old with new in s. Mostly for strings but can work with lists and tensors.
+		  - old: text or value to look for
+		  - new: replacement
 		*/
 	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN	# ReplaceFunc
 		/**
@@ -812,14 +908,17 @@ func2:
 	| RGB_TO_INT LPAREN expr ( COMMA expr COMMA expr)? RPAREN	# Rgb_to_intFunc
 		/**
 		  interpolate_linear(x, scale) - resizes x [N, C, ...] with (bi/tri)linear interpolation. A number scales every spatial dimension; a list is the target spatial size
+		  - scale: a number scales every spatial dimension; a list gives the target spatial size
 		*/
 	| INTERPOLATE_LINEAR LPAREN expr COMMA expr RPAREN	# InterpolateLinearFunc
 		/**
 		  interpolate_area(x, scale) - resizes x [N, C, ...] with area interpolation. A number scales every spatial dimension; a list is the target spatial size
+		  - scale: a number scales every spatial dimension; a list gives the target spatial size
 		*/
 	| INTERPOLATE_AREA LPAREN expr COMMA expr RPAREN	# InterpolateAreaFunc
 		/**
 		  interpolate_nearest_exact(x, scale) - resizes x [N, C, ...] with nearest-neighbour interpolation. A number scales every spatial dimension; a list is the target spatial size
+		  - scale: a number scales every spatial dimension; a list gives the target spatial size
 		*/
 	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc
 		/**
@@ -835,62 +934,87 @@ func3:
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN		# ClampFunc
 		/**
 		  lerp(a, b, t) - linear interpolation between a and b by t per element. t can be float or tensor.
+		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| LERP LPAREN expr COMMA expr COMMA expr RPAREN		# LerpFunc
 		/**
 		  smoothstep(x, edge0, edge1) - smooth interpolation between edge0 and edge1
+		  - edge0: value mapped to 0
+		  - edge1: value mapped to 1
 		*/
 	| SMOOTHSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmoothstepFunc
 		/**
 		  transpose(x, dim0, dim1) / swapaxes(x, dim0, dim1) - swaps two tensor dimensions
+		  - dim0: first dimension to swap
+		  - dim1: second dimension to swap
 		*/
 	| TRANSPOSE LPAREN expr COMMA expr COMMA expr RPAREN	# TransposeFunc
 		/**
 		  range(start, stop, step) - creates a range of values between start (inclusive) and stop (exclusive) using step. Use linspace if you want value count.
+		  - start: first value
+		  - stop: end of the range (not included)
+		  - step: distance between consecutive values
 		*/
 	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN	# RangeFunc
 		/**
 		  moment(x, a, k) - computes the k-th moment of x around a
+		  - a: centre the moment is taken around
+		  - k: order of the moment
 		*/
 	| MOMENT LPAREN expr COMMA expr COMMA expr RPAREN	# MomentFunc
 		/**
 		  cubic_ease(a, b, t) - cubic ease between a and b
+		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| CUBIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# CubicEaseFunc
 		/**
 		  elastic_ease(a, b, t) - elastic ease between a and b
+		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| ELASTIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# ElasticEaseFunc
 		/**
 		  sine_ease(a, b, t) - sine easing between a and b
+		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
 		/**
 		  smootherstep(x, edge0, edge1) - smoother interpolation between edge0 and edge1
+		  - edge0: value mapped to 0
+		  - edge1: value mapped to 1
 		*/
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 		/**
 		  crop(x, start, size) - crops the region of x beginning at start (the low corner). The result always has shape size; parts outside x are zero-filled. On text, returns at most size characters
+		  - start: low corner of the region, one index per dimension
+		  - size: size of the result, one value per dimension
 		*/
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN		# CropFunc
 		/**
 		  ifft(x, [shape]) - inverse fast Fourier transform of x. shape (defaults to the node's tensor shape) sizes the K/Kx/Ky/.../frequency variables made available while evaluating x, it does not resize x itself.
+		  - shape: shape used for the K/Kx/Ky frequency variables (default: the node's input shape)
 		*/
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
 		/**
 		  irfft(x, [n], [dim]) - computes the inverse one-dimensional real FFT along dim (default: last dimension)
+		  - n: length of the output signal (default: 2 * (input length - 1))
+		  - dim: dimension to transform (default: last)
 		*/
 	| IRFFT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# IrfftFunc
 		/**
 		  overlay(base, overlay, offset, [opacity]) - overlays overlay on base at offset. Opacity controls blending. It can be tensor or float. If it is tensor it should be the same shape as overlay.
+		  - offset: position of the overlay's low corner in base, one value per dimension
+		  - opacity: 0-1 blend amount; a number or a tensor shaped like overlay (default: 1)
 		*/
 	| OVERLAY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# OverlayFunc
 		/**
 		  linspace(start, stop, num) - creates num linearly spaced values from start to stop (inclusive). Use range if you want to control the step between values.
+		  - num: number of values
 		*/
 	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
 		/**
 		  roll(x, shifts, [dim]) - circularly shifts tensor x along dim (default 0)
+		  - shifts: number of places to shift; elements pushed off one end come back at the other
+		  - dim: dimension to shift along (default: 0)
 		*/
 	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 		/**
@@ -903,14 +1027,17 @@ func3:
 	| RGB_TO_CIELAB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# RgbToCielabFunc
 		/**
 		  rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts RGB to HSV. With one color argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is 0-360 instead of 0-1
+		  - degrees: truthy to use hue in 0-360 instead of 0-1
 		*/
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN	# RgbToHsvFunc
 		/**
 		  hsv_to_rgb(hsv, [degrees]) / hsv_to_rgb(h, s, v, [degrees]) - converts HSV to RGB. With one color argument its last dimension holds H, S, V; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is read as 0-360 instead of 0-1
+		  - degrees: truthy to use hue in 0-360 instead of 0-1
 		*/
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN	# HsvToRgbFunc
 		/**
 		  where(condition, x, y) - returns x if condition is true, else y. Runs per element.
+		  - condition: non-zero selects x, zero selects y
 		*/
 	| WHERE LPAREN expr COMMA expr COMMA expr RPAREN			# WhereFunc
 		/**
@@ -923,36 +1050,65 @@ func3:
 	| CIELAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN		# CielabToRgbFunc
 		/**
 		  text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline]) - renders text to a 2D tensor with values 0-1
+		  - font: font name to look up in the system fonts, or a path to a font file
+		  - size: font size in pixels
+		  - max_width: wrap lines wider than this many pixels (default: 0, no wrapping)
+		  - weight: font weight 100-900 as in CSS (default: 400)
+		  - rotation_angle: rotation in degrees, counter-clockwise (default: 0)
+		  - line_spacing: line distance as a multiple of the line height (default: 1)
+		  - italic: truthy for italic text (default: false)
+		  - underline: truthy to underline the text (default: false)
 		*/
 	| TEXT_IMAGE LPAREN expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# TextImageFunc
 	    /**
 		  coords(shape, dim, [dtype_template]) - generates a tensor with the specified shape whose values are the coordinates of each element along dim. An optional tensor supplies the output dtype (default float32).
+		  - shape: list of dimension sizes
+		  - dim: dimension whose index becomes the value
+		  - dtype_template: tensor whose dtype the result uses (default: float32)
 		*/
 	| COORDS LPAREN expr COMMA expr (COMMA expr)? RPAREN	# CoordsFunc
 	    /**
 		   gather(x, dim, idx) - gathers elements along dim using the indices specified in idx. The output tensor has the same shape as idx.
+		   - dim: dimension to gather along
+		   - idx: indices along dim; the result has the shape of idx
 		   */
 	| GATHER LPAREN expr COMMA expr COMMA expr RPAREN	# GatherFunc
 	    /**
 		  scatter(x, dim, idx, src) - scatters elements from src into x along dim using the indices specified in idx. The output tensor has the same shape as x.
+		  - dim: dimension to scatter along
+		  - idx: position along dim for each element of src
+		  - src: values to write
 		*/
 	| SCATTER LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ScatterFunc
 		/**
 		  scatter_add(x, dim, idx, src) - scatters elements from src into x along dim using the indices specified in idx, adding to existing values. The output tensor has the same shape as x.
+		  - dim: dimension to scatter along
+		  - idx: position along dim for each element of src
+		  - src: values to add
 		*/
 	| SCATTER_ADD LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ScatterAddFunc;
 
 func4:
 		/**
 		  swap(x, dim, idx1, idx2) - swaps elements along dim between idx1 and idx2
+		  - dim: dimension to swap along
+		  - idx1: first position
+		  - idx2: second position
 		*/
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 		/**
 		  nan_to_num(x, nan, pos_inf, neg_inf) - replaces NaN, +inf and -inf in x with the given values (named after SQL NVL)
+		  - nan: replacement for NaN
+		  - pos_inf: replacement for +infinity
+		  - neg_inf: replacement for -infinity
 		*/
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
 		/**
 		  logspace(start, stop, num, base) - creates logarithmically spaced values
+		  - start: exponent of the first value
+		  - stop: exponent of the last value
+		  - num: number of values
+		  - base: base of the exponent
 		*/
 	| LOGSPACE LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# LogspaceFunc
 		/**
@@ -961,16 +1117,27 @@ func4:
 	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc
 		/**
 		  histogram(x, bins, min, max) - counts the elements of flatten(x) in bins equal-width bins over [min, max]
+		  - bins: number of equal-width bins
+		  - min: lower edge of the first bin
+		  - max: upper edge of the last bin
 		*/
 	| HISTOGRAM LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# HistogramFunc;
 
 func5:
 		/**
 		  remap(v, i_min, i_max, o_min, o_max) - remaps values from input range to output range
+		  - i_min: start of the input range
+		  - i_max: end of the input range
+		  - o_min: value i_min maps to
+		  - o_max: value i_max maps to
 		*/
 	REMAP LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN # RemapFunc
     	/**
 		  diagonal_matrix(x, shape, [offset], [dim1], [dim2]) - creates a diagonal matrix from x with specified shape. offset is the diagonal offset. dim1 and dim2 are the dimensions to place the diagonal on.
+		  - shape: shape of the result
+		  - offset: diagonal offset: positive above, negative below the main diagonal (default: 0)
+		  - dim1: first dimension of the matrix (default: -2)
+		  - dim2: second dimension of the matrix (default: -1)
 		  */
 		  | DIAG LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN # DiagonalMatrixFunc;
 
@@ -978,18 +1145,29 @@ func5:
 funcN:
 		/**
 		  norm(x, [p], [dims]) - computes the p-norm globally or along one or more dimensions (default p=2)
+		  - p: norm order (default: 2)
+		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	NORM LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# NormFunc
 		/**
 		  slerp(a, b, t, [dim]) - interpolates vector directions spherically and magnitudes linearly. Without dim, all elements form one vector; dim selects a vector-component axis and other axes identify independent vectors.
+		  - t: progress from 0 (gives a) to 1 (gives b)
+		  - dim: dimension holding the vector components (default: all elements form one vector)
 		*/
 	| SLERP LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# SlerpFunc
 		/**
 		  normalize(x, [p], [dim], [eps]) - normalizes x along dim using the p-norm (defaults: p=2, dim=-1, eps=1e-12)
+		  - p: norm order (default: 2)
+		  - dim: dimension to work along (default: last)
+		  - eps: smallest allowed divisor (default: 1e-12)
 		*/
 	| NORMALIZE LPAREN expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# NormalizeFunc
 		/**
 		  group_norm(x, groups, [weight], [bias], [eps]) - applies channel-first GroupNorm to [N, C, ...] input
+		  - groups: number of channel groups; must divide the channel count
+		  - weight: per-channel scale, length C (default: none)
+		  - bias: per-channel shift, length C (default: none)
+		  - eps: value added to the variance for stability (default: 1e-5)
 		*/
 	| GROUP_NORM LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# GroupNormFunc
 		/**
@@ -1002,34 +1180,53 @@ funcN:
 	| SMAX LPAREN expr (COMMA expr)* RPAREN		# SMaxFunc
 		/**
 		  map(tensor, coord1, [coord2], [coord3]) - samples/remaps input tensor using coordinates
+		  - coord1: sample positions (element indices) along the first mapped dimension; mapped dimensions are the last ones of tensor
+		  - coord2: sample positions along the second mapped dimension
+		  - coord3: sample positions along the third mapped dimension
 		*/
 	| MAP LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN		# MapFunc
 		/**
 		  ezconvolution(tensor, size_x, kernel) / ezconvolution(tensor, size_x, size_y, kernel) / ezconvolution(tensor, size_x, size_y, size_z, kernel) - convolves tensor with a 1D, 2D or 3D kernel, guessing whether channels come first or last. kernel is evaluated over the kernel grid with kx/ky/kz coordinates
+		  - tensor: input, channels first or last
+		  - size_x: kernel size along the first spatial dimension
+		  - size_y: kernel size along the second spatial dimension
+		  - size_z: kernel size along the third spatial dimension
+		  - kernel: expression for the kernel weights, evaluated over the kernel grid with kx/ky/kz offsets from its centre
 		*/
 	| EZCONV LPAREN expr (COMMA expr)+ RPAREN	# EzConvFunc
 		/**
 		  convolution(tensor, size_x, kernel) / convolution(tensor, size_x, size_y, kernel) / convolution(tensor, size_x, size_y, size_z, kernel) - convolves tensor [batch, channel, spatial...] with a 1D, 2D or 3D kernel. kernel is evaluated over the kernel grid with kx/ky/kz coordinates
+		  - tensor: input shaped [batch, channel, spatial...]
+		  - size_x: kernel size along the first spatial dimension
+		  - size_y: kernel size along the second spatial dimension
+		  - size_z: kernel size along the third spatial dimension
+		  - kernel: expression for the kernel weights, evaluated over the kernel grid with kx/ky/kz offsets from its centre
 		*/
 	| CONV LPAREN expr (COMMA expr)+ RPAREN		# ConvFunc
 		/**
 		  reshape(x, shape) - reshapes tensor x to the specified shape
+		  - shape: new shape; the total number of elements must stay the same
 		*/
 	| RESHAPE LPAREN expr COMMA expr RPAREN		# ReshapeFunc
 		/**
 		  squeeze(x, [dim]) - removes size-1 dimensions from tensor x, optionally at dim
+		  - dim: only remove this dimension, if it has size 1
 		*/
 	| SQUEEZE LPAREN expr (COMMA expr)? RPAREN		# SqueezeFunc
 		/**
 		  unsqueeze(x, dim) - inserts a size-1 dimension into tensor x at dim
+		  - dim: position of the new size-1 dimension
 		*/
 	| UNSQUEEZE LPAREN expr COMMA expr RPAREN		# UnsqueezeFunc
 		/**
 		  concatenate(x, ..., dim) - concatenates one or more tensors along the specified dimension
+		  - dim: dimension to join along (the last argument)
 		*/
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc
 		/**
 		  stack(tensors, [dim]) - stacks a list of tensors along a new dimension
+		  - tensors: list of tensors with equal shapes
+		  - dim: position of the new dimension (default: 0)
 		*/
 	| STACK LPAREN expr (COMMA expr)? RPAREN	# StackFunc
 		/**
@@ -1056,86 +1253,165 @@ funcN:
 funcNoise:
 		/**
 		  random_normal(seed, [shape]) - generates normally distributed random noise
+		  - seed: random seed; the same seed always gives the same values
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	NOISE LPAREN expr (COMMA expr)? RPAREN				# NoiseFunc
 		/**
 		  pink_noise(seed, [shape]) - generates deterministic pink noise (approximately 1/f power spectrum) with zero mean and unit variance per row
+		  - seed: random seed; the same seed always gives the same values
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| PINK_NOISE LPAREN expr (COMMA expr)? RPAREN		# PinkNoiseFunc
 		/**
 		  brown_noise(seed, [shape]) - generates deterministic brown noise (approximately 1/f^2 power spectrum) with zero mean and unit variance per row
+		  - seed: random seed; the same seed always gives the same values
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| BROWN_NOISE LPAREN expr (COMMA expr)? RPAREN		# BrownNoiseFunc
 		/**
 		  random_uniform(seed, [shape]) - generates uniformly distributed random noise
+		  - seed: random seed; the same seed always gives the same values
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| RAND LPAREN expr (COMMA expr)? RPAREN				# RandFunc
 		/**
 		  random_exponential(seed, lambda, [shape]) - generates exponentially distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - lambda: rate; the mean is 1 / lambda
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| EXPONENTIAL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# ExponentialFunc
 		/**
 		  random_bernoulli(seed, probability, [shape]) - generates Bernoulli distributed random values (0 or 1). Probability can be a tensor
+		  - seed: random seed; the same seed always gives the same values
+		  - probability: chance of a 1; a tensor gives one probability per element and sets the shape
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| BERNOULLI LPAREN expr COMMA expr (COMMA expr)? RPAREN		# BernoulliFunc
 		/**
 		  random_poisson(seed, lambda, [shape]) - generates Poisson distributed random values.
+		  - seed: random seed; the same seed always gives the same values
+		  - lambda: expected count; a tensor gives one rate per element and sets the shape
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| POISSON LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PoissonFunc
 		/**
 		  random_cauchy(seed, median, sigma, [shape]) - generates Cauchy distributed random values.
+		  - seed: random seed; the same seed always gives the same values
+		  - median: centre of the distribution
+		  - sigma: half width at half maximum
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| CAUCHY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# CauchyFunc
 		/**
 		  random_log_normal(seed, mean, std, [shape]) - generates log-normally distributed random values.
+		  - seed: random seed; the same seed always gives the same values
+		  - mean: mean of the underlying normal distribution
+		  - std: standard deviation of the underlying normal distribution
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| LOGNORMAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LogNormalFunc
 		/**
 		  random_gamma(seed, shape_param, scale, [shape]) - generates Gamma distributed random values.
+		  - seed: random seed; the same seed always gives the same values
+		  - shape_param: shape (concentration) k
+		  - scale: scale theta; the mean is k * theta
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| GAMMADIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# GammaDistFunc
 		/**
 		  random_beta(seed, alpha, beta, [shape]) - generates Beta distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - alpha: first concentration
+		  - beta: second concentration
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| BETADIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# BetaDistFunc
 		/**
 		  random_laplace(seed, loc, scale, [shape]) - generates Laplace distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - loc: centre of the distribution
+		  - scale: spread (diversity)
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| LAPLACEDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LaplaceDistFunc
 		/**
 		  random_gumbel(seed, loc, scale, [shape]) - generates Gumbel distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - loc: mode of the distribution
+		  - scale: spread
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| GUMBELDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# GumbelDistFunc
 		/**
 		  random_weibull(seed, scale, concentration, [shape]) - generates Weibull distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - scale: scale lambda
+		  - concentration: shape k
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| WEIBULLDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# WeibullDistFunc
 		/**
 		  random_chi2(seed, df, [shape]) - generates Chi-squared distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - df: degrees of freedom
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| CHI2DIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# Chi2DistFunc
 		/**
 		  random_studentt(seed, df, [shape]) - generates Student-t distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - df: degrees of freedom
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc
 		/**
 		  perlin_noise(seed, scale, [octaves], [offset], [shape]) - generates Perlin gradient noise in 0-1 (default 1 octave)
+		  - seed: random seed; the same seed always gives the same values
+		  - scale: feature size in elements; larger values give smoother noise
+		  - octaves: number of detail layers, each half the size of the previous (default: 1)
+		  - offset: shift of the sampling grid, one value per dimension (default: 0)
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| PERLIN LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PerlinFunc
 		/**
 		  cellular_noise(seed, scale, [jitter], [offset], [shape]) - generates Cellular/Voronoi noise in 0-1: distance to the nearest feature point (jitter 0-1, default 0.5)
+		  - seed: random seed; the same seed always gives the same values
+		  - scale: cell size in elements
+		  - jitter: 0-1 randomness of the cell points (default: 0.5)
+		  - offset: shift of the sampling grid, one value per dimension (default: 0)
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| CELLULAR LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# CellularFunc
 		/**
 		  plasma_noise(seed, scale, [octaves], [offset], [shape]) - generates Plasma/Turbulence noise in 0-1 - same as perlin but default octaves 4
+		  - seed: random seed; the same seed always gives the same values
+		  - scale: feature size in elements; larger values give smoother noise
+		  - octaves: number of detail layers, each half the size of the previous (default: 4)
+		  - offset: shift of the sampling grid, one value per dimension (default: 0)
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| PLASMA LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# PlasmaFunc
 		/**
 		  ridged_noise(seed, scale, [octaves], [offset], [shape]) - generates ridged multi-fractal noise in 0-1 (default 4 octaves)
+		  - seed: random seed; the same seed always gives the same values
+		  - scale: feature size in elements; larger values give smoother noise
+		  - octaves: number of detail layers, each half the size of the previous (default: 4)
+		  - offset: shift of the sampling grid, one value per dimension (default: 0)
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| RIDGED LPAREN expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN		# RidgedFunc
 		/**
 		  domain_warp_noise(seed, scale, warp_scale, warp_strength, [octaves], [warp_octaves], [offset], [shape]) - generates domain warped Perlin noise in 0-1 (defaults: 4 octaves, 2 warp octaves)
+		  - seed: random seed; the same seed always gives the same values
+		  - scale: feature size in elements; larger values give smoother noise
+		  - warp_scale: feature size of the warp field in elements
+		  - warp_strength: how far the warp field displaces the coordinates
+		  - octaves: detail layers of the base noise (default: 4)
+		  - warp_octaves: detail layers of the warp field (default: 2)
+		  - offset: shift of the sampling grid, one value per dimension (default: 0)
+		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| DOMAIN_WARP LPAREN expr COMMA expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# DomainWarpFunc;
 

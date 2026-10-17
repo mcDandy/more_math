@@ -45,6 +45,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { app } from '/scripts/app.js';
 import { attachAutocomplete, escapeHtml, handleEditingKey, renderHighlight } from './autocomplete.js';
 
 const modelValue = defineModel<string>({ default: '' });
@@ -158,7 +159,7 @@ let autocompleteController: { destroy: () => void } | null = null;
 onMounted(() => {
   const textarea = textareaRef.value!;
   // Autocomplete first: its keydown handler must run before the editing keys.
-  autocompleteController = attachAutocomplete(textarea);
+  autocompleteController = attachAutocomplete(textarea, (id) => app.extensionManager?.setting?.get(id));
   textarea.addEventListener('keydown', onKeyDown);
   document.addEventListener('selectionchange', onSelectionChange);
 

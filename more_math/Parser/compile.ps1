@@ -319,43 +319,35 @@ function ConvertTo-FunctionSignature {
     # Parses a doc-comment first line such as:
     #   "sum(x, [dims]) - computes the sum of elements of x, ..."
     #   "rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts ..."
-    # into the signature text, arg-count bounds, display arg names (from the
-    # first signature) and the trailing description text.
+    # into the signature text, the display arg names of every call form, the
+    # arg-count bounds covering all forms, and the trailing description text.
     param([Parameter(Mandatory)][string]$Line)
 
-    $sigMatch = [regex]::Match($Line, '^[a-zA-Z_][a-zA-Z0-9_]*\((?<args>.*?)\)')
-    if (-not $sigMatch.Success) { return $null }
-
-    $rest = $Line.Substring($sigMatch.Index + $sigMatch.Length)
-    $spec1 = Split-ArgSpec -ArgsText $sigMatch.Groups['args'].Value
-
-    # Some functions document two call forms separated by " / "; fold the
-    # second form's bounds in so min/max cover both (e.g. rgb_to_hsv).
-    $altMatch = [regex]::Match($rest, '^\s*/\s*[a-zA-Z_][a-zA-Z0-9_]*\((?<args>.*?)\)')
-    $spec2 = $null
-    if ($altMatch.Success) {
-        $spec2 = Split-ArgSpec -ArgsText $altMatch.Groups['args'].Value
-        $rest = $rest.Substring($altMatch.Index + $altMatch.Length)
+    $formPattern = [regex]'^\s*/?\s*[a-zA-Z_][a-zA-Z0-9_]*\((?<args>.*?)\)'
+    $rest = $Line
+    $forms = New-Object System.Collections.Generic.List[object]
+    $min = $null
+    $max = 0
+    $variadic = $false
+    while (($m = $formPattern.Match($rest)).Success -and ($forms.Count -eq 0 -or $m.Value.TrimStart().StartsWith('/'))) {
+        $spec = Split-ArgSpec -ArgsText $m.Groups['args'].Value
+        $forms.Add($spec.Display)
+        if ($null -eq $min -or $spec.Min -lt $min) { $min = $spec.Min }
+        if ($spec.Max -gt $max) { $max = $spec.Max }
+        if ($spec.Variadic) { $variadic = $true }
+        $rest = $rest.Substring($m.Length)
     }
+    if ($forms.Count -eq 0) { return $null }
     $signature = $Line.Substring(0, $Line.Length - $rest.Length).Trim()
 
     $descMatch = [regex]::Match($rest, '^\s*-\s*(?<desc>.*)$')
     $desc = if ($descMatch.Success) { $descMatch.Groups['desc'].Value.Trim() } else { $rest.Trim() }
 
-    $min = $spec1.Min
-    $variadic = $spec1.Variadic
-    $max = $spec1.Max
-    if ($spec2) {
-        if ($spec2.Min -lt $min) { $min = $spec2.Min }
-        if ($spec2.Variadic) { $variadic = $true }
-        if ($spec2.Max -gt $max) { $max = $spec2.Max }
-    }
-
     [pscustomobject]@{
         Signature   = $signature
         MinArgs     = $min
         MaxArgs     = if ($variadic) { $null } else { $max }
-        ArgNames    = $spec1.Display
+        Forms       = $forms.ToArray()
         Description = $desc
     }
 }
@@ -407,22 +399,32 @@ if ($undocumented.Count -gt 0) {
     Write-Warning "No parsable doc comment found for function token(s): $($undocumented -join ', '). They will get placeholder metadata."
 }
 
-# The grammar production is authoritative for argument counts; the doc
-# comment only describes them, so report where the two disagree.
+# The grammar production bounds what parses; the doc comment may be stricter
+# (e.g. conv accepts any count in the grammar but 3..5 in the visitor). Use the
+# narrower range, and report docs that allow calls the grammar rejects.
 $arityByToken = Get-ProductionArities -FuncSection $sections.FuncSection
 function Format-Arity { param($Min, $Max) "$Min..$(if ($null -eq $Max) { 'n' } else { $Max })" }
-foreach ($token in $functionTokens) {
-    $sig = $sigByToken[$token]
-    $arity = $arityByToken[$token]
-    if ($sig -and $arity -and ($sig.MinArgs -ne $arity.MinArgs -or $sig.MaxArgs -ne $arity.MaxArgs)) {
-        Write-Warning "Doc comment for $token ('$($sig.Signature)') documents $(Format-Arity $sig.MinArgs $sig.MaxArgs) args, grammar accepts $(Format-Arity $arity.MinArgs $arity.MaxArgs)."
-    }
+function Test-ArityWithin {
+    param($Inner, $Outer)
+    $Inner.MinArgs -ge $Outer.MinArgs -and ($null -eq $Outer.MaxArgs -or ($null -ne $Inner.MaxArgs -and $Inner.MaxArgs -le $Outer.MaxArgs))
 }
 
 $FUNCTION_META = [ordered]@{}
 foreach ($token in $functionTokens) {
     $sig = $sigByToken[$token]
     $arity = $arityByToken[$token]
+    if ($sig -and $arity) {
+        if (Test-ArityWithin $sig $arity) {
+            $arity = $sig
+        } else {
+            Write-Warning "Doc comment for $token ('$($sig.Signature)') documents $(Format-Arity $sig.MinArgs $sig.MaxArgs) args, grammar accepts $(Format-Arity $arity.MinArgs $arity.MaxArgs)."
+        }
+    }
+
+    # Assigned outside an if-expression so PowerShell doesn't unroll the nested arrays.
+    $forms = [object[]]@(, [string[]]@())
+    if ($sig) { $forms = $sig.Forms }
+
     $words = $functionTokenToWords[$token]
     foreach ($alias in $words) {
         # Show the signature under the spelling being completed (e.g. conv vs convolution).
@@ -431,7 +433,7 @@ foreach ($token in $functionTokens) {
             MinArgs     = if ($arity) { $arity.MinArgs } else { 0 }
             MaxArgs     = if ($arity) { $arity.MaxArgs } else { $null }
             Signature   = $signature
-            Args        = if ($sig) { @($sig.ArgNames) } else { @() }
+            Forms       = $forms
             Description = if ($sig) { $sig.Description } else { '' }
             Details     = if ($sig) { $detailsByToken[$token] } else { '' }
             Aliases     = @($words | Where-Object { $_ -ne $alias })
@@ -477,6 +479,18 @@ function ConvertTo-PyList {
     return '[' + (@($Values | ForEach-Object { ConvertTo-PyString $_ }) -join ', ') + ']'
 }
 
+function ConvertTo-JsForms {
+    param([object[]]$Forms)
+    $parts = foreach ($form in $Forms) { ConvertTo-JsArray $form }
+    return '[' + (@($parts) -join ', ') + ']'
+}
+
+function ConvertTo-PyForms {
+    param([object[]]$Forms)
+    $parts = foreach ($form in $Forms) { ConvertTo-PyList $form }
+    return '[' + (@($parts) -join ', ') + ']'
+}
+
 function Write-JsSymbols {
     param(
         [string]$Path,
@@ -505,7 +519,7 @@ function Write-JsSymbols {
     foreach ($name in @($FunctionMeta.psbase.Keys)) {
         $meta = $FunctionMeta[$name]
         $maxArgsJs = if ($null -eq $meta.MaxArgs) { 'null' } else { $meta.MaxArgs }
-        [void]$sb.AppendLine("    $(ConvertTo-JsString $name): { minArgs: $($meta.MinArgs), maxArgs: $maxArgsJs, signature: $(ConvertTo-JsString $meta.Signature), args: $(ConvertTo-JsArray $meta.Args), description: $(ConvertTo-JsString $meta.Description), details: $(ConvertTo-JsString $meta.Details), aliases: $(ConvertTo-JsArray $meta.Aliases) },")
+        [void]$sb.AppendLine("    $(ConvertTo-JsString $name): { minArgs: $($meta.MinArgs), maxArgs: $maxArgsJs, signature: $(ConvertTo-JsString $meta.Signature), forms: $(ConvertTo-JsForms $meta.Forms), description: $(ConvertTo-JsString $meta.Description), details: $(ConvertTo-JsString $meta.Details), aliases: $(ConvertTo-JsArray $meta.Aliases) },")
     }
     [void]$sb.AppendLine('};')
 
@@ -537,7 +551,7 @@ function Write-PySymbols {
     foreach ($name in @($FunctionMeta.psbase.Keys)) {
         $meta = $FunctionMeta[$name]
         $maxArgsPy = if ($null -eq $meta.MaxArgs) { 'None' } else { $meta.MaxArgs }
-        [void]$sb.AppendLine("    $(ConvertTo-PyString $name): {'min_args': $($meta.MinArgs), 'max_args': $maxArgsPy, 'signature': $(ConvertTo-PyString $meta.Signature), 'args': $(ConvertTo-PyList $meta.Args), 'description': $(ConvertTo-PyString $meta.Description), 'details': $(ConvertTo-PyString $meta.Details), 'aliases': $(ConvertTo-PyList $meta.Aliases)},")
+        [void]$sb.AppendLine("    $(ConvertTo-PyString $name): {'min_args': $($meta.MinArgs), 'max_args': $maxArgsPy, 'signature': $(ConvertTo-PyString $meta.Signature), 'forms': $(ConvertTo-PyForms $meta.Forms), 'description': $(ConvertTo-PyString $meta.Description), 'details': $(ConvertTo-PyString $meta.Details), 'aliases': $(ConvertTo-PyList $meta.Aliases)},")
     }
     [void]$sb.AppendLine('}')
 

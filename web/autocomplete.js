@@ -435,14 +435,60 @@ function findCallContext(text, cursor) {
             depth--;
             continue;
         }
-        if (value !== "(") return null;
+        // Inside a list or dict literal: it is one argument of the enclosing call.
+        if (value !== "(") {
+            argIndex = 0;
+            continue;
+        }
 
         let j = i - 1;
         while (j >= 0 && isBlank(tokens[j])) j--;
         const name = tokens[j]?.type === "function" ? tokens[j].value : null;
-        return name ? { name, argIndex } : null;
+        return name ? { name, argIndex, argCount: countCallArgs(text, tokens[i].start) } : null;
     }
     return null;
+}
+
+// Number of arguments in the call whose "(" is at openPos, including those after the cursor.
+function countCallArgs(text, openPos) {
+    let depth = 0;
+    let commas = 0;
+    let hasArg = false;
+    for (const t of tokenize(text.slice(openPos))) {
+        if (t.type === "bracket") {
+            if (OPENING_BRACKETS.has(t.value)) {
+                if (++depth === 1) continue;
+            } else if (--depth === 0) {
+                break;
+            }
+        }
+        if (depth === 1 && t.type === "operator" && t.value === ",") commas++;
+        else if (!isBlank(t) && t.type !== "comment") hasArg = true;
+    }
+    return hasArg || commas ? commas + 1 : 0;
+}
+
+// Arity of one documented call form, e.g. ["x", "[dims]"] or ["r", "[g", "b]"].
+function formArity(args) {
+    let depth = 0;
+    let min = 0;
+    let max = 0;
+    for (const a of args) {
+        const optional = depth > 0 || a.startsWith("[");
+        depth += (a.match(/\[/g) ?? []).length - (a.match(/\]/g) ?? []).length;
+        if (a.includes("...")) return { min, max: Infinity };
+        max++;
+        if (!optional) min++;
+    }
+    return { min, max };
+}
+
+// First documented form that accepts argCount arguments (e.g. rgb_to_hsv(rgb) vs rgb_to_hsv(r, g, b)).
+function pickForm(forms, argCount) {
+    return forms.find((form) => {
+        const { min, max } = formArity(form);
+        return argCount >= min && argCount <= max;
+    }) ?? forms[0];
 }
 
 function getCaretCoordinates(textarea, position) {
@@ -766,11 +812,12 @@ export function attachAutocomplete(textarea) {
             return;
         }
 
-        // A variadic arg (`...`, `[sizes...]`) absorbs every argument from its position on.
-        const variadicAt = meta.args.findIndex((a) => a.includes("..."));
+        const form = pickForm(meta.forms, Math.max(ctx.argCount, ctx.argIndex + 1));
+        // A variadic arg (`...`) absorbs every argument from its position on.
+        const variadicAt = form.findIndex((a) => a.includes("..."));
         let active = ctx.argIndex;
         if (variadicAt !== -1 && active >= variadicAt) active = variadicAt;
-        const args = meta.args
+        const args = form
             .map((a, i) => (i === active ? `<span class="mrmth-sig-active">${escapeHtml(a)}</span>` : escapeHtml(a)))
             .join(", ");
 

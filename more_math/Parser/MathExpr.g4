@@ -138,51 +138,51 @@ func0:
 // Single-argument functions
 func1:
 		/**
-		  sin(x) - applies sinus function to value or each element of value
+		  sin(x) - applies sine function to value or each element of value
 		*/
 	SIN LPAREN expr RPAREN				# SinFunc
 		/**
-		  cos(x) - applies cosinus function to value or each element of value
+		  cos(x) - applies cosine function to value or each element of value
 		*/
 	| COS LPAREN expr RPAREN			# CosFunc
 		/**
-		  tan(x) - applies tangents function to value or each element of value
+		  tan(x) - applies tangent function to value or each element of value
 		*/
 	| TAN LPAREN expr RPAREN			# TanFunc
 		/**
-		  asin(x) - applies arcus sinus function to value or each element of value
+		  asin(x) - applies arcus sine function to value or each element of value
 		*/
 	| ASIN LPAREN expr RPAREN			# AsinFunc
 		/**
-		  acos(x) - applies arcus cosinus function to value or each element of value
+		  acos(x) - applies arcus cosine function to value or each element of value
 		*/
 	| ACOS LPAREN expr RPAREN			# AcosFunc
 		/**
-		  atan(x) - applies arcus tangents function to value or each element of value
+		  atan(x) - applies arcus tangent function to value or each element of value
 		*/
 	| ATAN LPAREN expr RPAREN			# AtanFunc
 		/**
-		  sinh(x) - applies hyperbolic sinus function to value or each element of value
+		  sinh(x) - applies hyperbolic sine function to value or each element of value
 		*/
 	| SINH LPAREN expr RPAREN			# SinhFunc
 		/**
-		  cosh(x) - applies hyperbolic cosinus function to value or each element of value
+		  cosh(x) - applies hyperbolic cosine function to value or each element of value
 		*/
 	| COSH LPAREN expr RPAREN			# CoshFunc
 		/**
-		  tanh(x) - applies hyperbolic tangents function to value or each element of value
+		  tanh(x) - applies hyperbolic tangent function to value or each element of value
 		*/
 	| TANH LPAREN expr RPAREN			# TanhFunc
 		/**
-		  asinh(x) - applies hyperbolic arcus sinus function to value or each element of value
+		  asinh(x) - applies hyperbolic arcus sine function to value or each element of value
 		*/
 	| ASINH LPAREN expr RPAREN			# AsinhFunc
 		/**
-		  acosh(x) - applies hyperbolic arcus cosinus function to value or each element of value
+		  acosh(x) - applies hyperbolic arcus cosine function to value or each element of value
 		*/
 	| ACOSH LPAREN expr RPAREN			# AcoshFunc
 		/**
-		  atanh(x) - applies hyperbolic arcus tangents function to value or each element of value
+		  atanh(x) - applies hyperbolic arcus tangent function to value or each element of value
 		*/
 	| ATANH LPAREN expr RPAREN			# AtanhFunc
 		/**
@@ -190,7 +190,7 @@ func1:
 		*/
 	| ABS LPAREN expr RPAREN			# AbsFunc
 		/**
-		  sqrt(x) - applies sqere root per element. Negative numbers return NaN (not a number)
+		  sqrt(x) - applies square root per element. Negative numbers return NaN (not a number)
 		*/
 	| SQRT LPAREN expr RPAREN			# SqrtFunc
 		/**
@@ -318,7 +318,7 @@ func1:
 		*/
 	| PRINT_SHAPE LPAREN expr RPAREN		# PrintShapeFunc
 		/**
-		  pinv(x) - computes the permutative inverse of a list x (list must have uniqe elements) -- TODO: CHECK --
+		  pinv(x) - computes the inverse permutation of x: where x[i] == j the result has result[j] == i. Not the matrix pseudoinverse; use inv(x, 1) for that
 		*/
 	| PINV LPAREN expr RPAREN			# PinvFunc
 		/**
@@ -350,7 +350,7 @@ func1:
 		*/
 	| PROD LPAREN expr (COMMA expr)? RPAREN		# ProdFunc
 		/**
-		  sort(x, [desc], [dim]) - returns a sorted version of x (If input is tensor, it sorts the last dimension)
+		  sort(x, [descending], [dim]) - returns x sorted ascending, or descending when descending is truthy. Tensors are sorted along dim (default: last dimension); lists use Python sorting
 		*/
 	| SORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN			# SortFunc
 		/**
@@ -362,7 +362,7 @@ func1:
 		*/
 	| ALL LPAREN expr RPAREN			# AllFunc
 		/**
-		  edge(x, [matrix_size]) - detects edges in x. Matrix size denotes the size of edge detection matrix.
+		  edge(x, [kernel_size]) - detects edges in x with a Sobel filter. kernel_size must be odd and at least 3 (default 3).
 		*/
 	| EDGE LPAREN expr (COMMA expr)? RPAREN		# EdgeFunc
 		/**
@@ -422,7 +422,7 @@ func1:
 		*/
 	| GET LPAREN expr RPAREN			# GetFunc
 		/**
-		  argsort(x, [desc], [dim]) - returns the indices that would sort x. desc defaults to ascending and dim defaults to the last dimension.
+		  argsort(x, [descending], [dim]) - returns the indices that would sort x. descending defaults to false and dim defaults to the last dimension.
 		*/
 	| ARGSORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# ArgsortFunc
 		/**
@@ -434,11 +434,11 @@ func1:
 		*/
 	| ARGMAX LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgmaxFunc
 		/**
-		  softmax(x, [axis]) - applies the softmax function to x (sum of slice == 1.0 and max value <= 1.0). axis defaults to last.
+		  softmax(x, [dim]) - applies the softmax function to x (each slice sums to 1.0). dim defaults to the last dimension.
 		*/
 	| SOFTMAX LPAREN expr (COMMA expr)? RPAREN	# SoftmaxFunc
 		/**
-		  softmin(x, [axis]) - applies the softmin function to x (same as softmax(-x,[axis])). axis defaults to last.
+		  softmin(x, [dim]) - applies the softmin function to x (same as softmax(-x, [dim])). dim defaults to the last dimension.
 		*/
 	| SOFTMIN LPAREN expr (COMMA expr)? RPAREN	# SoftminFunc
 		/**
@@ -454,7 +454,7 @@ func1:
 		*/
 	| ERFINV LPAREN expr RPAREN			# ErfinvFunc
 		/**
-		  unique(x) - returns the unique elements (sorted, flatened)
+		  unique(x) - returns the sorted unique elements of x (tensors are flattened first)
 		*/
 	| UNIQUE LPAREN expr RPAREN			# UniqueFunc
 		/**
@@ -494,7 +494,7 @@ func1:
 		*/
 	| TRIM LPAREN expr RPAREN			# TrimFunc
 		/**
-		  entropy(x) - computes shanon entropy
+		  entropy(x) - computes the Shannon entropy (in nats) of softmax(x), i.e. x is treated as logits over all of its elements
 		*/
 	| ENTROPY LPAREN expr RPAREN			# EntropyFunc
 		/**
@@ -502,19 +502,19 @@ func1:
 		*/
 	| SFFT LPAREN expr RPAREN			# SfftFunc
 		/**
-		  dilate(x, [kernel]) - applies dilation to x. kernel is optional.
+		  dilate(x, [kernel_size]) - applies morphological dilation to x with a square kernel (default size 3).
 		*/
 	| DILATE LPAREN expr (COMMA expr)? RPAREN	# DilateFunc
 		/**
-		  erode(x, [kernel]) - applies erosion to x. kernel is size of used matrix.
+		  erode(x, [kernel_size]) - applies morphological erosion to x with a square kernel (default size 3).
 		*/
 	| ERODE LPAREN expr (COMMA expr)? RPAREN	# ErodeFunc
 		/**
-		  morph_open(x, [kernel]) - applies morphological opening to x. kernel is size of used matrix.
+		  morph_open(x, [kernel_size]) - applies morphological opening (erosion then dilation) to x with a square kernel (default size 3).
 		*/
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN	# MorphOpenFunc
 		/**
-		  morph_close(x, [kernel]) - applies morphological closing to x. kernel is size of used matrix.
+		  morph_close(x, [kernel_size]) - applies morphological closing (dilation then erosion) to x with a square kernel (default size 3).
 		*/
 	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN	# MorphCloseFunc
 		/**
@@ -530,7 +530,7 @@ func1:
 		*/
 	| FLOW_MAG LPAREN expr RPAREN	# FlowMagFunc
 		/**
-		  flow_angle(x) - computes the angle of optical flow (basically angle() but real and imaginery is separate in 2 dimensions)
+		  flow_angle(x) - computes the angle atan2(dy, dx) of optical flow x [..., 2] (like angle(), with real and imaginary parts in the last dimension)
 		*/
 	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc
 	    /**
@@ -538,7 +538,7 @@ func1:
 		  */
 	| AS_NESTED LPAREN expr RPAREN	# AsNestedFunc
 		/**
-		  svd(x, [full_matrices]) - computes the singular value decomposition of x. Returns a list of 3 tensors: U, S, V such that x = matmul(matmul(U, diagonal_matrix(S,shape(U))), V)
+		  svd(x, [full_matrices]) - computes the singular value decomposition of x. Returns a list of 3 tensors U, S, Vh such that x = matmul(matmul(U, diagonal_matrix(S, shape(U))), Vh)
 		*/
 		| SVD LPAREN expr (COMMA expr)? RPAREN	# SvdFunc;
 
@@ -648,15 +648,15 @@ func2:
 		*/
 	| DET LPAREN expr RPAREN			# DetFunc
 		/**
-		  flip(x, dims) - reverses the order of elements along the specified dimensions. Works also for text and list with dims=0
+		  flip(x, dims) - reverses the order of elements along the specified dimensions. Text is reversed as a whole
 		*/
 	| FLIP LPAREN expr COMMA expr RPAREN			# FlipFunc
 		/**
-		  cov(x, y) - computes the covariance matrix of x and y
+		  cov(x, y) - computes the sample covariance of the flattened x and y (which must have the same number of elements)
 		*/
 	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
 		/**
-		  correlation(x, y) - computes the correlation between x and y
+		  correlation(x, y) - computes the Pearson correlation coefficient between x and y
 		*/
 	| CORR LPAREN expr COMMA expr RPAREN			# CorrFunc
 		/**
@@ -676,11 +676,11 @@ func2:
 		*/
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 		/**
-		  topk_indices(x, k, [dim]) - returns the indices of the k largest elements along dim; dim defaults to the last
+		  topk_indices(x, k, [dim]) - returns the indices of the k largest elements along dim; without dim, returns indices into flatten(x)
 		*/
 	| TOPK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# TopkIndFunc
 		/**
-		  botk_indices(x, k, [dim]) - returns the indices of the k smallest elements along dim; dim defaults to the last
+		  botk_indices(x, k, [dim]) - returns the indices of the k smallest elements along dim; without dim, returns indices into flatten(x)
 		*/
 	| BOTK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# BotkIndFunc
 		/**
@@ -765,7 +765,7 @@ func2:
 	| FLOW_APPLY LPAREN expr COMMA expr RPAREN		# FlowApplyFunc
 		/**
 		  rife(image1, image2, [tiling_size], [iterations], [multi_scale]) - computes the optical flow field ([H, W, 2]) between image1 and image2 using a RAFT-based model
-		  - tiling_size: chuncks image to overlapping tiling_size*tiling_size parts to conserve memory. Default is 0 (auto: enables 1024x1024 tiling when over 2MPx). When tiling_size is between 0 - 1 it takes as a fraction of the resolution
+		  - tiling_size: splits the image to overlapping tiling_size*tiling_size parts to conserve memory. Default is 0 (auto: enables 1024x1024 tiling when over 2MPx). When tiling_size is between 0 - 1 it takes as a fraction of the resolution
 		  - iterations: how many times to run the flow model. Default 12
 		  - multi_scale: also use low resolution of base image for giant movements. Default false
 		*/
@@ -787,7 +787,7 @@ func2:
 		*/
 	| SPLIT LPAREN expr (COMMA expr)? RPAREN		# SplitFunc
 		/**
-		  join(x, [separator]) - joins strings in list using separator. Defalut separator is "". If you want to join tensors use concatinate(...)
+		  join(x, [separator]) - joins the items of list x as text using separator (default ""). Use concatenate(...) to join tensors
 		*/
 	| JOIN LPAREN expr (COMMA expr)? RPAREN			# JoinFunc
 		/**
@@ -803,23 +803,23 @@ func2:
 		*/
 	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN	# ReplaceFunc
 		/**
-		  int_to_rgb(val) - converts an integer to an RGB color. If input is tensor it stacks the resulting R, G and B tensors using last dimension. If It is list, List of lists is returned and if value, 3 long list is returned.
+		  int_to_rgb(val) - unpacks 0xRRGGBB integers into 0-1 RGB colors. Tensors get R, G, B stacked in a new last dimension, lists return a list of colors and a number returns a 3-item list
 		*/
 	| INT_TO_RGB LPAREN expr RPAREN				# Int_to_rgbFunc
 		/**
-		  rgb_to_int(r, [g, b]) - converts RGB components to an integer It uses last dimension of tensor (or list) as R,G,B if one value. Othervise uses whole thing as channel.
+		  rgb_to_int(rgb) / rgb_to_int(r, g, b) - packs 0-1 RGB components into 0xRRGGBB integers. With one argument the last dimension (or a 3-item list) holds R, G, B; with three, each argument is one channel
 		*/
 	| RGB_TO_INT LPAREN expr ( COMMA expr COMMA expr)? RPAREN	# Rgb_to_intFunc
 		/**
-		  interpolate_linear(x, y) - performs linear interpolation on X. Assumes that dim 0 is batch and dim 1 = channel
+		  interpolate_linear(x, scale) - resizes x [N, C, ...] with (bi/tri)linear interpolation. A number scales every spatial dimension; a list is the target spatial size
 		*/
 	| INTERPOLATE_LINEAR LPAREN expr COMMA expr RPAREN	# InterpolateLinearFunc
 		/**
-		  interpolate_area(x, y) - performs area interpolation X. Assumes that dim 0 is batch and dim 1 = channel
+		  interpolate_area(x, scale) - resizes x [N, C, ...] with area interpolation. A number scales every spatial dimension; a list is the target spatial size
 		*/
 	| INTERPOLATE_AREA LPAREN expr COMMA expr RPAREN	# InterpolateAreaFunc
 		/**
-		  interpolate_nearest_exact(x, y) - performs nearest neighbor interpolation X. Assumes that dim 0 is batch and dim 1 = channel
+		  interpolate_nearest_exact(x, scale) - resizes x [N, C, ...] with nearest-neighbour interpolation. A number scales every spatial dimension; a list is the target spatial size
 		*/
 	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc
 		/**
@@ -870,7 +870,7 @@ func3:
 		*/
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 		/**
-		  crop(x, start, size) - crops tensor x. Take size and begin at start. start should be the low corner. The result is at most size (if size is bigger then rest of tensor).
+		  crop(x, start, size) - crops the region of x beginning at start (the low corner). The result always has shape size; parts outside x are zero-filled. On text, returns at most size characters
 		*/
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN		# CropFunc
 		/**
@@ -890,23 +890,23 @@ func3:
 		*/
 	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
 		/**
-		  roll(x, shifts, [axis]) - rolls tensor x along axis
+		  roll(x, shifts, [dim]) - circularly shifts tensor x along dim (default 0)
 		*/
 	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 		/**
-		  rgb_to_oklab(r, [g], [b]) - converts RGB to OKLab. It has 2 modes. Aither 1 or 3 parameters. With 1 parameter it expects last dimension of 3 and with 3 it concatinates them after converting.
+		  rgb_to_oklab(rgb) / rgb_to_oklab(r, g, b) - converts 0-1 sRGB to OKLab. With one argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result
 		*/
 	| RGB_TO_OKLAB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# RgbToOklabFunc
 		/**
-		  rgb_to_cielab(r, [g], [b]) - converts RGB to CIELAB. It has 2 modes. Aither 1 or 3 parameters. With 1 parameter it expects last dimension of 3 and with 3 it concatinates them after converting.
+		  rgb_to_cielab(rgb) / rgb_to_cielab(r, g, b) - converts 0-1 sRGB to CIELAB (D65) divided by 100, so L is 0-1. With one argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result
 		*/
 	| RGB_TO_CIELAB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# RgbToCielabFunc
 		/**
-		  rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts RGB to HSV. It has 2 modes. Aither 1 or 3 parameters. With 1 parameter it expects last dimension of 3 and with 3 it concatinates them after converting. If degrees is specified and nonzero it returns hue as 0-360 instead of 0-1
+		  rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts RGB to HSV. With one color argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is 0-360 instead of 0-1
 		*/
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN	# RgbToHsvFunc
 		/**
-		  hsv_to_rgb(hsv, [degrees]) / hsv_to_rgb(h, s, v, [degrees]) - converts HSV to RGB. It has 2 modes. Aither 1 or 3 parameters. With 1 parameter it expects last dimension of 3 and with 3 it concatinates them after converting.
+		  hsv_to_rgb(hsv, [degrees]) / hsv_to_rgb(h, s, v, [degrees]) - converts HSV to RGB. With one color argument its last dimension holds H, S, V; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is read as 0-360 instead of 0-1
 		*/
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN	# HsvToRgbFunc
 		/**
@@ -914,19 +914,19 @@ func3:
 		*/
 	| WHERE LPAREN expr COMMA expr COMMA expr RPAREN			# WhereFunc
 		/**
-		  oklab_to_rgb(oklab) / oklab_to_rgb(l, a, b) - converts OKLab to RGB. It has 2 modes. Aither 1 or 3 parameters. With 1 parameter it expects last dimension of 3 and with 3 it concatinates them after converting.
+		  oklab_to_rgb(oklab) / oklab_to_rgb(l, a, b) - converts OKLab to 0-1 sRGB. With one argument its last dimension holds L, a, b; with three, the channels are stacked into the last dimension of the result
 		*/
 	| OKLAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN		# OklabToRgbFunc
 		/**
-		  cielab_to_rgb(cielab) / cielab_to_rgb(l, a, b) - converts CIELAB to RGB. It has 2 modes. Aither 1 or 3 parameters. With 1 parameter it expects last dimension of 3 and with 3 it concatinates them after converting.
+		  cielab_to_rgb(cielab) / cielab_to_rgb(l, a, b) - converts CIELAB divided by 100 (as returned by rgb_to_cielab) to 0-1 sRGB. With one argument its last dimension holds L, a, b; with three, the channels are stacked into the last dimension of the result
 		*/
 	| CIELAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN		# CielabToRgbFunc
 		/**
-		  text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline]) - renders text to an 2D tensor
+		  text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline]) - renders text to a 2D tensor with values 0-1
 		*/
 	| TEXT_IMAGE LPAREN expr COMMA expr COMMA expr (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? (COMMA expr)? RPAREN	# TextImageFunc
 	    /**
-		  coords(shape, dim, [dtype]) - generates a tensor with the specified shape whose values are the coordinates of each element along the specified dimension. The dtype can be specified to control the data type of the output tensor.
+		  coords(shape, dim, [dtype_template]) - generates a tensor with the specified shape whose values are the coordinates of each element along dim. An optional tensor supplies the output dtype (default float32).
 		*/
 	| COORDS LPAREN expr COMMA expr (COMMA expr)? RPAREN	# CoordsFunc
 	    /**
@@ -948,7 +948,7 @@ func4:
 		*/
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 		/**
-		  nan_to_num(x, nan, pos_inf, neg_inf) - null value replacement - inspired by NVL
+		  nan_to_num(x, nan, pos_inf, neg_inf) - replaces NaN, +inf and -inf in x with the given values (named after SQL NVL)
 		*/
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
 		/**
@@ -960,7 +960,7 @@ func4:
 		*/
 	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc
 		/**
-		  histogram(x, bins, min, max) - computes histogram
+		  histogram(x, bins, min, max) - counts the elements of flatten(x) in bins equal-width bins over [min, max]
 		*/
 	| HISTOGRAM LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# HistogramFunc;
 
@@ -1005,11 +1005,11 @@ funcN:
 		*/
 	| MAP LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN		# MapFunc
 		/**
-		  ezconvolution(tensor, [kernel_sizes...], kernel) - applies convolution with kernel. Attempts to correctly convolve over size dimensions.
+		  ezconvolution(tensor, size_x, kernel) / ezconvolution(tensor, size_x, size_y, kernel) / ezconvolution(tensor, size_x, size_y, size_z, kernel) - convolves tensor with a 1D, 2D or 3D kernel, guessing whether channels come first or last. kernel is evaluated over the kernel grid with kx/ky/kz coordinates
 		*/
 	| EZCONV LPAREN expr (COMMA expr)+ RPAREN	# EzConvFunc
 		/**
-		  convolution(tensor, [kernel_sizes...], kernel) - applies convolution with kernel. Expects [batch,channel, ...]
+		  convolution(tensor, size_x, kernel) / convolution(tensor, size_x, size_y, kernel) / convolution(tensor, size_x, size_y, size_z, kernel) - convolves tensor [batch, channel, spatial...] with a 1D, 2D or 3D kernel. kernel is evaluated over the kernel grid with kx/ky/kz coordinates
 		*/
 	| CONV LPAREN expr (COMMA expr)+ RPAREN		# ConvFunc
 		/**

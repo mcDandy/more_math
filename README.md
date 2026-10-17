@@ -191,9 +191,9 @@ You can also get the node from comfy manager under the name of More math.
 - `norm(x, [p], [dims])`: p-norm globally or along one or more dimensions; `p` defaults to `2`.
 - `normalize(x, [p], [dim], [eps])`: normalize each vector along `dim` (default `-1`); defaults to L2 and clamps the divisor to `eps` (`1e-12`). List input returns a nested list; tensor input returns a tensor.
 - `cossim(a, b)` / `cosine_similarity`: cosine similarity.
-- `cov(x, y)`: covariance.
+- `cov(x, y)`: sample covariance of the flattened inputs.
 - `corr(x, y)` / `correlation`: Pearson correlation.
-- `entropy(x)`: Shannon entropy.
+- `entropy(x)`: Shannon entropy of `softmax(x)` (`x` is treated as logits).
 - `flip(x, dims)`: flip selected dimensions; `dims` can be a single dimension, list, or tensor of dimensions, so multiple axes can be flipped at once.
 - `swap(tensor, dim, i1, i2)`: swap two indices along dimension `dim`.
 
@@ -232,8 +232,8 @@ You can also get the node from comfy manager under the name of More math.
 - `where(cond, a, b)`: tensor broadcasting for tensor inputs; recursive truthy selection for lists/scalars.
 - `histogram(x, bins, min, max)` / `hist`: histogram counts from `flatten()` in the given interval
 - `gather(tensor, dim, indices)`: gather values along `dim` using `indices`
-- `scatter(tensor, dim, indices)`: scatter values along `dim` using `indices`
-- `scatter_add(tensor, dim, indices)`: scatter-add values along `dim` using `indices`
+- `scatter(tensor, dim, indices, src)`: scatter values from `src` along `dim` using `indices`
+- `scatter_add(tensor, dim, indices, src)`: scatter-add values from `src` along `dim` using `indices`
 - `nonzero(x)`: returns coordinate indices for non-zero elements.
 - `one_hot(indices, classes)`: converts integer class indices into float32 one-hot vectors; indices must be in `0..classes-1`.
 
@@ -271,7 +271,7 @@ You can also get the node from comfy manager under the name of More math.
 - `solve(A, b)`: solve the square linear system `A*x = b`; prefer this to computing `inv(A) @ b`.
 - `matrix_rank(x, [tol])`: numerical rank of each matrix; optional `tol` is the absolute singular-value tolerance.
 - `inv(x, [pseudo])`: matrix inverse; `pseudo` defaults to false. A singular or non-square matrix raises an error in ordinary mode. Set `pseudo` to a truthy value (for example, `1`) to compute the Moore–Penrose pseudoinverse, which also supports singular and rectangular matrices.
-- `pinv(x)`: permutation inverse for permutation-like values; this is not the matrix pseudoinverse.
+- `pinv(x)`: inverse permutation (`result[x[i]] = i`); this is not the matrix pseudoinverse, use `inv(x, 1)` for that.
 - `singular_value_decomposition(x,[full_matrices])`/`svd`: singular value decomposition.
 - `diagonal_matrix(x,shape,[offset],[dim1],[dim2])` / `diag`: create a diagonal matrix from a vector. The diagonal can be offset from the main diagonal using the `offset` parameter. The `dim1` and `dim2` parameters specify which dimensions to use for the diagonal.
 #### 2.6 Mapping / Sampling
@@ -279,7 +279,7 @@ You can also get the node from comfy manager under the name of More math.
   - supports up to `3` coordinate inputs,
   - uses sampling coordinates derived from the provided coordinate tensors or functions,
   - intended for spatial remapping / resampling.
-- `get_value(tensor, position)`: read value at an N-D position using flat offset math. Superseeded by tensor[position] indexing.
+- `get_value(tensor, position)`: read value at an N-D position using flat offset math. Superseded by tensor[position] indexing.
 
 #### 2.7 Losses / Image Metrics
 - `mse(a, b, [reduction])`: mean squared error; reduction is `mean` (default), `sum`, or `none` (`none` returns element-wise values).

@@ -386,13 +386,15 @@ $docEntries = Get-FunctionDocEntries -FuncSection $sections.FuncSection
 $sigByToken = @{}
 $detailsByToken = @{}
 $paramsByToken = @{}
+$paramTotal = 0
+$paramDescribed = 0
 foreach ($e in $docEntries) {
     $sig = ConvertTo-FunctionSignature -Line $e.FirstLine
     if (-not $sig) { continue }
     $sigByToken[$e.Token] = $sig
 
     # "- name: description" lines document one parameter; other lines are general details.
-    $argNames = @($sig.Forms | ForEach-Object { $_ } | ForEach-Object { $_.Trim('[', ']', ' ').Replace('...', '') })
+    $argNames = @($sig.Forms | ForEach-Object { $_ } | ForEach-Object { $_.Trim('[', ']', ' ').Replace('...', '') } | Where-Object { $_ })
     $params = [ordered]@{}
     $details = New-Object System.Collections.Generic.List[string]
     foreach ($line in $e.Details) {
@@ -409,7 +411,10 @@ foreach ($e in $docEntries) {
     }
     $paramsByToken[$e.Token] = $params
     $detailsByToken[$e.Token] = $details -join "`n"
+    $paramTotal += @($argNames | Select-Object -Unique).Count
+    $paramDescribed += @($argNames | Select-Object -Unique | Where-Object { $params.Contains($_) }).Count
 }
+Write-Host "[symbols] $paramDescribed of $paramTotal parameters have a description."
 
 $functionTokens = @($functionTokenToWords.psbase.Keys)
 $undocumented = @($functionTokens | Where-Object { -not $sigByToken.ContainsKey($_) })

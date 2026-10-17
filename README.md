@@ -293,7 +293,7 @@ You can also get the node from comfy manager under the name of More math.
 ### 3) Imaging & Spatial Processing
 
 #### 3.1 Filters & Convolution
-- `blur(x, sigma, [reshape])` / `gaussian`: Gaussian blur using separable convolution. If `reshape` is truthy, tries orienting the input such that channel is in the direction of the filter; otherwise it expects the color dimension to be last.
+- `blur(x, sigma, [auto_channels])` / `gaussian`: Gaussian blur using separable convolution. If `auto_channels` is truthy, tries orienting the input such that channel is in the direction of the filter; otherwise it expects the color dimension to be last.
 - `edge(x, [kernel_size])`: Sobel-style edge detection.
 - `ezconvolution(tensor, ...)` / `ezconv`: convolution with auto layout handling.
 - `convolution(tensor, ...)` / `conv`: direct convolution. Expects [batch, channel, spatial...] layout.

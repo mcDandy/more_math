@@ -139,443 +139,544 @@ func0:
 func1:
 		/**
 		  sin(x) - applies sine function to value or each element of value
+		  - x: angle in radians (number, list or tensor)
 		*/
 	SIN LPAREN expr RPAREN				# SinFunc
 		/**
 		  cos(x) - applies cosine function to value or each element of value
+		  - x: angle in radians (number, list or tensor)
 		*/
 	| COS LPAREN expr RPAREN			# CosFunc
 		/**
 		  tan(x) - applies tangent function to value or each element of value
+		  - x: angle in radians (number, list or tensor)
 		*/
 	| TAN LPAREN expr RPAREN			# TanFunc
 		/**
 		  asin(x) - applies arcus sine function to value or each element of value
+		  - x: value in -1..1 (number, list or tensor)
 		*/
 	| ASIN LPAREN expr RPAREN			# AsinFunc
 		/**
 		  acos(x) - applies arcus cosine function to value or each element of value
+		  - x: value in -1..1 (number, list or tensor)
 		*/
 	| ACOS LPAREN expr RPAREN			# AcosFunc
 		/**
 		  atan(x) - applies arcus tangent function to value or each element of value
+		  - x: number, list or tensor; applied to each element
 		*/
 	| ATAN LPAREN expr RPAREN			# AtanFunc
 		/**
 		  sinh(x) - applies hyperbolic sine function to value or each element of value
+		  - x: number, list or tensor; applied to each element
 		*/
 	| SINH LPAREN expr RPAREN			# SinhFunc
 		/**
 		  cosh(x) - applies hyperbolic cosine function to value or each element of value
+		  - x: number, list or tensor; applied to each element
 		*/
 	| COSH LPAREN expr RPAREN			# CoshFunc
 		/**
 		  tanh(x) - applies hyperbolic tangent function to value or each element of value
+		  - x: number, list or tensor; applied to each element
 		*/
 	| TANH LPAREN expr RPAREN			# TanhFunc
 		/**
 		  asinh(x) - applies hyperbolic arcus sine function to value or each element of value
+		  - x: number, list or tensor; applied to each element
 		*/
 	| ASINH LPAREN expr RPAREN			# AsinhFunc
 		/**
 		  acosh(x) - applies hyperbolic arcus cosine function to value or each element of value
+		  - x: value >= 1 (number, list or tensor)
 		*/
 	| ACOSH LPAREN expr RPAREN			# AcoshFunc
 		/**
 		  atanh(x) - applies hyperbolic arcus tangent function to value or each element of value
+		  - x: value in -1..1 (number, list or tensor)
 		*/
 	| ATANH LPAREN expr RPAREN			# AtanhFunc
 		/**
 		  abs(x) - applies per element absolute value function. Same as |x| for numbers.
+		  - x: number, list or tensor; applied to each element
 		*/
 	| ABS LPAREN expr RPAREN			# AbsFunc
 		/**
 		  sqrt(x) - applies square root per element. Negative numbers return NaN (not a number)
+		  - x: non-negative values (number, list or tensor)
 		*/
 	| SQRT LPAREN expr RPAREN			# SqrtFunc
 		/**
 		  ln(x) - applies natural logarithm to value (per element). Negative numbers return NaN (not a number)
+		  - x: positive values (number, list or tensor)
 		*/
 	| LN LPAREN expr RPAREN				# LnFunc
 		/**
 		  log(x) - applies base 10 logarithm to value (per element). Negative numbers return NaN (not a number)
+		  - x: positive values (number, list or tensor)
 		*/
 	| LOG LPAREN expr RPAREN			# LogFunc
 		/**
 		  log2(x) - applies base 2 logarithm to value (per element). Negative numbers return NaN (not a number)
+		  - x: positive values (number, list or tensor)
 		*/
 	| LOG2 LPAREN expr RPAREN			# Log2Func
 		/**
 		  exp(x) - applies e^x to value (per element)
+		  - x: number, list or tensor; applied to each element
 		*/
 		| EXP LPAREN expr RPAREN			# ExpFunc
 			/**
 			  log1p(x) - applies ln(1+x) accurately for values near zero
+			  - x: values greater than -1 (number, list or tensor)
 			*/
 		| LOG1P LPAREN expr RPAREN			# Log1pFunc
 			/**
 			  expm1(x) - applies exp(x)-1 accurately for values near zero
+			  - x: number, list or tensor; applied to each element
 			*/
 		| EXPM1 LPAREN expr RPAREN			# Expm1Func
 		/**
 		  sinc(x) - computes the normalized sinc function sin(pi*x)/(pi*x), with sinc(0)=1
+		  - x: number, list or tensor; applied to each element
 		*/
 		| SINC LPAREN expr RPAREN			# SincFunc
 		/**
 		  cbrt(x) - computes the real cube root of each value, including negative values
+		  - x: number, list or tensor; applied to each element
 		*/
 		| CBRT LPAREN expr RPAREN			# CbrtFunc
 		/**
 		  reciprocal(x) - computes 1/x element-wise
+		  - x: number, list or tensor; applied to each element
 		*/
 		| RECIPROCAL LPAREN expr RPAREN		# ReciprocalFunc
 			/**
 			  isnan(x) - returns 1.0 for NaN values and 0.0 otherwise
+			  - x: number, list or tensor; applied to each element
 			*/
 		| ISNAN LPAREN expr RPAREN			# IsnanFunc
 			/**
 			  isinf(x) - returns 1.0 for infinite values and 0.0 otherwise
+			  - x: number, list or tensor; applied to each element
 			*/
 		| ISINF LPAREN expr RPAREN			# IsinfFunc
 			/**
 			  isfinite(x) - returns 1.0 for finite values and 0.0 otherwise
+			  - x: number, list or tensor; applied to each element
 			*/
 		| ISFINITE LPAREN expr RPAREN			# IsfiniteFunc
 		/**
 		  tnorm(x, [dim]) - normalises tensor or list by multiplication such that sum(x^2)==1.0 for each slice. Defaults to the last dimension; dim selects a different slicing dimension.
+		  - x: tensor or list to normalise
 		  - dim: dimension whose slices are normalised (default: last)
 		*/
 		| TNORM LPAREN expr (COMMA expr)? RPAREN			# TNormFunc
 		/**
 		  floor(x) - returns the largest integer less than or equal to x
+		  - x: number, list or tensor; applied to each element
 		*/
 	| FLOOR LPAREN expr RPAREN			# FloorFunc
 		/**
 		  ceil(x) - returns the smallest integer greater than or equal to x
+		  - x: number, list or tensor; applied to each element
 		*/
 	| CEIL LPAREN expr RPAREN			# CeilFunc
 		/**
 		  round(x) - rounds x to the nearest integer
+		  - x: number, list or tensor; applied to each element
 		*/
 	| ROUND LPAREN expr RPAREN			# RoundFunc
 		/**
 		  gamma(x) - computes the gamma function (per element)
+		  - x: number, list or tensor; applied to each element
 		*/
 	| GAMMA LPAREN expr RPAREN			# GammaFunc
 		/**
 		  sigm(x) - applies the sigmoid function: 1 / (1 + exp(-x))
+		  - x: number, list or tensor; applied to each element
 		*/
 	| SIGM LPAREN expr RPAREN			# sigmoidFunc
 		/**
 		  angle(x) - returns the angle of a complex number or vector
+		  - x: complex or real values (number, list or tensor)
 		*/
 	| ANGL LPAREN expr RPAREN			# anglFunc
 		/**
 		  print(x) - prints the value of x to the console while passing output unchanged
+		  - x: value to print; it is also returned unchanged
 		*/
 	| PRNT LPAREN expr RPAREN			# printFunc
 		/**
 		  fract(x) - returns the fractional part of x: x - floor(x)
+		  - x: number, list or tensor; applied to each element
 		*/
 	| FRACT LPAREN expr RPAREN			# FractFunc
 		/**
 		  relu(x) - applies rectified linear unit function: max(0, x)
+		  - x: number, list or tensor; applied to each element
 		*/
 	| RELU LPAREN expr RPAREN			# ReluFunc
 		/**
 		  softsign(x) - applies x / (1 + abs(x)) element-wise
+		  - x: number, list or tensor; applied to each element
 		*/
 	| SOFTSIGN LPAREN expr RPAREN			# SoftsignFunc
 		/**
 		  softplus(x) - applies the softplus function: ln(1 + exp(x))
+		  - x: number, list or tensor; applied to each element
 		*/
 	| SOFTPLUS LPAREN expr RPAREN			# SoftplusFunc
 		/**
 		  gelu(x) - applies the Gaussian Error Linear Unit (GELU) activation function
+		  - x: number, list or tensor; applied to each element
 		*/
 	| GELU LPAREN expr RPAREN			# GeluFunc
 		/**
 		  silu(x) - applies the Sigmoid Linear Unit activation element-wise
+		  - x: number, list or tensor; applied to each element
 		*/
 	| SILU LPAREN expr RPAREN			# SiluFunc
 		/**
 		  sign(x) - returns the sign of x: -1, 0, or 1
+		  - x: number, list or tensor; applied to each element
 		*/
 	| SIGN LPAREN expr RPAREN			# SignFunc
 		/**
 	  degrees(x) - converts radians to degrees (per element)
+	  - x: angle in radians (number, list or tensor)
 	*/
 	| DEGREES LPAREN expr RPAREN			# DegreesFunc
 		/**
 	  radians(x) - converts degrees to radians (per element)
+	  - x: angle in degrees (number, list or tensor)
 	*/
 	| RADIANS LPAREN expr RPAREN			# RadiansFunc
 		/**
 	  logical_not(x) - returns 1.0 where x is zero and 0.0 otherwise
+	  - x: values; zero counts as false (number, list or tensor)
 	*/
 	| LOGICAL_NOT LPAREN expr RPAREN		# LogicalNotFunc
 		/**
 		  print_shape(x) - prints the shape of the tensor x
+		  - x: value whose shape is printed; it is also returned unchanged
 		*/
 	| PRINT_SHAPE LPAREN expr RPAREN		# PrintShapeFunc
 		/**
-		  pinv(x) - computes the inverse permutation of x: where x[i] == j the result has result[j] == i. Not the matrix pseudoinverse; use inv(x, 1) for that
+		  pinv(permutation) - computes the inverse permutation: where permutation[i] == j the result has result[j] == i. Not the matrix pseudoinverse; use inv(matrix, 1) for that
+		  - permutation: list or tensor holding each index exactly once
 		*/
 	| PINV LPAREN expr RPAREN			# PinvFunc
 		/**
 		  inv(x, [pseudo]) - computes the matrix inverse; when pseudo is truthy, computes the Moore-Penrose pseudoinverse instead
+		  - x: matrix, or a batch of matrices in the last two dimensions
 		  - pseudo: truthy to compute the Moore-Penrose pseudoinverse, which also works for singular and non-square matrices (default: false)
 		*/
 	| INV LPAREN expr (COMMA expr)? RPAREN		# InvFunc
 		/**
 		  matrix_rank(x, [tol]) - computes the numerical rank of each matrix using optional absolute tolerance tol
+		  - x: matrix, or a batch of matrices in the last two dimensions
 		  - tol: absolute tolerance below which singular values count as zero
 		*/
 	| MATRIX_RANK LPAREN expr (COMMA expr)? RPAREN	# MatrixRankFunc
 		/**
 		  sum(x, [dims]) - computes the sum of elements of x, optionally along one or more dimensions
+		  - x: values to add up (number, list or tensor)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| SUM LPAREN expr (COMMA expr)? RPAREN		# SumFunc
 		/**
 		  mean(x, [dims]) - computes the arithmetic mean of elements of x globally or along one or more dimensions
+		  - x: values to average (number, list or tensor)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| MEAN LPAREN expr (COMMA expr)? RPAREN		# MeanFunc
 		/**
 		  std(x, [dims]) - computes the sample standard deviation of elements of x globally or along one or more dimensions
+		  - x: values (number, list or tensor)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| STD LPAREN expr (COMMA expr)? RPAREN		# StdFunc
 		/**
 		  var(x, [dims]) - computes the sample variance of elements of x globally or along one or more dimensions
+		  - x: values (number, list or tensor)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| VAR LPAREN expr (COMMA expr)? RPAREN		# VarFunc
 		/**
 		  prod(x, [dims]) - computes the product of elements of x globally or along one or more dimensions
+		  - x: values to multiply (number, list or tensor)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| PROD LPAREN expr (COMMA expr)? RPAREN		# ProdFunc
 		/**
 		  sort(x, [descending], [dim]) - returns x sorted ascending, or descending when descending is truthy. Tensors are sorted along dim (default: last dimension); lists use Python sorting
+		  - x: list or tensor to sort
 		  - descending: truthy to sort from largest to smallest (default: false)
 		  - dim: dimension to sort along (default: last)
 		*/
 	| SORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN			# SortFunc
 		/**
 		  any(x) - returns 1 if any element of x is non-zero otherwise 0
+		  - x: values to test (number, list or tensor)
 		*/
 	| ANY LPAREN expr RPAREN			# AnyFunc
 		/**
 		  all(x) - returns 1 if all elements of x are non-zero otherwise 0
+		  - x: values to test (number, list or tensor)
 		*/
 	| ALL LPAREN expr RPAREN			# AllFunc
 		/**
 		  edge(x, [kernel_size]) - detects edges in x with a Sobel filter. kernel_size must be odd and at least 3 (default 3).
+		  - x: image or tensor
 		  - kernel_size: odd Sobel kernel size, at least 3 (default: 3)
 		*/
 	| EDGE LPAREN expr (COMMA expr)? RPAREN		# EdgeFunc
 		/**
 		  median(x, [dim]) - computes the median globally or along one dimension
+		  - x: values (list or tensor)
 		  - dim: dimension to reduce (default: all elements)
 		*/
 	| MEDIAN LPAREN expr (COMMA expr)? RPAREN			# MedianFunc
 		/**
 		  mode(x, [dim]) - computes the mode globally or along one dimension
+		  - x: values (list or tensor)
 		  - dim: dimension to reduce (default: all elements)
 		*/
 	| MODE LPAREN expr (COMMA expr)? RPAREN			# ModeFunc
 		/**
 		  cumsum(x, [dim]) - computes the cumulative sum, defaulting to the first dimension.
+		  - x: list or tensor
 		  - dim: dimension to accumulate along (default: 0)
 		*/
 	| CUMSUM LPAREN expr (COMMA expr)? RPAREN	# CumsumFunc
 		/**
 		  count(x) - returns the number of elements in x
+		  - x: list, tensor, dictionary or value
 		*/
 	| COUNT LPAREN expr RPAREN			# CountFunc
 		/**
-		  keys(x) - returns a list of dictionary keys in insertion order
+		  keys(dict) - returns a list of dictionary keys in insertion order
+		  - dict: dictionary
 		*/
 	| KEYS LPAREN expr RPAREN			# KeysFunc
 		/**
-		  enable_tracking(d) - enables change tracking for ChangeTrackingDict d (returns d)
+		  enable_tracking(dict) - enables change tracking for a ChangeTrackingDict and returns it
+		  - dict: ChangeTrackingDict (other values are returned unchanged)
 		*/
 	| ENABLE_TRACKING LPAREN expr RPAREN	# EnableTrackingFunc
 		/**
-		  disable_tracking(d) - disables change tracking for ChangeTrackingDict d (returns d)
+		  disable_tracking(dict) - disables change tracking for a ChangeTrackingDict and returns it
+		  - dict: ChangeTrackingDict (other values are returned unchanged)
 		*/
 	| DISABLE_TRACKING LPAREN expr RPAREN	# DisableTrackingFunc
 		/**
-		  reset_tracking(d) - resets change tracking state for ChangeTrackingDict d (returns d)
+		  reset_tracking(dict) - resets the change tracking state of a ChangeTrackingDict and returns it
+		  - dict: ChangeTrackingDict (other values are returned unchanged)
 		*/
 	| RESET_TRACKING LPAREN expr RPAREN		# ResetTrackingFunc
 		/**
 		  repeat(x, count, [dims]) - repeats tensor elements; count may be scalar or per-dim list
+		  - x: text, list or tensor to repeat
 		  - count: number of repeats, or a list with one count per dimension
 		  - dims: dimension or list of dimensions to repeat along; without it a number repeats each element of the flattened input and a list tiles the whole tensor
 		*/
 	| REPEAT LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RepeatFunc
 		/**
 		  cumprod(x) - computes the cumulative product over first dimension.
+		  - x: list or tensor
 		*/
 	| CUMPROD LPAREN expr RPAREN			# CumprodFunc
 		/**
 		  stack_pop(slot) - removes and returns the last element of slot stack
+		  - slot: stack number (any integer)
 		*/
 	| POP LPAREN expr RPAREN			# PopFunc
 		/**
 		  stack_clear(slot) - clears the contents of slot stack
+		  - slot: stack number (any integer)
 		*/
 	| CLEAR LPAREN expr RPAREN			# ClearFunc
 		/**
 		  stack_has(slot) - returns 1.0 if slot exists in stack and is not empty else returns 0.0
+		  - slot: stack number (any integer)
 		*/
 	| HAS LPAREN expr RPAREN			# HasFunc
 		/**
 		  stack_get(slot) - returns the last pushed value in slot without popping it
+		  - slot: stack number (any integer)
 		*/
 	| GET LPAREN expr RPAREN			# GetFunc
 		/**
 		  argsort(x, [descending], [dim]) - returns the indices that would sort x. descending defaults to false and dim defaults to the last dimension.
+		  - x: list or tensor
 		  - descending: truthy to sort from largest to smallest (default: false)
 		  - dim: dimension to sort along (default: last)
 		*/
 	| ARGSORT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# ArgsortFunc
 		/**
 		  argmin(x, [as_position], [dim]) - returns the minimum index globally or along dim; as_position returns global coordinates
+		  - x: list or tensor to search
 		  - as_position: truthy to return the coordinates of the minimum instead of a flat index
 		  - dim: dimension to search along; cannot be combined with as_position
 		*/
 	| ARGMIN LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgminFunc
 		/**
 		  argmax(x, [as_position], [dim]) - returns the maximum index globally or along dim; as_position returns global coordinates
+		  - x: list or tensor to search
 		  - as_position: truthy to return the coordinates of the maximum instead of a flat index
 		  - dim: dimension to search along; cannot be combined with as_position
 		*/
 	| ARGMAX LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN		# ArgmaxFunc
 		/**
 		  softmax(x, [dim]) - applies the softmax function to x (each slice sums to 1.0). dim defaults to the last dimension.
+		  - x: scores (list or tensor)
 		  - dim: dimension whose slices sum to 1 (default: last)
 		*/
 	| SOFTMAX LPAREN expr (COMMA expr)? RPAREN	# SoftmaxFunc
 		/**
 		  softmin(x, [dim]) - applies the softmin function to x (same as softmax(-x, [dim])). dim defaults to the last dimension.
+		  - x: scores (list or tensor)
 		  - dim: dimension whose slices sum to 1 (default: last)
 		*/
 	| SOFTMIN LPAREN expr (COMMA expr)? RPAREN	# SoftminFunc
 		/**
 		  erf(x) - computes the error function (torch.erf)
+		  - x: number, list or tensor; applied to each element
 		*/
 	| ERF LPAREN expr RPAREN			# ErfFunc
 		/**
 		  erfc(x) - computes the complementary error function (torch.special.erfc)
+		  - x: number, list or tensor; applied to each element
 		*/
 	| ERFC LPAREN expr RPAREN			# ErfcFunc
 		/**
 		  erfinv(x) - computes the inverse error function (torch.erfinv)
+		  - x: value in -1..1 (number, list or tensor)
 		*/
 	| ERFINV LPAREN expr RPAREN			# ErfinvFunc
 		/**
 		  unique(x) - returns the sorted unique elements of x (tensors are flattened first)
+		  - x: list or tensor
 		*/
 	| UNIQUE LPAREN expr RPAREN			# UniqueFunc
 		/**
 		  flatten(x) - flattens tensor into a 1D tensor
+		  - x: tensor or nested list
 		*/
 	| FLATTEN LPAREN expr RPAREN			# FlattenFunc
 		/**
-		  motion_mask(x) - generates a motion mask from optical flow
+		  motion_mask(flow) - generates a motion mask from optical flow
+		  - flow: optical flow [..., 2], e.g. from rife()
 		*/
 	| MOTION_MASK LPAREN expr RPAREN		# MotionMaskFunc
 		/**
-		  flow_to_image(x) - converts optical flow x to an RGB image. Up-Down is blue-yellow Left-right green-magenta.
+		  flow_to_image(flow) - converts optical flow to an RGB image. Up-down is blue-yellow, left-right is green-magenta.
+		  - flow: optical flow [..., 2], e.g. from rife()
 		*/
 	| FLOW_TO_IMAGE LPAREN expr RPAREN		# FlowToImageFunc
 		/**
 		  bnot(x) - computes the bitwise NOT
+		  - x: integer values (number, list or tensor)
 		*/
 	| BNOT LPAREN expr RPAREN			# BitNotFunc
 		/**
 		  bitcount(x) - returns the number of set bits
+		  - x: integer values (number, list or tensor)
 		*/
 	| BITCOUNT LPAREN expr RPAREN			# BitCountFunc
 		/**
 		  shape(x) - returns the shape of tensor as a list
+		  - x: tensor, list or value
 		*/
 	| SHAPE LPAREN expr RPAREN			# ShapeFunc
 		/**
-		  upper(x) - converts string to uppercase
+		  upper(text) - converts string to uppercase
+		  - text: text
 		*/
 	| UPPER LPAREN expr RPAREN			# UpperFunc
 		/**
-		  lower(x) - converts string to lowercase
+		  lower(text) - converts string to lowercase
+		  - text: text
 		*/
 	| LOWER LPAREN expr RPAREN			# LowerFunc
 		/**
-		  trim(x) - removes leading and trailing whitespace from string
+		  trim(text) - removes leading and trailing whitespace from string
+		  - text: text
 		*/
 	| TRIM LPAREN expr RPAREN			# TrimFunc
 		/**
-		  entropy(x) - computes the Shannon entropy (in nats) of softmax(x), i.e. x is treated as logits over all of its elements
+		  entropy(logits) - computes the Shannon entropy (in nats) of softmax(logits) over all elements
+		  - logits: scores (list or tensor)
 		*/
 	| ENTROPY LPAREN expr RPAREN			# EntropyFunc
 		/**
 		  fft(x) - computes  fast Fourier transform of x
+		  - x: tensor, transformed over all dimensions
 		*/
 	| SFFT LPAREN expr RPAREN			# SfftFunc
 		/**
 		  dilate(x, [kernel_size]) - applies morphological dilation to x with a square kernel (default size 3).
+		  - x: mask or image with values 0-1
 		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| DILATE LPAREN expr (COMMA expr)? RPAREN	# DilateFunc
 		/**
 		  erode(x, [kernel_size]) - applies morphological erosion to x with a square kernel (default size 3).
+		  - x: mask or image with values 0-1
 		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| ERODE LPAREN expr (COMMA expr)? RPAREN	# ErodeFunc
 		/**
 		  morph_open(x, [kernel_size]) - applies morphological opening (erosion then dilation) to x with a square kernel (default size 3).
+		  - x: mask or image with values 0-1
 		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| MORPH_OPEN LPAREN expr (COMMA expr)? RPAREN	# MorphOpenFunc
 		/**
 		  morph_close(x, [kernel_size]) - applies morphological closing (dilation then erosion) to x with a square kernel (default size 3).
+		  - x: mask or image with values 0-1
 		  - kernel_size: size of the square kernel (default: 3)
 		*/
 	| MORPH_CLOSE LPAREN expr (COMMA expr)? RPAREN	# MorphCloseFunc
 		/**
 		  int(x) - casts x to integer
+		  - x: value to convert; lists convert each item and text is parsed
 		*/
 	| INT LPAREN expr RPAREN    # IntFunc
 		/**
 		  float(x) - casts x to float
+		  - x: value to convert; lists convert each item and text is parsed
 		*/
 	| FLOAT LPAREN expr RPAREN    # FloatFunc
 		/**
-		  flow_magnitude(x) - computes the magnitude of optical flow (or any other structure with last dimension of 2)
+		  flow_magnitude(flow) - computes the magnitude of optical flow (or any other structure with last dimension of 2)
+		  - flow: optical flow [..., 2], e.g. from rife()
 		*/
 	| FLOW_MAG LPAREN expr RPAREN	# FlowMagFunc
 		/**
-		  flow_angle(x) - computes the angle atan2(dy, dx) of optical flow x [..., 2] (like angle(), with real and imaginary parts in the last dimension)
+		  flow_angle(flow) - computes the angle atan2(dy, dx) of optical flow (like angle(), with real and imaginary parts in the last dimension)
+		  - flow: optical flow [..., 2], e.g. from rife()
 		*/
 	| FLOW_ANG LPAREN expr RPAREN	# FlowAngFunc
 	    /**
-		    as_nested(x) - converts a list to a nested tensor (special object containing tensors of different shapes behaving like a tensor)
+		    as_nested(values) - converts a list to a nested tensor (special object containing tensors of different shapes behaving like a tensor)
+		    - values: list of tensors; their shapes may differ
 		  */
 	| AS_NESTED LPAREN expr RPAREN	# AsNestedFunc
 		/**
 		  svd(x, [full_matrices]) - computes the singular value decomposition of x. Returns a list of 3 tensors U, S, Vh such that x = matmul(matmul(U, diagonal_matrix(S, shape(U))), Vh)
+		  - x: matrix, or a batch of matrices in the last two dimensions
 		  - full_matrices: truthy to return full-size U and Vh (default: false)
 		*/
 		| SVD LPAREN expr (COMMA expr)? RPAREN	# SvdFunc;
 
 func2:
 		/**
-		  pow(x, y) - computes x raised to the power of y
-		  - x: base
-		  - y: exponent
+		  pow(base, exponent) - computes base raised to the power of exponent
+		  - base: number, list or tensor to raise
+		  - exponent: power to raise base to; tensors broadcast
 		*/
 	POWE LPAREN expr COMMA expr RPAREN			# PowFunc
 		/**
@@ -586,165 +687,216 @@ func2:
 	| ATAN2 LPAREN expr COMMA expr RPAREN			# Atan2Func
 		/**
 		  hypot(x, y) - computes the element-wise Euclidean distance from the origin
+		  - x: first coordinate (number, list or tensor)
+		  - y: second coordinate (number, list or tensor)
 		*/
 	| HYPOT LPAREN expr COMMA expr RPAREN			# HypotFunc
 		/**
 		  logaddexp(x, y) - computes log(exp(x) + exp(y)) element-wise using a numerically stable method
+		  - x: first log-space value (number, list or tensor)
+		  - y: second log-space value (number, list or tensor)
 		*/
 	| LOGADDEXP LPAREN expr COMMA expr RPAREN		# LogaddexpFunc
 		/**
 		  logical_and(x, y) - returns 1.0 if both values are non-zero, else 0.0
+		  - x: values; non-zero counts as true
+		  - y: values; non-zero counts as true
 		*/
 	| LOGICAL_AND LPAREN expr COMMA expr RPAREN		# LogicalAndFunc
 		/**
 		  logical_or(x, y) - returns 1.0 if either value is non-zero, else 0.0
+		  - x: values; non-zero counts as true
+		  - y: values; non-zero counts as true
 		*/
 	| LOGICAL_OR LPAREN expr COMMA expr RPAREN		# LogicalOrFunc
 		/**
 		  isclose(a, b, [rtol], [atol]) - elementwise approximate equality test
+		  - a: first values to compare
+		  - b: second values to compare
 		  - rtol: relative tolerance (default: 1e-5)
 		  - atol: absolute tolerance (default: 1e-8)
 		*/
 	| ISCLOSE LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# IscloseFunc
 		/**
 		  allclose(a, b, [rtol], [atol]) - returns 1.0 if all elements are approximately equal, else 0.0
+		  - a: first values to compare
+		  - b: second values to compare
 		  - rtol: relative tolerance (default: 1e-5)
 		  - atol: absolute tolerance (default: 1e-8)
 		*/
 	| ALLCLOSE LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# AllcloseFunc
 		/**
-		  tmin(x, y) - elementwise minimum of tensor or list. min(x,y) when inputs are floats
+		  tmin(a, b) - element-wise minimum of a and b; min(a, b) for plain numbers
+		  - a: first values; tensors broadcast
+		  - b: second values; tensors broadcast
 		*/
 	| TMIN LPAREN expr COMMA expr RPAREN			# TMinFunc
 		/**
-		  tmax(x,y) - elementwise maximum of tensor or list. max(x,y) when inputs are floats
+		  tmax(a, b) - element-wise maximum of a and b; max(a, b) for plain numbers
+		  - a: first values; tensors broadcast
+		  - b: second values; tensors broadcast
 		*/
 	| TMAX LPAREN expr COMMA expr RPAREN			# TMaxFunc
 		/**
-		  snorm(x,[dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list. Defaults to no dimension.
+		  snorm(x, [dim]) - frobenius norm of tensor. Along dimension if dimension specified. Dimension can be a list. Defaults to no dimension.
+		  - x: number, list or tensor
 		  - dim: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| SNORM LPAREN expr (COMMA expr)? RPAREN		# SNormFunc
 		/**
 		  step(x, edge) - returns 0 if x < edge, else 1
+		  - x: values to test (number, list or tensor)
 		  - edge: threshold; the result is 1 where x >= edge, otherwise 0
 		*/
 	| STEP LPAREN expr COMMA expr RPAREN			# StepFunc
 		/**
 		  topk(x, k, [dim]) - returns the k largest elements along dim. For tensors it keeps them in place; dim defaults to the last.
+		  - x: list or tensor
 		  - k: number of elements to keep
 		  - dim: dimension to select along (default: last)
 		*/
 	| TOPK LPAREN expr COMMA expr (COMMA expr)? RPAREN			# TopkFunc
 		/**
 		  botk(x, k, [dim]) - returns the k smallest elements along dim. For tensors it keeps them in place; dim defaults to the last.
+		  - x: list or tensor
 		  - k: number of elements to keep
 		  - dim: dimension to select along (default: last)
 		*/
 	| BOTK LPAREN expr COMMA expr (COMMA expr)? RPAREN			# BotkFunc
 		/**
 		  quartile(x, q, [dim]) - computes the q-th quartile globally or along dim
+		  - x: values (list or tensor)
 		  - q: quartile number 0-4 (0 = minimum, 2 = median, 4 = maximum)
 		  - dim: dimension to reduce (default: all elements)
 		*/
 	| QUARTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# QuartileFunc
 		/**
 		  percentile(x, p, [dim]) - computes the p-th percentile globally or along dim
+		  - x: values (list or tensor)
 		  - p: percentile 0-100
 		  - dim: dimension to reduce (default: all elements)
 		*/
 	| PERCENTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PercentileFunc
 		/**
 		  quantile(x, q, [dim]) - computes the q-th quantile globally or along dim
+		  - x: values (list or tensor)
 		  - q: quantile 0-1
 		  - dim: dimension to reduce (default: all elements)
 		*/
 	| QUANTILE LPAREN expr COMMA expr (COMMA expr)? RPAREN		# QuantileFunc
 		/**
 		  dot(x, y) - computes the dot product of x and y after flattening both to 1D. Use cross(x, y) if you need a per-vector product with the last dimension kept.
+		  - x: first tensor; flattened before multiplying
+		  - y: second tensor with the same number of elements
 		*/
 	| DOT LPAREN expr COMMA expr RPAREN			# DotFunc
 		/**
 		  outer(x, y) - computes the outer product of flattened x and y
+		  - x: first tensor; flattened first
+		  - y: second tensor; flattened first
 		*/
 	| OUTER LPAREN expr COMMA expr RPAREN		# OuterFunc
 		/**
 		  cosine_similarity(x, y) - computes the cosine similarity between x and y.
+		  - x: vectors along the last dimension
+		  - y: vectors along the last dimension
 		*/
 	| COSSIM LPAREN expr COMMA expr RPAREN			# CossimFunc
 		/**
 		  startswith(text, prefix) - returns 1 if text starts with prefix, else 0
+		  - text: text to check
+		  - prefix: start to look for
 		*/
 	| STARTSWITH LPAREN expr COMMA expr RPAREN		# StartswithFunc
 		/**
 		  endswith(text, suffix) - returns 1 if text ends with suffix, else 0
+		  - text: text to check
+		  - suffix: ending to look for
 		*/
 	| ENDSWITH LPAREN expr COMMA expr RPAREN			# EndswithFunc
 		/**
 		  logsumexp(x, [dims]) - computes log(sum(exp(x))) stably, optionally reducing along one or more dimensions
+		  - x: values (list or tensor)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| LOGSUMEXP LPAREN expr (COMMA expr)? RPAREN		# LogsumexpFunc
 		/**
 		  rfft(x, [dim]) - computes the one-dimensional real-input FFT along dim (default: last dimension)
+		  - x: real-valued signal
 		  - dim: dimension to transform (default: last)
 		*/
 	| RFFT LPAREN expr (COMMA expr)? RPAREN		# RfftFunc
 		/**
 		  trace(x) - sums the main diagonal of each square matrix in x
+		  - x: matrix, or a batch of matrices in the last two dimensions
 		*/
 	| TRACE LPAREN expr RPAREN			# TraceFunc
 		/**
 		  det(x) - computes the determinant of each square matrix in x
+		  - x: matrix, or a batch of matrices in the last two dimensions
 		*/
 	| DET LPAREN expr RPAREN			# DetFunc
 		/**
 		  flip(x, dims) - reverses the order of elements along the specified dimensions. Text is reversed as a whole
+		  - x: tensor, list or text
 		  - dims: dimension or list of dimensions to reverse
 		*/
 	| FLIP LPAREN expr COMMA expr RPAREN			# FlipFunc
 		/**
 		  cov(x, y) - computes the sample covariance of the flattened x and y (which must have the same number of elements)
+		  - x: first values; flattened
+		  - y: second values with the same number of elements
 		*/
 	| COV LPAREN expr COMMA expr RPAREN			# CovFunc
 		/**
 		  correlation(x, y) - computes the Pearson correlation coefficient between x and y
+		  - x: first values
+		  - y: second values
 		*/
 	| CORR LPAREN expr COMMA expr RPAREN			# CorrFunc
 		/**
-		  append(x, y) - appends y to the end of x. If inputs are tensors use concatenate(x,...,dim)
-		  - y: item, list or tensor added to the end of x
+		  append(list, item) - adds item to the end of list. To join tensors along a dimension use concatenate(...)
+		  - list: list, tensor or value to extend
+		  - item: item, list or tensor added to the end of list
 		*/
 		| APPEND LPAREN expr COMMA expr RPAREN			# AppendFunc
 			/**
 			  add_key(dict, key, value) - adds or replaces a dictionary entry and returns the updated dictionary
+			  - dict: dictionary to change; it is also returned
+			  - key: entry name
+			  - value: entry value
 			*/
 		| ADD_KEY LPAREN expr COMMA expr COMMA expr RPAREN	# AddKeyFunc
 			/**
 			  permute(x, dims) - permutes the dimensions of tensor x according to dims
+			  - x: tensor
 			  - dims: new order of the dimensions, e.g. [0, 2, 1]
 			*/
 		| PERM LPAREN expr COMMA expr RPAREN			# PermuteFunc
 		/**
-		  gaussian(x, sigma, [reshape]) - applies a Gaussian blur to x with specified sigma. if reshape has value of 1.0, then it tries orienting the input such that channel is in the direction of filter. Otherwise it expect color dimension to be the last.
+		  gaussian(x, sigma, [auto_channels]) - applies a separable Gaussian blur to x. Channels are expected last unless auto_channels is truthy
+		  - x: image or tensor to blur
 		  - sigma: blur strength as the standard deviation in elements; 0 or less returns x unchanged
-		  - reshape: truthy to find the channel dimension automatically; otherwise channels must be last (default: false)
+		  - auto_channels: truthy to find the channel dimension automatically; otherwise channels must be last (default: false)
 		*/
 	| GAUSSIAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# GaussianFunc
 		/**
 		  topk_indices(x, k, [dim]) - returns the indices of the k largest elements along dim; without dim, returns indices into flatten(x)
+		  - x: list or tensor
 		  - k: number of indices to return
 		  - dim: dimension to select along (default: indices into flatten(x))
 		*/
 	| TOPK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# TopkIndFunc
 		/**
 		  botk_indices(x, k, [dim]) - returns the indices of the k smallest elements along dim; without dim, returns indices into flatten(x)
+		  - x: list or tensor
 		  - k: number of indices to return
 		  - dim: dimension to select along (default: indices into flatten(x))
 		*/
 	| BOTK_IND LPAREN expr COMMA expr (COMMA expr)? RPAREN		# BotkIndFunc
 		/**
 		  batch_shuffle(x, indices) - shuffles and duplicates or skips the batch dimension of x according to indices
+		  - x: tensor whose first dimension is the batch
 		  - indices: batch indices to take, in order; batches may repeat or be skipped
 		*/
 	| BATCH_SHUFFLE LPAREN expr COMMA expr RPAREN		# BatchShuffleFunc
@@ -756,6 +908,7 @@ func2:
 	| PUSH LPAREN expr COMMA expr RPAREN			# PushFunc
 		/**
 		  get_value(tensor, position) - reads the value at an N-D position of tensor. Superseded by tensor[position] indexing
+		  - tensor: tensor to read from
 		  - position: list with one index per dimension
 		*/
 	| GET_VALUE LPAREN expr COMMA expr RPAREN		# GetValueFunc
@@ -792,27 +945,36 @@ func2:
 	| ONE_HOT LPAREN expr COMMA expr RPAREN		# OneHotFunc
 		/**
 		  mse(a, b, [reduction]) - mean squared error; reduction is mean (default), sum, or none
+		  - a: first values (broadcast against b)
+		  - b: second values
 		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
 	| MSE LPAREN expr COMMA expr (COMMA expr)? RPAREN	# MseFunc
 		/**
 		  mae(a, b, [reduction]) - mean absolute error; reduction is mean (default), sum, or none
+		  - a: first values (broadcast against b)
+		  - b: second values
 		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
 	| MAE LPAREN expr COMMA expr (COMMA expr)? RPAREN	# MaeFunc
 		/**
 		  psnr(a, b, [data_range]) - peak signal-to-noise ratio in dB; data_range defaults to 1
+		  - a: first image
+		  - b: second image
 		  - data_range: difference between the largest and smallest possible value (default: 1)
 		*/
 	| PSNR LPAREN expr COMMA expr (COMMA expr)? RPAREN	# PsnrFunc
 		/**
 		  weighted_mean(x, weights, [dims]) - computes the weighted mean globally or along one or more dimensions
+		  - x: values (list or tensor)
 		  - weights: weight of each element, broadcast against x
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	| WEIGHTED_MEAN LPAREN expr COMMA expr (COMMA expr)? RPAREN	# WeightedMeanFunc
 		/**
 		  huber_loss(prediction, target, [delta], [reduction]) - computes Huber loss; delta defaults to 1 and reduction to mean
+		  - prediction: predicted values
+		  - target: expected values
 		  - delta: error size where the loss changes from quadratic to linear (default: 1)
 		  - reduction: "mean" (default), "sum", or "none" for element-wise values
 		*/
@@ -827,20 +989,26 @@ func2:
 	| CROSS_ENTROPY LPAREN expr COMMA expr (COMMA expr (COMMA expr)?)? RPAREN	# CrossEntropyFunc
 		/**
 		  leaky_relu(x, [negative_slope]) - applies leaky ReLU element-wise; negative_slope defaults to 0.01
+		  - x: number, list or tensor; applied to each element
 		  - negative_slope: slope used for negative inputs (default: 0.01)
 		*/
 	| LEAKY_RELU LPAREN expr (COMMA expr)? RPAREN		# LeakyReluFunc
 		/**
 		  pad(x, padding) - pads tensor x with specified padding (dim 0 neg, dim 0 pos, dim 1 ...)
+		  - x: tensor to pad
 		  - padding: amounts as [dim0_before, dim0_after, dim1_before, dim1_after, ...]
 		*/
 	| PAD LPAREN expr COMMA expr RPAREN			# PadFunc
 		/**
 		  cross(x, y) - computes the cross product of x and y. Last dimension must be 3
+		  - x: vectors with 3 components in the last dimension
+		  - y: vectors with 3 components in the last dimension
 		*/
 	| CROSS LPAREN expr COMMA expr RPAREN			# CrossFunc
 		/**
 		  matmul(x, y) - computes the matrix multiplication of x and y
+		  - x: left matrix or batch of matrices
+		  - y: right matrix or batch of matrices
 		*/
 	| MATMUL LPAREN expr COMMA expr RPAREN			# MatmulFunc
 		/**
@@ -851,10 +1019,14 @@ func2:
 	| SOLVE LPAREN expr COMMA expr RPAREN		# SolveFunc
 		/**
 		  flow_apply(image, flow) - applies optical flow to an image
+		  - image: image to warp
+		  - flow: per-pixel displacement [..., 2], e.g. from rife()
 		*/
 	| FLOW_APPLY LPAREN expr COMMA expr RPAREN		# FlowApplyFunc
 		/**
 		  rife(image1, image2, [tiling_size], [iterations], [multi_scale]) - computes the optical flow field ([H, W, 2]) between image1 and image2 using a RAFT-based model
+		  - image1: first frame
+		  - image2: second frame
 		  - tiling_size: splits the image to overlapping tiling_size*tiling_size parts to conserve memory. Default is 0 (auto: enables 1024x1024 tiling when over 2MPx). When tiling_size is between 0 - 1 it takes as a fraction of the resolution
 		  - iterations: how many times to run the flow model. Default 12
 		  - multi_scale: also use low resolution of base image for giant movements. Default false
@@ -862,67 +1034,89 @@ func2:
 	| RIFE LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN # RifeFunc
 		/**
 		  bitwise_and(x, y) - computes the element-wise bitwise AND of x and y
+		  - x: integer values (number, list or tensor)
+		  - y: integer values (number, list or tensor)
 		*/
 	| BAND LPAREN expr COMMA expr RPAREN			# BitAndFunc
 		/**
 		  bitwise_xor(x, y) - computes the element-wise bitwise XOR of x and y
+		  - x: integer values (number, list or tensor)
+		  - y: integer values (number, list or tensor)
 		*/
 	| XOR LPAREN expr COMMA expr RPAREN			# BitXorFunc
 		/**
 		  bitwise_or(x, y) - computes the element-wise bitwise OR of x and y
+		  - x: integer values (number, list or tensor)
+		  - y: integer values (number, list or tensor)
 		*/
 	| BOR LPAREN expr COMMA expr RPAREN			# BitOrFunc
 		/**
-		  split(x, [delimiter]) - splits string to list of strings based on delimiter. Default is space.
+		  split(text, [delimiter]) - splits string to list of strings based on delimiter. Default is space.
+		  - text: text to split
 		  - delimiter: text to split on (default: a space)
 		*/
 	| SPLIT LPAREN expr (COMMA expr)? RPAREN		# SplitFunc
 		/**
-		  join(x, [separator]) - joins the items of list x as text using separator (default ""). Use concatenate(...) to join tensors
+		  join(items, [separator]) - joins items as text using separator (default ""). Use concatenate(...) to join tensors
+		  - items: list or tensor of items to join
 		  - separator: text placed between the items (default: "")
 		*/
 	| JOIN LPAREN expr (COMMA expr)? RPAREN			# JoinFunc
 		/**
-		  substring(s, start, [length]) - returns length characters of s starting at start. If length is not supplied, it returns the rest of the string
+		  substring(text, start, [length]) - returns length characters of text starting at start. If length is not supplied, it returns the rest of the string
+		  - text: source text
 		  - start: index of the first character
 		  - length: number of characters (default: the rest of the text)
 		*/
 	| SUBSTRING LPAREN expr COMMA expr (COMMA expr)? RPAREN # SubstringFunc
 		/**
-		  find(s, sub) - returns the index of the first occurrence of sub in s. -1 if not found. Works only for strings.
+		  find(text, search) - returns the index of the first occurrence of search in text, or -1 if it is not found
+		  - text: text to search in
+		  - search: text to look for
 		*/
 	| FIND LPAREN expr COMMA expr RPAREN			# FindFunc
 		/**
-		  replace(s, old, new) - replaces occurrences of old with new in s. Mostly for strings but can work with lists and tensors.
+		  replace(value, old, new) - replaces every occurrence of old with new; works on text, lists and tensors
+		  - value: text, list or tensor
 		  - old: text or value to look for
 		  - new: replacement
 		*/
 	| REPLACE LPAREN expr COMMA expr COMMA expr RPAREN	# ReplaceFunc
 		/**
-		  int_to_rgb(val) - unpacks 0xRRGGBB integers into 0-1 RGB colors. Tensors get R, G, B stacked in a new last dimension, lists return a list of colors and a number returns a 3-item list
+		  int_to_rgb(color) - unpacks 0xRRGGBB integers into 0-1 RGB colors. Tensors get R, G, B stacked in a new last dimension, lists return a list of colors and a number returns a 3-item list
+		  - color: packed 0xRRGGBB integer, list or tensor
 		*/
 	| INT_TO_RGB LPAREN expr RPAREN				# Int_to_rgbFunc
 		/**
 		  rgb_to_int(rgb) / rgb_to_int(r, g, b) - packs 0-1 RGB components into 0xRRGGBB integers. With one argument the last dimension (or a 3-item list) holds R, G, B; with three, each argument is one channel
+		  - rgb: colors with R, G, B (0-1) in the last dimension, or a 3-item list
+		  - r: red channel 0-1
+		  - g: green channel 0-1
+		  - b: blue channel 0-1
 		*/
 	| RGB_TO_INT LPAREN expr ( COMMA expr COMMA expr)? RPAREN	# Rgb_to_intFunc
 		/**
 		  interpolate_linear(x, scale) - resizes x [N, C, ...] with (bi/tri)linear interpolation. A number scales every spatial dimension; a list is the target spatial size
+		  - x: tensor shaped [N, C, ...] with 1-3 spatial dimensions
 		  - scale: a number scales every spatial dimension; a list gives the target spatial size
 		*/
 	| INTERPOLATE_LINEAR LPAREN expr COMMA expr RPAREN	# InterpolateLinearFunc
 		/**
 		  interpolate_area(x, scale) - resizes x [N, C, ...] with area interpolation. A number scales every spatial dimension; a list is the target spatial size
+		  - x: tensor shaped [N, C, ...] with 1-3 spatial dimensions
 		  - scale: a number scales every spatial dimension; a list gives the target spatial size
 		*/
 	| INTERPOLATE_AREA LPAREN expr COMMA expr RPAREN	# InterpolateAreaFunc
 		/**
 		  interpolate_nearest_exact(x, scale) - resizes x [N, C, ...] with nearest-neighbour interpolation. A number scales every spatial dimension; a list is the target spatial size
+		  - x: tensor shaped [N, C, ...] with 1-3 spatial dimensions
 		  - scale: a number scales every spatial dimension; a list gives the target spatial size
 		*/
 	| INTERPOLATE_NEAREST LPAREN expr COMMA expr RPAREN	# InterpolateNearestExactFunc
 		/**
 		  remove_key(dict, key) - removes a dictionary entry and returns the updated dictionary
+		  - dict: dictionary to change; it is also returned
+		  - key: entry name to remove; missing keys are ignored
 		*/
 	| REMOVE_KEY LPAREN expr COMMA expr RPAREN	# RemoveKeyFunc;
 
@@ -930,21 +1124,28 @@ func2:
 func3:
 		/**
 		  clamp(x, min, max) - clamps x between min and max per element
+		  - x: number, list or tensor; applied to each element
+		  - min: lower bound
+		  - max: upper bound
 		*/
 	CLAMP LPAREN expr COMMA expr COMMA expr RPAREN		# ClampFunc
 		/**
 		  lerp(a, b, t) - linear interpolation between a and b by t per element. t can be float or tensor.
+		  - a: value at t = 0
+		  - b: value at t = 1
 		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| LERP LPAREN expr COMMA expr COMMA expr RPAREN		# LerpFunc
 		/**
 		  smoothstep(x, edge0, edge1) - smooth interpolation between edge0 and edge1
+		  - x: input values
 		  - edge0: value mapped to 0
 		  - edge1: value mapped to 1
 		*/
 	| SMOOTHSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmoothstepFunc
 		/**
 		  transpose(x, dim0, dim1) / swapaxes(x, dim0, dim1) - swaps two tensor dimensions
+		  - x: tensor
 		  - dim0: first dimension to swap
 		  - dim1: second dimension to swap
 		*/
@@ -957,99 +1158,142 @@ func3:
 		*/
 	| RANGE LPAREN expr COMMA expr COMMA expr RPAREN	# RangeFunc
 		/**
-		  moment(x, a, k) - computes the k-th moment of x around a
-		  - a: centre the moment is taken around
-		  - k: order of the moment
+		  moment(x, center, order) - computes the order-th moment of x around center: mean((x - center)^order)
+		  - x: values (list or tensor)
+		  - center: centre the moment is taken around
+		  - order: order of the moment
 		*/
 	| MOMENT LPAREN expr COMMA expr COMMA expr RPAREN	# MomentFunc
 		/**
 		  cubic_ease(a, b, t) - cubic ease between a and b
+		  - a: value at t = 0
+		  - b: value at t = 1
 		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| CUBIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# CubicEaseFunc
 		/**
 		  elastic_ease(a, b, t) - elastic ease between a and b
+		  - a: value at t = 0
+		  - b: value at t = 1
 		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| ELASTIC_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# ElasticEaseFunc
 		/**
 		  sine_ease(a, b, t) - sine easing between a and b
+		  - a: value at t = 0
+		  - b: value at t = 1
 		  - t: progress from 0 (gives a) to 1 (gives b)
 		*/
 	| SINE_EASE LPAREN expr COMMA expr COMMA expr RPAREN	# SineEaseFunc
 		/**
 		  smootherstep(x, edge0, edge1) - smoother interpolation between edge0 and edge1
+		  - x: input values
 		  - edge0: value mapped to 0
 		  - edge1: value mapped to 1
 		*/
 	| SMOOTHERSTEP LPAREN expr COMMA expr COMMA expr RPAREN	# SmootherstepFunc
 		/**
 		  crop(x, start, size) - crops the region of x beginning at start (the low corner). The result always has shape size; parts outside x are zero-filled. On text, returns at most size characters
+		  - x: tensor or text
 		  - start: low corner of the region, one index per dimension
 		  - size: size of the result, one value per dimension
 		*/
 	| CROP LPAREN expr COMMA expr COMMA expr RPAREN		# CropFunc
 		/**
 		  ifft(x, [shape]) - inverse fast Fourier transform of x. shape (defaults to the node's tensor shape) sizes the K/Kx/Ky/.../frequency variables made available while evaluating x, it does not resize x itself.
+		  - x: spectrum to transform back; may use the K/Kx/Ky/frequency variables
 		  - shape: shape used for the K/Kx/Ky frequency variables (default: the node's input shape)
 		*/
 	| SIFFT LPAREN expr (COMMA expr)? RPAREN		# SifftFunc
 		/**
 		  irfft(x, [n], [dim]) - computes the inverse one-dimensional real FFT along dim (default: last dimension)
+		  - x: complex half-spectrum, e.g. from rfft()
 		  - n: length of the output signal (default: 2 * (input length - 1))
 		  - dim: dimension to transform (default: last)
 		*/
 	| IRFFT LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# IrfftFunc
 		/**
 		  overlay(base, overlay, offset, [opacity]) - overlays overlay on base at offset. Opacity controls blending. It can be tensor or float. If it is tensor it should be the same shape as overlay.
+		  - base: background value, list, text or tensor
+		  - overlay: value placed on top of base
 		  - offset: position of the overlay's low corner in base, one value per dimension
 		  - opacity: 0-1 blend amount; a number or a tensor shaped like overlay (default: 1)
 		*/
 	| OVERLAY LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# OverlayFunc
 		/**
-		  linspace(start, stop, num) - creates num linearly spaced values from start to stop (inclusive). Use range if you want to control the step between values.
-		  - num: number of values
+		  linspace(start, stop, count) - creates count evenly spaced values from start to stop (both included). Use range to control the step instead.
+		  - start: first value
+		  - stop: last value (included)
+		  - count: number of values
 		*/
 	| LINSPACE LPAREN expr COMMA expr COMMA expr RPAREN	# LinspaceFunc
 		/**
 		  roll(x, shifts, [dim]) - circularly shifts tensor x along dim (default 0)
+		  - x: tensor
 		  - shifts: number of places to shift; elements pushed off one end come back at the other
 		  - dim: dimension to shift along (default: 0)
 		*/
 	| ROLL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RollFunc
 		/**
 		  rgb_to_oklab(rgb) / rgb_to_oklab(r, g, b) - converts 0-1 sRGB to OKLab. With one argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result
+		  - rgb: sRGB colors (0-1) with R, G, B in the last dimension, or a 3-item list
+		  - r: red channel 0-1
+		  - g: green channel 0-1
+		  - b: blue channel 0-1
 		*/
 	| RGB_TO_OKLAB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# RgbToOklabFunc
 		/**
 		  rgb_to_cielab(rgb) / rgb_to_cielab(r, g, b) - converts 0-1 sRGB to CIELAB (D65) divided by 100, so L is 0-1. With one argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result
+		  - rgb: sRGB colors (0-1) with R, G, B in the last dimension, or a 3-item list
+		  - r: red channel 0-1
+		  - g: green channel 0-1
+		  - b: blue channel 0-1
 		*/
 	| RGB_TO_CIELAB LPAREN expr (COMMA expr COMMA expr)? RPAREN	# RgbToCielabFunc
 		/**
 		  rgb_to_hsv(rgb, [degrees]) / rgb_to_hsv(r, g, b, [degrees]) - converts RGB to HSV. With one color argument its last dimension holds R, G, B; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is 0-360 instead of 0-1
+		  - rgb: colors (0-1) with R, G, B in the last dimension, or a 3-item list
 		  - degrees: truthy to use hue in 0-360 instead of 0-1
+		  - r: red channel 0-1
+		  - g: green channel 0-1
+		  - b: blue channel 0-1
 		*/
 	| RGB_TO_HSV LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN	# RgbToHsvFunc
 		/**
 		  hsv_to_rgb(hsv, [degrees]) / hsv_to_rgb(h, s, v, [degrees]) - converts HSV to RGB. With one color argument its last dimension holds H, S, V; with three, the channels are stacked into the last dimension of the result. If degrees is truthy, hue is read as 0-360 instead of 0-1
+		  - hsv: colors with H, S, V in the last dimension, or a 3-item list
 		  - degrees: truthy to use hue in 0-360 instead of 0-1
+		  - h: hue 0-1 (0-360 with degrees)
+		  - s: saturation 0-1
+		  - v: value (brightness) 0-1
 		*/
 	| HSV_TO_RGB LPAREN expr (COMMA expr COMMA expr)? (COMMA expr)? RPAREN	# HsvToRgbFunc
 		/**
-		  where(condition, x, y) - returns x if condition is true, else y. Runs per element.
-		  - condition: non-zero selects x, zero selects y
+		  where(condition, if_true, if_false) - returns if_true where condition is non-zero, otherwise if_false. Runs per element
+		  - condition: non-zero selects if_true, zero selects if_false
+		  - if_true: value used where condition is non-zero
+		  - if_false: value used where condition is zero
 		*/
 	| WHERE LPAREN expr COMMA expr COMMA expr RPAREN			# WhereFunc
 		/**
 		  oklab_to_rgb(oklab) / oklab_to_rgb(l, a, b) - converts OKLab to 0-1 sRGB. With one argument its last dimension holds L, a, b; with three, the channels are stacked into the last dimension of the result
+		  - oklab: OKLab colors with L, a, b in the last dimension, or a 3-item list
+		  - l: lightness
+		  - a: green-red axis
+		  - b: blue-yellow axis
 		*/
 	| OKLAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN		# OklabToRgbFunc
 		/**
 		  cielab_to_rgb(cielab) / cielab_to_rgb(l, a, b) - converts CIELAB divided by 100 (as returned by rgb_to_cielab) to 0-1 sRGB. With one argument its last dimension holds L, a, b; with three, the channels are stacked into the last dimension of the result
+		  - cielab: CIELAB colors / 100 with L, a, b in the last dimension, or a 3-item list
+		  - l: lightness / 100 (0-1)
+		  - a: green-red axis / 100
+		  - b: blue-yellow axis / 100
 		*/
 	| CIELAB_TO_RGB LPAREN expr (COMMA expr COMMA expr)? RPAREN		# CielabToRgbFunc
 		/**
 		  text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline]) - renders text to a 2D tensor with values 0-1
+		  - text: text to render; line breaks start new lines
 		  - font: font name to look up in the system fonts, or a path to a font file
 		  - size: font size in pixels
 		  - max_width: wrap lines wider than this many pixels (default: 0, no wrapping)
@@ -1068,55 +1312,65 @@ func3:
 		*/
 	| COORDS LPAREN expr COMMA expr (COMMA expr)? RPAREN	# CoordsFunc
 	    /**
-		   gather(x, dim, idx) - gathers elements along dim using the indices specified in idx. The output tensor has the same shape as idx.
+		   gather(x, dim, indices) - gathers elements of x along dim at the given indices. The result has the shape of indices.
+		   - x: source tensor
 		   - dim: dimension to gather along
-		   - idx: indices along dim; the result has the shape of idx
+		   - indices: indices along dim; the result has their shape
 		   */
 	| GATHER LPAREN expr COMMA expr COMMA expr RPAREN	# GatherFunc
 	    /**
-		  scatter(x, dim, idx, src) - scatters elements from src into x along dim using the indices specified in idx. The output tensor has the same shape as x.
+		  scatter(x, dim, indices, src) - writes the elements of src into x along dim at the given indices. The result has the shape of x.
+		  - x: tensor to write into
 		  - dim: dimension to scatter along
-		  - idx: position along dim for each element of src
+		  - indices: position along dim for each element of src
 		  - src: values to write
 		*/
 	| SCATTER LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ScatterFunc
 		/**
-		  scatter_add(x, dim, idx, src) - scatters elements from src into x along dim using the indices specified in idx, adding to existing values. The output tensor has the same shape as x.
+		  scatter_add(x, dim, indices, src) - adds the elements of src into x along dim at the given indices. The result has the shape of x.
+		  - x: tensor to add into
 		  - dim: dimension to scatter along
-		  - idx: position along dim for each element of src
+		  - indices: position along dim for each element of src
 		  - src: values to add
 		*/
 	| SCATTER_ADD LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# ScatterAddFunc;
 
 func4:
 		/**
-		  swap(x, dim, idx1, idx2) - swaps elements along dim between idx1 and idx2
+		  swap(x, dim, index1, index2) - swaps the elements at index1 and index2 along dim
+		  - x: tensor
 		  - dim: dimension to swap along
-		  - idx1: first position
-		  - idx2: second position
+		  - index1: first position
+		  - index2: second position
 		*/
 	SWAP LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# SwapFunc
 		/**
 		  nan_to_num(x, nan, pos_inf, neg_inf) - replaces NaN, +inf and -inf in x with the given values (named after SQL NVL)
+		  - x: values to clean
 		  - nan: replacement for NaN
 		  - pos_inf: replacement for +infinity
 		  - neg_inf: replacement for -infinity
 		*/
 	| NVL LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# NvlFunc
 		/**
-		  logspace(start, stop, num, base) - creates logarithmically spaced values
+		  logspace(start, stop, count, base) - creates count values from base^start to base^stop, evenly spaced in the exponent
 		  - start: exponent of the first value
 		  - stop: exponent of the last value
-		  - num: number of values
+		  - count: number of values
 		  - base: base of the exponent
 		*/
 	| LOGSPACE LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# LogspaceFunc
 		/**
 		  distance(x1, y1, x2, y2) - computes Euclidean distance between (x1, y1) and (x2, y2)
+		  - x1: x of the first point
+		  - y1: y of the first point
+		  - x2: x of the second point
+		  - y2: y of the second point
 		*/
 	| DIST LPAREN expr COMMA expr COMMA expr COMMA expr RPAREN	# DistFunc
 		/**
 		  histogram(x, bins, min, max) - counts the elements of flatten(x) in bins equal-width bins over [min, max]
+		  - x: values; flattened
 		  - bins: number of equal-width bins
 		  - min: lower edge of the first bin
 		  - max: upper edge of the last bin
@@ -1125,15 +1379,17 @@ func4:
 
 func5:
 		/**
-		  remap(v, i_min, i_max, o_min, o_max) - remaps values from input range to output range
-		  - i_min: start of the input range
-		  - i_max: end of the input range
-		  - o_min: value i_min maps to
-		  - o_max: value i_max maps to
+		  remap(x, in_min, in_max, out_min, out_max) - remaps values from input range to output range
+		  - x: values to remap (number, list or tensor)
+		  - in_min: start of the input range
+		  - in_max: end of the input range
+		  - out_min: value in_min maps to
+		  - out_max: value in_max maps to
 		*/
 	REMAP LPAREN expr COMMA expr COMMA expr COMMA expr COMMA expr RPAREN # RemapFunc
     	/**
-		  diagonal_matrix(x, shape, [offset], [dim1], [dim2]) - creates a diagonal matrix from x with specified shape. offset is the diagonal offset. dim1 and dim2 are the dimensions to place the diagonal on.
+		  diagonal_matrix(values, shape, [offset], [dim1], [dim2]) - creates a tensor of the given shape with values on a diagonal and zeros elsewhere
+		  - values: values placed on the diagonal
 		  - shape: shape of the result
 		  - offset: diagonal offset: positive above, negative below the main diagonal (default: 0)
 		  - dim1: first dimension of the matrix (default: -2)
@@ -1145,18 +1401,22 @@ func5:
 funcN:
 		/**
 		  norm(x, [p], [dims]) - computes the p-norm globally or along one or more dimensions (default p=2)
+		  - x: number, list or tensor
 		  - p: norm order (default: 2)
 		  - dims: dimension or list of dimensions to reduce (default: all elements)
 		*/
 	NORM LPAREN expr (COMMA expr (COMMA expr)?)? RPAREN	# NormFunc
 		/**
 		  slerp(a, b, t, [dim]) - interpolates vector directions spherically and magnitudes linearly. Without dim, all elements form one vector; dim selects a vector-component axis and other axes identify independent vectors.
+		  - a: vectors at t = 0
+		  - b: vectors at t = 1
 		  - t: progress from 0 (gives a) to 1 (gives b)
 		  - dim: dimension holding the vector components (default: all elements form one vector)
 		*/
 	| SLERP LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# SlerpFunc
 		/**
 		  normalize(x, [p], [dim], [eps]) - normalizes x along dim using the p-norm (defaults: p=2, dim=-1, eps=1e-12)
+		  - x: list or tensor
 		  - p: norm order (default: 2)
 		  - dim: dimension to work along (default: last)
 		  - eps: smallest allowed divisor (default: 1e-12)
@@ -1164,6 +1424,7 @@ funcN:
 	| NORMALIZE LPAREN expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# NormalizeFunc
 		/**
 		  group_norm(x, groups, [weight], [bias], [eps]) - applies channel-first GroupNorm to [N, C, ...] input
+		  - x: tensor shaped [N, C, ...]
 		  - groups: number of channel groups; must divide the channel count
 		  - weight: per-channel scale, length C (default: none)
 		  - bias: per-channel shift, length C (default: none)
@@ -1172,14 +1433,17 @@ funcN:
 	| GROUP_NORM LPAREN expr COMMA expr (COMMA expr (COMMA expr (COMMA expr)?)?)? RPAREN	# GroupNormFunc
 		/**
 		  smin(x, ...) - computes the minimum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smin(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
+		  - x: values; one list or tensor gives its smallest element, several values give the smallest of all
 		*/
 	| SMIN LPAREN expr (COMMA expr)* RPAREN		# SMinFunc
 		/**
 		  smax(x, ...) - computes the maximum of inputs or elements. Tensors must have the same size or be broadcastable to same size. When called as smax(x, dims) with x a tensor/list, reduces x along dims (a single dim or list of dims) instead.
+		  - x: values; one list or tensor gives its largest element, several values give the largest of all
 		*/
 	| SMAX LPAREN expr (COMMA expr)* RPAREN		# SMaxFunc
 		/**
 		  map(tensor, coord1, [coord2], [coord3]) - samples/remaps input tensor using coordinates
+		  - tensor: tensor to sample from
 		  - coord1: sample positions (element indices) along the first mapped dimension; mapped dimensions are the last ones of tensor
 		  - coord2: sample positions along the second mapped dimension
 		  - coord3: sample positions along the third mapped dimension
@@ -1189,37 +1453,41 @@ funcN:
 		  ezconvolution(tensor, size_x, kernel) / ezconvolution(tensor, size_x, size_y, kernel) / ezconvolution(tensor, size_x, size_y, size_z, kernel) - convolves tensor with a 1D, 2D or 3D kernel, guessing whether channels come first or last. kernel is evaluated over the kernel grid with kx/ky/kz coordinates
 		  - tensor: input, channels first or last
 		  - size_x: kernel size along the first spatial dimension
+		  - kernel: expression for the kernel weights, evaluated over the kernel grid with kx/ky/kz offsets from its centre
 		  - size_y: kernel size along the second spatial dimension
 		  - size_z: kernel size along the third spatial dimension
-		  - kernel: expression for the kernel weights, evaluated over the kernel grid with kx/ky/kz offsets from its centre
 		*/
 	| EZCONV LPAREN expr (COMMA expr)+ RPAREN	# EzConvFunc
 		/**
 		  convolution(tensor, size_x, kernel) / convolution(tensor, size_x, size_y, kernel) / convolution(tensor, size_x, size_y, size_z, kernel) - convolves tensor [batch, channel, spatial...] with a 1D, 2D or 3D kernel. kernel is evaluated over the kernel grid with kx/ky/kz coordinates
 		  - tensor: input shaped [batch, channel, spatial...]
 		  - size_x: kernel size along the first spatial dimension
+		  - kernel: expression for the kernel weights, evaluated over the kernel grid with kx/ky/kz offsets from its centre
 		  - size_y: kernel size along the second spatial dimension
 		  - size_z: kernel size along the third spatial dimension
-		  - kernel: expression for the kernel weights, evaluated over the kernel grid with kx/ky/kz offsets from its centre
 		*/
 	| CONV LPAREN expr (COMMA expr)+ RPAREN		# ConvFunc
 		/**
 		  reshape(x, shape) - reshapes tensor x to the specified shape
+		  - x: tensor
 		  - shape: new shape; the total number of elements must stay the same
 		*/
 	| RESHAPE LPAREN expr COMMA expr RPAREN		# ReshapeFunc
 		/**
 		  squeeze(x, [dim]) - removes size-1 dimensions from tensor x, optionally at dim
+		  - x: tensor
 		  - dim: only remove this dimension, if it has size 1
 		*/
 	| SQUEEZE LPAREN expr (COMMA expr)? RPAREN		# SqueezeFunc
 		/**
 		  unsqueeze(x, dim) - inserts a size-1 dimension into tensor x at dim
+		  - x: tensor
 		  - dim: position of the new size-1 dimension
 		*/
 	| UNSQUEEZE LPAREN expr COMMA expr RPAREN		# UnsqueezeFunc
 		/**
 		  concatenate(x, ..., dim) - concatenates one or more tensors along the specified dimension
+		  - x: first tensor or list; more may follow before dim
 		  - dim: dimension to join along (the last argument)
 		*/
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc
@@ -1231,22 +1499,27 @@ funcN:
 	| STACK LPAREN expr (COMMA expr)? RPAREN	# StackFunc
 		/**
 		  nonzero(x) - returns an N-by-rank tensor of coordinates for nonzero elements
+		  - x: tensor
 		*/
 	| NONZERO LPAREN expr RPAREN			# NonzeroFunc
 		/**
-		  get_changed_keys(d) - returns list of keys that were modified or added in ChangeTrackingDict d
+		  get_changed_keys(dict) - returns the keys that were modified or added in a ChangeTrackingDict
+		  - dict: ChangeTrackingDict
 		*/
 	| GET_CHANGED_KEYS LPAREN expr RPAREN		# GetChangedKeysFunc
 		/**
-		  get_added_keys(d) - returns list of keys that were added (newly created) in ChangeTrackingDict d
+		  get_added_keys(dict) - returns the keys that were newly added to a ChangeTrackingDict
+		  - dict: ChangeTrackingDict
 		*/
 	| GET_ADDED_KEYS LPAREN expr RPAREN			# GetAddedKeysFunc
 		/**
-		  get_removed_keys(d) - returns list of keys that were removed from ChangeTrackingDict d
+		  get_removed_keys(dict) - returns the keys that were removed from a ChangeTrackingDict
+		  - dict: ChangeTrackingDict
 		*/
 	| GET_REMOVED_KEYS LPAREN expr RPAREN		# GetRemovedKeysFunc
 		/**
-		  get_unchanged_keys(d) - returns list of keys that remain unchanged in ChangeTrackingDict d
+		  get_unchanged_keys(dict) - returns the keys that are unchanged in a ChangeTrackingDict
+		  - dict: ChangeTrackingDict
 		*/
 	| GET_UNCHANGED_KEYS LPAREN expr RPAREN		# GetUnchangedKeysFunc;
 
@@ -1276,9 +1549,9 @@ funcNoise:
 		*/
 	| RAND LPAREN expr (COMMA expr)? RPAREN				# RandFunc
 		/**
-		  random_exponential(seed, lambda, [shape]) - generates exponentially distributed random values
+		  random_exponential(seed, rate, [shape]) - generates exponentially distributed random values
 		  - seed: random seed; the same seed always gives the same values
-		  - lambda: rate; the mean is 1 / lambda
+		  - rate: events per unit; the mean is 1 / rate
 		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| EXPONENTIAL LPAREN expr COMMA expr (COMMA expr)? RPAREN	# ExponentialFunc
@@ -1290,9 +1563,9 @@ funcNoise:
 		*/
 	| BERNOULLI LPAREN expr COMMA expr (COMMA expr)? RPAREN		# BernoulliFunc
 		/**
-		  random_poisson(seed, lambda, [shape]) - generates Poisson distributed random values.
+		  random_poisson(seed, rate, [shape]) - generates Poisson distributed random values.
 		  - seed: random seed; the same seed always gives the same values
-		  - lambda: expected count; a tensor gives one rate per element and sets the shape
+		  - rate: expected count; a tensor gives one rate per element and sets the shape
 		  - shape: output shape as a list (default: the shape of the node's input)
 		*/
 	| POISSON LPAREN expr COMMA expr (COMMA expr)? RPAREN		# PoissonFunc
@@ -1313,9 +1586,9 @@ funcNoise:
 		*/
 	| LOGNORMAL LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# LogNormalFunc
 		/**
-		  random_gamma(seed, shape_param, scale, [shape]) - generates Gamma distributed random values.
+		  random_gamma(seed, concentration, scale, [shape]) - generates Gamma distributed random values.
 		  - seed: random seed; the same seed always gives the same values
-		  - shape_param: shape (concentration) k
+		  - concentration: shape (concentration) k
 		  - scale: scale theta; the mean is k * theta
 		  - shape: output shape as a list (default: the shape of the node's input)
 		*/

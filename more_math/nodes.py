@@ -34,6 +34,7 @@ from .StackUnBatcher import StackUnBatcher
 from .ScriptTextWindow import ScriptTextInput
 from .BatchLoraNode import BatchLoraNode
 from .BatchLoraHooksNode import BatchLoraHooksNode
+from .node_replacements import api, register_replacements
 
 from comfy_api.latest import ComfyExtension, io
 
@@ -140,6 +141,11 @@ class IntToBoolNode(io.ComfyNode):
 class MoreMathExtension(ComfyExtension):
     def __init__(self):
         pass
+
+    async def on_load(self) -> None:
+        # ComfyUI versions without node replacement still load the old nodes, they just don't offer the upgrade
+        if hasattr(api, "node_replacement"):
+            await register_replacements()
 
     @classmethod
     async def get_node_list(self) -> list[type[io.ComfyNode]]:

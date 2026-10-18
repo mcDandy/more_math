@@ -92,7 +92,6 @@ class MathGuider:
             self.tree1 = expression1
         self.inner_model = None  # Will be set during sample
         self.sigmas = None
-        self.current_step = 0
         self.steps = 0
         self.stck = stack
 
@@ -142,7 +141,6 @@ class MathGuider:
         eval_samples, variables = self.setVars(x, sigma, seed, lazy_g_results)
         visitor = UnifiedMathVisitor(variables, eval_samples.shape,eval_samples.device,state_storage=self.stck)
         result_tensor = visitor.visit(self.tree)
-        self.current_step = self.current_step + 1;
         return as_tensor(result_tensor, eval_samples.shape).to(x.device)
 
 
@@ -164,6 +162,13 @@ class MathGuider:
 
         frame_count = eval_samples.shape[time_dim] if time_dim is not None else 1
 
+        # sigma has one entry per batch item, all equal
+        sigma = float(sigma.flatten()[0]) if isinstance(sigma, torch.Tensor) else sigma
+        current_step = 0
+        if self.sigmas is not None:
+            # Index of the step whose interval contains sigma, so extra model calls within a step (heun, dpmpp_2s, ...) keep the same index
+            current_step = max((i for i, s in enumerate(self.sigmas.tolist()) if s >= sigma), default=0)
+
         def make_lazy_var(value_fn):
             value_fn.is_lazy_var = True
             return value_fn
@@ -184,10 +189,10 @@ class MathGuider:
             "batch_count": float(eval_samples.shape[0]),
             "N": float(eval_samples.shape[channel_dim]) if channel_dim < ndim else 0.0,
             "channel_count": float(eval_samples.shape[channel_dim]) if channel_dim < ndim else 0.0,
-            "sigma": sigma.item() if isinstance(sigma,torch.Tensor) else sigma,
+            "sigma": sigma,
             "seed": seed if seed is not None else 0,
             "steps": self.steps,
-            "current_step": self.current_step,
+            "current_step": current_step,
             "sample": x
         })
         if g_results is not None:
@@ -226,7 +231,7 @@ class MathGuider:
 
     def sample(self, noise, latent_image, sampler, sigmas, denoise_mask=None, callback=None, disable_pbar=False, seed=None):
         self.sigmas = sigmas
-        self.steps = len(sigmas)
+        self.steps = len(sigmas) - 1
         if sigmas.shape[-1] == 0:
             return latent_image
         active_guiders = [g for g in self.V.values() if g is not None]

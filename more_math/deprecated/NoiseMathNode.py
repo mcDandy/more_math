@@ -100,8 +100,7 @@ class NoiseExecutor:
         self.z = z
         self.expr = Noise
         self.tree = parse_expr(Noise)
-
-    seed = -1
+        self.seed = next((n.seed for n in (a, b, c, d) if n is not None), 0)
 
     def generate_noise(self, input_latent: torch.Tensor) -> torch.Tensor:
         samples = input_latent["samples"]

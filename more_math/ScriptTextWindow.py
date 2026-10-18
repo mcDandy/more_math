@@ -22,4 +22,4 @@ class ScriptTextInput(io.ComfyNode):
 
     @classmethod
     def execute(cls, script):
-        return (remove_dead_code(parse_expr(script)),)
+        return (remove_dead_code(parse_expr.__wrapped__(script)),)

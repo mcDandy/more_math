@@ -169,10 +169,10 @@ class VideoMathNode(io.ComfyNode):
             variables[v_name].is_lazy_var = True
 
         def lazy_v_stack():
-            return get_v_variable(V_norm, length_mismatch=length_mismatch)[0]
+            return get_v_variable(V_norm)[0]
         lazy_v_stack.is_lazy_var = True
         def lazy_v_count():
-            return float(get_v_variable(V_norm, length_mismatch=length_mismatch)[1])
+            return float(get_v_variable(V_norm)[1])
         lazy_v_count.is_lazy_var = True
         variables["V"] = lazy_v_stack
         variables["Vcnt"] = lazy_v_count
@@ -251,10 +251,10 @@ class VideoMathNode(io.ComfyNode):
             variables[v_name].is_lazy_var = True
 
         def lazy_v_stack():
-            return get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)[0]
+            return get_v_variable(V_norm_waveforms)[0]
         lazy_v_stack.is_lazy_var = True
         def lazy_v_count():
-            return float(get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)[1])
+            return float(get_v_variable(V_norm_waveforms)[1])
         lazy_v_count.is_lazy_var = True
         variables["V"] = lazy_v_stack
         variables["Vcnt"] = lazy_v_count

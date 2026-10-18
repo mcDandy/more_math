@@ -135,7 +135,7 @@ class AudioMathNode(io.ComfyNode):
             "batch_count": float(a_w.shape[0]),
         } | generate_dim_variables(a_w) | V_norm_waveforms | sample_rates
 
-        v_stacked, v_cnt = get_v_variable(V_norm_waveforms, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm_waveforms)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)
@@ -167,6 +167,5 @@ class AudioMathNode(io.ComfyNode):
                 res_list.append({"waveform": result_chunk, "sample_rate": sample_rate})
             return (res_list, stack)
         else:
-            stack = stack if remember_stack else copy.deepcopy(stack)
 
             return ([{"waveform": result, "sample_rate": sample_rate}], stack)

@@ -108,7 +108,7 @@ class MaskMathNode(io.ComfyNode):
             "batch_count": float(ae.shape[0]),
         } | generate_dim_variables(ae)
 
-        v_stacked, v_cnt = get_v_variable(V_norm, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)
@@ -140,8 +140,6 @@ class MaskMathNode(io.ComfyNode):
             res_list = []
             for result_chunk in res:
                 res_list.append(result_chunk)
-                stack = stack if remember_stack else copy.deepcopy(stack)
             return (res_list, stack)
         else:
-            stack = stack if remember_stack else copy.deepcopy(stack)
             return ([result], stack)

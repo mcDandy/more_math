@@ -215,7 +215,7 @@ class LatentMathNode(io.ComfyNode):
         # Add all dynamic inputs
         variables.update(V_norm_samples)
 
-        v_stacked, v_cnt = get_v_variable(V_norm_samples, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm_samples)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)
@@ -242,7 +242,6 @@ class LatentMathNode(io.ComfyNode):
         if getattr(result_t, "is_nested", False):
             rl = result_latent.copy()
             rl["samples"] = result_t
-            stack = stack if remember_stack else copy.deepcopy(stack)
             return (move_to_device([rl], original_device), stack)
 
         # If the visitor produced a list/tuple, emit each element as a separate latent.
@@ -252,7 +251,6 @@ class LatentMathNode(io.ComfyNode):
                 rl = result_latent.copy()
                 rl["samples"] = comp
                 results.append(rl)
-                stack = stack if remember_stack else copy.deepcopy(stack)
             return (move_to_device(results, original_device), stack)
 
         if batching > 0:
@@ -262,9 +260,7 @@ class LatentMathNode(io.ComfyNode):
                 rl = result_latent.copy()
                 rl["samples"] = result_tensor
                 results.append(rl)
-                stack = stack if remember_stack else copy.deepcopy(stack)
             return (move_to_device(results, original_device), stack)
         rl = result_latent.copy()
         rl["samples"] = result_t
-        stack = stack if remember_stack else copy.deepcopy(stack)
         return (move_to_device([rl], original_device), stack)

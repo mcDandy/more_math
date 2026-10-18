@@ -102,6 +102,16 @@ class TestMathGuider(unittest.TestCase):
         # At step 2 with 2 steps: 2 / 2 = 1.0
         self.assertTrue(torch.allclose(res2, torch.tensor(1.0)))
 
+    def test_math_guider_batched_sigma_and_substeps(self):
+        # Samplers pass sigma with one entry per batch item; heun-like samplers also call the model between sigmas
+        math_guider = MathGuider({"V0": MockGuider(1.0)}, {}, "current_step + sigma * 0", "V0", {})
+        math_guider.sigmas = torch.tensor([10.0, 5.0, 0.0])
+        math_guider.steps = 2
+        x = torch.zeros((2, 1, 1, 1))
+        self.assertTrue(torch.allclose(math_guider(x, torch.tensor([5.0, 5.0])), torch.tensor(1.0)))
+        self.assertTrue(torch.allclose(math_guider(x, torch.tensor([7.0, 7.0])), torch.tensor(0.0)))
+        self.assertTrue(torch.allclose(math_guider(x, torch.tensor([10.0, 10.0])), torch.tensor(0.0)))
+
     def test_math_guider_crop_function(self):
         """Test crop function within guider context"""
         g0 = MockGuider(1.0)

@@ -1383,7 +1383,7 @@ func3:
 		/**
 		  text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline]) - renders text to a 2D tensor with values 0-1
 		  - text: text to render; line breaks start new lines
-		  - font: font name to look up in the system fonts, or a path to a font file
+		  - font: font name to look up in the system fonts, or a path to a font file in a system font folder or the ComfyUI input folder
 		  - size: font size in pixels
 		  - max_width: wrap lines wider than this many pixels (default: 0, no wrapping)
 		  - weight: font weight 100-900 as in CSS (default: 400)

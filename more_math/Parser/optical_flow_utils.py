@@ -6,25 +6,29 @@ from torchvision.utils import flow_to_image as torchvision_flow_to_image
 import numpy as np
 import folder_paths
 import comfy.utils
+import comfy.model_management
+import comfy.model_patcher
 
-_raft_model = None
+folder_paths.folder_names_and_paths.setdefault("optical_flow", ([os.path.join(folder_paths.models_dir, "optical_flow")], folder_paths.supported_pt_extensions))
 
-def get_raft_model(device):
-    global _raft_model
-    if _raft_model is None:
+# Small (~20MB) and offloaded by model management like any other model, so it is loaded once per process
+_raft_patcher = None
+
+def get_raft_model():
+    global _raft_patcher
+    if _raft_patcher is None:
         names = folder_paths.get_filename_list("optical_flow")
+        model = raft_large(weights=None, progress=False)
+        model.load_state_dict(comfy.utils.load_torch_file(folder_paths.get_full_path_or_raise("optical_flow", names[0]), safe_load=True))
+        _raft_patcher = comfy.model_patcher.ModelPatcher(model.eval(), load_device=comfy.model_management.get_torch_device(), offload_device=comfy.model_management.unet_offload_device())
+    comfy.model_management.load_model_gpu(_raft_patcher)
+    return _raft_patcher.model
         if names:
             model = raft_large(weights=None, progress=False)
             model.load_state_dict(comfy.utils.load_torch_file(folder_paths.get_full_path_or_raise("optical_flow", names[0]), safe_load=True))
         else:
             # No local checkpoint: download torchvision's RAFT weights once and keep a copy in models/optical_flow
             weights = Raft_Large_Weights.DEFAULT
-            model = raft_large(weights=weights, progress=True)
-            save_dir = folder_paths.get_folder_paths("optical_flow")[0]
-            os.makedirs(save_dir, exist_ok=True)
-            torch.save(model.state_dict(), os.path.join(save_dir, os.path.basename(weights.url)))
-        _raft_model = model.to(device).eval()
-    return _raft_model
 
 def warp(x, flow, padding_mode='reflection'):
     """
@@ -90,8 +94,8 @@ def get_optical_flow(img1, img2, tiling_size=0, iterations=12, multi_scale=False
     img1, img2: [H, W, C] or [B, H, W, C]
     Returns: [B, H, W, 2] flow vectors
     """
-    device = img1.device
-    model = get_raft_model(device)
+    model = get_raft_model()
+    device = comfy.model_management.get_torch_device()
 
     img1_proc = preprocess_image(img1, device)
     img2_proc = preprocess_image(img2, device)
@@ -176,7 +180,7 @@ def get_optical_flow(img1, img2, tiling_size=0, iterations=12, multi_scale=False
         flow[:, 1] *= float(h) / h_new
 
     # [B, 2, H, W] -> [B, H, W, 2]
-    return flow.movedim(1, -1)
+    return flow.movedim(1, -1).to(img1.device)
 
 def calculate_occlusion_mask(flow):
     """

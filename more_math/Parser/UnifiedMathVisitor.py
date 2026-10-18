@@ -10,6 +10,7 @@ import math
 import inspect
 import weakref
 import torch.nn.functional as F
+import folder_paths
 from comfy.nested_tensor import NestedTensor
 from comfy.model_management import throw_exception_if_processing_interrupted
 from comfy.k_diffusion import sampling as k_sampling
@@ -156,6 +157,17 @@ _BLEND_MODES = {
 }
 
 
+_FLOAT8_DTYPES = {
+    dtype for dtype in (
+        getattr(torch, "float8_e4m3fn", None),
+        getattr(torch, "float8_e4m3fnuz", None),
+        getattr(torch, "float8_e5m2", None),
+        getattr(torch, "float8_e5m2fnuz", None),
+    )
+    if dtype is not None
+}
+
+
 def _rec709_luma(r, g, b):
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
@@ -190,9 +202,7 @@ def _font_axis_name(axis):
     return str(name).lower()
 
 
-@functools.lru_cache(maxsize=1)
-def _system_fonts():
-    """Index of installed fonts, scanned once per process (fonts installed later need a restart)."""
+def _font_dirs():
     if sys.platform == "win32":
         search_dirs = [os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"), os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Windows\Fonts")]
     elif sys.platform == "darwin":
@@ -205,9 +215,23 @@ def _system_fonts():
             os.path.expanduser("~/.local/share/fonts"),
             os.path.expanduser("~/.fonts"),
         ]
+    return list(dict.fromkeys(search_dirs))
 
+
+def _is_allowed_font_file(path):
+    """Font files given by path must be in a system font folder or in ComfyUI's input folder."""
+    if not os.path.isfile(path):
+        return False
+    path = os.path.normcase(os.path.realpath(path))
+    roots = _font_dirs() + [folder_paths.get_input_directory()]
+    return any(path.startswith(os.path.normcase(os.path.realpath(root)) + os.sep) for root in roots)
+
+
+@functools.lru_cache(maxsize=1)
+def _system_fonts():
+    """Index of installed fonts, scanned once per process (fonts installed later need a restart)."""
     fonts = []
-    for directory in dict.fromkeys(search_dirs):
+    for directory in _font_dirs():
         for root, _, files in os.walk(directory):
             for fname in files:
                 if not fname.lower().endswith((".ttf", ".otf", ".ttc", ".otc")):
@@ -419,20 +443,8 @@ class UnifiedMathVisitor(MathExprVisitor):
             return torch.full(t,val,device=self.device)
         return torch.tensor(val, device=self.device)
 
-    @staticmethod
-    def _float8_dtypes():
-        return {
-            dtype for dtype in (
-                getattr(torch, "float8_e4m3fn", None),
-                getattr(torch, "float8_e4m3fnuz", None),
-                getattr(torch, "float8_e5m2", None),
-                getattr(torch, "float8_e5m2fnuz", None),
-            )
-            if dtype is not None
-        }
-
     def _apply_binary_operation(self, a, b, torch_op, scalar_op):
-        float8_dtypes = self._float8_dtypes()
+        float8_dtypes = _FLOAT8_DTYPES
         original_dtype = None
         if self._is_plain_tensor(a) and a.dtype in float8_dtypes:
             original_dtype = a.dtype
@@ -449,7 +461,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def _apply_unary_operation(self, value, torch_op, scalar_op):
         original_dtype = None
-        if self._is_plain_tensor(value) and value.dtype in self._float8_dtypes():
+        if self._is_plain_tensor(value) and value.dtype in _FLOAT8_DTYPES:
             original_dtype = value.dtype
             value = value.to(torch.float16)
 
@@ -1342,10 +1354,10 @@ class UnifiedMathVisitor(MathExprVisitor):
             dims = self._normalize_dims((yield ctx.expr(2)), val.ndim, ctx, "norm dimension")
             dim = tuple(dims)
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             val = val.to(torch.float32)
         result = torch.linalg.vector_norm(val, ord=p, dim=dim)
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             result = result.to(original_dtype)
         return result.item() if result.numel() == 1 else result
 
@@ -1359,13 +1371,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         if eps < 0:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: normalize eps must be non-negative")
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             val = val.to(torch.float32)
         if val.ndim == 0:
             result = val / torch.linalg.vector_norm(val, ord=p).clamp_min(eps)
         else:
             result = F.normalize(val, p=p, dim=dim, eps=eps)
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             result = result.to(original_dtype)
         return result.tolist() if return_list else result
 
@@ -1380,7 +1392,7 @@ class UnifiedMathVisitor(MathExprVisitor):
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: group_norm groups must be positive and divide the channel count {channels}")
 
         original_dtype = val.dtype
-        float8_dtypes = self._float8_dtypes()
+        float8_dtypes = _FLOAT8_DTYPES
         if original_dtype in float8_dtypes:
             val = val.to(torch.float32)
 
@@ -1852,7 +1864,7 @@ class UnifiedMathVisitor(MathExprVisitor):
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp expects one vector dimension")
             dim = dims[0]
 
-        float8_dtypes = self._float8_dtypes()
+        float8_dtypes = _FLOAT8_DTYPES
         input_dtypes = (a.dtype, b.dtype)
         output_dtype = next((dtype for dtype in input_dtypes if dtype in float8_dtypes), None)
         if output_dtype is None:
@@ -2313,7 +2325,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitRfftFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0)))
         dim = self._to_int((yield ctx.expr(1)), ctx, "rfft dimension", strict=True) if len(ctx.expr()) > 1 else -1
-        if val.dtype in self._float8_dtypes() or not (val.is_floating_point() or val.is_complex()):
+        if val.dtype in _FLOAT8_DTYPES or not (val.is_floating_point() or val.is_complex()):
             val = val.to(torch.float32)
         return torch.fft.rfft(val, dim=dim)
 
@@ -2321,7 +2333,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         val = self._promote_to_tensor((yield ctx.expr(0)))
         n = self._to_int((yield ctx.expr(1)), ctx, "irfft length", strict=True) if len(ctx.expr()) > 1 else None
         dim = self._to_int((yield ctx.expr(2)), ctx, "irfft dimension", strict=True) if len(ctx.expr()) > 2 else -1
-        if val.dtype in self._float8_dtypes():
+        if val.dtype in _FLOAT8_DTYPES:
             val = val.to(torch.complex64)
         return torch.fft.irfft(val, n=n, dim=dim)
 
@@ -2420,10 +2432,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         elif val.ndim > 0:
             dims = tuple(range(val.ndim))
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             val = val.to(torch.float32)
         result = val if dims is None else torch.logsumexp(val, dim=dims)
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             result = result.to(original_dtype)
         return result.item() if result.numel() == 1 else result
 
@@ -2672,7 +2684,7 @@ class UnifiedMathVisitor(MathExprVisitor):
     def visitOuterFunc(self, ctx):
         a = self._promote_to_tensor((yield ctx.expr(0))).flatten()
         b = self._promote_to_tensor((yield ctx.expr(1))).flatten()
-        float8_dtypes = self._float8_dtypes()
+        float8_dtypes = _FLOAT8_DTYPES
         output_dtype = a.dtype if a.dtype in float8_dtypes else b.dtype if b.dtype in float8_dtypes else None
         if output_dtype is not None:
             a = a.to(torch.float32)
@@ -2685,20 +2697,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         if val.ndim < 2 or val.shape[-1] != val.shape[-2]:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: trace expects square matrices")
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             val = val.to(torch.float32)
         result = torch.diagonal(val, dim1=-2, dim2=-1).sum(dim=-1)
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             result = result.to(original_dtype)
         return result.item() if result.numel() == 1 else result
 
     def visitDetFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr()))
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             val = val.to(torch.float32)
         result = torch.linalg.det(val)
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             result = result.to(original_dtype)
         return result.item() if result.numel() == 1 else result
 
@@ -2710,10 +2722,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         if not pseudo and val.shape[-1] != val.shape[-2]:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: inv without pseudo requires square matrices")
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes():
+        if original_dtype in _FLOAT8_DTYPES:
             val = val.to(torch.float32)
         result = torch.linalg.pinv(val) if pseudo else torch.linalg.inv(val)
-        return result.to(original_dtype) if original_dtype in self._float8_dtypes() else result
+        return result.to(original_dtype) if original_dtype in _FLOAT8_DTYPES else result
 
     def visitSolveFunc(self, ctx):
         a = self._promote_to_tensor((yield ctx.expr(0)))
@@ -2721,7 +2733,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if a.ndim < 2 or a.shape[-1] != a.shape[-2]:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: solve expects square coefficient matrices")
 
-        float8_dtypes = self._float8_dtypes()
+        float8_dtypes = _FLOAT8_DTYPES
         output_dtype = a.dtype if a.dtype in float8_dtypes else b.dtype if b.dtype in float8_dtypes else None
         if a.dtype in float8_dtypes or not (a.is_floating_point() or a.is_complex()):
             a = a.to(torch.float32)
@@ -2736,7 +2748,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         if val.ndim < 2:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: matrix_rank expects matrices")
         original_dtype = val.dtype
-        if original_dtype in self._float8_dtypes() or not (val.is_floating_point() or val.is_complex()):
+        if original_dtype in _FLOAT8_DTYPES or not (val.is_floating_point() or val.is_complex()):
             val = val.to(torch.float32)
         tol = (yield ctx.expr(1)) if len(ctx.expr()) > 1 else None
         if self._is_tensor(tol):
@@ -3536,7 +3548,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         tier = _FONT_WEIGHT_TIERS[bisect.bisect_left((150, 250, 350, 450, 550, 650, 750, 850), weight_val)]
         synthetic_italic = synthetic_bold = False
         variation_weight, variation_italic = weight_val, is_italic
-        if os.path.isfile(font_name):
+        if _is_allowed_font_file(font_name):
             font_path = font_name
         else:
             font_path = _find_font(font_name, tier, weight_val, is_italic)

@@ -1,3 +1,5 @@
+import functools
+
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.atn.PredictionMode import PredictionMode
@@ -66,8 +68,10 @@ def as_tensor(value, shape):
     return torch.cat(value)
 
 
+# check_lazy_status and execute both parse the same expression; trees are only read, so they can be shared.
+@functools.lru_cache(maxsize=64)
 def parse_expr(expr: str):
-    """Parse a math expression and return the parse tree."""
+    """Parse a math expression and return the parse tree. The tree is shared, use parse_expr.__wrapped__ for one you modify."""
     input_stream = InputStream(expr)
     lexer = MathExprLexer(input_stream)
     stream = CommonTokenStream(lexer)
@@ -299,7 +303,7 @@ def normalize_to_common_shape(*tensors, mode="pad"):
             result.append(t.contiguous())
     return tuple(result)
 
-def get_v_variable(v_norm_dict, length_mismatch="error"):
+def get_v_variable(v_norm_dict):
     """
     Collects V0, V1, ... from the dict (ignoring NestedTensor component keys
     like V0_0, V1_1), and returns them as a list and count.

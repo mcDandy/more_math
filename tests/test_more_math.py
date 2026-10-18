@@ -360,6 +360,7 @@ def test_noise_math_5d():
     class MockNoise:
         def __init__(self, tensor):
             self.tensor = tensor
+            self.seed = 0
 
         def generate_noise(self, input_latent):
             return self.tensor
@@ -382,6 +383,7 @@ def test_noise_math_autogrow():
     class MockNoise:
         def __init__(self, tensor):
             self.tensor = tensor
+            self.seed = 0
 
         def generate_noise(self, input_latent):
             return self.tensor

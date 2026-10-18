@@ -69,7 +69,7 @@ class StringMathNode(io.ComfyNode):
             "z": F.get("F3", 0.0) if F.get("F3") is not None else 0.0
         }
 
-        v_stacked, v_cnt = get_v_variable(V, length_mismatch="do nothing")
+        v_stacked, v_cnt = get_v_variable(V)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)
@@ -105,9 +105,7 @@ class StringMathNode(io.ComfyNode):
                 for start in range(0, len(s), n):
                     yield s[start:start+n]
 
-            stack = stack if remember_stack else copy.deepcopy(stack)
             return (chunks(result,batching), stack)
         else:
-            stack = stack if remember_stack else copy.deepcopy(stack)
 
             return ([result], stack)

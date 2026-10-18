@@ -319,7 +319,7 @@ You can also get the node from comfy manager under the name of More math.
 
 ### 4) Optical Flow
 - `rife(img1, img2, [tiling_size, iterations, multi_scale])`: compute optical flow using a RAFT-based model.
-  - uses the first checkpoint in `models/optical_flow`. Download https://download.pytorch.org/models/raft_large_C_T_SKHT_V2-ff5fadd5.pth (torchvision RAFT-large) and put it there.
+  - uses the first checkpoint in `models/optical_flow`; if there is none, torchvision's RAFT-large weights are downloaded once and saved there.
   - `tiling_size` chunks the image into overlapping `tiling_size`x`tiling_size` tiles to conserve memory; defaults to `0` (auto-enables `1024`x`1024` tiling above 2MPx); a value between `0` and `1` is taken as a fraction of the resolution instead.
   - `iterations` defaults to `12`.
   - `multi_scale` (default `false`) also runs a low-resolution pass of the base image to help catch large movements.

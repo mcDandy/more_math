@@ -129,7 +129,7 @@ class ImageMathNode(io.ComfyNode):
         # Add all dynamic inputs
         variables.update(V_norm)
 
-        v_stacked, v_cnt = get_v_variable(V_norm, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)

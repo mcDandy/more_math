@@ -215,7 +215,7 @@ class LatentMathNode(io.ComfyNode):
         # Add all dynamic inputs
         variables.update(V_norm_samples)
 
-        v_stacked, v_cnt = get_v_variable(V_norm_samples, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm_samples)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)

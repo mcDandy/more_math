@@ -147,7 +147,7 @@ class ConditioningMathNode(io.ComfyNode):
             "batch_count": a.shape[0],
         } | generate_dim_variables(a) | V_norm_tensors
 
-        v_stacked, v_cnt = get_v_variable(V_norm_tensors, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm_tensors)
         if v_stacked is not None:
              variables["V"] = v_stacked
              variables["Vcnt"] = float(v_cnt)
@@ -193,7 +193,7 @@ class ConditioningMathNode(io.ComfyNode):
             "batch_count": a_p.shape[0] if a_p.numel() > 0 else 0,
         } | generate_dim_variables(a_p) | V_norm_pooled
 
-        v_stacked, v_cnt = get_v_variable(V_norm_pooled, length_mismatch=length_mismatch)
+        v_stacked, v_cnt = get_v_variable(V_norm_pooled)
         if v_stacked is not None:
              variables_pi["V"] = v_stacked
              variables_pi["Vcnt"] = float(v_cnt)

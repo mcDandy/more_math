@@ -303,7 +303,7 @@ def normalize_to_common_shape(*tensors, mode="pad"):
             result.append(t.contiguous())
     return tuple(result)
 
-def get_v_variable(v_norm_dict, length_mismatch="error"):
+def get_v_variable(v_norm_dict):
     """
     Collects V0, V1, ... from the dict (ignoring NestedTensor component keys
     like V0_0, V1_1), and returns them as a list and count.

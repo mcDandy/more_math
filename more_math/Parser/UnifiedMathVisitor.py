@@ -1737,19 +1737,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         xs = [k for k, _ in keys]
         ys = [v for _, v in keys]
 
+        if self._is_list(x):
+            return [self._interp_at(float(v), xs, ys, mode) for v in x]
         if not self._is_tensor(x) or x.numel() == 1:
-            i = bisect.bisect_right(xs, float(x))
-            if i == 0:
-                return ys[0]
-            if i == len(xs) or mode == "step":
-                return ys[i - 1]
-            t = (float(x) - xs[i - 1]) / (xs[i] - xs[i - 1])
-            if mode == "smooth":
-                t = t * t * (3 - 2 * t)
-            a, b = ys[i - 1], ys[i]
-            if self._is_tensor(a) or self._is_tensor(b):
-                return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), t)
-            return a + (b - a) * t
+            return self._interp_at(float(x), xs, ys, mode)
 
         if any(self._is_tensor(v) and v.numel() != 1 for v in ys):
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: interp values must be numbers when x is a tensor")
@@ -1767,6 +1758,20 @@ class UnifiedMathVisitor(MathExprVisitor):
         elif mode == "smooth":
             t = t * t * (3 - 2 * t)
         return torch.lerp(ys_t[i - 1], ys_t[i], t)
+
+    def _interp_at(self, x, xs, ys, mode):
+        i = bisect.bisect_right(xs, x)
+        if i == 0:
+            return ys[0]
+        if i == len(xs) or mode == "step":
+            return ys[i - 1]
+        t = (x - xs[i - 1]) / (xs[i] - xs[i - 1])
+        if mode == "smooth":
+            t = t * t * (3 - 2 * t)
+        a, b = ys[i - 1], ys[i]
+        if self._is_tensor(a) or self._is_tensor(b):
+            return torch.lerp(self._promote_to_tensor(a), self._promote_to_tensor(b), t)
+        return a + (b - a) * t
 
     def _schedule_args(self, ctx):
         steps = self._to_int((yield ctx.expr(0)), ctx, "schedule steps", strict=True)
@@ -1799,17 +1804,35 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         if self._is_math_dict(a) or self._is_math_dict(b) or self._is_math_dict(w):
             return self._map_math_dict(self._lerp_helper, a, b, w)
+        return self._lerp_times(a, b, w)
+
+    def _lerp_times(self, a, b, w):
         if self._is_list(w):
              return [self._lerp_helper(a[i] if self._is_list(a) else a,
                                       b[i] if self._is_list(b) else b,
                                       t) for i, t in enumerate(w)]
-
         return self._lerp_helper(a, b, w)
 
     def visitSlerpFunc(self, ctx):
-        a = self._promote_to_tensor((yield ctx.expr(0)))
-        b = self._promote_to_tensor((yield ctx.expr(1)))
-        t = self._promote_to_tensor((yield ctx.expr(2)))
+        a = (yield ctx.expr(0))
+        b = (yield ctx.expr(1))
+        t = (yield ctx.expr(2))
+        dim = (yield ctx.expr(3)) if len(ctx.expr()) > 3 else None
+        if not self._is_list(t):
+            return self._slerp_helper(ctx, a, b, t, dim)
+        # a list t evaluates every time in it; lists of tensors (from an earlier list slerp/lerp) are paired with it
+        def at(x, i):
+            if self._is_list(x) and any(self._is_tensor(v) for v in x):
+                if len(x) != len(t):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp got {len(x)} values for {len(t)} times")
+                return x[i]
+            return x
+        return [self._slerp_helper(ctx, at(a, i), at(b, i), ti, dim) for i, ti in enumerate(t)]
+
+    def _slerp_helper(self, ctx, a, b, t, dim):
+        a = self._promote_to_tensor(a)
+        b = self._promote_to_tensor(b)
+        t = self._promote_to_tensor(t)
         if a.ndim == 0 or b.ndim == 0:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp inputs must have a vector dimension")
         try:
@@ -1817,14 +1840,14 @@ class UnifiedMathVisitor(MathExprVisitor):
         except RuntimeError as exc:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp inputs must be broadcastable") from exc
 
-        default_dim = len(ctx.expr()) <= 3
+        default_dim = dim is None
         if default_dim:
             output_shape = a.shape
             a = a.reshape(-1)
             b = b.reshape(-1)
             dim = 0
         else:
-            dims = self._normalize_dims((yield ctx.expr(3)), a.ndim, ctx, "slerp dimension")
+            dims = self._normalize_dims(dim, a.ndim, ctx, "slerp dimension")
             if len(dims) != 1:
                 raise ValueError(f"{ctx.start.line}:{ctx.start.column}: slerp expects one vector dimension")
             dim = dims[0]
@@ -1992,13 +2015,13 @@ class UnifiedMathVisitor(MathExprVisitor):
         def cubic(v):
              return torch.where(v < 0.5, 4 * v**3, 1 - torch.pow(-2 * v + 2, 3) / 2) if self._is_tensor(v) else \
                     (4 * v**3 if v < 0.5 else 1 - math.pow(-2 * v + 2, 3) / 2)
-        return self._lerp_helper(a, b, cubic(t))
+        return self._lerp_times(a, b, [cubic(v) for v in t] if self._is_list(t) else cubic(t))
 
     def visitSineEaseFunc(self, ctx):
         a, b, t = (yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))
         def sine(v):
              return -(torch.cos(math.pi * v) - 1) / 2 if self._is_tensor(v) else -(math.cos(math.pi * v) - 1) / 2
-        return self._lerp_helper(a, b, sine(t))
+        return self._lerp_times(a, b, [sine(v) for v in t] if self._is_list(t) else sine(t))
 
     def visitElasticEaseFunc(self, ctx):
         a, b, t = (yield ctx.expr(0)), (yield ctx.expr(1)), (yield ctx.expr(2))
@@ -2013,7 +2036,7 @@ class UnifiedMathVisitor(MathExprVisitor):
              if v >= 1: return 1
              if v < 0.5: return -(math.pow(2, 20 * v - 10) * math.sin((20 * v - 11.125) * c4)) / 2
              return (math.pow(2, -20 * v + 10) * math.sin((20 * v - 11.125) * c4)) / 2 + 1
-        return self._lerp_helper(a, b, elastic(t))
+        return self._lerp_times(a, b, [elastic(v) for v in t] if self._is_list(t) else elastic(t))
 
     # Helpers for visiting generic exprs
     def visitFunc1Exp(self, ctx):
@@ -5471,6 +5494,9 @@ class UnifiedMathVisitor(MathExprVisitor):
             items.append((yield exprs[i]))
 
         dim_val = yield exprs[-1]
+        # concat(list, dim) joins the list's elements, e.g. the per-time results of lerp/slerp
+        if len(items) == 1 and self._is_list(items[0]) and any(self._is_tensor(x) for x in items[0]):
+            items = list(items[0])
         if any(isinstance(x, str) for x in items):
             return "".join(str(x) for x in items)
 
@@ -5485,12 +5511,22 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.cat(tensors, dim=d)
 
     def visitStackFunc(self, ctx):
-        values = yield ctx.expr(0)
+        exprs = ctx.expr()
+        values = yield exprs[0]
+        dim = 0
+        if self._is_list(values) and len(exprs) <= 2:
+            if len(exprs) > 1:
+                dim = self._to_int((yield exprs[1]), ctx, "stack dim", strict=True)
+        elif len(exprs) > 1:
+            # stack(x, ..., dim), like concat
+            values = [values]
+            for e in exprs[1:-1]:
+                values.append((yield e))
+            dim = self._to_int((yield exprs[-1]), ctx, "stack dim", strict=True)
         if not self._is_list(values) or not values:
-            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: stack expects a non-empty list of values")
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: stack expects a non-empty list of values, or values followed by dim")
 
         tensors = [self._promote_to_tensor(value) for value in values]
-        dim = self._to_int((yield ctx.expr(1)), ctx, "stack dim", strict=True) if len(ctx.expr()) > 1 else 0
         if dim < 0:
             dim += tensors[0].ndim + 1
         if dim < 0 or dim > tensors[0].ndim:

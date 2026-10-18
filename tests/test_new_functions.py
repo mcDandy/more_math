@@ -240,7 +240,7 @@ def test_slerp_validates_broadcasting_and_preserves_float8_dtype():
     with pytest.raises(ValueError, match="inputs must be broadcastable"):
         eval_expr("slerp([1, 2], [1, 2, 3], 0.5)")
     with pytest.raises(ValueError, match="t must broadcast"):
-        eval_expr("slerp([[1, 0], [0, 1]], [[0, 1], [1, 0]], [1, 2, 3])")
+        eval_expr("slerp([[1, 0], [0, 1]], [[0, 1], [1, 0]], t, 1)", {"t": torch.tensor([1.0, 2.0, 3.0])})
 
     float8_dtypes = [
         getattr(torch, name, None)
@@ -250,6 +250,56 @@ def test_slerp_validates_broadcasting_and_preserves_float8_dtype():
         values = torch.randn(2, 3).to(dtype)
         result = eval_expr("slerp(a, b, 0.5)", {"a": values, "b": values})
         assert result.dtype == dtype
+
+def test_slerp_and_lerp_with_list_of_times_concat_to_batch():
+    a = torch.randn(1, 3, 4)
+    b = torch.randn(1, 3, 4)
+    c = torch.randn(1, 3, 4)
+    times = [0.0, 0.25, 1.0]
+    variables = {"a": a, "b": b, "c": c}
+
+    result = eval_expr("concat(slerp(a, b, [0, 0.25, 1]), 0)", variables)
+    expected = torch.cat([eval_expr(f"slerp(a, b, {t})", variables) for t in times])
+    torch.testing.assert_close(result, expected)
+    torch.testing.assert_close(result[0:1], a)
+    torch.testing.assert_close(result[2:3], b)
+
+    # nested calls pair each time with its own result
+    result = eval_expr("w = [0, 0.25, 1]; concat(slerp(slerp(a, b, w), slerp(b, c, w), w), 0)", variables)
+    expected = torch.cat([eval_expr(f"slerp(slerp(a, b, {t}), slerp(b, c, {t}), {t})", variables) for t in times])
+    torch.testing.assert_close(result, expected)
+
+    result = eval_expr("w = [0, 0.25, 1]; concat(lerp(lerp(a, b, w), lerp(b, c, w), w), 0)", variables)
+    expected = torch.cat([torch.lerp(torch.lerp(a, b, t), torch.lerp(b, c, t), t) for t in times])
+    torch.testing.assert_close(result, expected)
+
+    with pytest.raises(ValueError, match="2 values for 3 times"):
+        eval_expr("slerp(slerp(a, b, [0, 1]), b, [0, 0.5, 1])", variables)
+
+def test_eases_and_interp_with_list_of_times():
+    a = torch.randn(1, 3, 4)
+    b = torch.randn(1, 3, 4)
+    variables = {"a": a, "b": b}
+    times = [0.0, 0.3, 0.8, 1.0]
+    for name in ("cubic_ease", "sine_ease", "elastic_ease"):
+        result = eval_expr(f"concat({name}(a, b, [0, 0.3, 0.8, 1]), 0)", variables)
+        expected = torch.cat([eval_expr(f"{name}(a, b, {t})", variables) for t in times])
+        torch.testing.assert_close(result, expected)
+    assert eval_expr("sine_ease(0, 2, [0, 0.5, 1])") == pytest.approx([0.0, 1.0, 2.0])
+
+    keys = {"a": a, "b": b, "c": torch.randn(1, 3, 4)}
+    for mode in ("linear", "smooth", "step"):
+        result = eval_expr(f'concat(interp([0, 0.25, 0.5, 0.9], [0, 0.5, 1], [a, b, c], "{mode}"), 0)', keys)
+        expected = torch.cat([eval_expr(f'interp({t}, [0, 0.5, 1], [a, b, c], "{mode}")', keys) for t in (0, 0.25, 0.5, 0.9)])
+        torch.testing.assert_close(result, expected)
+    assert eval_expr("interp([0, 12, 24], [0, 24], [1, 3])") == [1.0, 2.0, 3.0]
+
+def test_concat_single_list_argument():
+    a = torch.ones(1, 2)
+    b = torch.zeros(2, 2)
+    torch.testing.assert_close(eval_expr("concat([a, b], 0)", {"a": a, "b": b}), torch.cat([a, b]))
+    torch.testing.assert_close(eval_expr("concat([a, a], 1)", {"a": a}), torch.ones(1, 4))
+    assert eval_expr("concat([1, 2], [3], 0)") == [1, 2, 3]
 
 def test_sinc_and_erfc():
     assert {"sinc", "erfc"} <= INBUILT_FUNCTIONS

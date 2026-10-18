@@ -1574,16 +1574,17 @@ funcN:
 	| UNSQUEEZE LPAREN expr COMMA expr RPAREN		# UnsqueezeFunc
 		/**
 		  concatenate(x, ..., dim) - concatenates one or more tensors along the specified dimension
-		  - x: first tensor or list; more may follow before dim
+		  - x: first tensor or list; more may follow before dim. A single list of tensors joins its elements
 		  - dim: dimension to join along (the last argument)
 		*/
 	| CONCAT LPAREN expr (COMMA expr)+ RPAREN	# ConcatFunc
 		/**
-		  stack(tensors, [dim]) - stacks a list of tensors along a new dimension
+		  stack(tensors, [dim]) / stack(x, ..., dim) - stacks tensors along a new dimension
 		  - tensors: list of tensors with equal shapes
-		  - dim: position of the new dimension (default: 0)
+		  - x: first tensor; more may follow before dim
+		  - dim: position of the new dimension (default: 0 for a list; required after separate tensors)
 		*/
-	| STACK LPAREN expr (COMMA expr)? RPAREN	# StackFunc
+	| STACK LPAREN expr (COMMA expr)* RPAREN	# StackFunc
 		/**
 		  nonzero(x) - returns an N-by-rank tensor of coordinates for nonzero elements
 		  - x: tensor

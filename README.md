@@ -176,7 +176,8 @@ You can also get the node from comfy manager under the name of More math.
 
 #### 1.6 Interpolation & Remap
 - `lerp(a, b, t)`: linear interpolation.
-- `slerp(a, b, t, [dim])`: spherical interpolation of vector directions with linearly interpolated magnitudes. Without `dim`, all elements form one vector. Set `dim` to select an axis of vector components; all other axes identify independent vectors, and `t` may be scalar or broadcast over those axes.
+- `slerp(a, b, t, [dim])`: spherical interpolation of vector directions with linearly interpolated magnitudes. Without `dim`, all elements form one vector. Set `dim` to select an axis of vector components; all other axes identify independent vectors, and `t` may be scalar or a tensor broadcast over those axes.
+- With a list `t`, `lerp`, `slerp` and the `*_ease` functions return one result per time (as does `interp` with a list `x`); list inputs from an earlier call are paired with their time, so nested curves work. Join the results into a batch with `concat(..., 0)`, e.g. `concat(slerp(slerp(V0, V1, w), slerp(V2, V3, w), w), 0)`.
 - `smoothstep(x, e0, e1)`: 3rd-order smooth transition.
 - `smootherstep(x, e0, e1)`: 5th-order smoother transition.
 - `cubic_ease(a, b, t)` / `cubic`: cubic easing interpolation.
@@ -257,8 +258,8 @@ You can also get the node from comfy manager under the name of More math.
 - `append(a, b)`: append or concatenate items, lists, and tensors.
 - `repeat(x, count, [dims])`: repeat values; tensor `count` can be a scalar or a per-dimension list when `dims` is provided.
 - `batch_shuffle(tensor, indices)` / `shuffle` / `select`: reorder along batch dimension.
-- `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists.
-- `stack(tensors, [dim])`: stack a non-empty list of tensors along a new dimension.
+- `concatenate(..., dim)` / `concat` / `cat`: concatenate tensors or lists; a single list of tensors, `concat(list, dim)`, concatenates its elements.
+- `stack(tensors, [dim])` / `stack(x, ..., dim)`: stack a non-empty list of tensors, or separate tensors followed by `dim`, along a new dimension.
 - `roll(tensor, shifts, [dim])`: circular shift.
 - `tensor(shape, [value, [type]])`: create a filled tensor; `type` a tensor to copy its dtype to self when being created.
 - `zeros(shape, [dtype_template])` / `ones(shape, [dtype_template])`: create zero- or one-filled tensors; an optional tensor supplies the output dtype.

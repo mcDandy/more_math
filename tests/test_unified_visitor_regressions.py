@@ -111,6 +111,17 @@ def test_stack_list_of_tensors_with_negative_dimension():
     assert torch.equal(result, torch.tensor([[1.0, 3.0], [2.0, 4.0]]))
 
 
+def test_stack_separate_tensors_followed_by_dimension():
+    first = torch.tensor([1.0, 2.0])
+    second = torch.tensor([3.0, 4.0])
+    variables = {"a": first, "b": second}
+
+    assert torch.equal(_visit("stack(a, b, 0)", variables), torch.stack([first, second]))
+    assert torch.equal(_visit("stack(a, b, a, -1)", variables), torch.stack([first, second, first], dim=-1))
+    assert torch.equal(_visit("stack(a, 0)", variables), first.unsqueeze(0))
+    assert torch.equal(_visit("stack([a, b], 1)", variables), torch.stack([first, second], dim=1))
+
+
 def test_stack_rejects_invalid_dimension_and_non_list_input():
     with pytest.raises(ValueError, match="stack expects a non-empty list"):
         _visit("stack(a)", {"a": torch.tensor([1.0, 2.0])})

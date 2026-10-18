@@ -1,3 +1,5 @@
+import functools
+
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.atn.PredictionMode import PredictionMode
@@ -66,8 +68,10 @@ def as_tensor(value, shape):
     return torch.cat(value)
 
 
+# check_lazy_status and execute both parse the same expression; trees are only read, so they can be shared.
+@functools.lru_cache(maxsize=64)
 def parse_expr(expr: str):
-    """Parse a math expression and return the parse tree."""
+    """Parse a math expression and return the parse tree. The tree is shared, use parse_expr.__wrapped__ for one you modify."""
     input_stream = InputStream(expr)
     lexer = MathExprLexer(input_stream)
     stream = CommonTokenStream(lexer)

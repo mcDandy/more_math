@@ -9,7 +9,7 @@ from more_math.helper_functions import parse_expr, checkLazyNew
 
 
 def run(script, variables=None, optimize=True, stack=None):
-    tree = parse_expr(script)
+    tree = parse_expr.__wrapped__(script)
     if optimize:
         remove_dead_code(tree)
     out = io.StringIO()
@@ -109,5 +109,5 @@ def test_last_statement_of_a_block_stays():
 
 
 def test_unused_inputs_are_no_longer_requested():
-    tree = remove_dead_code(parse_expr("u = V1 * 2; V0"))
+    tree = remove_dead_code(parse_expr.__wrapped__("u = V1 * 2; V0"))
     assert checkLazyNew(tree, {"V0": None, "V1": None}, {}) == {"V0"}

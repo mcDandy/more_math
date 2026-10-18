@@ -100,7 +100,7 @@ class BoolToIntNode(io.ComfyNode):
             display_name="Bool -> Int",
             category="More math/converters",
             inputs=[
-                io.Boolean.Input(id="value", default=0),
+                io.Boolean.Input(id="value", default=False),
             ],
             outputs=[
                 io.Int.Output(),
@@ -125,7 +125,7 @@ class IntToBoolNode(io.ComfyNode):
             category="More math/converters",
             display_name="Int -> bool",
             inputs=[
-                io.Int.Input(id="value", default=0.0),
+                io.Int.Input(id="value", default=0),
             ],
             outputs=[
                 io.Boolean.Output(),

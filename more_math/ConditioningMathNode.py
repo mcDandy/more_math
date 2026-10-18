@@ -251,5 +251,4 @@ class ConditioningMathNode(io.ComfyNode):
             base[0] = (rtensor, new_dict)
             res_list = [base]
 
-        stack = stack if remember_stack else copy.deepcopy(stack)
         return (move_to_device(res_list, original_device),stack)

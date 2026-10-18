@@ -159,8 +159,6 @@ class ImageMathNode(io.ComfyNode):
             res_list = []
             for result_chunk in res:
                 res_list.append(result_chunk)
-            stack = stack if remember_stack else copy.deepcopy(stack)
             return (res_list, stack)
         else:
-            stack = stack if remember_stack else copy.deepcopy(stack)
             return ([result], stack)

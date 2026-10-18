@@ -105,9 +105,7 @@ class StringMathNode(io.ComfyNode):
                 for start in range(0, len(s), n):
                     yield s[start:start+n]
 
-            stack = stack if remember_stack else copy.deepcopy(stack)
             return (chunks(result,batching), stack)
         else:
-            stack = stack if remember_stack else copy.deepcopy(stack)
 
             return ([result], stack)

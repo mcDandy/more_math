@@ -9,6 +9,9 @@ from PIL import ImageFont
 from more_math.Parser.UnifiedMathVisitor import ChangeTrackingDict, MathDict, UnifiedMathVisitor
 from more_math.helper_functions import checkLazyNew, parse_expr
 from more_math.FloatMathNode import FloatMathNode
+from more_math.ImageMathNode import ImageMathNode
+from more_math.LatentMathNode import LatentMathNode
+from more_math.MaskMathNode import MaskMathNode
 
 
 def _visit(expression, variables):
@@ -282,6 +285,28 @@ def test_unconnected_stack_is_not_shared_between_runs():
     _, stack = FloatMathNode.execute("stack_push(0, 1)", {"V0": 0.0}, remember_stack=True)
 
     assert stack == {0: [1.0]}
+
+
+@pytest.mark.parametrize("node, value, extra", [
+    (ImageMathNode, torch.zeros(2, 4, 4, 3), {"use_compute_device": False}),
+    (MaskMathNode, torch.zeros(2, 4, 4), {}),
+    (LatentMathNode, {"samples": torch.zeros(2, 4, 4, 4)}, {"use_compute_device": False}),
+])
+@pytest.mark.parametrize("batching", [0, 1])
+def test_stack_across_list_runs(node, value, extra, batching):
+    # ComfyUI runs the node once per list item and passes the same stack object every time
+    def run(stack, remember):
+        return node.execute(V={"V0": value}, F={}, Expression="stack_push(0, 1); V0", batching=batching, remember_stack=remember, stack=stack, **extra)[-1]
+
+    shared = {}
+    run(shared, True)
+    assert run(shared, True) == {0: [1.0, 1.0]}
+
+    fresh = {}
+    first, second = run(fresh, False), run(fresh, False)
+    assert fresh == {}
+    assert first == second == {0: [1.0]}
+    assert first is not second
 
 
 def test_top_level_return_stops_script():

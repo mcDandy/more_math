@@ -167,6 +167,5 @@ class AudioMathNode(io.ComfyNode):
                 res_list.append({"waveform": result_chunk, "sample_rate": sample_rate})
             return (res_list, stack)
         else:
-            stack = stack if remember_stack else copy.deepcopy(stack)
 
             return ([{"waveform": result, "sample_rate": sample_rate}], stack)

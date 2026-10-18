@@ -73,8 +73,8 @@ class NoiseExecutor:
         else:
             self.tree = expr
         self.stack = stack
-
-    seed = -1
+        # Samplers seed their own noise (ancestral/SDE) from noise.seed, so pass the first input's seed through
+        self.seed = next((v.seed for v in V.values() if v is not None), 0)
 
     def generate_noise(self, input_latent: torch.Tensor) -> torch.Tensor:
         samples = input_latent["samples"]

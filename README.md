@@ -33,6 +33,7 @@ You can also get the node from comfy manager under the name of More math.
   - can be used later in the same expression chain,
   - compound assignments are supported: `+=`, `-=`, `*=`, `/=`, `%=`.
 - Indexed assignment `a[i, j, ...] = expression;`
+  - the first write to a tensor copies it, so node inputs are never changed in place,
   - supports multidimensional tensors and nested lists,
   - scalar values and 1-element tensors/lists fill the selected slice,
   - leading singleton dimensions are squeezed when needed to match target rank.
@@ -50,7 +51,8 @@ You can also get the node from comfy manager under the name of More math.
   - `break`
   - `continue`
 - Stack support shared across evaluations through stack connections.
-  - useful for `GuiderMath` state between steps.
+  - useful for `GuiderMath` state between steps,
+  - with no stack connected, every run starts with an empty stack.
 - Comments:
   - line comments `# ...`
   - block comments `/* ... */`
@@ -58,19 +60,22 @@ You can also get the node from comfy manager under the name of More math.
 
 ### Control Flow Statements
 
+- **Conditions** (`if`, `while`, ternary) are true when the value, or any of its elements, is non-zero. On a tensor the ternary picks per element instead.
 - **If/Else**: `if (condition) statement [else statement]`
 - **While Loops**: `while (condition) statement`
 - **Blocks**: `{ statement1; statement2; ... }`
   - New variables defined in blocks are isolated and don't leak to outer scope
   - Modifications to existing variables persist to outer scope
 - **Return Statements**: `return [expression];`
-  - Early return from functions or top-level expressions
+  - Returns from the current function; at top level it ends the script with that value
 - **For Loops**: `for (variable in expression) statement`
   - Iterates over list elements
   - Iterates over tensor elements along dimension `0`
   - Scalars are treated as one-item iterables
 - **Break/Continue**: `break;`, `continue;`
   - Control loop execution (works in `while` and `for` loops)
+  - Only affect loops in the same function; using them outside a loop is an error
+- Scripts can be cancelled with ComfyUI's interrupt, even inside endless loops or recursion.
 
 ## Operators
 
@@ -178,6 +183,7 @@ You can also get the node from comfy manager under the name of More math.
 - `sine_ease(a, b, t)` / `sine`: sine easing interpolation.
 - `elastic_ease(a, b, t)` / `elastic`: elastic easing interpolation.
 - `remap(v, i_min, i_max, o_min, o_max)`: map value from one interval to another.
+- `interp(x, xs, ys, [mode])`: keyframe interpolation through the points `(xs, ys)`, holding the first/last value outside the keys. Modes: `"linear"` (default), `"smooth"` (eases in and out of every key), `"step"` (holds a value until the next key). `x` can be a tensor; when `x` is a number the values can be tensors, e.g. keyframe images. Example: `interp(frame, [0, 24, 48], [0.2, 1, 0.5])`.
 
 ---
 
@@ -247,7 +253,7 @@ You can also get the node from comfy manager under the name of More math.
 - `permute(tensor, dims)` / `perm`: reorder dimensions.
 - `crop(tensor, position, size)`: extract a region from tensor or string.
 - `pad(tensor, padding)`: pad tensor.
-- `overlay(base, overlay, offset, [opacity])`: overlay one value/tensor onto another.
+- `overlay(base, overlay, offset, [opacity], [mode])`: overlay one value/tensor onto another. For tensors, `mode` applies a blend mode from `blend()` to the pasted region.
 - `append(a, b)`: append or concatenate items, lists, and tensors.
 - `repeat(x, count, [dims])`: repeat values; tensor `count` can be a scalar or a per-dimension list when `dims` is provided.
 - `batch_shuffle(tensor, indices)` / `shuffle` / `select`: reorder along batch dimension.
@@ -303,11 +309,16 @@ You can also get the node from comfy manager under the name of More math.
 - `erode(x, [kernel_size])`: erosion.
 - `morph_open(x, [kernel_size])`: opening = erosion followed by dilation.
 - `morph_close(x, [kernel_size])`: closing = dilation followed by erosion.
+- `distance_transform(mask, [threshold])`: exact Euclidean distance in pixels from each pixel inside the mask (above `threshold`, default `0.5`) to the nearest pixel outside it; outside pixels are `0`. Use `distance_transform(1 - mask)` for the distance outside the mask, e.g. for feathering.
+
+#### 3.3 Blending
+- `blend(base, top, mode, [opacity])`: blends `top` onto `base` like layers in an image editor; shapes broadcast. Modes: `normal`, `multiply`, `screen`, `overlay`, `soft_light`, `hard_light`, `darken`, `lighten`, `difference`, `exclusion`, `add`, `subtract`, `color_dodge`, `color_burn`. Use `overlay(..., mode)` to place a smaller layer at an offset.
 
 ---
 
 ### 4) Optical Flow
 - `rife(img1, img2, [tiling_size, iterations, multi_scale])`: compute optical flow using a RAFT-based model.
+  - uses the first checkpoint in `models/optical_flow`; if there is none, torchvision's RAFT-large weights are downloaded once and saved there.
   - `tiling_size` chunks the image into overlapping `tiling_size`x`tiling_size` tiles to conserve memory; defaults to `0` (auto-enables `1024`x`1024` tiling above 2MPx); a value between `0` and `1` is taken as a fraction of the resolution instead.
   - `iterations` defaults to `12`.
   - `multi_scale` (default `false`) also runs a low-resolution pass of the base image to help catch large movements.
@@ -367,6 +378,13 @@ All procedural noises return values in `0..1`.
 - `domain_warp(seed, scale, warp_scale, warp_strength, [octaves, [warp_octaves, [offset, [shape]]]])` / `domain_warp_noise`:
   - domain-warped noise for breaking up regular patterns and adding complex organic detail.
 
+#### 6.3 Noise Schedules
+Same schedules as ComfyUI's scheduler nodes, as a tensor of sigmas for the `SIGMAS` node.
+- `sigm_karras(steps, sigma_min, sigma_max, [rho])`: Karras schedule, `rho` defaults to `7`; ends with a final `0`.
+- `sigm_exponential(steps, sigma_min, sigma_max)`: evenly spaced in log sigma; ends with a final `0`.
+- `sigm_polyexponential(steps, sigma_min, sigma_max, [rho])`: polynomial in log sigma, `rho` defaults to `1`; ends with a final `0`.
+- `sigm_laplace(steps, sigma_min, sigma_max, [mu], [beta])`: Laplace schedule, `mu` defaults to `0` and `beta` to `0.5`; like ComfyUI's Laplace scheduler it has no final `0`.
+
 ---
 
 ### 7) Bitwise
@@ -395,6 +413,9 @@ All procedural noises return values in `0..1`.
 - `replace(str, search, replacement)`: replace occurrences.
 - `startswith(str, prefix)`: returns `1.0` if the string starts with `prefix`, otherwise `0.0`.
 - `endswith(str, suffix)`: returns `1.0` if the string ends with `suffix`, otherwise `0.0`.
+- `regex_search(str, pattern)`: position of the first match of the regular expression `pattern`, or `-1`.
+- `regex_replace(str, pattern, replacement)`: replace every regular-expression match; `replacement` can refer to groups as `\1`.
+- `format(value, [spec])`: format numbers as text; `spec` is a number of decimals (`format(x, 2)`) or a Python format spec (`format(x, ".3e")`). Defaults to the shortest form, so `0.3` stays `"0.3"`. Lists and tensors are formatted per element.
 
 ---
 
@@ -413,6 +434,8 @@ All procedural noises return values in `0..1`.
    - accepts packed tensor/list input or separate `r, g, b`.
 -  `cielab_to_rgb(...)`: convert CIELAB to RGB.
    - accepts packed tensor/list input or separate `L, a, b`.
+- `luminance(rgb)` / `luminance(r, g, b)`: Rec.709 luminance `0.2126 R + 0.7152 G + 0.0722 B`; the color dimension is removed.
+- `grayscale(image)`: replaces R, G, B with their luminance, keeping the shape and any alpha channel.
 - `int_to_rgb(value)`: convert packed integer color to RGB triplet.
 - `rgb_to_int(...)`: convert RGB triplet to packed integer color.
 
@@ -434,6 +457,8 @@ ___
 
 ### Generators
 - `text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline])` - renders text to an 2D tensor
+  - `font` is a font file path or an installed font name; installed fonts are scanned once, so restart ComfyUI after installing new ones,
+  - if the requested weight or italic face is missing, bold and italic are synthesized from the regular face.
 - `coordinates(shape, dim, [dtype])` / `coords` - generates a tensor whose values are the coordinates of each element along the specified dimension. dtype is copied from tensor at that position. Default is float32.
 
 

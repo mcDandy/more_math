@@ -3161,8 +3161,11 @@ class UnifiedMathVisitor(MathExprVisitor):
                 if res is not None:
                     last_res = res
         except ReturnSignal as signal:
-            return signal.value
+            last_res = signal.value
 
+        if isinstance(last_res, LambdaFunction):
+            final = ctx.expr()
+            raise ValueError(f"{final.start.line}:{final.start.column}: the script ends with a lambda, but it has to end with a value; call it instead, e.g. f(V0)")
         return last_res
 
     def visitExprStatement(self, ctx):

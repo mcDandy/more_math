@@ -49,7 +49,10 @@ breakStmt: BREAK SEMICOLON;
 continueStmt: CONTINUE SEMICOLON;
 returnStmt: RETURN expr? SEMICOLON;
 
-expr: ternaryExpr | compExpr;
+// A lambda binds loosest, so its body takes the whole following expression, ternaries included.
+expr: lambdaExpr | ternaryExpr | compExpr;
+
+lambdaExpr: LPAREN paramList RPAREN ARROW (expr | block) # LambdaExp;
 
 ternaryExpr: compExpr QUESTION expr COLON expr # TernaryExp;
 
@@ -117,7 +120,6 @@ atom:
 	| NUMBER						# NumberExp
 	| CONSTANT						# ConstantExp
 	| STRING						# StringExp
-	| LPAREN paramList RPAREN ARROW (expr | block)	# LambdaExp
 	| LPAREN expr RPAREN			# ParenExp
 	| LPAREN expr RPAREN			# ParenExp
 	| PIPE expr PIPE				# AbsExp

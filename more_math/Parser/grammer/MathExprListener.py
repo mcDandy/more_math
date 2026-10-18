@@ -215,6 +215,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#LambdaExp.
+    def enterLambdaExp(self, ctx:MathExprParser.LambdaExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#LambdaExp.
+    def exitLambdaExp(self, ctx:MathExprParser.LambdaExpContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#TernaryExp.
     def enterTernaryExp(self, ctx:MathExprParser.TernaryExpContext):
         pass
@@ -635,15 +644,6 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#StringExp.
     def exitStringExp(self, ctx:MathExprParser.StringExpContext):
-        pass
-
-
-    # Enter a parse tree produced by MathExprParser#LambdaExp.
-    def enterLambdaExp(self, ctx:MathExprParser.LambdaExpContext):
-        pass
-
-    # Exit a parse tree produced by MathExprParser#LambdaExp.
-    def exitLambdaExp(self, ctx:MathExprParser.LambdaExpContext):
         pass
 
 

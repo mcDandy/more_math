@@ -111,6 +111,24 @@ def test_stack_list_of_tensors_with_negative_dimension():
     assert torch.equal(result, torch.tensor([[1.0, 3.0], [2.0, 4.0]]))
 
 
+def test_lambda_binds_loosest():
+    assert _visit("f = (n) -> n <= 1 ? 1 : 2; f(0) + f(5)", {}) == 3.0
+    assert _visit("f = (g, n) -> n <= 1 ? 1 : n * g(g, n - 1); f(f, 4)", {}) == 24.0
+    assert _visit("h(p) -> p(3); h((x) -> x * 2)", {}) == 6.0
+    assert _visit("c = 1; f = c ? (x) -> x + 1 : (x) -> x - 1; f(5)", {}) == 6.0
+    assert _visit("f = (n) -> (n * 2); f(3)", {}) == 6.0
+    assert _visit("a = 2; (a + 3) * (a)", {}) == 10.0
+
+
+def test_script_has_to_end_with_a_value_not_a_lambda():
+    with pytest.raises(ValueError, match="ends with a lambda"):
+        _visit("(x) -> x * 2", {})
+    with pytest.raises(ValueError, match="ends with a lambda"):
+        _visit("f = (x) -> x * 2; f", {})
+    assert _visit("f = (x) -> x * 2; f(V0)", {"V0": 3.0}) == 6.0
+    assert _visit("V0 + V1", {"V0": 1.0, "V1": 2.0}) == 3.0
+
+
 def test_stack_separate_tensors_followed_by_dimension():
     first = torch.tensor([1.0, 2.0])
     second = torch.tensor([3.0, 4.0])

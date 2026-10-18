@@ -18,17 +18,21 @@ def get_raft_model():
     global _raft_patcher
     if _raft_patcher is None:
         names = folder_paths.get_filename_list("optical_flow")
-        model = raft_large(weights=None, progress=False)
-        model.load_state_dict(comfy.utils.load_torch_file(folder_paths.get_full_path_or_raise("optical_flow", names[0]), safe_load=True))
+        if not names:
+            weights = Raft_Large_Weights.DEFAULT
+            model = raft_large(weights=weights, progress=True)
+            save_dir = folder_paths.get_folder_paths("optical_flow")[0]
+            os.makedirs(save_dir, exist_ok=True)
+            torch.save(
+                model.state_dict(),
+                os.path.join(save_dir, os.path.basename(weights.url)),
+            )
+        else:
+            model = raft_large(weights=None, progress=False)
+            model.load_state_dict(comfy.utils.load_torch_file(folder_paths.get_full_path_or_raise("optical_flow", names[0]), safe_load=True))
         _raft_patcher = comfy.model_patcher.ModelPatcher(model.eval(), load_device=comfy.model_management.get_torch_device(), offload_device=comfy.model_management.unet_offload_device())
     comfy.model_management.load_model_gpu(_raft_patcher)
     return _raft_patcher.model
-        if names:
-            model = raft_large(weights=None, progress=False)
-            model.load_state_dict(comfy.utils.load_torch_file(folder_paths.get_full_path_or_raise("optical_flow", names[0]), safe_load=True))
-        else:
-            # No local checkpoint: download torchvision's RAFT weights once and keep a copy in models/optical_flow
-            weights = Raft_Large_Weights.DEFAULT
 
 def warp(x, flow, padding_mode='reflection'):
     """

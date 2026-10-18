@@ -1,5 +1,8 @@
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4 import InputStream, CommonTokenStream
+from antlr4.atn.PredictionMode import PredictionMode
+from antlr4.error.ErrorStrategy import BailErrorStrategy, DefaultErrorStrategy
+from antlr4.error.Errors import ParseCancellationException
 
 import torch
 
@@ -69,8 +72,20 @@ def parse_expr(expr: str):
     lexer = MathExprLexer(input_stream)
     stream = CommonTokenStream(lexer)
     parser = MathExprParser(stream)
-    parser.addErrorListener(ThrowingErrorListener())
-    return parser.start()
+    # SLL prediction is orders of magnitude faster and gives the same tree for valid input;
+    # only fall back to full LL (with proper error messages) when it bails out.
+    parser._interp.predictionMode = PredictionMode.SLL
+    parser.removeErrorListeners()
+    parser._errHandler = BailErrorStrategy()
+    try:
+        return parser.start()
+    except ParseCancellationException:
+        stream.seek(0)
+        parser.reset()
+        parser._interp.predictionMode = PredictionMode.LL
+        parser._errHandler = DefaultErrorStrategy()
+        parser.addErrorListener(ThrowingErrorListener())
+        return parser.start()
 
 
 def getIndexTensorAlongDim(tensor, dim):

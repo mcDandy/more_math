@@ -1,6 +1,7 @@
 from comfy_api.latest import io
 from .helper_functions import parse_expr
 from .ParseTree import MrmthParseTree
+from .Parser.dead_code import remove_dead_code
 
 class ScriptTextInput(io.ComfyNode):
 
@@ -21,5 +22,4 @@ class ScriptTextInput(io.ComfyNode):
 
     @classmethod
     def execute(cls, script):
-        expr = parse_expr(script)
-        return (expr,)
+        return (remove_dead_code(parse_expr(script)),)

@@ -10,6 +10,7 @@ import math
 import inspect
 import weakref
 import torch.nn.functional as F
+import folder_paths
 from comfy.nested_tensor import NestedTensor
 from comfy.model_management import throw_exception_if_processing_interrupted
 from comfy.k_diffusion import sampling as k_sampling
@@ -190,9 +191,7 @@ def _font_axis_name(axis):
     return str(name).lower()
 
 
-@functools.lru_cache(maxsize=1)
-def _system_fonts():
-    """Index of installed fonts, scanned once per process (fonts installed later need a restart)."""
+def _font_dirs():
     if sys.platform == "win32":
         search_dirs = [os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"), os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Windows\Fonts")]
     elif sys.platform == "darwin":
@@ -205,9 +204,23 @@ def _system_fonts():
             os.path.expanduser("~/.local/share/fonts"),
             os.path.expanduser("~/.fonts"),
         ]
+    return list(dict.fromkeys(search_dirs))
 
+
+def _is_allowed_font_file(path):
+    """Font files given by path must be in a system font folder or in ComfyUI's input folder."""
+    if not os.path.isfile(path):
+        return False
+    path = os.path.normcase(os.path.realpath(path))
+    roots = _font_dirs() + [folder_paths.get_input_directory()]
+    return any(path.startswith(os.path.normcase(os.path.realpath(root)) + os.sep) for root in roots)
+
+
+@functools.lru_cache(maxsize=1)
+def _system_fonts():
+    """Index of installed fonts, scanned once per process (fonts installed later need a restart)."""
     fonts = []
-    for directory in dict.fromkeys(search_dirs):
+    for directory in _font_dirs():
         for root, _, files in os.walk(directory):
             for fname in files:
                 if not fname.lower().endswith((".ttf", ".otf", ".ttc", ".otc")):
@@ -3536,7 +3549,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         tier = _FONT_WEIGHT_TIERS[bisect.bisect_left((150, 250, 350, 450, 550, 650, 750, 850), weight_val)]
         synthetic_italic = synthetic_bold = False
         variation_weight, variation_italic = weight_val, is_italic
-        if os.path.isfile(font_name):
+        if _is_allowed_font_file(font_name):
             font_path = font_name
         else:
             font_path = _find_font(font_name, tier, weight_val, is_italic)

@@ -80,17 +80,12 @@ def test_lambda_calls_require_exact_argument_count(call):
 def test_text_image_size_expression_is_evaluated_once(monkeypatch):
     visitor_module = importlib.import_module("more_math.Parser.UnifiedMathVisitor")
     default_font = ImageFont.load_default()
-    original_isfile = os.path.isfile
     monkeypatch.setattr(
         visitor_module.ImageFont,
         "truetype",
         lambda *args, **kwargs: default_font,
     )
-    monkeypatch.setattr(
-        visitor_module.os.path,
-        "isfile",
-        lambda path: path == "mock-font" or original_isfile(path),
-    )
+    monkeypatch.setattr(visitor_module, "_is_allowed_font_file", lambda path: path == "mock-font")
 
     values = MathDict()
     _visit(
@@ -99,6 +94,15 @@ def test_text_image_size_expression_is_evaluated_once(monkeypatch):
     )
 
     assert len(values) == 1
+
+
+def test_text_image_rejects_font_path_outside_font_folders(monkeypatch):
+    visitor_module = importlib.import_module("more_math.Parser.UnifiedMathVisitor")
+    monkeypatch.setattr(visitor_module, "_find_font", lambda *args: None)
+    path = os.path.abspath(__file__).replace("\\", "/")
+
+    with pytest.raises(FileNotFoundError):
+        _visit(f'text_image("x", "{path}", 12)', {})
 
 
 def test_stack_list_of_tensors_with_negative_dimension():

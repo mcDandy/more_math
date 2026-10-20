@@ -4,6 +4,7 @@
 
 import os
 import sys
+import json
 
 # Ensure test runner (Visual Studio) can import the package regardless of working dir.
 # If repository uses `src/` layout, add that to sys.path; otherwise add project root.
@@ -681,7 +682,41 @@ def test_dict_literal_and_stringification():
     assert result["a"] == 1.0
     assert result["b"] == "two"
     assert result["nested"]["c"] == 3.0
-    assert str(result) == "{a:1.0, b:two, nested:{c:3.0}}"
+    assert str(result) == '{"a": 1.0, "b": "two", "nested": {"c": 3.0}}'
+
+
+def test_dict_types_stringify_as_json_with_tensor_arrays():
+    from more_math.Parser.UnifiedMathVisitor import ChangeTrackingDict, MathDict
+
+    values = {
+        "items": [1.0, {"nested": True}],
+        "tensor": torch.tensor([[2, 3]]),
+    }
+    expected = {"items": [1.0, {"nested": True}], "tensor": [[2, 3]]}
+
+    for dict_type in (MathDict, ChangeTrackingDict):
+        result = dict_type(values)
+        assert repr(result) == str(result)
+        assert json.loads(str(result)) == expected
+
+
+def test_json_functions_decode_nested_objects_and_encode_tensors():
+    from more_math.Parser.UnifiedMathVisitor import MathDict, UnifiedMathVisitor
+    from more_math.helper_functions import parse_expr
+
+    text = '{"items":[1,{"name":"two"}],"enabled":true}'
+    visitor = UnifiedMathVisitor({"text": text, "value": MathDict({"tensor": torch.tensor([1, 2])})}, (1,))
+    decoded = visitor.visit(parse_expr("from_json(text)"))
+    encoded = visitor.visit(parse_expr("to_json(value)"))
+
+    assert isinstance(decoded, MathDict)
+    assert isinstance(decoded["items"][1], MathDict)
+    assert decoded["items"][0] == 1
+    assert decoded["enabled"] is True
+    assert json.loads(str(decoded)) == json.loads(text)
+    assert json.loads(encoded) == {"tensor": [1, 2]}
+    assert json.loads(visitor.visit(parse_expr("json_encode(value)"))) == {"tensor": [1, 2]}
+    assert visitor.visit(parse_expr("json_decode(text)")) == decoded
 
 
 def test_dict_index_assignment_and_get():

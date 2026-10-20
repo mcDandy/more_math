@@ -2258,6 +2258,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#ToJsonFunc.
+    def enterToJsonFunc(self, ctx:MathExprParser.ToJsonFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#ToJsonFunc.
+    def exitToJsonFunc(self, ctx:MathExprParser.ToJsonFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FromJsonFunc.
+    def enterFromJsonFunc(self, ctx:MathExprParser.FromJsonFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FromJsonFunc.
+    def exitFromJsonFunc(self, ctx:MathExprParser.FromJsonFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#FormatFunc.
     def enterFormatFunc(self, ctx:MathExprParser.FormatFuncContext):
         pass

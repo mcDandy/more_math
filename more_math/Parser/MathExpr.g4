@@ -1109,6 +1109,16 @@ func2:
 		*/
 	| REGEX_REPLACE LPAREN expr COMMA expr COMMA expr RPAREN	# RegexReplaceFunc
 		/**
+		  to_json(value) - serializes a value as JSON; tensors become nested arrays
+		  - value: JSON-compatible value, dictionary, list, or tensor
+		*/
+	| TO_JSON LPAREN expr RPAREN				# ToJsonFunc
+		/**
+		  from_json(text) - parses JSON; objects become dictionaries and arrays become lists
+		  - text: JSON text; decoded arrays remain ordinary lists
+		*/
+	| FROM_JSON LPAREN expr RPAREN			# FromJsonFunc
+		/**
 		  format(value, [spec]) - formats numbers as text. spec is a number of decimals or a Python format spec such as ".3e" (default: shortest form, "g"); lists and tensors are formatted per element
 		  - value: number, list or tensor
 		  - spec: decimal count or format spec text
@@ -1978,6 +1988,8 @@ REPLACE: 'replace';
 REGEX_SEARCH: 'regex_search';
 REGEX_REPLACE: 'regex_replace';
 FORMAT: 'format';
+TO_JSON: 'to_json' | 'json_encode';
+FROM_JSON: 'from_json' | 'json_decode';
 DILATE: 'dilate';
 ERODE: 'erode';
 MORPH_OPEN: 'morph_open';

@@ -416,6 +416,8 @@ Same schedules as ComfyUI's scheduler nodes, as a tensor of sigmas for the `SIGM
 - `endswith(str, suffix)`: returns `1.0` if the string ends with `suffix`, otherwise `0.0`.
 - `regex_search(str, pattern)`: position of the first match of the regular expression `pattern`, or `-1`.
 - `regex_replace(str, pattern, replacement)`: replace every regular-expression match; `replacement` can refer to groups as `\1`.
+- `to_json(value)` / `json_encode(value)`: encode dictionaries, lists, and tensors as JSON. Tensors become nested arrays.
+- `from_json(text)` / `json_decode(text)`: decode JSON objects to dictionaries and arrays to lists. Tensor dtype and device are not preserved.
 - `format(value, [spec])`: format numbers as text; `spec` is a number of decimals (`format(x, 2)`) or a Python format spec (`format(x, ".3e")`). Defaults to the shortest form, so `0.3` stays `"0.3"`. Lists and tensors are formatted per element.
 
 ---

@@ -1259,6 +1259,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#ToJsonFunc.
+    def visitToJsonFunc(self, ctx:MathExprParser.ToJsonFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FromJsonFunc.
+    def visitFromJsonFunc(self, ctx:MathExprParser.FromJsonFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#FormatFunc.
     def visitFormatFunc(self, ctx:MathExprParser.FormatFuncContext):
         return self.visitChildren(ctx)

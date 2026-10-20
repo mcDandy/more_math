@@ -1,5 +1,6 @@
 import bisect
 import functools
+import json
 import time
 import os
 import re
@@ -42,9 +43,30 @@ class BreakSignal(ControlSignal):
 class ContinueSignal(ControlSignal):
     pass
 
+def _json_default(value):
+    if isinstance(value, torch.Tensor):
+        value = value.detach()
+        if value.dtype in _FLOAT8_DTYPES:
+            value = value.float()
+        return value.cpu().tolist()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def _to_json(value):
+    return json.dumps(value, default=_json_default, allow_nan=False)
+
+
+def _from_json(value):
+    if isinstance(value, dict):
+        return MathDict({key: _from_json(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return [_from_json(item) for item in value]
+    return value
+
+
 class MathDict(dict):
     def __str__(self):
-        return "{" + ", ".join(f"{k}:{v}" for k, v in self.items()) + "}"
+        return _to_json(self)
 
     __repr__ = __str__
 
@@ -54,6 +76,11 @@ class ChangeTrackingDict(dict):
     A dict subclass that tracks which keys have been modified after initialization.
     Used in dict_mode to identify which patches need to be computed.
     """
+    def __str__(self):
+        return _to_json(self)
+
+    __repr__ = __str__
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Record initial keys and values for change tracking
@@ -5122,6 +5149,15 @@ class UnifiedMathVisitor(MathExprVisitor):
         text = str((yield ctx.expr(0)))
         pattern = str((yield ctx.expr(1)))
         return re.sub(pattern, str((yield ctx.expr(2))), text)
+
+    def visitToJsonFunc(self, ctx):
+        return _to_json((yield ctx.expr()))
+
+    def visitFromJsonFunc(self, ctx):
+        value = yield ctx.expr()
+        if not isinstance(value, str):
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: from_json() requires JSON text")
+        return _from_json(json.loads(value))
 
     def visitFormatFunc(self, ctx):
         value = yield ctx.expr(0)

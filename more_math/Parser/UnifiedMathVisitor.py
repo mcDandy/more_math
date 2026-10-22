@@ -3943,8 +3943,28 @@ class UnifiedMathVisitor(MathExprVisitor):
         return torch.cumsum(val, dim=dim)
 
     def visitCumprodFunc(self, ctx):
-        val = self._promote_to_tensor((yield ctx.expr()))
-        return torch.cumprod(val, dim=0)
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        dim = 0
+        if len(ctx.expr()) > 1:
+            dim_val = (yield ctx.expr(1))
+            dim = self._to_int(dim_val, ctx, "cumprod dim", strict=True)
+        return torch.cumprod(val, dim=dim)
+
+    def visitCummaxFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        dim = 0
+        if len(ctx.expr()) > 1:
+            dim_val = (yield ctx.expr(1))
+            dim = self._to_int(dim_val, ctx, "cummax dim", strict=True)
+        return torch.cummax(val, dim=dim)
+
+    def visitCumminFunc(self, ctx):
+        val = self._promote_to_tensor((yield ctx.expr(0)))
+        dim = 0
+        if len(ctx.expr()) > 1:
+            dim_val = (yield ctx.expr(1))
+            dim = self._to_int(dim_val, ctx, "cummin dim", strict=True)
+        return torch.cummin(val, dim=dim)
 
     def visitTopkIndFunc(self, ctx):
         val = self._promote_to_tensor((yield ctx.expr(0)))

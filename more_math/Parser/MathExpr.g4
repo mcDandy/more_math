@@ -497,10 +497,23 @@ func1:
 		*/
 	| REPEAT LPAREN expr COMMA expr (COMMA expr)? RPAREN	# RepeatFunc
 		/**
-		  cumprod(x) - computes the cumulative product over first dimension.
+		  cumprod(x, [dim]) - computes the cumulative product over dim dimension or first dimension if not specified.
 		  - x: list or tensor
+		  - dim: dimension to accumulate along (default: 0)
 		*/
-	| CUMPROD LPAREN expr RPAREN			# CumprodFunc
+	| CUMPROD LPAREN expr (COMMA expr)? RPAREN			# CumprodFunc
+		/**
+		  cummax(x, [dim]) - computes the cumulative maximum over dim dimension or first dimension if not specified.
+		  - x: list or tensor
+		  - dim: dimension to accumulate along (default: 0)
+		*/
+	| CUMMAX LPAREN expr (COMMA expr)? RPAREN			# CummaxFunc
+		/**
+		  cummin(x, [dim]) - computes the cumulative minimum over dim dimension or first dimension if not specified.
+		  - x: list or tensor
+		  - dim: dimension to accumulate along (default: 0)
+		*/
+	| CUMMIN LPAREN expr (COMMA expr)? RPAREN			# CumminFunc
 		/**
 		  stack_pop(slot) - removes and returns the last element of slot stack
 		  - slot: stack number (any integer)
@@ -1907,6 +1920,8 @@ GRAYSCALE: 'grayscale';
 GAUSSIAN: 'blur' | 'gaussian';
 MEDIAN: 'median';
 MODE: 'mode';
+CUMMAX: 'cummax';
+CUMMIN: 'cummin';
 CUMSUM: 'cumsum';
 CUMPROD: 'cumprod';
 TOPK_IND: 'topk_ind' | 'topk_indices';

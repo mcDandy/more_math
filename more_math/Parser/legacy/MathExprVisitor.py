@@ -759,6 +759,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#CummaxFunc.
+    def visitCummaxFunc(self, ctx:MathExprParser.CummaxFuncContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#CumminFunc.
+    def visitCumminFunc(self, ctx:MathExprParser.CumminFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PopFunc.
     def visitPopFunc(self, ctx:MathExprParser.PopFuncContext):
         return self.visitChildren(ctx)

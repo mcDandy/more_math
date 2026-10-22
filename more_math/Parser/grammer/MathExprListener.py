@@ -1358,6 +1358,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#CummaxFunc.
+    def enterCummaxFunc(self, ctx:MathExprParser.CummaxFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CummaxFunc.
+    def exitCummaxFunc(self, ctx:MathExprParser.CummaxFuncContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#CumminFunc.
+    def enterCumminFunc(self, ctx:MathExprParser.CumminFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#CumminFunc.
+    def exitCumminFunc(self, ctx:MathExprParser.CumminFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PopFunc.
     def enterPopFunc(self, ctx:MathExprParser.PopFuncContext):
         pass

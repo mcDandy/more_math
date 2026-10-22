@@ -220,8 +220,10 @@ You can also get the node from comfy manager under the name of More math.
 - `any(x)`: `1.0` if any element is non-zero.
 - `all(x)`: `1.0` if all elements are non-zero.
 - `count(x)` / `length(x)` / `cnt(x)`: number of elements or length.
+- `cummax(x, [dim])`: cumulative maximum; `dim` defaults to `0`.
+- `cummin(x, [dim])`: cumulative minimum; `dim` defaults to `0`.
 - `cumsum(x, [dim])`: cumulative sum; `dim` defaults to `0`.
-- `cumprod(x)`: cumulative product along dimension `0`.
+- `cumprod(x, [dim])`: cumulative product; `dim` defaults to `0`.
 - `smin(x, ...[, dims])`: scalar minimum across inputs; optionally reduce the first tensor/list input across `dims`.
 - `smax(x, ...[, dims])`: scalar maximum across inputs; optionally reduce the first tensor/list input across `dims`.
 - `weighted_mean(x, weights, [dims])`: computes `sum(x * weights) / sum(weights)` globally or along one or more dimensions; raises an error if a reduction's weights sum to zero.

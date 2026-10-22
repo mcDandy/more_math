@@ -362,6 +362,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         self._owned_tensors = weakref.WeakValueDictionary()
 
     def visit(self, tree):
+        throw_exception_if_processing_interrupted()
         if tree is None:
             return None
 

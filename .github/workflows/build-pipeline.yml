@@ -60,8 +60,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
           pip install -r requirements.txt
+          pip install pytest ruff
 
       - name: Clone ComfyUI dependency
         run: |

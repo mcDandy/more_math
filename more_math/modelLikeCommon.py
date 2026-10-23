@@ -288,7 +288,7 @@ def calculate_patches_autogrow(Expr, V, F, pbar=None, mapping=None, stack=None, 
         # In autogrow mode, expression must return a single tensor (patch for this key)
         # If a dict is returned, that's an error - use dict_mode instead
         if isinstance(res, dict) and not isinstance(res, torch.Tensor):
-            raise ValueError(f"Autogrow mode expects tensor output, got dict. Use dict_mode=True for dict output.")
+            raise ValueError("Autogrow mode expects tensor output, got dict. Use dict_mode=True for dict output.")
 
         res = as_tensor(res, ref_tensor.shape)
 

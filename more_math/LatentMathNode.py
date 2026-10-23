@@ -16,7 +16,6 @@ from .helper_functions import (
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import comfy
 import torch
-from comfy.nested_tensor import NestedTensor
 from .Stack import MrmthStack
 from .ParseTree import MrmthParseTree
 import copy

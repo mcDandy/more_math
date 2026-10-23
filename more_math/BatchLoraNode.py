@@ -1,4 +1,3 @@
-from email.mime import base
 
 from comfy_api.latest import io
 import folder_paths

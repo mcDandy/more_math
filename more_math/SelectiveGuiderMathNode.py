@@ -748,6 +748,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 dbg(f"HOOK SUMMARY ITEM {item}")
 
         return result
-    
+
 def tensor_shape(x):
     return list(x.shape) if isinstance(x, torch.Tensor) else []

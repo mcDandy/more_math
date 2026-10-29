@@ -460,7 +460,7 @@ Same schedules as ComfyUI's scheduler nodes, as a tensor of sigmas for the `SIGM
 
 ___
 
-### Generators
+### 11) Generators
 - `text_image(text, font, size, [max_width], [weight], [rotation_angle], [line_spacing], [italic], [underline])` - renders text to an 2D tensor
   - `font` is a font file path or an installed font name; installed fonts are scanned once, so restart ComfyUI after installing new ones,
   - if the requested weight or italic face is missing, bold and italic are synthesized from the regular face.
@@ -469,14 +469,14 @@ ___
 
 ---
 
-### 11) State / Stack
+### 12) State / Stack
 - `stack_push(id, value)`: push into stack slot.
 - `stack_pop(id)`: pop from stack slot.
 - `stack_get(id)`: read top value without removing it.
 - `stack_clear(id)`: clear stack slot.
 - `stack_has(id)`: check whether slot exists and is non-empty.
 
-### 12) Dictionary 
+### 13) Dictionary 
  - `add_key(dict, key, value)` - add a key-value pair to a dictionary.
  - `remove_key(dict, key)` / `rm_key` - remove a key-value pair from a dictionary.
  - `keys(dict)` - returns a list of dictionary keys in insertion order.

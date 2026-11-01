@@ -1753,6 +1753,14 @@ funcNoise:
 		*/
 	| STUDENTTDIST LPAREN expr COMMA expr (COMMA expr)? RPAREN	# StudentTDistFunc
 		/**
+		  random_binomial(seed, n, p, [shape]) - generates Binomial distributed random values
+		  - seed: random seed; the same seed always gives the same values
+		  - n: number of trials
+		  - p: probability of success
+		  - shape: output shape as a list (default: the shape of the node's input)
+		*/
+	| BINOMIALDIST LPAREN expr COMMA expr COMMA expr (COMMA expr)? RPAREN	# BinomialDistFunc
+		/**
 		  perlin_noise(seed, scale, [octaves], [offset], [shape]) - generates Perlin gradient noise in 0-1 (default 1 octave)
 		  - seed: random seed; the same seed always gives the same values
 		  - scale: feature size in elements; larger values give smoother noise
@@ -2066,6 +2074,7 @@ CAUCHY: 'randc' | 'random_cauchy';
 EXPONENTIAL: 'rande' | 'random_exponential';
 LOGNORMAL: 'randln' | 'random_log_normal';
 BERNOULLI: 'randb' | 'random_bernoulli';
+BINOMIALDIST: 'randbin' | 'random_binomial';
 POISSON: 'randp' | 'random_poisson';
 GAMMADIST: 'randg' | 'random_gamma';
 BETADIST: 'randbeta' | 'random_beta';

@@ -1699,6 +1699,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BinomialDistFunc.
+    def visitBinomialDistFunc(self, ctx:MathExprParser.BinomialDistFuncContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#PerlinFunc.
     def visitPerlinFunc(self, ctx:MathExprParser.PerlinFuncContext):
         return self.visitChildren(ctx)

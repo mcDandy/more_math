@@ -3050,6 +3050,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#BinomialDistFunc.
+    def enterBinomialDistFunc(self, ctx:MathExprParser.BinomialDistFuncContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BinomialDistFunc.
+    def exitBinomialDistFunc(self, ctx:MathExprParser.BinomialDistFuncContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#PerlinFunc.
     def enterPerlinFunc(self, ctx:MathExprParser.PerlinFuncContext):
         pass

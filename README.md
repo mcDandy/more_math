@@ -354,6 +354,7 @@ You can also get the node from comfy manager under the name of More math.
 - `randc(seed, median, sigma, [shape])` / `random_cauchy`: Cauchy distribution.
 - `randln(seed, mean, std, [shape])` / `random_log_normal`: log-normal distribution.
 - `randb(seed, probability, [shape])` / `random_bernoulli`: Bernoulli distribution.
+- `randbin(seed, n, p, [shape])` / `random_binomial`: binomial distribution.
 - `randp(seed, lambda, [shape])` / `random_poisson`: Poisson distribution.
 - `randg(seed, shape_param, scale, [shape])` / `random_gamma`: gamma distribution.
 - `randbeta(seed, alpha, beta, [shape])` / `random_beta`: beta distribution.

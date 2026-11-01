@@ -3877,6 +3877,23 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         return z / torch.sqrt(v / df)
 
+    def visitBinomialDistFunc(self, ctx):
+        seed_val = yield ctx.expr(0)
+        seed = int(seed_val.item()) if self._is_tensor(seed_val) else int(seed_val)
+        n_val = yield ctx.expr(1)
+        n = torch.as_tensor(n_val, device=self.device, dtype=torch.float32)
+        p_val = yield ctx.expr(2)
+        p = torch.as_tensor(p_val, device=self.device, dtype=torch.float32)
+        shape_arg = self.shape
+        if len(ctx.expr()) > 3:
+            shape_arg = (yield ctx.expr(3))
+
+        shape_arg = self._normalize_shape_arg(shape_arg, ctx, "binomial")
+        generator = torch.Generator(device=self.device).manual_seed(seed)
+        return torch.empty(shape_arg, device=self.device).binomial_(
+            n, p, generator=generator
+    )
+
     def visitNvlFunc(self, ctx):
         v = yield ctx.expr(0)
         v1 = yield ctx.expr(1)

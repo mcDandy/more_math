@@ -352,6 +352,14 @@ def test_custom_functions():
     expr5 = "f(y) -> x + y; f(5)"
     assert parse_and_visit(expr5, vars) == 15.0
 
+    # 5. Variable and function names may contain non-alphanumeric characters
+    expr6 = "$double(@value) -> @value * 2; $double(3)"
+    assert parse_and_visit(expr6, vars) == 6.0
+
+
+def test_numeric_literals_are_not_variables():
+    assert parse_and_visit("a = 2; a", {}) == 2.0
+
 def test_append():
     vars = {}
 

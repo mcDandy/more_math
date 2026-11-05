@@ -20,12 +20,18 @@ funcDef:
 	VARIABLE LPAREN paramList? RPAREN ARROW (expr | block) SEMICOLON # FunctionDef;
 
 varDef:
-	VARIABLE (LBRACKET expr (COMMA expr)* RBRACKET)* (EQUEALS | PLUS_EQ | MINUS_EQ | MULT_EQ | DIV_EQ | MOD_EQ) expr SEMICOLON;
+	destructureTarget assignmentOperator expr SEMICOLON
+	| VARIABLE (LBRACKET expr (COMMA expr)* RBRACKET)* assignmentOperator expr SEMICOLON;
+
+destructureTarget: LBRACKET variableList RBRACKET;
+variableList: VARIABLE (COMMA VARIABLE)+;
+assignmentOperator: EQUEALS | PLUS_EQ | MINUS_EQ | MULT_EQ | DIV_EQ | MOD_EQ;
 
 paramList: VARIABLE (COMMA VARIABLE)*;
 
 stmt:
 	ifStmt				# IfStatement
+	| funcDef			# FunctionDefStatement
 	| whileStmt			# WhileStatement
 	| block				# BlockStatement
 	| breakStmt			# BreakStatement
@@ -35,9 +41,9 @@ stmt:
 	| forStmt			# ForStatement
 	| expr SEMICOLON	# ExprStatement;
 
-ifStmt: IF LPAREN expr RPAREN stmt (ELSE stmt)?;
+ifStmt: IF LPAREN expr RPAREN stmt (ELIF LPAREN expr RPAREN stmt)* (ELSE stmt)?;
 whileStmt: WHILE LPAREN expr RPAREN stmt;
-forStmt: FOR LPAREN VARIABLE IN expr RPAREN stmt;
+forStmt: FOR LPAREN (VARIABLE | LBRACKET variableList RBRACKET) IN expr RPAREN stmt;
 block: LBRACE stmt* RBRACE;
 
 dictEntryList: dictEntry (COMMA dictEntry)*;
@@ -51,7 +57,9 @@ continueStmt: CONTINUE SEMICOLON;
 returnStmt: RETURN expr? SEMICOLON;
 
 // A lambda binds loosest, so its body takes the whole following expression, ternaries included.
-expr: lambdaExpr | ternaryExpr | compExpr;
+expr: lambdaExpr | assignmentExpr | ternaryExpr | compExpr;
+
+assignmentExpr: (VARIABLE | destructureTarget) assignmentOperator expr;
 
 lambdaExpr: LPAREN paramList? RPAREN ARROW (expr | block) # LambdaExp;
 
@@ -77,6 +85,7 @@ addExpr:
 mulExpr:
 	mulExpr MULT unaryExpr	# MulExp
 	| mulExpr DIV unaryExpr	# DivExp
+	| mulExpr FLOOR_DIV unaryExpr	# FloorDivExp
 	| mulExpr MOD unaryExpr	# ModExp
 	| unaryExpr			# ToPow;
 
@@ -90,6 +99,8 @@ powExpr: indexExpr POW unaryExpr # PowExp | indexExpr # ToUnary;
 unaryExpr:
 	PLUS unaryExpr		# UnaryPlus
 	| MINUS unaryExpr	# UnaryMinus
+	| INC VARIABLE		# PreIncrement
+	| DEC VARIABLE		# PreDecrement
 	| powExpr			# ToIndex;
 
 indexExpr:
@@ -117,9 +128,13 @@ atom:
 	| func5							# Func5Exp
 	| funcN							# FuncNExp
 	| funcNoise						# FuncNoiseExp
+	| VARIABLE INC					# PostIncrement
+	| VARIABLE DEC					# PostDecrement
 	| VARIABLE						# VariableExp
 	| NUMBER						# NumberExp
 	| CONSTANT						# ConstantExp
+	| NAN							# NanExp
+	| INF							# InfExp
 	| TRUE							# BooleanExp
 	| FALSE							# BooleanExp
 	| STRING						# StringExp
@@ -2037,6 +2052,7 @@ SVD: 'svd'|'singular_value_decomposition';
 DIAG: 'diagonal_matrix'|'diag';
 
 IF: 'if';
+ELIF: 'elif';
 ELSE: 'else';
 WHILE: 'while';
 FOR: 'for';
@@ -2098,6 +2114,9 @@ MINUS: '-';
 MULT: '*';
 DIV: '/';
 MOD: '%';
+FLOOR_DIV: '//';
+INC: '++';
+DEC: '--';
 POW: '^';
 LSHIFT: '<<';
 RSHIFT: '>>';
@@ -2127,8 +2146,10 @@ COLON: ':';
 LBRACE: '{';
 RBRACE: '}';
 
-NUMBER: ([0-9]+ ('.' [0-9]*)? | '.' [0-9]+) ([eE][+-]? [0-9]+)?;
+NUMBER: ('0' [xX] [0-9a-fA-F] ('_'? [0-9a-fA-F])* | '0' [bB] [01] ('_'? [01])* | [0-9] ('_'? [0-9])* ('.' [0-9] ('_'? [0-9])*)? | '.' [0-9] ('_'? [0-9])*) ([eE][+-]? [0-9] ('_'? [0-9])*)?;
 CONSTANT: ('pi' | 'PI' | 'e' | 'E');
+NAN: 'nan' | 'NaN' | 'NAN';
+INF: 'inf' | 'Inf' | 'INF' | 'infinity' | 'Infinity' | 'INFINITY';
 STRING: '"' (~["\\\r\n] | '\\' .)* '"'
 	   | '\'' (~['\\\r\n] | '\\' .)* '\''
 	   ;

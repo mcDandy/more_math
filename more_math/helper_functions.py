@@ -366,10 +366,12 @@ def _collect_vars_from_node( node, needed_vars, assigned_vars, shadowed_vars):
         return
 
     # Compound (x += ...) and indexed (x[i] = ...) assignments read their target
-    if node_type == 'VarDefContext' and (node.LBRACKET() or node.EQUEALS() is None):
-        var_name = node.VARIABLE().getText()
-        if var_name not in shadowed_vars and var_name not in assigned_vars:
-            needed_vars.add(var_name)
+    if node_type == 'VarDefContext':
+        assignment = node.assignmentOperator().getText()
+        if node.destructureTarget() is None and (node.LBRACKET() or assignment != '='):
+            var_name = node.VARIABLE().getText()
+            if var_name not in shadowed_vars and var_name not in assigned_vars:
+                needed_vars.add(var_name)
 
     # Recursively visit children
     for i in range(node.getChildCount()):
@@ -410,9 +412,11 @@ def checkLazyNew(Expression, V, F):
 
         # Top-level assignments
         elif rule_name == 'varDef':
-            var_name = child.VARIABLE().getText()
             _collect_vars_from_node(child, needed_vars, assigned_vars, set())
-            assigned_vars.add(var_name)
+            if child.destructureTarget():
+                assigned_vars.update(node.getText() for node in child.destructureTarget().variableList().VARIABLE())
+            else:
+                assigned_vars.add(child.VARIABLE().getText())
 
         # Track other top-level statements
         else:

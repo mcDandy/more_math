@@ -802,7 +802,16 @@ class UnifiedMathVisitor(MathExprVisitor):
     # ========================
 
     def visitNumberExp(self, ctx):
-        return float(ctx.NUMBER().getText())
+        text = ctx.NUMBER().getText().replace("_", "")
+        if text.lower().startswith(("0x", "0b")):
+            return float(int(text, 0))
+        return float(text)
+
+    def visitNanExp(self, ctx):
+        return float("nan")
+
+    def visitInfExp(self, ctx):
+        return float("inf")
 
     def visitConstantExp(self, ctx):
         val = ctx.CONSTANT().getText().lower()
@@ -1123,6 +1132,11 @@ class UnifiedMathVisitor(MathExprVisitor):
         a = yield ctx.mulExpr()
         b = yield ctx.unaryExpr()
         return self._bin_op(a, b, torch.div, lambda a, b: a / b, ctx)
+
+    def visitFloorDivExp(self, ctx):
+        a = yield ctx.mulExpr()
+        b = yield ctx.unaryExpr()
+        return self._bin_op(a, b, lambda x, y: torch.floor(torch.div(x, y)), lambda x, y: math.floor(x / y), ctx)
 
     def visitModExp(self, ctx):
         a = yield ctx.mulExpr()
@@ -3230,6 +3244,7 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitBlock(self, ctx):
         vars_before = set(self.variables.keys())
+        functions_before = set(self.functions.keys())
         try:
             val = None
             for stmt in ctx.stmt():
@@ -3238,17 +3253,23 @@ class UnifiedMathVisitor(MathExprVisitor):
         finally:
             for v in set(self.variables.keys()) - vars_before:
                 del self.variables[v]
+            for name in set(self.functions.keys()) - functions_before:
+                del self.functions[name]
 
     def visitIfStatement(self, ctx):
         return (yield ctx.ifStmt())
 
-    def visitIfStmt(self, ctx):
-        cond = yield ctx.expr()
+    def visitFunctionDefStatement(self, ctx):
+        return (yield ctx.funcDef())
 
-        if self._truthy(cond):
-            return (yield ctx.stmt(0))
-        elif ctx.stmt(1):
-            return (yield ctx.stmt(1))
+    def visitIfStmt(self, ctx):
+        conditions = ctx.expr()
+        bodies = ctx.stmt()
+        for index, condition in enumerate(conditions):
+            if self._truthy((yield condition)):
+                return (yield bodies[index])
+        if len(bodies) > len(conditions):
+            return (yield bodies[-1])
         return None
 
     def visitWhileStmt(self, ctx):
@@ -3265,7 +3286,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         return None
 
     def visitForStmt(self, ctx):
-        var_name = ctx.VARIABLE().getText()
+        if ctx.variableList():
+            var_names = [node.getText() for node in ctx.variableList().VARIABLE()]
+        else:
+            var_names = [ctx.VARIABLE().getText()]
         iterable = yield ctx.expr()
 
         iterator = []
@@ -3281,7 +3305,13 @@ class UnifiedMathVisitor(MathExprVisitor):
 
         for val in iterator:
             throw_exception_if_processing_interrupted()
-            self.variables[var_name] = val
+            if len(var_names) == 1:
+                self.variables[var_names[0]] = val
+            else:
+                if not self._is_list(val) or len(val) != len(var_names):
+                    raise ValueError(f"{ctx.start.line}:{ctx.start.column}: cannot unpack loop value into {len(var_names)} variables")
+                for name, item in zip(var_names, val):
+                    self.variables[name] = item
             try:
                 yield ctx.stmt()
             except BreakSignal:
@@ -3305,10 +3335,27 @@ class UnifiedMathVisitor(MathExprVisitor):
         return ReturnSignal(val)
 
     def visitVarDef(self, ctx):
-        var_name = ctx.VARIABLE().getText()
         expr_list = ctx.expr()
+        assign_op = ctx.assignmentOperator().getText()
 
-        assign_op = "="
+        if ctx.destructureTarget():
+            value = yield expr_list[0]
+            names = [node.getText() for node in ctx.destructureTarget().variableList().VARIABLE()]
+            if assign_op != "=":
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: compound assignment is not supported for destructuring")
+            if not self._is_list(value) or len(value) != len(names):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: cannot unpack value into {len(names)} variables")
+            for name, item in zip(names, value):
+                self.variables[name] = item
+            return value
+
+        var_name = ctx.VARIABLE().getText()
+
+        if not ctx.assignmentOperator():
+            assign_op = "="
+
+        if assign_op == "=":
+            pass
         if getattr(ctx, "PLUS_EQ", lambda: None)() is not None: assign_op = "+="
         elif getattr(ctx, "MINUS_EQ", lambda: None)() is not None: assign_op = "-="
         elif getattr(ctx, "MULT_EQ", lambda: None)() is not None: assign_op = "*="
@@ -3460,6 +3507,53 @@ class UnifiedMathVisitor(MathExprVisitor):
         else:
             raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Indexed assignment not supported for {type(target)}")
 
+
+    def visitAssignmentExpr(self, ctx):
+        assign_op = ctx.assignmentOperator().getText()
+        value = yield ctx.expr()
+        if ctx.destructureTarget():
+            names = [node.getText() for node in ctx.destructureTarget().variableList().VARIABLE()]
+            if assign_op != "=" or not self._is_list(value) or len(value) != len(names):
+                raise ValueError(f"{ctx.start.line}:{ctx.start.column}: invalid destructuring assignment")
+            for name, item in zip(names, value):
+                self.variables[name] = item
+            return value
+
+        name = ctx.VARIABLE().getText()
+        if assign_op != "=" and name not in self.variables:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Variable '{name}' not defined for compound assignment.")
+        if assign_op == "+=":
+            value = self._bin_op(self.variables[name], value, torch.add, lambda a, b: a + b, ctx)
+        elif assign_op == "-=":
+            value = self._bin_op(self.variables[name], value, torch.sub, lambda a, b: a - b, ctx)
+        elif assign_op == "*=":
+            value = self._bin_op(self.variables[name], value, torch.mul, lambda a, b: a * b, ctx)
+        elif assign_op == "/=":
+            value = self._bin_op(self.variables[name], value, torch.div, lambda a, b: a / b, ctx)
+        elif assign_op == "%=":
+            value = self._bin_op(self.variables[name], value, torch.remainder, lambda a, b: a % b, ctx)
+        self.variables[name] = value
+        return value
+
+    def _increment(self, name, delta, ctx):
+        if name not in self.variables:
+            raise ValueError(f"{ctx.start.line}:{ctx.start.column}: Variable '{name}' not found")
+        old = self.variables[name]
+        new = self._bin_op(old, float(delta), torch.add, lambda a, b: a + b, ctx)
+        self.variables[name] = new
+        return old, new
+
+    def visitPreIncrement(self, ctx):
+        return self._increment(ctx.VARIABLE().getText(), 1, ctx)[1]
+
+    def visitPreDecrement(self, ctx):
+        return self._increment(ctx.VARIABLE().getText(), -1, ctx)[1]
+
+    def visitPostIncrement(self, ctx):
+        return self._increment(ctx.VARIABLE().getText(), 1, ctx)[0]
+
+    def visitPostDecrement(self, ctx):
+        return self._increment(ctx.VARIABLE().getText(), -1, ctx)[0]
 
     def visitFunctionDef(self, ctx):
         func_name = ctx.VARIABLE().getText()

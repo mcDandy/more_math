@@ -24,6 +24,21 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#destructureTarget.
+    def visitDestructureTarget(self, ctx:MathExprParser.DestructureTargetContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#variableList.
+    def visitVariableList(self, ctx:MathExprParser.VariableListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#assignmentOperator.
+    def visitAssignmentOperator(self, ctx:MathExprParser.AssignmentOperatorContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#paramList.
     def visitParamList(self, ctx:MathExprParser.ParamListContext):
         return self.visitChildren(ctx)
@@ -31,6 +46,11 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#IfStatement.
     def visitIfStatement(self, ctx:MathExprParser.IfStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#FunctionDefStatement.
+    def visitFunctionDefStatement(self, ctx:MathExprParser.FunctionDefStatementContext):
         return self.visitChildren(ctx)
 
 
@@ -124,6 +144,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#assignmentExpr.
+    def visitAssignmentExpr(self, ctx:MathExprParser.AssignmentExprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#LambdaExp.
     def visitLambdaExp(self, ctx:MathExprParser.LambdaExpContext):
         return self.visitChildren(ctx)
@@ -199,6 +224,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#FloorDivExp.
+    def visitFloorDivExp(self, ctx:MathExprParser.FloorDivExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#DivExp.
     def visitDivExp(self, ctx:MathExprParser.DivExpContext):
         return self.visitChildren(ctx)
@@ -241,6 +271,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#UnaryMinus.
     def visitUnaryMinus(self, ctx:MathExprParser.UnaryMinusContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PreIncrement.
+    def visitPreIncrement(self, ctx:MathExprParser.PreIncrementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PreDecrement.
+    def visitPreDecrement(self, ctx:MathExprParser.PreDecrementContext):
         return self.visitChildren(ctx)
 
 
@@ -344,6 +384,16 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#PostIncrement.
+    def visitPostIncrement(self, ctx:MathExprParser.PostIncrementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#PostDecrement.
+    def visitPostDecrement(self, ctx:MathExprParser.PostDecrementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#VariableExp.
     def visitVariableExp(self, ctx:MathExprParser.VariableExpContext):
         return self.visitChildren(ctx)
@@ -356,6 +406,16 @@ class MathExprVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MathExprParser#ConstantExp.
     def visitConstantExp(self, ctx:MathExprParser.ConstantExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#NanExp.
+    def visitNanExp(self, ctx:MathExprParser.NanExpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MathExprParser#InfExp.
+    def visitInfExp(self, ctx:MathExprParser.InfExpContext):
         return self.visitChildren(ctx)
 
 

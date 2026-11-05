@@ -1,7 +1,7 @@
 // Generated automatically by compile.ps1. Do not edit.
 
 export const KEYWORDS = new Set([
-"break", "continue", "else", "false", "False", "FALSE", "for", "if", "in", "none", "None", "null", "NULL", "return", "true", "True", "TRUE", "while"
+"_", "break", "continue", "elif", "else", "false", "False", "FALSE", "for", "if", "in", "inf", "Inf", "INF", "infinity", "Infinity", "INFINITY", "nan", "NaN", "NAN", "none", "None", "null", "NULL", "return", "true", "True", "TRUE", "while"
 ]);
 
 export const CONSTANTS = new Set([

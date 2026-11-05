@@ -33,10 +33,14 @@ class _DeadCode:
             if isinstance(n, TerminalNode):
                 continue
             if isinstance(n, P.VarDefContext):
-                if n.EQUEALS() and not n.LBRACKET():
+                if n.destructureTarget() is None and not n.LBRACKET() and n.assignmentOperator().getText() == "=":
                     assignments.append((n.VARIABLE().getText(), n.expr(0)))
             elif isinstance(n, P.ForStmtContext):
-                self.unknown.add(n.VARIABLE().getText())
+                if n.VARIABLE():
+                    self.unknown.add(n.VARIABLE().getText())
+                elif n.destructureTarget():
+                    for variable in n.destructureTarget().variableList().VARIABLE():
+                        self.unknown.add(variable.getText())
             elif isinstance(n, P.FunctionDefContext):
                 self.defs.setdefault(n.VARIABLE().getText(), []).append((_params(n), n.block() or n.expr()))
             elif isinstance(n, P.LambdaExpContext):
@@ -129,6 +133,9 @@ class _DeadCode:
         todo = [node]
         while todo:
             n = todo.pop()
+            if isinstance(n, list):
+                todo.extend(n)
+                continue
             if isinstance(n, TerminalNode):
                 t = n.getSymbol().type
                 if t == P.VARIABLE:
@@ -165,13 +172,16 @@ class _DeadCode:
         if isinstance(node, P.VarDefStmtContext):
             node = node.varDef()
         if isinstance(node, P.VarDefContext):
-            name = node.VARIABLE().getText()
             reads, effect = set(), False
             for e in node.expr():
                 r, eff = self.scan(e)
                 reads |= r
                 effect |= eff
-            if node.EQUEALS() and not node.LBRACKET():
+            if node.destructureTarget():
+                names = {variable.getText() for variable in node.destructureTarget().variableList().VARIABLE()}
+                return (live - names) | reads, not (live & names) and not effect
+            name = node.VARIABLE().getText()
+            if not node.LBRACKET() and node.assignmentOperator().getText() == "=":
                 before = (live - {name}) | reads
             else:
                 before = live | {name} | reads

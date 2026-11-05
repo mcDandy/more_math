@@ -35,6 +35,33 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#destructureTarget.
+    def enterDestructureTarget(self, ctx:MathExprParser.DestructureTargetContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#destructureTarget.
+    def exitDestructureTarget(self, ctx:MathExprParser.DestructureTargetContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#variableList.
+    def enterVariableList(self, ctx:MathExprParser.VariableListContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#variableList.
+    def exitVariableList(self, ctx:MathExprParser.VariableListContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#assignmentOperator.
+    def enterAssignmentOperator(self, ctx:MathExprParser.AssignmentOperatorContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#assignmentOperator.
+    def exitAssignmentOperator(self, ctx:MathExprParser.AssignmentOperatorContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#paramList.
     def enterParamList(self, ctx:MathExprParser.ParamListContext):
         pass
@@ -50,6 +77,15 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#IfStatement.
     def exitIfStatement(self, ctx:MathExprParser.IfStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#FunctionDefStatement.
+    def enterFunctionDefStatement(self, ctx:MathExprParser.FunctionDefStatementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FunctionDefStatement.
+    def exitFunctionDefStatement(self, ctx:MathExprParser.FunctionDefStatementContext):
         pass
 
 
@@ -215,6 +251,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#assignmentExpr.
+    def enterAssignmentExpr(self, ctx:MathExprParser.AssignmentExprContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#assignmentExpr.
+    def exitAssignmentExpr(self, ctx:MathExprParser.AssignmentExprContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#LambdaExp.
     def enterLambdaExp(self, ctx:MathExprParser.LambdaExpContext):
         pass
@@ -350,6 +395,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#FloorDivExp.
+    def enterFloorDivExp(self, ctx:MathExprParser.FloorDivExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#FloorDivExp.
+    def exitFloorDivExp(self, ctx:MathExprParser.FloorDivExpContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#DivExp.
     def enterDivExp(self, ctx:MathExprParser.DivExpContext):
         pass
@@ -428,6 +482,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#UnaryMinus.
     def exitUnaryMinus(self, ctx:MathExprParser.UnaryMinusContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PreIncrement.
+    def enterPreIncrement(self, ctx:MathExprParser.PreIncrementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PreIncrement.
+    def exitPreIncrement(self, ctx:MathExprParser.PreIncrementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PreDecrement.
+    def enterPreDecrement(self, ctx:MathExprParser.PreDecrementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PreDecrement.
+    def exitPreDecrement(self, ctx:MathExprParser.PreDecrementContext):
         pass
 
 
@@ -611,6 +683,24 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#PostIncrement.
+    def enterPostIncrement(self, ctx:MathExprParser.PostIncrementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PostIncrement.
+    def exitPostIncrement(self, ctx:MathExprParser.PostIncrementContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#PostDecrement.
+    def enterPostDecrement(self, ctx:MathExprParser.PostDecrementContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#PostDecrement.
+    def exitPostDecrement(self, ctx:MathExprParser.PostDecrementContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#VariableExp.
     def enterVariableExp(self, ctx:MathExprParser.VariableExpContext):
         pass
@@ -635,6 +725,24 @@ class MathExprListener(ParseTreeListener):
 
     # Exit a parse tree produced by MathExprParser#ConstantExp.
     def exitConstantExp(self, ctx:MathExprParser.ConstantExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#NanExp.
+    def enterNanExp(self, ctx:MathExprParser.NanExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#NanExp.
+    def exitNanExp(self, ctx:MathExprParser.NanExpContext):
+        pass
+
+
+    # Enter a parse tree produced by MathExprParser#InfExp.
+    def enterInfExp(self, ctx:MathExprParser.InfExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#InfExp.
+    def exitInfExp(self, ctx:MathExprParser.InfExpContext):
         pass
 
 

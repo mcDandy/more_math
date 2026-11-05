@@ -4,7 +4,7 @@ Adds math nodes for numbers and types which do not need it. Inspired by the `was
 
 There is workflow folder containing examples. It will expand.
 
-The most important thing is that last part of input must be an expression. Node uses it to output result. It can be constant, function call, variable or mixture of these. No loops, branching using if. Branches, loops, ... can be before the final expression.
+The last part of the input must be an expression. The node uses it as the output, so it can be a constant, function call, variable, or combination of these. Definitions, assignments, loops, and branches must appear before the final expression.
 
 ## Quickstart
 
@@ -27,11 +27,14 @@ You can also get the node from comfy manager under the name of More math.
 - Vector math with list literals `[v1, v2, ...]` and mixed operations between lists, scalars, and tensors.
 - Custom functions `funcname(variable, variable, ...)->expression;`
   - can be used later in expressions and in other custom functions,
+  - local/nested function definitions are supported,
   - shadowing built-in functions is not supported,
   - recursion is allowed, so be careful.
 - Custom variables `varname=expression;`
   - can be used later in the same expression chain,
   - compound assignments are supported: `+=`, `-=`, `*=`, `/=`, `%=`.
+- Assignment expressions, including prefix/postfix increment and decrement: `x = 1`, `x += 2`, `++x`, `x++`.
+- Destructuring bindings: `[a, b] = [1, 2];` and `for ([a, b] in values) statement`.
 - Indexed assignment `a[i, j, ...] = expression;`
   - the first write to a tensor copies it, so node inputs are never changed in place,
   - supports multidimensional tensors and nested lists,
@@ -43,7 +46,7 @@ You can also get the node from comfy manager under the name of More math.
   - negative indices count from the end of the dimension.
 - json-like dictionary literals `{key1: value1, key2: value2, ...}` for structured data. Keys can be strings or numbers or variables (variable will be evaluated to its value), values can be any expression. Indexing using [].
 - Control flow:
-  - `if/else`
+  - `if/elif/else`
   - `while`
   - `for`
   - blocks `{ ... }`
@@ -61,8 +64,9 @@ You can also get the node from comfy manager under the name of More math.
 ### Control Flow Statements
 
 - **Conditions** (`if`, `while`, ternary) are true when the value, or any of its elements, is non-zero. On a tensor the ternary picks per element instead.
-- **If/Else**: `if (condition) statement [else statement]`
+- **If/Elif/Else**: `if (condition) statement elif (condition) statement [else statement]`
 - **While Loops**: `while (condition) statement`
+- **For Loops**: `for (variable in expression) statement` or `for ([a, b] in expression) statement`
 - **Blocks**: `{ statement1; statement2; ... }`
   - New variables defined in blocks are isolated and don't leak to outer scope
   - Modifications to existing variables persist to outer scope
@@ -79,12 +83,13 @@ You can also get the node from comfy manager under the name of More math.
 
 ## Operators
 
-- Math: `+`, `-`, `*`, `/`, `%`, `^`, `|x|` (abs / norm-style magnitude)
-- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `%=`
+- Math: `+`, `-`, `*`, `/`, `//`, `%`, `^`, `|x|` (abs / norm-style magnitude)
+- Assignment: `=`, `+=`, `-=`, `*=`, `/=`, `%=`; prefix/postfix `++` and `--` are also supported.
   - also works on indexed targets, for example `a[i] += 1;` or `a[i, j] = expression;`.
 - Boolean: `<`, `<=`, `>`, `>=`, `==`, `!=`
   (`false = 0.0`, `true = 1.0`)
 - Ternary: `condition ? a : b`
+- Numeric literals: decimal values, underscore separators (`1_000_000`), hexadecimal (`0xFF`), binary (`0b1010`), `nan`, and `inf`.
 - Constants: `pi`/`PI`, `e`/`E` (case-insensitive).
 - `none` / `None` / `null` / `NULL`: empty/no-value literal.
 - Bitwise shifts: `<<`, `>>`

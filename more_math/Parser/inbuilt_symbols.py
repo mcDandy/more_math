@@ -1,6 +1,6 @@
 # Generated automatically by compile.ps1. Do not edit.
 INBUILT_KEYWORDS = {
-'break', 'continue', 'else', 'for', 'if', 'in', 'none', 'None', 'null', 'NULL', 'return', 'while'
+'break', 'continue', 'else', 'false', 'False', 'FALSE', 'for', 'if', 'in', 'none', 'None', 'null', 'NULL', 'return', 'true', 'True', 'TRUE', 'while'
 }
 INBUILT_CONSTANTS = {
 'e', 'E', 'pi', 'PI'

@@ -638,6 +638,15 @@ class MathExprListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MathExprParser#BooleanExp.
+    def enterBooleanExp(self, ctx:MathExprParser.BooleanExpContext):
+        pass
+
+    # Exit a parse tree produced by MathExprParser#BooleanExp.
+    def exitBooleanExp(self, ctx:MathExprParser.BooleanExpContext):
+        pass
+
+
     # Enter a parse tree produced by MathExprParser#StringExp.
     def enterStringExp(self, ctx:MathExprParser.StringExpContext):
         pass

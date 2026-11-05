@@ -43,7 +43,8 @@ block: LBRACE stmt* RBRACE;
 dictEntryList: dictEntry (COMMA dictEntry)*;
 dictEntry: VARIABLE COLON expr
 	| STRING COLON expr
-	| NUMBER COLON expr;
+	| NUMBER COLON expr
+	| LBRACKET expr RBRACKET COLON expr;
 
 breakStmt: BREAK SEMICOLON;
 continueStmt: CONTINUE SEMICOLON;
@@ -52,7 +53,7 @@ returnStmt: RETURN expr? SEMICOLON;
 // A lambda binds loosest, so its body takes the whole following expression, ternaries included.
 expr: lambdaExpr | ternaryExpr | compExpr;
 
-lambdaExpr: LPAREN paramList RPAREN ARROW (expr | block) # LambdaExp;
+lambdaExpr: LPAREN paramList? RPAREN ARROW (expr | block) # LambdaExp;
 
 ternaryExpr: compExpr QUESTION expr COLON expr # TernaryExp;
 
@@ -74,22 +75,22 @@ addExpr:
 	| mulExpr			# ToMul;
 
 mulExpr:
-	mulExpr MULT powExpr	# MulExp
-	| mulExpr DIV powExpr	# DivExp
-	| mulExpr MOD powExpr	# ModExp
-	| powExpr			# ToPow;
+	mulExpr MULT unaryExpr	# MulExp
+	| mulExpr DIV unaryExpr	# DivExp
+	| mulExpr MOD unaryExpr	# ModExp
+	| unaryExpr			# ToPow;
 
 shiftExpr:
 	shiftExpr LSHIFT addExpr	# LShiftExp
 	| shiftExpr RSHIFT addExpr	# RShiftExp
 	| addExpr			# ToAdd;
 
-powExpr: unaryExpr POW powExpr # PowExp | unaryExpr # ToUnary;
+powExpr: indexExpr POW unaryExpr # PowExp | indexExpr # ToUnary;
 
 unaryExpr:
 	PLUS unaryExpr		# UnaryPlus
 	| MINUS unaryExpr	# UnaryMinus
-	| indexExpr			# ToIndex;
+	| powExpr			# ToIndex;
 
 indexExpr:
 	indexExpr LBRACKET sliceElement (COMMA sliceElement)* RBRACKET	# IndexExp
@@ -119,11 +120,12 @@ atom:
 	| VARIABLE						# VariableExp
 	| NUMBER						# NumberExp
 	| CONSTANT						# ConstantExp
+	| TRUE							# BooleanExp
+	| FALSE							# BooleanExp
 	| STRING						# StringExp
 	| LPAREN expr RPAREN			# ParenExp
-	| LPAREN expr RPAREN			# ParenExp
 	| PIPE expr PIPE				# AbsExp
-	| LBRACKET expr (COMMA expr)* RBRACKET	# ListExp
+	| LBRACKET (expr (COMMA expr)*)? RBRACKET	# ListExp
 	| LBRACE dictEntryList? RBRACE	# DictExp
 	| VARIABLE LPAREN exprList? RPAREN	# CallExp
 	| NONE							# NoneExp
@@ -2061,6 +2063,8 @@ CORR: 'corr' | 'correlation';
 ENTROPY: 'entropy';
 CROP: 'crop';
 NONE: 'none'|'None'|'null'|'NULL';
+TRUE: 'true'|'True'|'TRUE';
+FALSE: 'false'|'False'|'FALSE';
 COORDS: 'coords'|'coordinates';
 GATHER: 'gather';
 SCATTER: 'scatter';

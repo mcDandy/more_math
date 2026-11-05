@@ -359,6 +359,11 @@ class MathExprVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MathExprParser#BooleanExp.
+    def visitBooleanExp(self, ctx:MathExprParser.BooleanExpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MathExprParser#StringExp.
     def visitStringExp(self, ctx:MathExprParser.StringExpContext):
         return self.visitChildren(ctx)

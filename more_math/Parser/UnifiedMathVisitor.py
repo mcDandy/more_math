@@ -1,4 +1,4 @@
-import bisect
+﻿import bisect
 import functools
 import json
 import time
@@ -812,6 +812,9 @@ class UnifiedMathVisitor(MathExprVisitor):
             return math.e
         return 0.0
 
+    def visitBooleanExp(self, ctx):
+        return 1.0 if ctx.TRUE() else 0.0
+
     def visitVariableExp(self, ctx):
         var_name = ctx.VARIABLE().getText()
         if var_name == "depth":
@@ -831,14 +834,19 @@ class UnifiedMathVisitor(MathExprVisitor):
         res = MathDict()
         entries = ctx.dictEntryList().dictEntry() if ctx.dictEntryList() else []
         for entry in entries:
-            if entry.VARIABLE():
-                key = entry.VARIABLE().getText()
-            elif entry.STRING():
-                key = self._decode_string_literal(entry.STRING().getText())
+            if entry.LBRACKET():
+                expressions = entry.expr()
+                key = yield expressions[0]
+                value = yield expressions[1]
             else:
-                key_text = entry.NUMBER().getText()
-                key = float(key_text) if any(ch in key_text for ch in ".eE") else int(key_text)
-            value = yield entry.expr()
+                if entry.VARIABLE():
+                    key = entry.VARIABLE().getText()
+                elif entry.STRING():
+                    key = self._decode_string_literal(entry.STRING().getText())
+                else:
+                    key_text = entry.NUMBER().getText()
+                    key = float(key_text) if any(ch in key_text for ch in ".eE") else int(key_text)
+                value = yield entry.expr()[0]
             res[key] = value
         return res
 
@@ -859,7 +867,7 @@ class UnifiedMathVisitor(MathExprVisitor):
         return self._unary_op((yield ctx.unaryExpr()), torch.neg, lambda x: -x)
 
     def visitToIndex(self, ctx):
-        return (yield ctx.indexExpr())
+        return (yield ctx.powExpr())
 
     def _process_slice_element(self, slice_elem_ctx):
         """Process a sliceElement context and return either an index value or a slice object."""
@@ -1108,22 +1116,22 @@ class UnifiedMathVisitor(MathExprVisitor):
 
     def visitMulExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.unaryExpr()
         return self._bin_op(a, b, torch.mul, lambda a, b: a * b, ctx)
 
     def visitDivExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.unaryExpr()
         return self._bin_op(a, b, torch.div, lambda a, b: a / b, ctx)
 
     def visitModExp(self, ctx):
         a = yield ctx.mulExpr()
-        b = yield ctx.powExpr()
+        b = yield ctx.unaryExpr()
         return self._bin_op(a, b, torch.remainder, lambda a, b: a % b, ctx)
 
     def visitPowExp(self, ctx):
-        a = yield ctx.unaryExpr()
-        b = yield ctx.powExpr()
+        a = yield ctx.indexExpr()
+        b = yield ctx.unaryExpr()
         return self._bin_op(a, b, torch.pow, lambda a, b: a ** b, ctx)
 
     def _bool_op(self, a, b, torch_op, scalar_op, ctx=None):
@@ -1175,10 +1183,10 @@ class UnifiedMathVisitor(MathExprVisitor):
         return (yield ctx.mulExpr())
 
     def visitToPow(self, ctx):
-        return (yield ctx.powExpr())
+        return (yield ctx.unaryExpr())
 
     def visitToUnary(self, ctx):
-        return (yield ctx.unaryExpr())
+        return (yield ctx.indexExpr())
 
     # Functions
     def visitTimestampFunc(self, ctx):

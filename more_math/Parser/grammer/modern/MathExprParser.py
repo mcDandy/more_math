@@ -1796,7 +1796,7 @@ class MathExprParser ( Parser ):
                         self.stmt()
                         pass
 
-             
+
                 self.state = 87
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,1,self._ctx)
@@ -1833,7 +1833,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_funcDef
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -2342,7 +2342,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_stmt
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -3576,7 +3576,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_lambdaExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -3676,7 +3676,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_ternaryExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -3755,7 +3755,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_compExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -3899,7 +3899,7 @@ class MathExprParser ( Parser ):
                         self.relationalExpr(0)
                         pass
 
-             
+
                 self.state = 298
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,23,self._ctx)
@@ -3924,7 +3924,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_relationalExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -4154,7 +4154,7 @@ class MathExprParser ( Parser ):
                         self.shiftExpr(0)
                         pass
 
-             
+
                 self.state = 318
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,25,self._ctx)
@@ -4179,7 +4179,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_addExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -4323,7 +4323,7 @@ class MathExprParser ( Parser ):
                         self.mulExpr(0)
                         pass
 
-             
+
                 self.state = 332
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,27,self._ctx)
@@ -4348,7 +4348,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_mulExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -4578,7 +4578,7 @@ class MathExprParser ( Parser ):
                         self.unaryExpr()
                         pass
 
-             
+
                 self.state = 352
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,29,self._ctx)
@@ -4603,7 +4603,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_shiftExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -4747,7 +4747,7 @@ class MathExprParser ( Parser ):
                         self.addExpr(0)
                         pass
 
-             
+
                 self.state = 366
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,31,self._ctx)
@@ -4772,7 +4772,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_powExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -4881,7 +4881,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_unaryExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -5088,7 +5088,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_indexExpr
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -5232,7 +5232,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_sliceElement
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -5625,7 +5625,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_atom
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -6620,7 +6620,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func0
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -6688,7 +6688,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func1
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -11721,7 +11721,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func2
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -16025,7 +16025,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func3
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -18362,7 +18362,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func4
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -18715,7 +18715,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_func5
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -18906,7 +18906,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_funcN
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -20087,7 +20087,7 @@ class MathExprParser ( Parser ):
         def getRuleIndex(self):
             return MathExprParser.RULE_funcNoise
 
-     
+
         def copyFrom(self, ctx:ParserRuleContext):
             super().copyFrom(ctx)
 
@@ -21686,68 +21686,68 @@ class MathExprParser ( Parser ):
     def compExpr_sempred(self, localctx:CompExprContext, predIndex:int):
             if predIndex == 0:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 1:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def relationalExpr_sempred(self, localctx:RelationalExprContext, predIndex:int):
             if predIndex == 2:
                 return self.precpred(self._ctx, 5)
-         
+
 
             if predIndex == 3:
                 return self.precpred(self._ctx, 4)
-         
+
 
             if predIndex == 4:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 5:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def addExpr_sempred(self, localctx:AddExprContext, predIndex:int):
             if predIndex == 6:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 7:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def mulExpr_sempred(self, localctx:MulExprContext, predIndex:int):
             if predIndex == 8:
                 return self.precpred(self._ctx, 5)
-         
+
 
             if predIndex == 9:
                 return self.precpred(self._ctx, 4)
-         
+
 
             if predIndex == 10:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 11:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def shiftExpr_sempred(self, localctx:ShiftExprContext, predIndex:int):
             if predIndex == 12:
                 return self.precpred(self._ctx, 3)
-         
+
 
             if predIndex == 13:
                 return self.precpred(self._ctx, 2)
-         
+
 
     def indexExpr_sempred(self, localctx:IndexExprContext, predIndex:int):
             if predIndex == 14:
                 return self.precpred(self._ctx, 2)
-         
+
 
 
 

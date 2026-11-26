@@ -37,7 +37,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 io.Int.Input("layer_x", default=0, min=-999, max=999),
                 io.Combo.Input(
                     "hook_target",
-                    options=["all", "dit_block", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block", "noise_refiner", "attn_input", "attn1", "attn2", "double_block_attn", "single_block_attn", "model_begin", "model_end"],
+                    options=["all", "dit_block", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block", "post_input", "noise_refiner", "attn_input", "attn_q", "attn_k", "attn_v", "attn1", "attn2", "double_block_attn", "single_block_attn", "model_begin", "model_end"],
                     default="all"
                 ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes", optional=True),
@@ -510,15 +510,24 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "activation_w": float(act_shape[3]) if len(act_shape) > 3 else -1.0,
                 }
 
-                if hook_target in ("all", "attn_input"):
-                    input_meta = meta | {
-                        "hook_kind": "attn_input",
-                        "hook_domain": "attention_input",
-                        "layer_key": f"{stage}.{layer_id}.attn_input.{t_index}",
-                    }
-                    q = run_expr(q, input_meta)
-                    k = run_expr(k, input_meta)
-                    v = run_expr(v, input_meta)
+                input_targets = {
+                    "attn_input": ("q", "k", "v"),
+                    "attn_q": ("q",),
+                    "attn_k": ("k",),
+                    "attn_v": ("v",),
+                }
+                selected_inputs = ("q", "k", "v") if hook_target == "all" else input_targets.get(hook_target, ())
+                if selected_inputs:
+                    input_meta = meta | {"hook_domain": "attention_input"}
+                    for name in selected_inputs:
+                        input_meta["hook_kind"] = "attn_input" if hook_target in ("all", "attn_input") else f"attn_{name}"
+                        input_meta["layer_key"] = f"{stage}.{layer_id}.{input_meta['hook_kind']}.{t_index}"
+                        if name == "q":
+                            q = run_expr(q, input_meta)
+                        elif name == "k":
+                            k = run_expr(k, input_meta)
+                        else:
+                            v = run_expr(v, input_meta)
                     meta.update({"q": q, "k": k, "v": v})
 
                 if hook_target not in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
@@ -604,6 +613,40 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 # začátek timestep pipeline
                 return _apply_block_expr(emb, transformer_options, "time_emb", 0, "unet_block")
 
+            def post_input_patch(patch_args):
+                topts = patch_args["transformer_options"]
+                if not match_index(0, 1, "post_input", topts, "post_input"):
+                    return patch_args
+
+                co = topts.get("cond_or_uncond", None)
+                auto_side, auto_idx = side_from_cond_or_uncond(co)
+                side = forced_side if forced_side is not None else auto_side
+                result = dict(patch_args)
+                for stream_name in ("img", "txt"):
+                    stream = patch_args.get(stream_name)
+                    if not isinstance(stream, torch.Tensor):
+                        continue
+                    meta = {
+                        "hook_kind": "post_input",
+                        "hook_domain": "diffusion",
+                        "attn_kind": "none",
+                        "block_name": "post_input",
+                        "stream_name": stream_name,
+                        "layer_id": 0.0,
+                        "layer": 0.0,
+                        "i": 0.0,
+                        "total_blocks": 1.0,
+                        "has_qkv": 0.0,
+                        "layer_key": f"post_input.{stream_name}",
+                        "cond_side": side,
+                        "cond_index": float(0 if side == "positive" else (1 if side == "negative" else auto_idx)),
+                        "is_positive": 1.0 if side == "positive" else 0.0,
+                        "is_negative": 1.0 if side == "negative" else 0.0,
+                        "activations_shape": tensor_shape(stream),
+                    }
+                    result[stream_name] = run_expr(stream, meta)
+                return result
+
             if hook_target in ("all", "unet_block", "input_block"):
                 patches["input_block_patch"] = list(patches.get("input_block_patch", [])) + [input_block_patch]
             if hook_target in ("all", "input_block_after_skip"):
@@ -616,6 +659,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 patches["emb_patch"] = list(patches.get("emb_patch", [])) + [emb_patch]
             if hook_target in ("all", "unet_block", "middle_block"):
                 patches["middle_block_after_patch"] = list(patches.get("middle_block_after_patch", [])) + [middle_block_after_patch]
+            if hook_target in ("all", "post_input"):
+                patches["post_input"] = list(patches.get("post_input", [])) + [post_input_patch]
 
             topts["patches"] = patches
             patched_dict["transformer_options"] = topts
@@ -726,9 +771,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             p = {"transformer_options": {}}
             if hook_target in ("all", "dit_block"):
                 register_dit(p, forced_side=side_label)
-            if hook_target in ("all", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block"):
+            if hook_target in ("all", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block", "post_input"):
                 p = register_unet_blocks(p, forced_side=side_label)
-            if hook_target in ("all", "attn_input", "attn1", "attn2", "double_block_attn", "single_block_attn"):
+            if hook_target in ("all", "attn_input", "attn_q", "attn_k", "attn_v", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 p = register_attn(p, forced_side=side_label) 
             if hook_target in ("all", "noise_refiner"):
                 p = register_noise_refiner(p, forced_side=side_label)
@@ -783,9 +828,9 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             patched.setdefault("transformer_options", {})
             if hook_target in ("all", "dit_block"):
                 register_dit(patched, forced_side=None)
-            if hook_target in ("all", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block"):
+            if hook_target in ("all", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block", "post_input"):
                 patched = register_unet_blocks(patched, forced_side=None)
-            if hook_target in ("all", "attn_input", "attn1", "attn2", "double_block_attn", "single_block_attn"):
+            if hook_target in ("all", "attn_input", "attn_q", "attn_k", "attn_v", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 patched = register_attn(patched, forced_side=None)
             if hook_target in ("all", "noise_refiner"):
                 patched = register_noise_refiner(patched, forced_side=None)

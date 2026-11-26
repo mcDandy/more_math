@@ -564,15 +564,17 @@ Current implementation details:
 - Non-negative `layer_x` values select that index; negative values count from the end when the hook exposes a total layer count. Hooks without a valid index are skipped.
 - For guiders with `original_conds`, base conditions are restored before reattaching hooks to avoid hook accumulation across reruns/interrupted runs.
 - Active hook paths currently include:
-  - Projected attention inputs (`attn_input`, applied separately to `q`, `k`, and `v`) and attention outputs (`attn1` / `attn2` / `double_block_attn` / `single_block_attn` / `attn_unknown`)
+  - Projected attention inputs (`attn_input`, `attn_q`, `attn_k`, `attn_v`) and attention outputs (`attn1` / `attn2` / `double_block_attn` / `single_block_attn` / `attn_unknown`)
   - DiT block replace (`dit.double_block`, `dit.single_block`)
   - UNet block patches (`input_block`, `input_block_after_skip`, `middle_patch`, `middle_block`, `output_block`)
+  - Post-input image and text streams (`post_input`)
   - Lumina noise-refiner layers (`noise_refiner`)
   - Timestep embedding start via `emb_patch` (`block_name="time_emb"`, `layer_x=0`)
   - Whole-model edges via diffusion-model wrapper (`model_begin`, `model_end`)
 - `all` includes every applicable hook path. Individual targets are available when an expression should run at only one stage.
 - Hook availability depends on the model architecture. For example, `noise_refiner` is used by Lumina models that expose that patch point; unsupported models simply do not invoke it.
-- `attn_input` runs after Q/K/V projection on attention calls routed through ComfyUI's optimized-attention override, applying the expression independently to each tensor. `inp` is the current tensor and `q`, `k`, and `v` are the original projected values.
+- `attn_input` runs after Q/K/V projection on attention calls routed through ComfyUI's optimized-attention override, applying the expression independently to each tensor. `attn_q`, `attn_k`, and `attn_v` apply it only to the named tensor. `inp` is the current tensor and `q`, `k`, and `v` are the original projected values.
+- `post_input` applies the expression independently to available `img` and `txt` streams after model input projections. Models without one of those streams only invoke it for the stream they provide.
 - `input_block` runs before an input block's output is saved for the skip connection. `input_block_after_skip` runs after that save and changes the continuing hidden state, not the saved skip tensor. `output_block` runs before the output block's hidden state is merged with its skip tensor. `middle_patch` runs at supported transformer middle patches; `middle_block` runs after the complete UNet middle module.
 
 ### Side behavior (positive / negative)
@@ -603,6 +605,7 @@ The following variables are available in `Expression`.
 | `S0..Sn` | float | Per-dimension sizes from `generate_dim_variables`. |
 | `hook_kind` | string | Active hook identifier, including `attn_input`, attention output kinds, `dit_block`, UNet stage kinds, `noise_refiner`, `model_begin`, and `model_end`. |
 | `hook_domain` | string | High-level domain: `attention`, `attention_input`, `diffusion`, or `unknown`. |
+| `stream_name` | string | `img` or `txt` for `post_input` hooks. |
 | `attn_kind` | string | Attention kind: `attn1`, `attn2`, `double_block_attn`, `single_block_attn`, `attn_unknown`, or `none` outside attention hooks. |
 | `transformer_index` | float | Attention sub-block index inside a UNet block (`-1` if unavailable). |
 | `is_attn1` | float (0/1) | `1` when current hook is `attn1`, else `0`. |
@@ -648,6 +651,8 @@ The following variables are available in `Expression`.
 - For timestep-begin hooking use `layer_x=0` and filter by `block_name=="time_emb"` (or `layer_key=="unet.time_emb.0"`).
 - For model-edge hooks filter by `hook_kind=="model_begin"` or `hook_kind=="model_end"`.
 - For attention-input edits use `hook_target=="attn_input"`; `inp` refers to each projected Q, K, and V tensor in turn.
+- Use `attn_q`, `attn_k`, or `attn_v` to edit only one projected attention tensor.
+- For model input stream edits use `hook_target=="post_input"`; `stream_name` identifies whether `inp` is the image or text stream.
 - Use `input_block_after_skip` to modify the continuing input-block stream without changing the saved skip tensor.
 - Noise-refiner hooks are architecture-specific and run after each supported refiner block.
 - For model-agnostic expressions, prefer guard variables: `has_qkv`, `is_dit`, `is_unet_block`, `is_attn1`, `is_attn2`.
@@ -657,6 +662,7 @@ The following variables are available in `Expression`.
 
 - Selective guider math:
   - `hook_target`: `all`, `dit_block`, `unet_block`, `attn1`, `attn2`,
-    `double_block_attn`, `single_block_attn`, `attn_input`, `input_block`,
+    `double_block_attn`, `single_block_attn`, `attn_input`, `attn_q`,
+    `attn_k`, `attn_v`, `post_input`, `input_block`,
     `input_block_after_skip`, `output_block`, `middle_patch`, `middle_block`,
     `noise_refiner`, `model_begin`, `model_end`

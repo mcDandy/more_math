@@ -40,6 +40,51 @@ def test_attention_input_hook_transforms_projected_qkv():
     assert all(torch.equal(tensor, torch.ones_like(q)) for tensor in seen)
 
 
+def test_attention_qkv_targets_transform_only_the_selected_tensor():
+    q, k, v = (torch.zeros(1, 2, 3, 4) for _ in range(3))
+    for target, selected in (("attn_q", "q"), ("attn_k", "k"), ("attn_v", "v")):
+        options = make_guider(target).model_options["transformer_options"]
+        seen = {}
+
+        def original(q, k, v, heads, **kwargs):
+            seen.update(q=q, k=k, v=v)
+            return q
+
+        options["optimized_attention_override"](
+            original,
+            q,
+            k,
+            v,
+            2,
+            transformer_options={"block": ("middle", 0), "block_type": "double", "block_index": 0},
+        )
+
+        for name, tensor in seen.items():
+            expected = torch.ones_like(tensor) if name == selected else torch.zeros_like(tensor)
+            assert torch.equal(tensor, expected)
+
+
+def test_post_input_hook_transforms_available_image_and_text_streams():
+    guider = make_guider("post_input")
+    patch = guider.model_options["transformer_options"]["patches"]["post_input"][0]
+    img, txt, img_ids = torch.zeros(1, 2, 3), torch.zeros(1, 4, 3), torch.zeros(1, 2, 3)
+
+    result = patch({"img": img, "txt": txt, "img_ids": img_ids, "transformer_options": {}})
+
+    assert torch.equal(result["img"], torch.ones_like(img))
+    assert torch.equal(result["txt"], torch.ones_like(txt))
+    assert result["img_ids"] is img_ids
+    assert result["transformer_options"] == {}
+
+
+def test_post_input_hook_supports_models_with_only_image_stream():
+    guider = make_guider("post_input")
+    patch = guider.model_options["transformer_options"]["patches"]["post_input"][0]
+    img = torch.zeros(1, 2, 3)
+    result = patch({"img": img, "transformer_options": {}})
+    assert torch.equal(result["img"], torch.ones_like(img))
+
+
 def test_granular_unet_targets_register_the_expected_patch():
     expected = {
         "input_block": "input_block_patch",

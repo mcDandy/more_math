@@ -85,6 +85,26 @@ def test_post_input_hook_supports_models_with_only_image_stream():
     assert torch.equal(result["img"], torch.ones_like(img))
 
 
+def test_post_input_hook_skips_out_of_range_layer_index():
+    guider = make_guider("post_input", layer_x=1)
+    patch = guider.model_options["transformer_options"]["patches"]["post_input"][0]
+    img = torch.zeros(1, 2, 3)
+
+    result = patch({"img": img, "transformer_options": {}})
+
+    assert result["img"] is img
+
+
+def test_unet_hook_skips_out_of_range_positive_layer_index():
+    guider = make_guider("input_block", layer_x=4)
+    patch = guider.model_options["transformer_options"]["patches"]["input_block_patch"][0]
+    hidden = torch.zeros(1, 2, 3, 4)
+
+    result = patch(hidden, {"block": ("input", 1)})
+
+    assert result is hidden
+
+
 def test_granular_unet_targets_register_the_expected_patch():
     expected = {
         "input_block": "input_block_patch",

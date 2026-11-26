@@ -95,20 +95,6 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             if debug_hooks:
                 logging.warning(f"[SelectiveGuiderMathNode] {msg}")
 
-        def record_hook(kind: str, side: str, layer_id=None, stage=None, key=None):
-            if not debug_hooks:
-                return
-            parts = [f"hook={kind}", f"side={side}"]
-            if stage is not None:
-                parts.append(f"stage={stage}")
-            if layer_id is not None:
-                parts.append(f"layer_id={layer_id}")
-            if key is not None:
-                parts.append(f"key={key}")
-            line = " ".join(parts)
-            debug_hook_events.append(line)
-            dbg(f"HOOK {line}")
-
         def resolve_attn_kind(transformer_options: dict, q: torch.Tensor | None = None, k: torch.Tensor | None = None, v: torch.Tensor | None = None) -> str:
             # Flux / MM-DiT
             btype = transformer_options.get("block_type", None)
@@ -205,7 +191,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 if total_blocks is not None:
                     if total_blocks <= 0:
                         return -1
-                    return max(0, min(x, total_blocks - 1))
+                    return x if x < total_blocks else -1
                 return x
 
             if total_blocks is None:
@@ -281,6 +267,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 "context_tokens": -1.0,
                 "value_tokens": -1.0,
                 "activations_shape": [],
+                "stream_name": "unknown",
                 "activation_rank": -1.0,
                 "activation_b": -1.0,
                 "activation_c": -1.0,

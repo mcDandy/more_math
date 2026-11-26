@@ -37,7 +37,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 io.Int.Input("layer_x", default=0, min=-999, max=999),
                 io.Combo.Input(
                     "hook_target",
-                    options=["all", "dit_block", "unet_block", "attn1", "attn2", "double_block_attn", "single_block_attn", "model_begin", "model_end"],
+                    options=["all", "dit_block", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block", "noise_refiner", "attn_input", "attn1", "attn2", "double_block_attn", "single_block_attn", "model_begin", "model_end"],
                     default="all"
                 ),
                 MrmthStack.Input(id="stack", tooltip="Access stack between nodes", optional=True),
@@ -189,6 +189,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 names = ("single_layers", "single_blocks")
             elif block_type == "block":
                 names = ("blocks", "transformer_blocks", "double_layers", "single_layers")
+            elif block_type == "noise_refiner":
+                names = ("noise_refiner",)
             else:
                 names = ()
             for name in names:
@@ -217,6 +219,8 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             return x
 
         def match_index(idx: int, total_blocks: int | None, stage: str, topts: dict, hook_kind: str) -> bool:
+            if idx < 0:
+                return False
             x = resolve_x(total_blocks, stage, topts)
             return idx == x
 
@@ -446,8 +450,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     stage = str(blk[0])
                     layer_id = int(blk[1])
                 else:
-                    # lepší fallback pro Flux/FLOW
-                    stage = btype if btype in ("double", "single") else str(transformer_options.get("model_type", "unknown")).lower()
+                    stage = btype if btype != "unknown" else str(transformer_options.get("model_type", "unknown")).lower()
                     layer_id = bindex
 
                 t_index_raw = transformer_options.get("transformer_index", None)
@@ -507,6 +510,20 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "activation_w": float(act_shape[3]) if len(act_shape) > 3 else -1.0,
                 }
 
+                if hook_target in ("all", "attn_input"):
+                    input_meta = meta | {
+                        "hook_kind": "attn_input",
+                        "hook_domain": "attention_input",
+                        "layer_key": f"{stage}.{layer_id}.attn_input.{t_index}",
+                    }
+                    q = run_expr(q, input_meta)
+                    k = run_expr(k, input_meta)
+                    v = run_expr(v, input_meta)
+                    meta.update({"q": q, "k": k, "v": v})
+
+                if hook_target not in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
+                    return original_attn(q, k, v, heads, **kwargs)
+
                 out = original_attn(q, k, v, heads, **kwargs)
                 return run_expr(out, meta)
 
@@ -524,7 +541,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     return str(blk[0]), int(blk[1])
                 return fallback_stage, int(transformer_options.get("block_index", -1))
 
-            def _apply_block_expr(t: torch.Tensor, transformer_options: dict, stage: str, idx: int):
+            def _apply_block_expr(t: torch.Tensor, transformer_options: dict, stage: str, idx: int, hook_kind: str):
                 if not match_index(idx, None, stage, transformer_options, "unet_block"):
                     return t
 
@@ -534,11 +551,11 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                 idx_side = 0 if side == "positive" else (1 if side == "negative" else auto_idx)
 
                 if not hit_flags["unet"]:
-                    dbg(f"UNET BLOCK HIT stage={stage} layer_id={idx} side={side}")
+                    dbg(f"BLOCK HIT hook={hook_kind} stage={stage} layer_id={idx} side={side}")
                     hit_flags["unet"] = True
 
                 meta = {
-                    "hook_kind": "unet_block",
+                    "hook_kind": hook_kind,
                     "hook_domain": "diffusion",
                     "attn_kind": "none",
                     "is_dit": 0.0,
@@ -552,7 +569,7 @@ class SelectiveGuiderMathNode(io.ComfyNode):
                     "i": float(idx),
                     "total_blocks": -1.0,
                     "has_qkv": 0.0,
-                    "layer_key": f"unet.{stage}.{idx}",
+                    "layer_key": f"unet.{hook_kind}.{stage}.{idx}",
                     "cond_side": side,
                     "cond_index": float(idx_side),
                     "is_positive": 1.0 if side == "positive" else 0.0,
@@ -564,31 +581,92 @@ class SelectiveGuiderMathNode(io.ComfyNode):
 
             def input_block_patch(h, transformer_options):
                 stage, idx = _parse_block(transformer_options, "input")
-                return _apply_block_expr(h, transformer_options, stage, idx)
+                return _apply_block_expr(h, transformer_options, stage, idx, "input_block")
+
+            def input_block_after_skip_patch(h, transformer_options):
+                stage, idx = _parse_block(transformer_options, "input_after_skip")
+                return _apply_block_expr(h, transformer_options, stage, idx, "input_block_after_skip")
 
             def output_block_patch(h, hsp, transformer_options):
                 stage, idx = _parse_block(transformer_options, "output")
-                h2 = _apply_block_expr(h, transformer_options, stage, idx)
+                h2 = _apply_block_expr(h, transformer_options, stage, idx, "output_block")
                 return h2, hsp
 
             def middle_patch(h, transformer_options):
                 stage, idx = _parse_block(transformer_options, "middle")
-                return _apply_block_expr(h, transformer_options, stage, idx)
+                return _apply_block_expr(h, transformer_options, stage, idx, "middle_patch")
 
             def middle_block_after_patch(patch_args):
-                h = _apply_block_expr(patch_args["h"], patch_args["transformer_options"], "middle", 0)
+                h = _apply_block_expr(patch_args["h"], patch_args["transformer_options"], "middle", 0, "middle_block")
                 return {**patch_args, "h": h}
 
             def emb_patch(emb, model_channels, transformer_options):
                 # začátek timestep pipeline
-                return _apply_block_expr(emb, transformer_options, "time_emb", 0)
+                return _apply_block_expr(emb, transformer_options, "time_emb", 0, "unet_block")
 
-            patches["input_block_patch"] = list(patches.get("input_block_patch", [])) + [input_block_patch]
-            patches["output_block_patch"] = list(patches.get("output_block_patch", [])) + [output_block_patch]
-            patches["middle_patch"] = list(patches.get("middle_patch", [])) + [middle_patch]
-            patches["emb_patch"] = list(patches.get("emb_patch", [])) + [emb_patch]
-            patches["middle_block_after_patch"] = list(patches.get("middle_block_after_patch", [])) + [middle_block_after_patch]
+            if hook_target in ("all", "unet_block", "input_block"):
+                patches["input_block_patch"] = list(patches.get("input_block_patch", [])) + [input_block_patch]
+            if hook_target in ("all", "input_block_after_skip"):
+                patches["input_block_patch_after_skip"] = list(patches.get("input_block_patch_after_skip", [])) + [input_block_after_skip_patch]
+            if hook_target in ("all", "unet_block", "output_block"):
+                patches["output_block_patch"] = list(patches.get("output_block_patch", [])) + [output_block_patch]
+            if hook_target in ("all", "unet_block", "middle_patch"):
+                patches["middle_patch"] = list(patches.get("middle_patch", [])) + [middle_patch]
+            if hook_target in ("all", "unet_block"):
+                patches["emb_patch"] = list(patches.get("emb_patch", [])) + [emb_patch]
+            if hook_target in ("all", "unet_block", "middle_block"):
+                patches["middle_block_after_patch"] = list(patches.get("middle_block_after_patch", [])) + [middle_block_after_patch]
 
+            topts["patches"] = patches
+            patched_dict["transformer_options"] = topts
+            return patched_dict
+
+        def register_noise_refiner(patched_dict, forced_side=None):
+            topts = patched_dict["transformer_options"].copy()
+            patches = topts.get("patches", {}).copy()
+
+            def noise_refiner_patch(patch_args):
+                transformer_options = patch_args["transformer_options"]
+                idx = int(patch_args["block_index"])
+                count_options = dict(transformer_options)
+                count_options["block_type"] = "noise_refiner"
+                count_options.pop("total_blocks", None)
+                total_blocks = resolve_total_blocks("noise_refiner", count_options)
+                if not match_index(idx, total_blocks, "noise_refiner", count_options, "noise_refiner"):
+                    return patch_args
+
+                co = transformer_options.get("cond_or_uncond", None)
+                auto_side, auto_idx = side_from_cond_or_uncond(co)
+                side = forced_side if forced_side is not None else auto_side
+                img = patch_args["img"]
+                meta = {
+                    "hook_kind": "noise_refiner",
+                    "hook_domain": "diffusion",
+                    "attn_kind": "none",
+                    "block_name": "noise_refiner",
+                    "layer_id": float(idx),
+                    "layer": float(idx),
+                    "i": float(idx),
+                    "total_blocks": float(total_blocks) if total_blocks is not None else -1.0,
+                    "has_qkv": 0.0,
+                    "layer_key": f"noise_refiner.{idx}",
+                    "cond_side": side,
+                    "cond_index": float(0 if side == "positive" else (1 if side == "negative" else auto_idx)),
+                    "is_positive": 1.0 if side == "positive" else 0.0,
+                    "is_negative": 1.0 if side == "negative" else 0.0,
+                    "activations_shape": tensor_shape(img),
+                    "img": img,
+                    "img_input": patch_args["img_input"],
+                    "txt": patch_args["txt"],
+                    "pe": patch_args["pe"],
+                    "vec": patch_args["vec"],
+                    "x": patch_args["x"],
+                }
+                result = dict(patch_args)
+                result["img"] = run_expr(img, meta)
+                return result
+
+            patches["noise_refiner"] = list(patches.get("noise_refiner", [])) + [noise_refiner_patch]
             topts["patches"] = patches
             patched_dict["transformer_options"] = topts
             return patched_dict
@@ -648,10 +726,12 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             p = {"transformer_options": {}}
             if hook_target in ("all", "dit_block"):
                 register_dit(p, forced_side=side_label)
-            if hook_target in ("all", "unet_block"):
+            if hook_target in ("all", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block"):
                 p = register_unet_blocks(p, forced_side=side_label)
-            if hook_target in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
+            if hook_target in ("all", "attn_input", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 p = register_attn(p, forced_side=side_label) 
+            if hook_target in ("all", "noise_refiner"):
+                p = register_noise_refiner(p, forced_side=side_label)
             if hook_target in ("all", "model_begin", "model_end"):
                 p = register_model_edges(p, forced_side=side_label)
             return p["transformer_options"]
@@ -703,10 +783,12 @@ class SelectiveGuiderMathNode(io.ComfyNode):
             patched.setdefault("transformer_options", {})
             if hook_target in ("all", "dit_block"):
                 register_dit(patched, forced_side=None)
-            if hook_target in ("all", "unet_block"):
+            if hook_target in ("all", "unet_block", "input_block", "input_block_after_skip", "output_block", "middle_patch", "middle_block"):
                 patched = register_unet_blocks(patched, forced_side=None)
-            if hook_target in ("all", "attn1", "attn2", "double_block_attn", "single_block_attn"):
+            if hook_target in ("all", "attn_input", "attn1", "attn2", "double_block_attn", "single_block_attn"):
                 patched = register_attn(patched, forced_side=None)
+            if hook_target in ("all", "noise_refiner"):
+                patched = register_noise_refiner(patched, forced_side=None)
             if hook_target in ("all", "model_begin", "model_end"):
                 patched = register_model_edges(patched, forced_side=None)
             V.model_options = patched

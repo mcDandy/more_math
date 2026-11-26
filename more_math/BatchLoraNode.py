@@ -8,6 +8,7 @@ from .helper_functions import parse_expr
 from .Parser.UnifiedMathVisitor import UnifiedMathVisitor
 import torch
 import copy
+import logging
 from .ParseTree import MrmthParseTree
 
 class BatchLoraNode(io.ComfyNode):
@@ -24,7 +25,6 @@ class BatchLoraNode(io.ComfyNode):
         else:
             tree = Expression
         visitor = UnifiedMathVisitor(variables, [1],torch.device("cpu"),state_storage=stack)
-        print(stack)
         result = visitor.visit(tree)
         return (list(result), stack)
     @classmethod
@@ -58,8 +58,6 @@ class BatchLoraNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, model, clip, folder, add_no_lora, model_strength, clip_strength, stack=None):
-        paths = folder_paths.get_folder_paths("loras")
-        print(paths)
         lora_path = folder_paths.get_filename_list("loras")
         stack = copy.deepcopy(stack) if stack is not None else {}
         selected_folder = os.path.normpath(folder)
@@ -73,7 +71,11 @@ class BatchLoraNode(io.ComfyNode):
 
         model_strengths, stack = cls._parse_strengths(model_strength, stack, lora_path, len(lora_path), add_no_lora)
         clip_strengths, stack = cls._parse_strengths(clip_strength, stack, lora_path, len(lora_path), add_no_lora)
-        print(stack)
+        if lora_path and not model_strengths:
+            raise ValueError("model_strength expression must produce at least one value when LoRAs are selected.")
+        if lora_path and not clip_strengths:
+            raise ValueError("clip_strength expression must produce at least one value when LoRAs are selected.")
+
         model_lora = [model] if add_no_lora else []
         clip_lora = [clip] if add_no_lora else []
         for index, lora in enumerate(lora_path):
@@ -81,7 +83,7 @@ class BatchLoraNode(io.ComfyNode):
             clip = clip.clone()
             full_lora_path = folder_paths.get_full_path("loras", lora)
             if full_lora_path is None:
-                print(f"BatchLoraNode: Skipping missing LoRA: {lora}")
+                logging.warning("BatchLoraNode: Skipping missing LoRA: %s", lora)
                 continue
 
             model_strength_value = model_strengths[index] if index < len(model_strengths) else model_strengths[-1]

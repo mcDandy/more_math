@@ -30,10 +30,33 @@ class SpectrogramToAudio(io.ComfyNode):
         )
 
     @classmethod
+    def validate_inputs(cls, image, channel_count, window_length, **kwargs):
+        if channel_count <= 0:
+            return "channel_count must be greater than zero."
+        _, height, _, _ = image.shape
+        if height % channel_count != 0:
+            return f"Spectrogram height ({height}) must be divisible by channel_count ({channel_count})."
+        bucket_count = height // channel_count
+        if bucket_count < 2:
+            return "Each audio channel must have at least 2 frequency bins."
+        n_fft = (bucket_count - 1) * 2
+        if window_length > n_fft:
+            return f"window_length ({window_length}) must be no greater than the FFT size ({n_fft})."
+        return True
+
+    @classmethod
     def execute(cls, image, channel_count, sample_rate, window_length, hop_length, window_type):
         B, H, W, _ = image.shape
+        if channel_count <= 0:
+            raise ValueError("channel_count must be greater than zero.")
+        if H % channel_count != 0:
+            raise ValueError(f"Spectrogram height ({H}) must be divisible by channel_count ({channel_count}).")
         bucket_count = H // channel_count
+        if bucket_count < 2:
+            raise ValueError("Each audio channel must have at least 2 frequency bins.")
         n_fft = (bucket_count - 1) * 2
+        if window_length > n_fft:
+            raise ValueError(f"window_length ({window_length}) must be no greater than the FFT size ({n_fft}).")
         real = image[..., 0].reshape(B * channel_count, bucket_count, W)
         imag = image[..., 2].reshape(B * channel_count, bucket_count, W)
         stft_complex = torch.complex(real, imag)

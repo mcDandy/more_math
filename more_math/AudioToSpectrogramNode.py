@@ -34,11 +34,20 @@ class AudioToSpectrogram(io.ComfyNode):
         )
 
     @classmethod
+    def validate_inputs(cls, window_length, bucket_count, **kwargs):
+        n_fft = (bucket_count - 1) * 2
+        if window_length > n_fft:
+            return f"window_length ({window_length}) must be no greater than the FFT size ({n_fft})."
+        return True
+
+    @classmethod
     def execute(cls, audio, window_length, hop_length, bucket_count, window_type):
         waveform = audio["waveform"]
         sample_rate = audio["sample_rate"]
         B, C, S = waveform.shape
         n_fft = (bucket_count - 1) * 2
+        if window_length > n_fft:
+            raise ValueError(f"window_length ({window_length}) must be no greater than the FFT size ({n_fft}).")
         flat_waveform = waveform.reshape(B * C, S)
         window = windows[window_type](window_length, device=waveform.device)
 
@@ -58,5 +67,4 @@ class AudioToSpectrogram(io.ComfyNode):
         F, T = stft_out.shape[1], stft_out.shape[2]
         stft_out = stft_out.reshape(B, C, F, T).reshape(B, C * F, T)
         image = torch.stack([stft_out.real, torch.log1p(torch.abs(stft_out)), stft_out.imag], dim=-1)
-        print(image.type())
         return (image, C, sample_rate)
